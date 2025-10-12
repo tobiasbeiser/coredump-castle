@@ -20,7 +20,7 @@ public:
 
 private:
 
-	void RenderTiles(const std::shared_ptr<SDL_Texture>& texture,const tson::Layer& layer) const;
+	void RenderTiles(SDL_Texture& texture,const tson::Layer& layer) const;
 	void RenderBackground();
 
 

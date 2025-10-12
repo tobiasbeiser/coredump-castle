@@ -21,4 +21,4 @@ FetchContent_MakeAvailable(glm)
 
 add_library(vendor INTERFACE)
 target_link_libraries(vendor INTERFACE SDL3::SDL3 SDL3_image::SDL3_image glm)
-target_include_directories(vendor INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/tileson")
+target_include_directories(vendor SYSTEM INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/tileson")

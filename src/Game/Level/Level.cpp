@@ -20,7 +20,7 @@ void Level::Load(const std::string& levelFile, Player& player)
 		throw std::runtime_error("Failed to load map: " + map->getStatusMessage());
 	}
 	dimensions = glm::vec2(map->getSize().x, map->getSize().y);
-	fs::path imagePath = map->getTilesets()[0].getFullImagePath();
+	fs::path imagePath = map->getTilesets().at(0).getFullImagePath();
 	imagePath = "assets/tilesets" / imagePath.filename();
 	tileSetTexture = textureManager.GetTexture(imagePath.string());
 
@@ -51,10 +51,10 @@ void Level::Load(const std::string& levelFile, Player& player)
 
 	// Set player position to spawn point
 	auto spawnPoint = map->getLayer("Entities")->getObjectsByName("Player");
-	if (spawnPoint.size() != 1 && !spawnPoint[0].isPoint()) {
+	if (spawnPoint.size() != 1 && !spawnPoint.at(0).isPoint()) {
 		throw std::runtime_error("Map must have exactly one Player spawn point");
 	}
-	const tson::Vector2 pos = spawnPoint[0].getPosition();
+	const tson::Vector2 pos = spawnPoint.at(0).getPosition();
 
 	player.position.x = pos.x;
 	player.position.y = pos.y;
@@ -75,37 +75,34 @@ void Level::Render() {
 	for (const tson::Layer& layer : map->getLayers())
 	{
 		if (layer.getName() == "Tiles") {
-			RenderTiles(texture, layer);
+			RenderTiles(*tileSetTexture, layer);
 		}
 	}
 
 }
 
-void Level::RenderTiles(const std::shared_ptr<SDL_Texture>& texture, const tson::Layer& layer) const
+void Level::RenderTiles(SDL_Texture& texture, const tson::Layer& layer) const
 {
-
 	if (layer.getType() == tson::LayerType::TileLayer)
 	{
 		std::map<std::tuple<int, int>, tson::Tile*> tileData = layer.getTileData();
 		for (const auto& [pos, tile] : tileData) {
 			if (tile != nullptr) {
-				glm::ivec2 position = glm::ivec2(std::get<0>(pos), std::get<1>(pos));
-				glm::ivec2 tileSize = glm::ivec2(tile->getTileSize().x, tile->getTileSize().y);
+				const glm::ivec2 position = glm::ivec2(std::get<0>(pos), std::get<1>(pos));
+				const glm::ivec2 tileSize = glm::ivec2(tile->getTileSize().x, tile->getTileSize().y);
 
-				tson::Rect rectSrc = tile->getDrawingRect();
+				const tson::Rect rectSrc = tile->getDrawingRect();
 
-				renderer.DrawTexture(tileSetTexture.get(), rectSrc.x / rectSrc.width, rectSrc.y / rectSrc.height, position.x, position.y, spriteSize);
+				renderer.DrawTexture(texture, rectSrc.x / rectSrc.width, rectSrc.y / rectSrc.height, position.x, position.y, spriteSize);
 			}
 		}
-
-
 	}
 }
 
 void Level::RenderBackground()
 {
-	renderer.DrawBackground(texture.get());
-	renderer.DrawParalaxBackground(parallaxTexture.get(), scrollPos, 260, 1);
+	renderer.DrawBackground(*texture);
+	renderer.DrawParalaxBackground(*parallaxTexture, scrollPos, 260, 1);
 }
 
 void Level::RenderForeground() const
@@ -113,7 +110,7 @@ void Level::RenderForeground() const
 	for (const tson::Layer& layer : map->getLayers())
 	{
 		if (layer.getName() == "Foreground") {
-			RenderTiles(texture, layer);
+			RenderTiles(*tileSetTexture, layer);
 		}
 	}
 }

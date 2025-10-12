@@ -94,6 +94,8 @@ void GameEngine::HandleEvents()
 		case SDL_EVENT_KEY_UP:
 			inputManager.Update(&event.key);
 			break;
+		default:
+			break;
 		};
 
 	}

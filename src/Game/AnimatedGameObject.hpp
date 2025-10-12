@@ -13,7 +13,7 @@ public:
 	int currentAnimation;
 
 	void Update(const float deltaTime, const float stepSize) override {
-		animations[currentAnimation].step(deltaTime);
+		animations.at(currentAnimation).step(deltaTime);
 	};
 
 

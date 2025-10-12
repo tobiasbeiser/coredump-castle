@@ -10,10 +10,10 @@ Player::Player(const InputManager& inputManager, TextureManager& textureManager,
 	spriteSize = 56;
 	texture = textureManager.GetTexture("assets/Player/char_blue_1.png");
 	collisionBox = { 19, 25, 21, 32 };
-	animations[ANIM_IDLE] = Animation(6, 0.6f);
-	animations[ANIM_WALK] = Animation(8, 0.8f);
-	animations[ANIM_JUMP] = Animation(8, 0.4f, false);
-	animations[ANIM_FALL] = Animation(8, 0.4f, false);
+	animations.at(ANIM_IDLE) = Animation(6, 0.6f);
+	animations.at(ANIM_WALK) = Animation(8, 0.8f);
+	animations.at(ANIM_JUMP) = Animation(8, 0.4f, false);
+	animations.at(ANIM_FALL) = Animation(8, 0.4f, false);
 
 
 	currentAnimation = ANIM_IDLE;
@@ -90,13 +90,13 @@ void Player::UpdateAnimation()
 	case WALKING: currentAnimation = ANIM_WALK; break;
 	case JUMPING:
 		if (currentAnimation != ANIM_JUMP) {
-			animations[ANIM_JUMP].start();
+			animations.at(ANIM_JUMP).start();
 			currentAnimation = ANIM_JUMP;
 		}
 		break;
 	case FALLING:
 		if (currentAnimation != ANIM_FALL) {
-			animations[ANIM_FALL].start();
+			animations.at(ANIM_FALL).start();
 			currentAnimation = ANIM_FALL;
 		}
 	}
@@ -145,7 +145,7 @@ void Player::MoveHorizontal(const float currentDirection, const float stepSize) 
 		// decelerate
 		if (velocity.x) {
 			const float factor = velocity.x > 0 ? -2.5f : 2.5f;
-			float amount = factor * accelerationRate * stepSize;
+			const float amount = factor * accelerationRate * stepSize;
 			if (std::abs(velocity.x) < std::abs(amount)) {
 				acceleration.x = 0;
 				velocity.x = 0;

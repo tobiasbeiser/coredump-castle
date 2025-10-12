@@ -75,7 +75,7 @@ void CollisionSystem::Resolve(std::vector<std::unique_ptr<GameObject>>& objects,
 	}
 }
 
-void CollisionSystem::ResolveCollisions(SDL_FRect& entityBox, SDL_FRect& tileBox, std::reference_wrapper<IEntity>& entity) const
+void CollisionSystem::ResolveCollisions(SDL_FRect& entityBox, const SDL_FRect& tileBox, std::reference_wrapper<IEntity>& entity) const
 {
 	// AABB collision check
 	SDL_FRect intersection{ 0 };

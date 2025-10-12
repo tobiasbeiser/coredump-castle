@@ -6,25 +6,25 @@ class Timer {
 public:
 	Timer(float length) :length(length), time(0) {}
 
-	void step(float deltaTime, bool loop) {
-        time += deltaTime;
-        if (loop) {
-            if (time > length) {
-                time -= length;
-                timeout = true;
-            }
-        }
-        else {
-            if (time > length) {
-                time = length; 
-                timeout = true;
-            }
-        }
+	void step(float deltaTime, bool loop)noexcept {
+		time += deltaTime;
+		if (loop) {
+			if (time > length) {
+				time -= length;
+				timeout = true;
+			}
+		}
+		else {
+			if (time > length) {
+				time = length;
+				timeout = true;
+			}
+		}
 	};
-	bool isTimeout() const { return timeout; }
-	float getTime() const { return time; }
-	float getLength() const { return length; }
-	void reset() { time = 0; timeout = false; }
+	bool isTimeout() const noexcept { return timeout; }
+	float getTime() const noexcept { return time; }
+	float getLength() const noexcept { return length; }
+	void reset() noexcept { time = 0; timeout = false; }
 
 
 

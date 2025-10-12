@@ -22,11 +22,11 @@ public:
 
 	void StartFrame(int red, int green, int blue, int alpha) const;
 	void EndFrame() const;
-	void DrawAnimatedGameObject(const AnimatedGameObject& obj);
-	void DrawGameObject(const GameObject& gameObject, const float srcX, const float srcY, const float dstX, const float dstY);
+	void DrawAnimatedGameObject(const AnimatedGameObject& obj) const;
+	void DrawGameObject(const GameObject& gameObject, const float srcX, const float srcY, const float dstX, const float dstY) const;
 	void DrawTexture(SDL_Texture& texture, const float srcX, const float srcY, const float dstX, const float dstY, const float spriteSize) const;
 	void DrawBackground(SDL_Texture& texture) const;
-	void DrawParalaxBackground(SDL_Texture& texture, float& scrollPos, float y, float scale) const;
+	void DrawParalaxBackground(SDL_Texture& texture, const float& scrollPos, const float y, const float scale) const;
 	void CenterCameraOn(const GameObject& gameObject);
 
 
@@ -43,7 +43,7 @@ private:
 
 	SDL_FRect viewport{ .x = 0, .y = 0, .w = static_cast<float>(logW), .h = static_cast<float>(logH) };
 	std::vector<std::string> debugMessages;
-	void RenderTexture(SDL_Texture& texture, const SDL_FRect& srcRect, SDL_FRect& dstRect, bool flip) const;
+	void RenderTexture(SDL_Texture& texture, const SDL_FRect& srcRect, SDL_FRect& dstRect, const bool flip) const;
 
 	struct SDLRendererDeleter { void operator()(SDL_Renderer* r) const noexcept { if (r) SDL_DestroyRenderer(r); } };
 	struct SDLWindowDeleter { void operator()(SDL_Window* w) const  noexcept { if (w) SDL_DestroyWindow(w); } };

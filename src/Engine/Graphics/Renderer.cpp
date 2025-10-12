@@ -74,7 +74,7 @@ void Renderer::EndFrame() const
 	SDL_RenderPresent(renderer.get());
 }
 
-void Renderer::DrawAnimatedGameObject(const AnimatedGameObject& obj)
+void Renderer::DrawAnimatedGameObject(const AnimatedGameObject& obj) const
 {
 	float srcX = obj.currentAnimation != -1 ? obj.animations[obj.currentAnimation].currentFrame() * obj.spriteSize : 0;
 	float srcY = obj.currentAnimation != -1 ? obj.currentAnimation * obj.spriteSize : 0;
@@ -95,7 +95,7 @@ void Renderer::DrawAnimatedGameObject(const AnimatedGameObject& obj)
 
 	SDL_FlipMode flip = obj.direction == -1 ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
 
-	RenderTexture(obj.texture.get(), src, dst, obj.direction == -1);
+	RenderTexture(*(obj.texture), src, dst, obj.direction == -1);
 
 
 	if (DebugSystem::Instance().render.showBoundingBoxes) {
@@ -110,7 +110,7 @@ void Renderer::DrawAnimatedGameObject(const AnimatedGameObject& obj)
 	}
 }
 
-void Renderer::DrawGameObject(const GameObject& obj, const float srcX, const float srcY, const float dstX, const float dstY)
+void Renderer::DrawGameObject(const GameObject& obj, const float srcX, const float srcY, const float dstX, const float dstY) const
 {
 	SDL_FRect src{
 		.x = srcX * obj.spriteSize,
@@ -125,7 +125,7 @@ void Renderer::DrawGameObject(const GameObject& obj, const float srcX, const flo
 		.w = obj.spriteSize,
 		.h = obj.spriteSize
 	};
-	RenderTexture(obj.texture.get(), src, dst, false);
+	RenderTexture(*(obj.texture), src, dst, false);
 }
 
 void Renderer::CenterCameraOn(const GameObject& gameObject)
@@ -155,14 +155,14 @@ void Renderer::DrawBackground(SDL_Texture& texture)const {
 	SDL_RenderTexture(renderer.get(), &texture, nullptr, nullptr);
 }
 
-void Renderer::DrawParalaxBackground(SDL_Texture& texture, float& scrollPos, float y, float scale = 1)const {
+void Renderer::DrawParalaxBackground(SDL_Texture& texture, const float& scrollPos, const float y, const float scale = 1)const {
 	SDL_FRect dst{ .x = -scrollPos, .y = y, .w = texture.w * 5.0f, .h = static_cast<float>(texture.h) };
 
 	SDL_RenderTextureTiled(renderer.get(), &texture, nullptr, scale, &dst);
 }
 
 
-void Renderer::RenderTexture(SDL_Texture& texture, const SDL_FRect& srcRect, SDL_FRect& dstRect, bool flip) const
+void Renderer::RenderTexture(SDL_Texture& texture, const SDL_FRect& srcRect, SDL_FRect& dstRect,const bool flip) const
 {
 	dstRect.x -= viewport.x;
 	SDL_FlipMode flipMode = flip ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
