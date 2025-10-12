@@ -12,6 +12,7 @@ Level::Level(TextureManager& textureManager, Renderer& renderer)
 
 void Level::Load(const std::string& levelFile, Player& player)
 {
+	this->player = &player;
 	tson::Tileson t;
 	map = t.parse(fs::path(levelFile));
 	if (map->getStatus() != tson::ParseStatus::OK)
@@ -20,8 +21,32 @@ void Level::Load(const std::string& levelFile, Player& player)
 	}
 	dimensions = glm::vec2(map->getSize().x, map->getSize().y);
 	fs::path imagePath = map->getTilesets()[0].getFullImagePath();
-	imagePath = "assets/tilesets" / imagePath.filename();  
-	texture = textureManager.GetTexture(imagePath.string()); 
+	imagePath = "assets/tilesets" / imagePath.filename();
+	tileSetTexture = textureManager.GetTexture(imagePath.string());
+
+	//Load Background Textures
+
+	tson::Layer* backgroundLayer = map->getLayer("Background");
+	if (backgroundLayer && backgroundLayer->getType() == tson::LayerType::Group)
+	{
+		for (tson::Layer layer : backgroundLayer->getLayers()) {
+			if (layer.getType() != tson::LayerType::ImageLayer) return;
+
+			std::string layername = layer.getName();
+			fs::path backgroundPath = layer.getImage();
+			backgroundPath = "assets/background" / backgroundPath.filename();
+			if (layername == "Background") {
+				texture = textureManager.GetTexture(backgroundPath.string());
+			}
+			else if (layername == "Parallax") {
+				//TODO: Support multiple parallax layers with different scroll factors
+				parallaxTexture = textureManager.GetTexture(backgroundPath.string());
+			}
+			else if (layername == "Foreground") {
+				foregroundTexture = textureManager.GetTexture(backgroundPath.string());
+			}
+		}
+	}
 
 
 	// Set player position to spawn point
@@ -36,11 +61,23 @@ void Level::Load(const std::string& levelFile, Player& player)
 }
 
 void Level::Update(const float deltaTime, const float stepSize) {
-
+	//TODO: Move scroll factor to level file
+	scrollPos += player->velocity.x * 0.12f * stepSize;
+	SDL_Log("Scroll Pos: %f", scrollPos);
+	if (scrollPos <= -texture->w) {
+		scrollPos = 0;
+	}
 }
 
 void Level::Render() {
 
+	RenderBackground();
+	RenderTiles();
+
+}
+
+void Level::RenderTiles() const
+{
 	for (const tson::Layer& layer : map->getLayers())
 	{
 		if (layer.getType() == tson::LayerType::TileLayer)
@@ -53,12 +90,21 @@ void Level::Render() {
 
 					tson::Rect rectSrc = tile->getDrawingRect();
 
-					renderer.DrawGameObject(*this, rectSrc.x / rectSrc.width, rectSrc.y / rectSrc.height, position.x, position.y);
+					renderer.DrawTexture(tileSetTexture.get(), rectSrc.x / rectSrc.width, rectSrc.y / rectSrc.height, position.x, position.y, spriteSize);
 				}
 			}
 
 		}
-
-
 	}
+}
+
+void Level::RenderBackground()
+{
+	renderer.DrawBackground(texture.get());
+	renderer.DrawParalaxBackground(parallaxTexture.get(), scrollPos, 260, 1);
+}
+
+void Level::RenderForeground() const
+{
+
 }

@@ -95,8 +95,6 @@ void Renderer::DrawAnimatedGameObject(const AnimatedGameObject& obj)
 
 	RenderTexture(obj.texture.get(), src, dst, obj.direction == -1);
 
-	//SDL_RenderTextureRotated(renderer.get(), obj.texture.get(), &src, &dst, 0, nullptr, flip);
-
 
 	if (DebugSystem::Instance().render.showBoundingBoxes) {
 		SDL_SetRenderDrawColor(renderer.get(), 255, 0, 0, 255);
@@ -126,7 +124,6 @@ void Renderer::DrawGameObject(const GameObject& obj, const float srcX, const flo
 		.h = obj.spriteSize
 	};
 	RenderTexture(obj.texture.get(), src, dst, false);
-	//SDL_RenderTexture(renderer.get(), obj.texture.get(), &src, &dst);
 }
 
 void Renderer::CenterCameraOn(const GameObject& gameObject)
@@ -134,7 +131,36 @@ void Renderer::CenterCameraOn(const GameObject& gameObject)
 	viewport.x = (gameObject.position.x + gameObject.spriteSize / 2) - viewport.w / 2;
 }
 
-void Renderer::RenderTexture(SDL_Texture* texture, const SDL_FRect& srcRect, SDL_FRect& dstRect, const bool flip) const
+void Renderer::DrawTexture(SDL_Texture* texture, const float srcX, const float srcY, const float dstX, const float dstY, const float spriteSize) const
+{
+	SDL_FRect src{
+	.x = srcX * spriteSize,
+	.y = srcY * spriteSize,
+	.w = spriteSize,
+	.h = spriteSize
+	};
+
+	SDL_FRect dst{
+		.x = dstX * spriteSize,
+		.y = dstY * spriteSize,
+		.w = spriteSize,
+		.h = spriteSize
+	};
+	RenderTexture(texture, src, dst, false);
+}
+
+void Renderer::DrawBackground(SDL_Texture* texture)const {
+	SDL_RenderTexture(renderer.get(), texture, nullptr, nullptr);
+}
+
+void Renderer::DrawParalaxBackground(SDL_Texture* texture, float& scrollPos, float y, float scale = 1)const {
+	SDL_FRect dst{ .x = -scrollPos, .y = y, .w = texture->w * 5.0f, .h = static_cast<float>(texture->h) };
+
+	SDL_RenderTextureTiled(renderer.get(), texture, nullptr, scale, &dst);
+}
+
+
+void Renderer::RenderTexture(SDL_Texture* texture, const SDL_FRect& srcRect, SDL_FRect& dstRect, bool flip) const
 {
 	if (!texture) return;
 	dstRect.x -= viewport.x;
