@@ -19,6 +19,7 @@ public:
 private:
 	std::vector<std::unique_ptr<GameObject>> gameObjects;
 	Player* player = nullptr;
+	Level* level = nullptr;
 	const InputManager& inputManager;
 	TextureManager& textureManager;
 	Renderer& renderer;

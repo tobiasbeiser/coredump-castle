@@ -20,6 +20,8 @@ Renderer::Renderer(const std::string& title, int w, int h)
 
 	SDL_SetRenderLogicalPresentation(renderer.get(), logW, logH, SDL_LOGICAL_PRESENTATION_LETTERBOX);
 
+	SDL_SetRenderVSync(renderer.get(), 1);
+
 }
 
 
@@ -131,7 +133,7 @@ void Renderer::CenterCameraOn(const GameObject& gameObject)
 	viewport.x = (gameObject.position.x + gameObject.spriteSize / 2) - viewport.w / 2;
 }
 
-void Renderer::DrawTexture(SDL_Texture* texture, const float srcX, const float srcY, const float dstX, const float dstY, const float spriteSize) const
+void Renderer::DrawTexture(SDL_Texture& texture, const float srcX, const float srcY, const float dstX, const float dstY, const float spriteSize) const
 {
 	SDL_FRect src{
 	.x = srcX * spriteSize,
@@ -149,24 +151,23 @@ void Renderer::DrawTexture(SDL_Texture* texture, const float srcX, const float s
 	RenderTexture(texture, src, dst, false);
 }
 
-void Renderer::DrawBackground(SDL_Texture* texture)const {
-	SDL_RenderTexture(renderer.get(), texture, nullptr, nullptr);
+void Renderer::DrawBackground(SDL_Texture& texture)const {
+	SDL_RenderTexture(renderer.get(), &texture, nullptr, nullptr);
 }
 
-void Renderer::DrawParalaxBackground(SDL_Texture* texture, float& scrollPos, float y, float scale = 1)const {
-	SDL_FRect dst{ .x = -scrollPos, .y = y, .w = texture->w * 5.0f, .h = static_cast<float>(texture->h) };
+void Renderer::DrawParalaxBackground(SDL_Texture& texture, float& scrollPos, float y, float scale = 1)const {
+	SDL_FRect dst{ .x = -scrollPos, .y = y, .w = texture.w * 5.0f, .h = static_cast<float>(texture.h) };
 
-	SDL_RenderTextureTiled(renderer.get(), texture, nullptr, scale, &dst);
+	SDL_RenderTextureTiled(renderer.get(), &texture, nullptr, scale, &dst);
 }
 
 
-void Renderer::RenderTexture(SDL_Texture* texture, const SDL_FRect& srcRect, SDL_FRect& dstRect, bool flip) const
+void Renderer::RenderTexture(SDL_Texture& texture, const SDL_FRect& srcRect, SDL_FRect& dstRect, bool flip) const
 {
-	if (!texture) return;
 	dstRect.x -= viewport.x;
 	SDL_FlipMode flipMode = flip ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
 
-	SDL_RenderTextureRotated(renderer.get(), texture, &srcRect, &dstRect, 0, nullptr, flipMode);
+	SDL_RenderTextureRotated(renderer.get(), &texture, &srcRect, &dstRect, 0, nullptr, flipMode);
 }
 
 

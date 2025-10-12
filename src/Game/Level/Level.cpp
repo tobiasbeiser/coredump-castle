@@ -72,29 +72,33 @@ void Level::Update(const float deltaTime, const float stepSize) {
 void Level::Render() {
 
 	RenderBackground();
-	RenderTiles();
+	for (const tson::Layer& layer : map->getLayers())
+	{
+		if (layer.getName() == "Tiles") {
+			RenderTiles(texture, layer);
+		}
+	}
 
 }
 
-void Level::RenderTiles() const
+void Level::RenderTiles(const std::shared_ptr<SDL_Texture>& texture, const tson::Layer& layer) const
 {
-	for (const tson::Layer& layer : map->getLayers())
+
+	if (layer.getType() == tson::LayerType::TileLayer)
 	{
-		if (layer.getType() == tson::LayerType::TileLayer)
-		{
-			std::map<std::tuple<int, int>, tson::Tile*> tileData = layer.getTileData();
-			for (const auto& [pos, tile] : tileData) {
-				if (tile != nullptr) {
-					glm::ivec2 position = glm::ivec2(std::get<0>(pos), std::get<1>(pos));
-					glm::ivec2 tileSize = glm::ivec2(tile->getTileSize().x, tile->getTileSize().y);
+		std::map<std::tuple<int, int>, tson::Tile*> tileData = layer.getTileData();
+		for (const auto& [pos, tile] : tileData) {
+			if (tile != nullptr) {
+				glm::ivec2 position = glm::ivec2(std::get<0>(pos), std::get<1>(pos));
+				glm::ivec2 tileSize = glm::ivec2(tile->getTileSize().x, tile->getTileSize().y);
 
-					tson::Rect rectSrc = tile->getDrawingRect();
+				tson::Rect rectSrc = tile->getDrawingRect();
 
-					renderer.DrawTexture(tileSetTexture.get(), rectSrc.x / rectSrc.width, rectSrc.y / rectSrc.height, position.x, position.y, spriteSize);
-				}
+				renderer.DrawTexture(tileSetTexture.get(), rectSrc.x / rectSrc.width, rectSrc.y / rectSrc.height, position.x, position.y, spriteSize);
 			}
-
 		}
+
+
 	}
 }
 
@@ -106,5 +110,10 @@ void Level::RenderBackground()
 
 void Level::RenderForeground() const
 {
-
+	for (const tson::Layer& layer : map->getLayers())
+	{
+		if (layer.getName() == "Foreground") {
+			RenderTiles(texture, layer);
+		}
+	}
 }

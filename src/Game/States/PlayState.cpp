@@ -8,7 +8,9 @@ void PlayState::Init()
 {
 	std::unique_ptr<Player> player = std::make_unique<Player>(inputManager, textureManager, renderer);
 	this->player = player.get();
+	
 	std::unique_ptr<Level> level = std::make_unique<Level>(textureManager, renderer);
+	this->level = level.get();
 
 	level->Load("assets/Maps/Level1.json", *player);
 
@@ -58,6 +60,7 @@ void PlayState::Render(GameEngine& game)
 	{
 		entity->Render();
 	}
+	level->RenderForeground();
 
 
 	game.GetRenderer().EndFrame();
