@@ -1,6 +1,6 @@
 #include "Engine/GameEngine.hpp"
 
-const float stepSize = 1.0f / 240.0f;
+constexpr  float stepSize = 1.0f / 240.0f;
 float accumulator = 0.0f;
 
 int main() {
@@ -9,8 +9,8 @@ int main() {
 
 	Uint64 prevTime = SDL_GetTicks();
 	while (game.Running()) {
-		Uint64 currentTime = SDL_GetTicks();
-		float deltaTime = (currentTime - prevTime) / 1000.0f;
+		const Uint64 currentTime = SDL_GetTicks();
+		const float deltaTime = (currentTime - prevTime) / 1000.0f;
 
 		game.HandleEvents();
 

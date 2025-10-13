@@ -23,7 +23,7 @@ void CollisionSystem::Resolve(std::vector<std::unique_ptr<GameObject>>& objects,
 	for (auto& entity : entities) {
 		bool grounded = false;
 
-		SDL_FRect entityBox = {
+		const SDL_FRect entityBox = {
 			entity.get().position.x + entity.get().collisionBox.x,
 			entity.get().position.y + entity.get().collisionBox.y,
 			entity.get().collisionBox.w,
@@ -36,10 +36,10 @@ void CollisionSystem::Resolve(std::vector<std::unique_ptr<GameObject>>& objects,
 				std::map<std::tuple<int, int>, tson::Tile*> tileData = layer.getTileData();
 				for (const auto& [pos, tile] : tileData) {
 					if (tile && tile->getProp("collidable") && tile->getProp("collidable")->getType() == tson::Type::Boolean && tile->getProp("collidable")->getValue<bool>()) {
-						glm::ivec2 tilePos = glm::ivec2(std::get<0>(pos), std::get<1>(pos));
-						glm::ivec2 tileSize = glm::ivec2(tile->getTileSize().x, tile->getTileSize().y);
+						const glm::ivec2 tilePos = glm::ivec2(std::get<0>(pos), std::get<1>(pos));
+						const glm::ivec2 tileSize = glm::ivec2(tile->getTileSize().x, tile->getTileSize().y);
 
-						SDL_FRect tileBox = {
+						const SDL_FRect tileBox = {
 							static_cast<float>(tilePos.x * tileSize.x),
 							static_cast<float>(tilePos.y * tileSize.y),
 							static_cast<float>(tileSize.x),
@@ -52,7 +52,7 @@ void CollisionSystem::Resolve(std::vector<std::unique_ptr<GameObject>>& objects,
 						ResolveCollisions(entityBox, tileBox, entity);
 
 						// grounded check
-						SDL_FRect sensorBox{
+						const SDL_FRect sensorBox{
 							.x = entity.get().position.x + entity.get().collisionBox.x,
 							.y = entity.get().position.y + entity.get().collisionBox.y + entity.get().collisionBox.h,
 							.w = entity.get().collisionBox.w,
@@ -75,7 +75,7 @@ void CollisionSystem::Resolve(std::vector<std::unique_ptr<GameObject>>& objects,
 	}
 }
 
-void CollisionSystem::ResolveCollisions(SDL_FRect& entityBox, const SDL_FRect& tileBox, std::reference_wrapper<IEntity>& entity) const
+void CollisionSystem::ResolveCollisions(const SDL_FRect& entityBox, const SDL_FRect& tileBox, const std::reference_wrapper<IEntity>& entity) const
 {
 	// AABB collision check
 	SDL_FRect intersection{ 0 };

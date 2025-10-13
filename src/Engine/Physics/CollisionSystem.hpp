@@ -9,5 +9,5 @@
 class CollisionSystem {
 public:
 	void Resolve(std::vector<std::unique_ptr<GameObject>>& objects, float deltaTime) const;
-	void ResolveCollisions(SDL_FRect& entityBox, const SDL_FRect& tileBox, std::reference_wrapper<IEntity>& entity) const;
+	void ResolveCollisions(const SDL_FRect& entityBox, const SDL_FRect& tileBox, const std::reference_wrapper<IEntity>& entity) const;
 };

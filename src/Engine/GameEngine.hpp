@@ -15,8 +15,13 @@ class GameEngine {
 public:
 	GameEngine(const std::string& title, int width, int height);
 	~GameEngine();
+	// delete copy, move and assignments as we want only one instance of the game engine
+	GameEngine(const GameEngine&) = delete;
+	GameEngine& operator=(const GameEngine&) = delete;
+	GameEngine(GameEngine&&) = delete;
+	GameEngine& operator=(GameEngine&&) = delete;
 	bool Init();
-	void Cleanup();
+	void Cleanup() noexcept;
 
 	void ChangeState(std::unique_ptr<GameState> state);
 	void PushState(std::unique_ptr<GameState> state);

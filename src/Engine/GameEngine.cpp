@@ -27,7 +27,7 @@ bool GameEngine::Init()
 }
 
 
-void GameEngine::Cleanup()
+void GameEngine::Cleanup() noexcept
 {
 }
 
@@ -106,7 +106,7 @@ void GameEngine::HandleEvents()
 
 void GameEngine::Update(const float& deltaTime, const float stepSize)
 {
-	DebugSystem::Instance().Clear();
+	DebugSystem::Clear();
 	if (!states.empty())
 		states.back()->Update(*this, deltaTime, stepSize);
 }

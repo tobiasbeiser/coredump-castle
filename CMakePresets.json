@@ -10,7 +10,7 @@
 			"cacheVariables": {
 				"CMAKE_C_COMPILER": "cl.exe",
 				"CMAKE_CXX_COMPILER": "cl.exe",
-				"CMAKE_CXX_FLAGS_DEBUG": "/analyze /analyze:ruleset=CppCoreCheckRules.ruleset /analyze:external- /external:W0 /external:I \"${sourceDir}/vendor\" /external:I \"${sourceDir}/out\" /wd26455 /wd26440"
+				"CMAKE_CXX_FLAGS_DEBUG": "/analyze /analyze:ruleset=CppCoreCheckRules.ruleset /analyze:external- /external:W0 /external:I \"${sourceDir}/vendor\" /external:I \"${sourceDir}/out\" /wd26455 /wd26440 /wd6800 /EHsc"
 			},
 			"condition": {
 				"type": "equals",

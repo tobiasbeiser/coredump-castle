@@ -63,7 +63,6 @@ void Level::Load(const std::string& levelFile, Player& player)
 void Level::Update(const float deltaTime, const float stepSize) {
 	//TODO: Move scroll factor to level file
 	scrollPos += player->velocity.x * 0.12f * stepSize;
-	SDL_Log("Scroll Pos: %f", scrollPos);
 	if (scrollPos <= -texture->w) {
 		scrollPos = 0;
 	}

@@ -15,7 +15,11 @@ class GameObject;
 
 class Renderer {
 public:
+	// delete copy, move and assignments as we want only one instance of the renderer (create one at start that lives until shutdown)
+	// Cannot be copied as it manages a unique resource (the SDL_Renderer and SDL_Window)
 	Renderer(const Renderer&) = delete;
+	Renderer(Renderer&&) = delete;
+	Renderer& operator=(Renderer&&) = delete;
 	Renderer& operator=(const Renderer&) = delete;
 	Renderer(const std::string& title, int w, int h);
 	~Renderer();

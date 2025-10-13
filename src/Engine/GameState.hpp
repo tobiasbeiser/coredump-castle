@@ -6,6 +6,7 @@
 // concept taken from http://gamedevgeek.com/tutorials/managing-game-states-in-c/
 class GameState {
 public:
+	virtual ~GameState() = default;
 	virtual void Init() = 0;
 	virtual void Cleanup() = 0;
 
