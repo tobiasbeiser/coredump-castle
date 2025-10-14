@@ -12,7 +12,7 @@ void PlayState::Init()
 	std::unique_ptr<Level> level = std::make_unique<Level>(textureManager, renderer);
 	this->level = level.get();
 
-	level->Load("assets/Maps/Level1.json", *player);
+	level->Load("assets/maps/Level1.json", *player);
 
 
 	gameObjects.emplace_back(std::move(level));

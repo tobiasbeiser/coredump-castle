@@ -8,7 +8,7 @@ Player::Player(const InputManager& inputManager, TextureManager& textureManager,
 {
 	animations.resize(11);
 	spriteSize = 56;
-	texture = textureManager.GetTexture("assets/Player/char_blue_1.png");
+	texture = textureManager.GetTexture("assets/player/char_blue_1.png");
 	collisionBox = { 19, 25, 21, 32 };
 	animations.at(ANIM_IDLE) = Animation(6, 0.6f);
 	animations.at(ANIM_WALK) = Animation(8, 0.8f);
