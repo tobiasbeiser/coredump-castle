@@ -3,11 +3,11 @@
 #include <vector>
 
 struct DebugRenderOptions {
-	bool showBoundingBoxes = true;
+	bool showBoundingBoxes = false;
 };
 
 struct DebugPlayerOptions {
-	bool showState = true;
+	bool showState = false;
 
 	bool godMode = false;
 	bool noClip = false;
