@@ -4,18 +4,17 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
-
-class Renderer;
+#include "Renderer.hpp"
 
 class TextureManager {
   public:
 	TextureManager(Renderer &renderer) : renderer(renderer) {};
 
-	std::shared_ptr<SDL_Texture> GetTexture(const std::string &filePath);
+	SDL_Texture& GetTexture(const std::string &filePath);
 
 	void Cleanup() { textures.clear(); }
 
   private:
-	std::unordered_map<std::string, std::shared_ptr<SDL_Texture>> textures;
+	std::unordered_map<std::string, std::unique_ptr<SDL_Texture, SDLTextureDeleter>> textures;
 	Renderer &renderer;
 };

@@ -26,10 +26,14 @@ void LevelFactory::LoadTiles(std::unique_ptr<tson::Map> &map)
 
 	fs::path imagePath = map->getTilesets().at(0).getFullImagePath();
 	imagePath = "assets/tilesets" / imagePath.filename();
-	auto tileSetTexture = textureManager.GetTexture(imagePath.string());
+	auto& tileSetTexture = textureManager.GetTexture(imagePath.string());
 
 	for (const tson::Layer &layer : map->getLayers()) {
-		if (layer.getName() == "Tiles" && layer.getType() == tson::LayerType::TileLayer) {
+		
+		if (layer.getType() == tson::LayerType::TileLayer) {
+			Layer renderLayer = (layer.getName() == "Tiles") ? Layer::Tiles : Layer::Foreground;
+			
+
 			std::map<std::tuple<int, int>, tson::Tile *> tileData = layer.getTileData();
 			for (const auto &[pos, tile] : tileData) {
 				if (tile != nullptr) {
@@ -42,13 +46,22 @@ void LevelFactory::LoadTiles(std::unique_ptr<tson::Map> &map)
 					    entity, TileComponent{.TileSize = static_cast<float>(tileSize.x),
 					                          .TileMapPosition = {(rectSrc.x / rectSrc.width) * tileSize.x,
 					                                              (rectSrc.y / rectSrc.height) * tileSize.y}});
-					registry.register_component(entity, TextureComponent{.texture = tileSetTexture});
-					registry.register_component(entity, RenderComponent{.layer = Layer::Tiles});
+					registry.register_component(entity, TextureComponent{&tileSetTexture});
+					registry.register_component(entity, RenderComponent{.layer = renderLayer});
 					registry.register_component(entity, PositionComponent{position * tileSize});
 
 					if (tile->getProp("collidable")) {
-						registry.register_component(entity, CollisionComponent{0, 0, static_cast<float>(tileSize.x),
+						auto collisionBoxes = tile->getObjectgroup().getObjectsByType(tson::ObjectType::Rectangle);
+						if (!collisionBoxes.empty()) {
+							registry.register_component(
+								entity, CollisionComponent{static_cast<float>(collisionBoxes.at(0).getPosition().x),
+														  static_cast<float>(collisionBoxes.at(0).getPosition().y),
+														  static_cast<float>(collisionBoxes.at(0).getSize().x),
+							                               static_cast<float>(collisionBoxes.at(0).getSize().y)});
+						} else {
+							registry.register_component(entity, CollisionComponent{0, 0, static_cast<float>(tileSize.x),
 						                                                       static_cast<float>(tileSize.y)});
+						}
 					}
 				}
 			}
@@ -73,7 +86,7 @@ void LevelFactory::LoadBackground(std::unique_ptr<tson::Map> &map)
 				// TODO: Support multiple parallax layers with different scroll factors
 				CreateBackground(backgroundPath, Layer::Parallax, 1, 260);
 			} else if (layername == "Foreground") {
-				// CreateBackground(backgroundPath, Layer::Foreground);
+				 //CreateBackground(backgroundPath, Layer::Foreground);
 			}
 		}
 	}
@@ -84,7 +97,7 @@ void LevelFactory::CreateBackground(const fs::path &filename, const Layer &layer
 {
 	auto entity = registry.create();
 	registry.register_component<TextureComponent>(entity,
-	                                              TextureComponent{textureManager.GetTexture(filename.string())});
+	                                              TextureComponent{&textureManager.GetTexture(filename.string())});
 	registry.register_component(entity, BackgroundComponent{.scrollingSpeed = scrollSpeed, .yOffset = yOffset});
 	registry.register_component(entity, RenderComponent{.layer = layer, .flipX = false});
 }

@@ -27,6 +27,10 @@ class StateSystem {
 					state.state = States::Idle;
 				}
 			}
+
+			if (DebugSystem::Instance().player.showState) {
+				DebugSystem::Debug("Entity " + std::to_string(entity) + " State: " + std::to_string(state.state));
+			}
 		}
 	}
 };

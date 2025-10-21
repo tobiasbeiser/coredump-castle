@@ -1,5 +1,8 @@
 #pragma once
+#include "Engine/DebugSystem.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
+#include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Render/AnimationComponent.hpp"
 #include "Engine/ECS/Components/Render/BackgroundComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
@@ -38,7 +41,7 @@ class RenderSystem {
 			}
 
 			renderItems.push_back(RenderItem{.Layer = render.layer,
-			                                 .texture = tex.texture.get(),
+			                                 .texture = tex.texture,
 			                                 .src = srcOpt,
 			                                 .dst = dstOpt,
 			                                 .parallax = (render.layer == Layer::Parallax),
@@ -59,21 +62,21 @@ class RenderSystem {
 			SDL_FRect dst{.x = pos.position.x, .y = pos.position.y, .w = tile.TileSize, .h = tile.TileSize};
 
 			renderItems.push_back(RenderItem{.Layer = render.layer,
-			                                 .texture = tex.texture.get(),
+			                                 .texture = tex.texture,
 			                                 .src = src,
 			                                 .dst = dst,
 			                                 .parallax = false,
 			                                 .flipX = render.flipX});
 
-			// TODO : Re-add debug rendering
-			// if (DebugSystem::Instance().render.showBoundingBoxes) {
-			//	SDL_SetRenderDrawColor(renderer.get(), 255, 0, 0, 255);
-			//	const SDL_FRect box{.x = obj.position.x + obj.collisionBox.x,
-			//	                    .y = obj.position.y + obj.collisionBox.y,
-			//	                    .w = obj.collisionBox.w,
-			//	                    .h = obj.collisionBox.h};
-			//	SDL_RenderRect(renderer.get(), &box);
-			//}
+			if (DebugSystem::Instance().render.showBoundingBoxes && registry.has<CollisionComponent>(entity)) {
+				auto col = registry.get<CollisionComponent>(entity).collisionBox;
+				col.x = static_cast<int>(pos.position.x + col.x);
+				col.y = static_cast<int>(pos.position.y + col.y);
+
+				SDL_Color color =
+				    registry.has<MovementComponent>(entity) ? SDL_Color{0, 0, 255, 255} : SDL_Color{255, 0, 0, 255};
+				DebugSystem::Instance().debugRects.push_back({col, color});
+			}
 		}
 
 		std::sort(renderItems.begin(), renderItems.end(),

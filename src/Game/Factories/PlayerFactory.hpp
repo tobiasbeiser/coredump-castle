@@ -32,7 +32,7 @@ struct PlayerFactory {
 		registry.register_component(e, GroundedComponent{});
 		registry.register_component(e, CollisionComponent{19, 25, 21, 32});
 
-		registry.register_component(e, TextureComponent{texMgr.GetTexture(texturePath.string())});
+		registry.register_component(e, TextureComponent{&texMgr.GetTexture(texturePath.string())});
 		registry.register_component(e, RenderComponent{.layer = Layer::Player, .flipX = false});
 		registry.register_component(e, TileComponent{.TileSize = 56, .TileMapPosition = {0, 0}});
 

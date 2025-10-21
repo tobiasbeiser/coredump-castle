@@ -3,7 +3,7 @@
 #include <vector>
 
 struct DebugRenderOptions {
-	bool showBoundingBoxes = false;
+	bool showBoundingBoxes = true;
 };
 
 struct DebugPlayerOptions {
@@ -16,6 +16,7 @@ struct DebugPlayerOptions {
 struct DebugRect {
 	SDL_FRect rect;
 	SDL_Color color;
+	
 };
 
 class DebugSystem {

@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <optional>
+#include <filesystem>
 
 struct SDLTextureDeleter {
 	void operator()(SDL_Texture *t) const
@@ -29,20 +30,12 @@ class Renderer {
 
 	void StartFrame(int red, int green, int blue, int alpha) const;
 	void EndFrame() const;
-	void DrawAnimatedGameObject(const AnimatedGameObject &obj) const;
-	void DrawGameObject(const GameObject &gameObject, const float srcX, const float srcY, const float dstX,
-	                    const float dstY) const;
-	void DrawTexture(SDL_Texture &texture, const float srcX, const float srcY, const float dstX, const float dstY,
-	                 const float spriteSize) const;
-	void DrawBackground(SDL_Texture &texture) const;
-	void DrawParalaxBackground(SDL_Texture &texture, const float &scrollPos, const float y, const float scale) const;
 	void RenderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, const float scale) const;
-	void CenterCameraOn(const GameObject &gameObject);
 	SDL_Renderer& getSDLRenderer() const { return *renderer; }
 
 	void Resize(int w, int h);
 
-	std::unique_ptr<SDL_Texture, SDLTextureDeleter> LoadTexture(const std::string &filePath);
+	std::unique_ptr<SDL_Texture, SDLTextureDeleter> LoadTexture(const std::filesystem::path &filePath);
 	void RenderTexture(SDL_Texture &texture, const std::optional<SDL_FRect> srcRect, std::optional<SDL_FRect> dstRect,
 	                   const bool flip) const;
 

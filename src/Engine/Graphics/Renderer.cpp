@@ -35,11 +35,10 @@ void Renderer::Resize(int w, int h)
 	SDL_SetWindowSize(window.get(), width, height);
 }
 
-std::unique_ptr<SDL_Texture, SDLTextureDeleter> Renderer::LoadTexture(const std::string &filePath)
+std::unique_ptr<SDL_Texture, SDLTextureDeleter> Renderer::LoadTexture(const std::filesystem::path &filePath)
 {
-	SDL_Texture *tex = IMG_LoadTexture(renderer.get(), filePath.c_str());
+	SDL_Texture *tex = IMG_LoadTexture(renderer.get(), filePath.string().c_str());
 	if (!tex) {
-		SDL_Log("Failed to load texture %s: %s", filePath.c_str(), SDL_GetError());
 		throw std::runtime_error(SDL_GetError());
 	}
 	SDL_SetTextureScaleMode(tex, SDL_ScaleMode::SDL_SCALEMODE_NEAREST);
