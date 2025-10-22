@@ -32,8 +32,8 @@ jobs:
         if: runner.os == 'Linux'
         shell: bash
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends autoconf automake libtool libtool-bin m4 pkg-config gettext
+          sudo apt update
+          sudo apt install libltdl-dev
 
       - uses: lukka/get-cmake@latest
 
