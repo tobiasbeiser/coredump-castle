@@ -21,8 +21,6 @@ jobs:
 
       
     steps:
-      - uses: actions/cache@v3 
-      
       - uses: actions/checkout@v4
         with:
           submodules: true
@@ -41,6 +39,7 @@ jobs:
         uses: lukka/run-vcpkg@v11
         with:
           vcpkgJsonGlob: 'vcpkg.json'
+          doNotCache: false
 
       # Note: if the preset misses the "configuration", it is possible to explicitly select the
       # configuration with the additional `--config` flag, e.g.:
@@ -48,11 +47,13 @@ jobs:
       #   buildPresetAdditionalArgs: "[`--config`, `Release`]"
       #   testPreset: 'ninja-vcpkg'
       #   testPresetAdditionalArgs: "[`--config`, `Release`]"
-      - name: Config
-        run: cmake --preset debug
 
-      - name: Build
-        run: cmake --build --preset debug
+
+      - name: Run CMake consuming CMakePreset.json and run vcpkg to build packages
+        uses: lukka/run-cmake@v10
+        with:
+          configurePreset: 'release'
+          buildPreset: 'release'
 
     # On failure, zip the out directory
       - name: Zip out directory on failure
