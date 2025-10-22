@@ -17,7 +17,7 @@ jobs:
       fail-fast: false
       matrix:
          # os: [ubuntu-latest, macos-latest, windows-latest]
-         os: [windows-latest]
+         os: [windows-latest, macos-latest]
 
       
     steps:
@@ -39,19 +39,6 @@ jobs:
         uses: lukka/run-vcpkg@v11
         with:
           vcpkgJsonGlob: 'vcpkg.json'
-
-
-
-
-
-      - name: Set GCC compiler on macOS
-        if: runner.os == 'macOS'
-        run: |
-          brew install gcc
-          # Homebrew installs GCC with versioned binaries, e.g., gcc-13, g++-13
-          GCC_VERSION=$(brew list gcc | grep -o 'gcc-[0-9]\+' | head -n 1 | sed 's/gcc-//')
-          echo "CC=/opt/homebrew/bin/gcc-$GCC_VERSION" >> $GITHUB_ENV
-          echo "CXX=/opt/homebrew/bin/g++-$GCC_VERSION" >> $GITHUB_ENV
 
       # Note: if the preset misses the "configuration", it is possible to explicitly select the
       # configuration with the additional `--config` flag, e.g.:
