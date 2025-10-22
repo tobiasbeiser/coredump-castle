@@ -24,6 +24,14 @@ jobs:
         with:
           submodules: true
 
+          
+      - name: Install autotools dependencies (Linux only)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends autoconf automake libtool libtool-bin m4 pkg-config gettext
+
       - uses: lukka/get-cmake@latest
 
       - name: Restore from cache and setup vcpkg executable and data files.
@@ -31,12 +39,6 @@ jobs:
         with:
           vcpkgJsonGlob: 'vcpkg.json'
 
-      - name: Install autotools dependencies (Linux only)
-        if: runner.os == 'Linux'
-        shell: bash
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends autoconf automake libtool libtool-bin m4 pkg-config gettext
 
 
 
