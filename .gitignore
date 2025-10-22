@@ -2,3 +2,4 @@ build
 /.vs
 /.idea
 *.tiled-session
+/vcpkg_installed

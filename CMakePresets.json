@@ -7,9 +7,7 @@
 			"generator": "Ninja",
 			"binaryDir": "${sourceDir}/out/build/${presetName}",
 			"installDir": "${sourceDir}/out/install/${presetName}",
-			"cacheVariables": {
-				"CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
-			}
+			"toolchainFile": "${sourceDir}/vcpkg/scripts/buildsystems/vcpkg.cmake"
 		},
 		{
 			"name": "debug",
@@ -26,6 +24,22 @@
 			"cacheVariables": {
 				"CMAKE_BUILD_TYPE": "Release"
 			}
+		}
+	],
+	"buildPresets": [
+		{
+			"name": "debug",
+			"configurePreset": "debug",
+			"displayName": "Build (Debug)",
+			"description": "Build with Ninja/vcpkg (Debug)",
+			"configuration": "Debug"
+		},
+		{
+			"name": "release",
+			"configurePreset": "release",
+			"displayName": "Build (Release)",
+			"description": "Build with Ninja/vcpkg (Release)",
+			"configuration": "Release"
 		}
 	]
 }
