@@ -60,7 +60,7 @@ jobs:
           
       - name: Upload out.zip artifact
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: out-directory
           path: out.zip
