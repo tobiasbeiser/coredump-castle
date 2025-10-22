@@ -50,10 +50,18 @@ jobs:
 
       - name: Build
         run: cmake --build --preset debug
-
-
         
-      - name: Dump vcpkg manifest install log if: always() 
-        run: | FILE="$GITHUB_WORKSPACE/out/build/debug/vcpkg-manifest-install.log" if [ -f "$FILE" ]; then echo "====== vcpkg-manifest-install.log (start) ======" sed -n '1,4000p' "$FILE" # adjust lines as needed 
-        echo "====== vcpkg-manifest-install.log (end) ======" else echo "File not found: $FILE" fi shell: bash
+      - name: Dump vcpkg manifest install log
+        if: always()
+        shell: bash
+        run: |
+          FILE="$GITHUB_WORKSPACE/out/build/debug/vcpkg-manifest-install.log"
+          if [ -f "$FILE" ]; then
+            echo "====== vcpkg-manifest-install.log (start) ======"
+            sed -n '1,4000p' "$FILE"  # adjust lines as needed
+            echo "====== vcpkg-manifest-install.log (end) ======"
+          else
+            echo "File not found: $FILE"
+          fi
+
 
