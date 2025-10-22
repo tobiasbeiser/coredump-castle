@@ -17,7 +17,7 @@ jobs:
       fail-fast: false
       matrix:
          # os: [ubuntu-latest, macos-latest, windows-latest]
-         os: [windows-latest, macos-latest]
+         os: [windows-latest, macos-latest, linux-latest]
 
       
     steps:
@@ -51,18 +51,18 @@ jobs:
 
       - name: Build
         run: cmake --build --preset debug
-        
-      - name: Dump vcpkg manifest install log
-        if: always()
-        shell: bash
+
+    # On failure, zip the out directory
+      - name: Zip out directory on failure
+        if: failure()  # only runs if a previous step failed
         run: |
-          FILE="$GITHUB_WORKSPACE/out/build/debug/vcpkg-manifest-install.log"
-          if [ -f "$FILE" ]; then
-            echo "====== vcpkg-manifest-install.log (start) ======"
-            sed -n '1,4000p' "$FILE"  # adjust lines as needed
-            echo "====== vcpkg-manifest-install.log (end) ======"
-          else
-            echo "File not found: $FILE"
-          fi
+          zip -r out.zip out
+          
+      - name: Upload out.zip artifact
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: out-directory
+          path: out.zip
 
 
