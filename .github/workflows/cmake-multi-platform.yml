@@ -26,12 +26,19 @@ jobs:
           submodules: true
 
           
-      - name: Install autotools dependencies (Linux only)
+      - name: Install dependencies (Linux only)
         if: runner.os == 'Linux'
         shell: bash
         run: |
           sudo apt update
-          sudo apt install libltdl-dev
+          sudo apt install libltdl-dev clang-tidy
+
+      - name: Install dependencies (macOS only)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          brew install llvm
+          echo 'export PATH="/usr/local/opt/llvm/bin:$PATH"' >> $GITHUB_ENV
 
       - uses: lukka/get-cmake@latest
 
