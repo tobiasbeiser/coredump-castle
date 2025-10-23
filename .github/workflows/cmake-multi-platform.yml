@@ -54,7 +54,7 @@ jobs:
         with:
           configurePreset: 'release'
           buildPreset: 'release'
-          configurePresetAdditionalArgs: "['-DCMAKE_CXX_CLANG_TIDY=']"
+          buildPresetAdditionalArgs: "['-DCMAKE_CXX_CLANG_TIDY=']"
 
     # On failure, zip the out directory
       - name: Zip out directory on failure
