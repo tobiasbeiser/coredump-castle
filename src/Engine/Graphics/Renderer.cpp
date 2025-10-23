@@ -70,14 +70,18 @@ void Renderer::EndFrame() const
 }
 
 
-// void Renderer::CenterCameraOn(const GameObject &gameObject)
-// {
-// 	viewport.x = (gameObject.position.x + gameObject.spriteSize / 2) - viewport.w / 2;
-// }
-
-
-void Renderer::RenderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, const float scale) const
+void Renderer::CenterCameraOn(const int positionX)
 {
+	const float newCenter = positionX - viewport.w / 2;
+	viewport.x = newCenter>32 ? newCenter : 32;
+}
+
+
+void Renderer::RenderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, const float scale, const float scrollFactor) const
+{
+	dstRect.x = -viewport.x*scrollFactor; 
+	dstRect.w = texture.w * 5.0f;
+
 	SDL_RenderTextureTiled(renderer.get(), &texture, nullptr, scale, &dstRect);
 }
 

@@ -84,7 +84,7 @@ void LevelFactory::LoadBackground(std::unique_ptr<tson::Map> &map)
 				CreateBackground(backgroundPath, Layer::Background);
 			} else if (layername == "Parallax") {
 				// TODO: Support multiple parallax layers with different scroll factors
-				CreateBackground(backgroundPath, Layer::Parallax, 1, 260);
+				CreateBackground(backgroundPath, Layer::Parallax, 0.2, 260);
 			} else if (layername == "Foreground") {
 				 //CreateBackground(backgroundPath, Layer::Foreground);
 			}

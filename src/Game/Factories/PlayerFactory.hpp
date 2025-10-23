@@ -12,6 +12,7 @@
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Render/TextureComponent.hpp"
 #include "Engine/ECS/Components/Render/TileComponent.hpp"
+#include "Engine/ECS/Components/Render/CenterCameraComponent.hpp"
 
 #include "Engine/ECS/Components/Physics/GravityComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
@@ -35,6 +36,7 @@ struct PlayerFactory {
 		registry.register_component(e, TextureComponent{&texMgr.GetTexture(texturePath.string())});
 		registry.register_component(e, RenderComponent{.layer = Layer::Player, .flipX = false});
 		registry.register_component(e, TileComponent{.TileSize = 56, .TileMapPosition = {0, 0}});
+		registry.register_component(e, CenterCameraComponent{});
 
 		AnimationComponent playerAnim{
 		    .animations= std::vector<Animation>{

@@ -30,7 +30,8 @@ class Renderer {
 
 	void StartFrame(int red, int green, int blue, int alpha) const;
 	void EndFrame() const;
-	void RenderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, const float scale) const;
+	void RenderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, const float scale, const float scrollFactor) const;
+	void CenterCameraOn(const int positionX);
 	SDL_Renderer& getSDLRenderer() const { return *renderer; }
 
 	void Resize(int w, int h);

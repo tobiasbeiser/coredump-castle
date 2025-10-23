@@ -8,6 +8,7 @@
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Render/TextureComponent.hpp"
 #include "Engine/ECS/Components/Render/TileComponent.hpp"
+#include "Engine/ECS/Components/Render/CenterCameraComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
 #include "Engine/Graphics/Renderer.hpp"
@@ -45,7 +46,9 @@ class RenderSystem {
 			                                 .src = srcOpt,
 			                                 .dst = dstOpt,
 			                                 .parallax = (render.layer == Layer::Parallax),
-			                                 .flipX = render.flipX});
+											 .scrollFactor = bg.scrollingSpeed,
+			                                 .flipX = render.flipX
+											});
 		}
 
 		// Tiles, Player
@@ -82,11 +85,33 @@ class RenderSystem {
 		std::sort(renderItems.begin(), renderItems.end(),
 		          [](const RenderItem &a, const RenderItem &b) { return a.Layer < b.Layer; });
 
+
+
+		
+		auto centerCameraView = registry.view<PositionComponent, CenterCameraComponent, TileComponent>();
+		if (centerCameraView.size()==1)
+		{
+			const auto& centerCameraEntity = centerCameraView.at(0);
+			auto &pos = view.get<PositionComponent>(centerCameraEntity);
+			auto &tile = view.get<TileComponent>(centerCameraEntity);
+
+
+			renderer.CenterCameraOn((pos.position.x + tile.TileSize / 2));
+
+		}else if(centerCameraView.size()>1){
+			throw std::runtime_error("There cannot be more than on entity with a CenterCameraComponent");
+		}
+		
+
+
+
+
+
 		for (auto &renderItem : renderItems) {
 			if (!renderItem.parallax) {
 				renderer.RenderTexture(*renderItem.texture, renderItem.src, renderItem.dst, renderItem.flipX);
 			} else {
-				renderer.RenderTextureTiled(*renderItem.texture, renderItem.dst.value(), 1);
+				renderer.RenderTextureTiled(*renderItem.texture, renderItem.dst.value(), 1, renderItem.scrollFactor);
 			}
 		}
 		renderItems.clear();
@@ -99,6 +124,7 @@ class RenderSystem {
 		std::optional<SDL_FRect> src;
 		std::optional<SDL_FRect> dst;
 		bool parallax;
+		float scrollFactor=0;
 		bool flipX;
 	};
 	std::vector<RenderItem> renderItems;

@@ -20,6 +20,29 @@
         }, 
         {
          "id":1,
+         "objectgroup":
+            {
+             "draworder":"index",
+             "id":2,
+             "name":"",
+             "objects":[
+                    {
+                     "height":16,
+                     "id":1,
+                     "name":"",
+                     "rotation":0,
+                     "type":"",
+                     "visible":true,
+                     "width":16,
+                     "x":0,
+                     "y":16
+                    }],
+             "opacity":1,
+             "type":"objectgroup",
+             "visible":true,
+             "x":0,
+             "y":0
+            },
          "properties":[
                 {
                  "name":"collidable",
@@ -32,7 +55,6 @@
          "objectgroup":
             {
              "draworder":"index",
-             "id":2,
              "name":"",
              "objects":[
                     {
@@ -64,7 +86,6 @@
          "objectgroup":
             {
              "draworder":"index",
-             "id":2,
              "name":"",
              "objects":[
                     {
@@ -96,7 +117,6 @@
          "objectgroup":
             {
              "draworder":"index",
-             "id":2,
              "name":"",
              "objects":[
                     {
@@ -128,7 +148,6 @@
          "objectgroup":
             {
              "draworder":"index",
-             "id":2,
              "name":"",
              "objects":[
                     {
@@ -210,6 +229,42 @@
                 }]
         }, 
         {
+         "id":58,
+         "properties":[
+                {
+                 "name":"collidable",
+                 "type":"bool",
+                 "value":true
+                }]
+        }, 
+        {
+         "id":59,
+         "properties":[
+                {
+                 "name":"collidable",
+                 "type":"bool",
+                 "value":true
+                }]
+        }, 
+        {
+         "id":60,
+         "properties":[
+                {
+                 "name":"collidable",
+                 "type":"bool",
+                 "value":true
+                }]
+        }, 
+        {
+         "id":61,
+         "properties":[
+                {
+                 "name":"collidable",
+                 "type":"bool",
+                 "value":true
+                }]
+        }, 
+        {
          "id":64,
          "properties":[
                 {
@@ -220,6 +275,42 @@
         }, 
         {
          "id":65,
+         "properties":[
+                {
+                 "name":"collidable",
+                 "type":"bool",
+                 "value":true
+                }]
+        }, 
+        {
+         "id":80,
+         "properties":[
+                {
+                 "name":"collidable",
+                 "type":"bool",
+                 "value":true
+                }]
+        }, 
+        {
+         "id":81,
+         "properties":[
+                {
+                 "name":"collidable",
+                 "type":"bool",
+                 "value":true
+                }]
+        }, 
+        {
+         "id":82,
+         "properties":[
+                {
+                 "name":"collidable",
+                 "type":"bool",
+                 "value":true
+                }]
+        }, 
+        {
+         "id":83,
          "properties":[
                 {
                  "name":"collidable",

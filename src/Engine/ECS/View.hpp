@@ -27,6 +27,9 @@ class View {
 
 	auto begin() { return entities.begin(); }
 	auto end() { return entities.end(); }
+	auto at(const int index) { return entities.at(index); }
+
+	int size() { return entities.size(); }
 
 	template <typename T>
 	T &get(Entity e)
