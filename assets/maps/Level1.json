@@ -23,6 +23,8 @@
                  "imageheight":131,
                  "imagewidth":320,
                  "name":"Parallax",
+                 "offsetx":0,
+                 "offsety":260,
                  "opacity":1,
                  "properties":[
                         {

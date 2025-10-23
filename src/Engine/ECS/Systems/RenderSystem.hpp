@@ -111,7 +111,7 @@ class RenderSystem {
 			if (!renderItem.parallax) {
 				renderer.RenderTexture(*renderItem.texture, renderItem.src, renderItem.dst, renderItem.flipX);
 			} else {
-				renderer.RenderTextureTiled(*renderItem.texture, renderItem.dst.value(), 1, renderItem.scrollFactor);
+				renderer.RenderTextureTiled(*renderItem.texture, renderItem.dst.value(), renderItem.scrollFactor);
 			}
 		}
 		renderItems.clear();

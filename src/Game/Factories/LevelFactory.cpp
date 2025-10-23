@@ -8,9 +8,8 @@
 
 void LevelFactory::CreateLevel(const std::string &levelFile)
 {
-	SDL_Log("Created level");
-	tson::Tileson t;
-	auto map = t.parse(fs::path(levelFile));
+	tson::Tileson tileson;
+	auto map = tileson.parse(fs::path(levelFile));
 	if (map->getStatus() != tson::ParseStatus::OK) {
 		throw std::runtime_error("Failed to load map: " + map->getStatusMessage());
 	}
@@ -79,12 +78,14 @@ void LevelFactory::LoadBackground(std::unique_ptr<tson::Map> &map)
 
 			std::string layername = layer.getName();
 			fs::path backgroundPath = layer.getImage();
+			const float scrollSpeed = layer.getProp("scroll") ? layer.getProp("scroll")->getValue<float>() : 1;
+
 			backgroundPath = "assets/background" / backgroundPath.filename();
 			if (layername == "Background") {
 				CreateBackground(backgroundPath, Layer::Background);
 			} else if (layername == "Parallax") {
 				// TODO: Support multiple parallax layers with different scroll factors
-				CreateBackground(backgroundPath, Layer::Parallax, 0.2, 260);
+				CreateBackground(backgroundPath, Layer::Parallax, scrollSpeed, layer.getOffset().y);
 			} else if (layername == "Foreground") {
 				 //CreateBackground(backgroundPath, Layer::Foreground);
 			}

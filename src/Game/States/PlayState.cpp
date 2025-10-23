@@ -24,24 +24,25 @@ void PlayState::Resume() {}
 
 void PlayState::HandleEvents(GameEngine &game) {}
 
-// TODO Cleanup
-void PlayState::Update(GameEngine &game, const float deltaTime, const float stepSize)
+void PlayState::Update(GameEngine &game, const float deltaTime)
 {
 
 	inputSystem.Update(game.registry);
 
 	ECS::Systems::JumpSystem::Update(game.registry);
-	ECS::Systems::MovementSystem::Update(game.registry, stepSize);
-	ECS::Systems::PhysicsSystem::Update(game.registry, stepSize);
+	ECS::Systems::MovementSystem::Update(game.registry, deltaTime);
+	ECS::Systems::PhysicsSystem::Update(game.registry, deltaTime);
 	ECS::Systems::CollisionSystem::Update(game.registry);
 
 	ECS::Systems::StateSystem::Update(game.registry);
-	ECS::Systems::AnimationSystem::Update(game.registry, stepSize);
+	ECS::Systems::AnimationSystem::Update(game.registry, deltaTime);
 }
 
 void PlayState::Render(GameEngine &game)
 {
-	game.GetRenderer().StartFrame(25, 25, 25, 255);
+	const int red=25, blue=25, green = 25; 
+	const int alpha = 255;
+	game.GetRenderer().StartFrame(red, blue, green, alpha);
 	renderSystem.Update(game.registry);
 	game.GetRenderer().EndFrame();
 }

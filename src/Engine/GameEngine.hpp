@@ -13,7 +13,7 @@ class GameState;
 
 class GameEngine {
   public:
-	GameEngine(const std::string &title, int width, int height);
+	GameEngine(const std::string &title, Resolution resolution);
 	~GameEngine();
 	// delete copy, move and assignments as we want only one instance of the game engine
 	GameEngine(const GameEngine &) = delete;
@@ -28,7 +28,7 @@ class GameEngine {
 	void PopState();
 
 	void HandleEvents();
-	void Update(const float &deltaTime, const float stepSize);
+	void Update(const float deltaTime);
 	void Render();
 
 	bool Running() const { return running; }
@@ -41,8 +41,6 @@ class GameEngine {
 	std::vector<std::unique_ptr<GameState>> states;
 	bool running = false;
 	Renderer renderer;
-	int width;
-	int height;
 	const std::string title;
 	InputManager inputManager;
 	TextureManager textureManager;

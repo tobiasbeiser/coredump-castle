@@ -5,7 +5,7 @@
 
 struct AnimationComponent {
 	std::vector<Animation> animations;
-	int currentAnimation;
-	int previousAnimation;
+	int currentAnimation = 0;
+	int previousAnimation = 0;
 	std::unordered_map<int, int> stateToAnimationIndex;
 };

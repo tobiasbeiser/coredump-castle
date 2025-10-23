@@ -3,9 +3,9 @@
 
 SDL_Texture& TextureManager::GetTexture(const std::string &filePath)
 {
-	auto it = textures.find(filePath);
-	if (it != textures.end()) {
-		return *(it->second); // found in cache
+	auto iterator = textures.find(filePath);
+	if (iterator != textures.end()) {
+		return *(iterator->second); // found in cache
 	}
 
 	textures[filePath] = std::move(renderer.LoadTexture(filePath));

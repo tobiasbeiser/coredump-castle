@@ -4,13 +4,13 @@
 #include <SDL3_image/SDL_image.h>
 #include <stdexcept>
 
-Renderer::Renderer(const std::string &title, int w, int h) : width(w), height(h)
+Renderer::Renderer(const std::string &title, Resolution resolution) : currentResolution(resolution)
 {
 	if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) {
 		throw std::runtime_error(SDL_GetError());
 	}
 
-	window.reset(SDL_CreateWindow(title.c_str(), width, height, SDL_WINDOW_RESIZABLE));
+	window.reset(SDL_CreateWindow(title.c_str(), currentResolution.width, currentResolution.height, SDL_WINDOW_RESIZABLE));
 	if (!window)
 		throw std::runtime_error(SDL_GetError());
 
@@ -28,11 +28,10 @@ Renderer::~Renderer()
 	SDL_Quit();
 }
 
-void Renderer::Resize(int w, int h)
+void Renderer::Resize(Resolution newResolution)
 {
-	width = w;
-	height = h;
-	SDL_SetWindowSize(window.get(), width, height);
+	currentResolution = newResolution;
+	SDL_SetWindowSize(window.get(), currentResolution.width, currentResolution.height);
 }
 
 std::unique_ptr<SDL_Texture, SDLTextureDeleter> Renderer::LoadTexture(const std::filesystem::path &filePath)
@@ -63,26 +62,29 @@ void Renderer::EndFrame() const
 	for (std::string message : DebugSystem::Instance().debugMessages) {
 		DebugMessage.append(message + "\n");
 	}
-	SDL_SetRenderDrawColor(renderer.get(), 255, 255, 255, 255);
-	SDL_RenderDebugText(renderer.get(), 5, 5, DebugMessage.c_str());
+	const std::uint8_t red = 255, green = 255, blue = 255, alpha = 255;
+	SDL_SetRenderDrawColor(renderer.get(), red, green, blue, alpha);
+
+	const float debugTextX = 5, debugTextY = 5;
+	SDL_RenderDebugText(renderer.get(), debugTextX, debugTextY, DebugMessage.c_str());
 
 	SDL_RenderPresent(renderer.get());
 }
 
-
-void Renderer::CenterCameraOn(const int positionX)
+void Renderer::CenterCameraOn(const float positionX)
 {
-	const float newCenter = positionX - viewport.w / 2;
-	viewport.x = newCenter>32 ? newCenter : 32;
+	const float newCenter = positionX - (viewport.w / 2);
+	const int tileSize = 32;
+	viewport.x = newCenter > tileSize ? newCenter : tileSize;
 }
 
-
-void Renderer::RenderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, const float scale, const float scrollFactor) const
+void Renderer::RenderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, const float scrollFactor) const
 {
-	dstRect.x = -viewport.x*scrollFactor; 
-	dstRect.w = texture.w * 5.0f;
+	const float repetitions = 5.0f;
+	dstRect.x = -viewport.x * scrollFactor;
+	dstRect.w = static_cast<float>(texture.w) * repetitions;
 
-	SDL_RenderTextureTiled(renderer.get(), &texture, nullptr, scale, &dstRect);
+	SDL_RenderTextureTiled(renderer.get(), &texture, nullptr, 1, &dstRect);
 }
 
 void Renderer::RenderTexture(SDL_Texture &texture, const std::optional<SDL_FRect> srcRect,

@@ -15,7 +15,7 @@ class PlayState : public GameState {
 	void Pause() override;
 	void Resume() override;
 	void HandleEvents(GameEngine &game) override;
-	void Update(GameEngine &game, const float deltaTime, const float stepSize) override;
+	void Update(GameEngine &game, const float deltaTime) override;
 	void Render(GameEngine &game) override;
 
   private:

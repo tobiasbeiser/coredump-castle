@@ -1,0 +1,5 @@
+
+Checks: cppcoreguidelines-*,bugprone-*, -cppcoreguidelines-pro-type-union-access
+WarningsAsErrors: '*'
+ExtraArgs: 
+  - "-EHsc"          # for MSVC / Windows
