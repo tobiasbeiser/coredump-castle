@@ -3,6 +3,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
 #include <stdexcept>
+#include <numbers>
 
 Renderer::Renderer(const std::string &title, Resolution resolution) : currentResolution(resolution)
 {
@@ -10,7 +11,8 @@ Renderer::Renderer(const std::string &title, Resolution resolution) : currentRes
 		throw std::runtime_error(SDL_GetError());
 	}
 
-	window.reset(SDL_CreateWindow(title.c_str(), currentResolution.width, currentResolution.height, SDL_WINDOW_RESIZABLE));
+	window.reset(
+	    SDL_CreateWindow(title.c_str(), currentResolution.width, currentResolution.height, SDL_WINDOW_RESIZABLE));
 	if (!window)
 		throw std::runtime_error(SDL_GetError());
 
@@ -85,6 +87,42 @@ void Renderer::RenderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, cons
 	dstRect.w = static_cast<float>(texture.w) * repetitions;
 
 	SDL_RenderTextureTiled(renderer.get(), &texture, nullptr, 1, &dstRect);
+}
+
+void Renderer::RenderCircularFade(float progress, SDL_FColor color)
+{
+	if (progress <= 0.0f)
+		return;
+
+	if (progress > 1.0f)
+		progress = 1.0f;
+
+	const auto [width, height] = std::make_pair(logicalResolution.width, logicalResolution.height);
+	float maxRadius = std::sqrt(width * width + height * height);
+	float radius = maxRadius * progress;
+
+	const int segments = 64;
+	std::vector<SDL_Vertex> vertices(segments + 2);
+
+	vertices[0].position = {width / 2.0f, height / 2.0f};
+	vertices[0].color = color;
+
+for (int i = 0; i <= segments; ++i) {
+		float angle = 2.0f * std::numbers::pi * i / segments;
+		float x = width / 2.0f + radius * cos(angle);
+		float y = height / 2.0f + radius * sin(angle);
+		vertices[i + 1].position = {x, y};
+		vertices[i + 1].color = color;
+	}
+
+	std::vector<int> indices;
+	for (int i = 1; i <= segments; ++i) {
+		indices.push_back(0);
+		indices.push_back(i);
+		indices.push_back(i + 1);
+	}
+
+	SDL_RenderGeometry(renderer.get(), nullptr, vertices.data(), vertices.size(), indices.data(), indices.size());
 }
 
 void Renderer::RenderTexture(SDL_Texture &texture, const std::optional<SDL_FRect> srcRect,

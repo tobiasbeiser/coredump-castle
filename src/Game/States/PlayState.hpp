@@ -16,7 +16,7 @@ class PlayState : public GameState {
 	void Resume() override;
 	void HandleEvents(GameEngine &game) override;
 	void Update(GameEngine &game, const float deltaTime) override;
-	void Render(GameEngine &game) override;
+	void Render(GameEngine &game,const float alpha) override;
 
   private:
 	const InputManager &inputManager;
@@ -24,5 +24,6 @@ class PlayState : public GameState {
 	Renderer &renderer;
 	ECS::Systems::RenderSystem renderSystem{renderer};
 	ECS::Systems::InputSystem inputSystem{inputManager};
+	bool paused = false;
 };
 } // namespace GameEngine

@@ -25,6 +25,8 @@ class Registry {
 		return static_cast<StorageWrapper<T> *>(storagePools[id].get())->storage;
 	}
 
+	void clearAll() { storagePools.clear(); }
+
 	Entity create()
 	{
 		static Entity next = 0;

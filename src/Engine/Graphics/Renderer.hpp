@@ -36,7 +36,6 @@ class Renderer {
 	void StartFrame(int red, int green, int blue, int alpha) const;
 	void EndFrame() const;
 	void CenterCameraOn(const float positionX);
-	//SDL_Renderer &getSDLRenderer() const { return *renderer; }
 
 	void Resize(Resolution newResolution);
 
@@ -44,6 +43,8 @@ class Renderer {
 	void RenderTexture(SDL_Texture &texture, const std::optional<SDL_FRect> srcRect, std::optional<SDL_FRect> dstRect,
 	                   const bool flip) const;
 	void RenderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, const float scrollFactor) const;
+
+	void RenderCircularFade(float progress, SDL_FColor color = {0, 0, 0, 255});
 
   private:
 	Resolution currentResolution{1920, 1080};

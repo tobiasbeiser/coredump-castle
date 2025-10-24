@@ -4,4 +4,5 @@ enum class Key {
 	Down,
 	Left,
 	Right,
+	Interact,
 };

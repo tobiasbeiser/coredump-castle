@@ -1,4 +1,6 @@
 #include "LevelFactory.hpp"
+#include "Engine/ECS/Components/Core/PortalComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/InteractionComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Render/BackgroundComponent.hpp"
 #include "Engine/ECS/Components/Render/TextureComponent.hpp"
@@ -6,10 +8,21 @@
 #include "Game/Factories/PlayerFactory.hpp"
 #include <glm/vec2.hpp>
 
-void LevelFactory::CreateLevel(const std::string &levelFile)
+LevelFactory::LevelFactory(GameEngine::ECS::Registry &registry, TextureManager &textureManager,
+                           const std::string &levelFile, const std::string &spawnPoint)
+    : registry(registry), textureManager(textureManager), levelFile(levelFile), spawnPoint(spawnPoint) {};
+
+void LevelFactory::CreateLevel()
 {
-	tson::Tileson tileson;
-	auto map = tileson.parse(fs::path(levelFile));
+	std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now();
+
+	fs::path projectPath = fs::path("assets/tiled/CoredumpCastle.tiled-project");
+	tson::Project project{projectPath};
+
+	tson::Tileson tileson{&project};
+	fs::path mapBasePath = projectPath.parent_path() / "maps";
+	mapBasePath /= levelFile + ".json";
+	auto map = tileson.parse(mapBasePath);
 	if (map->getStatus() != tson::ParseStatus::OK) {
 		throw std::runtime_error("Failed to load map: " + map->getStatusMessage());
 	}
@@ -18,6 +31,14 @@ void LevelFactory::CreateLevel(const std::string &levelFile)
 	for (tson::Layer &layer : map->getLayers()) {
 		LoadLayer(layer, layerIndex);
 	}
+
+	PlayerFactory::CreatePlayer(registry, textureManager, playerSpawnPosition,
+	                            std::filesystem::path("assets/player/char_blue_1.png"), playerLayerIndex);
+
+	std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+
+	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - now).count();
+	SDL_Log("Level loaded in %lld ms\n", duration);
 }
 
 void LevelFactory::LoadLayer(tson::Layer &layer, int &layerIndex)
@@ -30,7 +51,7 @@ void LevelFactory::LoadLayer(tson::Layer &layer, int &layerIndex)
 		LoadTiles(layer, layerIndex);
 		break;
 	case tson::LayerType::ObjectGroup:
-		SpawnPlayer(layer, layerIndex);
+		LoadObjects(layer, layerIndex);
 		break;
 	case tson::LayerType::Group:
 		for (auto &subLayer : layer.getLayers()) {
@@ -49,7 +70,7 @@ void LevelFactory::LoadTiles(const tson::Layer &layer, const int layerIndex)
 			const glm::ivec2 position = glm::ivec2(std::get<0>(pos), std::get<1>(pos));
 			const glm::ivec2 tileSize = glm::ivec2(tile->getTileSize().x, tile->getTileSize().y);
 			const tson::Rect rectSrc = tile->getDrawingRect();
-			const fs::path imagePath = "assets/tilesets" / tile->getTileset()->getFullImagePath().filename();
+			const fs::path imagePath = "assets/tiled/tilesets" / tile->getTileset()->getFullImagePath().filename();
 
 			auto entity = registry.create();
 			registry.register_component(entity,
@@ -81,8 +102,7 @@ void LevelFactory::LoadBackground(tson::Layer &layer, const int layerIndex)
 {
 	std::string layername = layer.getName();
 	fs::path backgroundPath = layer.getImage();
-	backgroundPath = "assets/background" / backgroundPath.filename();
-	SDL_Log("Loading background layer: %s from %s", layername.c_str(), backgroundPath.string().c_str());
+	backgroundPath = "assets/tiled/background" / backgroundPath.filename();
 	if (layer.hasRepeatX()) {
 		const float scrollSpeed = layer.getProp("scroll") ? layer.getProp("scroll")->getValue<float>() : 1;
 		CreateBackground(backgroundPath, layerIndex, scrollSpeed, layer.getOffset().y, true);
@@ -94,7 +114,6 @@ void LevelFactory::LoadBackground(tson::Layer &layer, const int layerIndex)
 void LevelFactory::CreateBackground(const fs::path &filename, const int layer, const float scrollSpeed,
                                     const float yOffset, const bool repeatX)
 {
-	SDL_Log("Creating background: %s", filename.string().c_str());
 	auto entity = registry.create();
 	registry.register_component<TextureComponent>(entity,
 	                                              TextureComponent{&textureManager.GetTexture(filename.string())});
@@ -103,14 +122,47 @@ void LevelFactory::CreateBackground(const fs::path &filename, const int layer, c
 	registry.register_component(entity, RenderComponent{.layer = layer, .flipX = false});
 }
 
-void LevelFactory::SpawnPlayer(tson::Layer &layer, const int layerIndex)
+void LevelFactory::LoadObjects(tson::Layer &layer, int layerIndex)
 {
-	// Set player position to spawn point
-	const auto spawnPointFromMap = layer.getObjectsByName("Player");
-	if (spawnPointFromMap.size() != 1 && !spawnPointFromMap.at(0).isPoint()) {
-		throw std::runtime_error("Map must have exactly one Player spawn point");
+
+	// Load all portals
+
+	for (auto &obj : layer.getObjectsByType(tson::ObjectType::Rectangle)) {
+		if (obj.getProperties().hasProperty("Portal")) {
+			auto portalProp = obj.getProp("Portal");
+			tson::TiledClass portalClass = std::any_cast<tson::TiledClass>(portalProp->getValue());
+			std::string portalId = portalClass.get<std::string>("portalId");
+			std::string targetLevel = portalClass.get<std::string>("targetLevel");
+			std::string targetPortalId = portalClass.get<std::string>("targetPortalId");
+
+			auto entity = registry.create();
+			registry.register_component(entity,
+			                            PositionComponent{.position = {static_cast<float>(obj.getPosition().x),
+			                                                           static_cast<float>(obj.getPosition().y)}});
+			registry.register_component(
+			    entity, InteractionComponent{.interactionBox{.x = 0,
+			                                                 .y = 0,
+			                                                 .w = static_cast<float>(obj.getSize().x),
+			                                                 .h = static_cast<float>(obj.getSize().y)}});
+			registry.register_component(
+			    entity,
+			    PortalComponent{.portalId = portalId, .targetLevel = targetLevel, .targetPortalId = targetPortalId});
+
+			if (spawnPoint == portalId) {
+				playerSpawnPosition = glm::vec2(static_cast<float>(obj.getPosition().x - obj.getSize().x / 2.0f), 
+				                                static_cast<float>(obj.getPosition().y));
+				playerLayerIndex = layerIndex;
+			}
+		}
 	}
-	const tson::Vector2 pos = spawnPointFromMap.at(0).getPosition();
-	PlayerFactory::CreatePlayer(registry, textureManager, glm::vec2(pos.x, pos.y),
-	                            std::filesystem::path("assets/player/char_blue_1.png"), layerIndex);
+
+	if (spawnPoint == "Player") {
+		const auto spawnPointFromMap = layer.getObjectsByName("Player");
+		if (spawnPointFromMap.size() != 1 && !spawnPointFromMap.at(0).isPoint()) {
+			throw std::runtime_error("Map must have exactly one Player spawn point");
+		}
+		const tson::Vector2 pos = spawnPointFromMap.at(0).getPosition();
+		playerSpawnPosition = glm::vec2(pos.x, pos.y);
+		playerLayerIndex = layerIndex;
+	}
 }

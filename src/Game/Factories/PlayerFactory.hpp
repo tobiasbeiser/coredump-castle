@@ -3,6 +3,7 @@
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/InteractionComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/JumpComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
 #include "Engine/ECS/Components/Physics/AccelerationComponent.hpp"
@@ -22,8 +23,6 @@ struct PlayerFactory {
 	static GameEngine::ECS::Entity CreatePlayer(GameEngine::ECS::Registry &registry, TextureManager &texMgr,
 	                                            glm::vec2 spawn, const fs::path texturePath, const int layerIndex)
 	{
-		SDL_Log("Spawning player");
-
 		auto e = registry.create();
 		registry.register_component(e, PositionComponent{.position = spawn});
 		registry.register_component(e, VelocityComponent{.velocity = {0.0f, 0.0f}});
@@ -58,7 +57,8 @@ struct PlayerFactory {
 		registry.register_component(e, InputComponent{});
 		registry.register_component(e, MovementComponent{});
 		registry.register_component(e, JumpComponent{});
-		SDL_Log("Player spawned");
+
+		registry.register_component(e, InteractionComponent{19, 25, 21, 32});
 		return e;
 	}
 };

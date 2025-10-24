@@ -1,32 +1,44 @@
 #include "PlayState.hpp"
 #include "Engine/ECS/Systems/AnimationSystem.hpp"
 #include "Engine/ECS/Systems/CollisionSystem.hpp"
+#include "Engine/ECS/Systems/InteractionSystem.hpp"
+#include "Engine/ECS/Systems/JumpSystem.hpp"
 #include "Engine/ECS/Systems/MovementSystem.hpp"
 #include "Engine/ECS/Systems/PhysicsSystem.hpp"
-#include "Engine/ECS/Systems/JumpSystem.hpp"
 #include "Engine/ECS/Systems/StateSystem.hpp"
 #include "Engine/GameEngine.hpp"
 #include "Game/Factories/LevelFactory.hpp"
+#include <time.h>
 
 namespace GameEngine {
 
 void PlayState::Init(GameEngine &game)
 {
-	LevelFactory factory(game.registry, textureManager);
-	factory.CreateLevel("assets/maps/Level1.json");
+	game.registry.clearAll();
+	LevelFactory factory(game.registry, game.textureManager, "Level1");
+	SDL_Log("create from PlayState Init");
+	factory.CreateLevel();
 }
 
 void PlayState::Cleanup() {}
 
-void PlayState::Pause() {}
+void PlayState::Pause()
+{
+	paused = true;
+}
 
-void PlayState::Resume() {}
+void PlayState::Resume()
+{
+	paused = false;
+}
 
 void PlayState::HandleEvents(GameEngine &game) {}
 
 void PlayState::Update(GameEngine &game, const float deltaTime)
 {
-
+	if (paused) {
+		return;
+	}
 	inputSystem.Update(game.registry);
 
 	ECS::Systems::JumpSystem::Update(game.registry);
@@ -36,14 +48,12 @@ void PlayState::Update(GameEngine &game, const float deltaTime)
 
 	ECS::Systems::StateSystem::Update(game.registry);
 	ECS::Systems::AnimationSystem::Update(game.registry, deltaTime);
+
+	ECS::Systems::InteractionSystem::Update(game, game.registry);
 }
 
-void PlayState::Render(GameEngine &game)
+void PlayState::Render(GameEngine &game, const float alpha)
 {
-	const int red=25, blue=25, green = 25; 
-	const int alpha = 255;
-	game.GetRenderer().StartFrame(red, blue, green, alpha);
-	renderSystem.Update(game.registry);
-	game.GetRenderer().EndFrame();
+	renderSystem.Update(game.registry, alpha);
 }
 } // namespace GameEngine
