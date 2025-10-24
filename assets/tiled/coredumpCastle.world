@@ -6,6 +6,34 @@
             "width": 3200,
             "x": 0,
             "y": 0
+        },
+        {
+            "fileName": "maps/Level2.tmj",
+            "height": 416,
+            "width": 960,
+            "x": 608,
+            "y": -672
+        },
+        {
+            "fileName": "maps/Level2.json",
+            "height": 416,
+            "width": 960,
+            "x": 640,
+            "y": -512
+        },
+        {
+            "fileName": "maps/SaveArea.json",
+            "height": 448,
+            "width": 512,
+            "x": 1888,
+            "y": -544
+        },
+        {
+            "fileName": "maps/Hub.json",
+            "height": 448,
+            "width": 512,
+            "x": 2400,
+            "y": -544
         }
     ],
     "onlyShowAdjacentMaps": false,

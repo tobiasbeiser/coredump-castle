@@ -22,7 +22,7 @@ class LevelFactory {
 	const std::string levelFile;
 	const std::string spawnPoint;
 	int playerLayerIndex = 0;
-	glm::vec2 playerSpawnPosition;
+	glm::vec2 playerSpawnPosition = {0,0};
 	GameEngine::ECS::Registry &registry;
 	TextureManager &textureManager;
 };

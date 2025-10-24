@@ -27,9 +27,10 @@ class Registry {
 
 	void clearAll() { storagePools.clear(); }
 
+	int size() const { return next; }
+
 	Entity create()
 	{
-		static Entity next = 0;
 		return next++;
 	}
 
@@ -58,5 +59,8 @@ class Registry {
 	{
 		return View<Components...>(*this);
 	}
+
+  private:
+	Entity next = 0;
 };
 } // namespace GameEngine::ECS

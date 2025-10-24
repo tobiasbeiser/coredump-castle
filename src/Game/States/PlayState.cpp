@@ -14,10 +14,7 @@ namespace GameEngine {
 
 void PlayState::Init(GameEngine &game)
 {
-	game.registry.clearAll();
-	LevelFactory factory(game.registry, game.textureManager, "Level1");
-	SDL_Log("create from PlayState Init");
-	factory.CreateLevel();
+	game.PushState(std::make_unique<TransitionLevelState>("Level1", "Player"));
 }
 
 void PlayState::Cleanup() {}
@@ -49,7 +46,9 @@ void PlayState::Update(GameEngine &game, const float deltaTime)
 	ECS::Systems::StateSystem::Update(game.registry);
 	ECS::Systems::AnimationSystem::Update(game.registry, deltaTime);
 
-	ECS::Systems::InteractionSystem::Update(game, game.registry);
+	
+	ECS::Systems::LevelTransitionData transitionData{history, currentLevelName};
+	ECS::Systems::InteractionSystem::Update(game, game.registry, transitionData);
 }
 
 void PlayState::Render(GameEngine &game, const float alpha)

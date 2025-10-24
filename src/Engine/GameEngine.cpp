@@ -75,7 +75,7 @@ void GameEngine::HandleEvents()
 			break;
 
 		case SDL_EVENT_WINDOW_RESIZED:
-			renderer.Resize({.width=event.window.data1, .height=event.window.data2});
+			renderer.Resize({.width = event.window.data1, .height = event.window.data2});
 			break;
 
 		case SDL_EVENT_KEY_DOWN:
@@ -111,7 +111,5 @@ void GameEngine::Render(const float alpha)
 		state->Render(*this, alpha);
 	}
 	renderer.EndFrame();
-
-	
 };
 } // namespace GameEngine
