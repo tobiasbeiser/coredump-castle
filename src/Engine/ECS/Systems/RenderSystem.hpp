@@ -9,6 +9,7 @@
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Render/TextureComponent.hpp"
 #include "Engine/ECS/Components/Render/TileComponent.hpp"
+#include "Engine/ECS/Components/Render/CenterCameraComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
 #include "Engine/Graphics/Renderer.hpp"
