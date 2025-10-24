@@ -45,6 +45,7 @@ struct CollisionSystem {
 
 
 				ResolveAABBCollision(entityBox, tileBox, pos.position, vel.velocity);
+				pos.previousPosition = pos.position;
 
 				if (registry.has<GroundedComponent>(dynEntity)) {
 					// Ground check

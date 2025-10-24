@@ -19,7 +19,7 @@ class RenderSystem {
   public:
 	RenderSystem(Renderer &renderer) : renderer(renderer) {}
 
-	void Update(Registry &registry)
+	void Update(Registry &registry, const float alpha)
 	{
 		renderItems.clear();
 		// Backgrounds
@@ -58,7 +58,10 @@ class RenderSystem {
 			const SDL_FRect src{
 			    .x = tile.TileMapPosition.x, .y = tile.TileMapPosition.y, .w = tile.TileSize, .h = tile.TileSize};
 
-			SDL_FRect dst{.x = pos.position.x, .y = pos.position.y, .w = tile.TileSize, .h = tile.TileSize};
+			SDL_FRect dst{.x = pos.previousPosition.x * (1 - alpha) + pos.position.x * alpha,
+			              .y = pos.previousPosition.y * (1 - alpha) + pos.position.y * alpha,
+			              .w = tile.TileSize,
+			              .h = tile.TileSize};
 
 			renderItems.push_back(RenderItem{.Layer = render.layer,
 			                                 .texture = tex.texture,

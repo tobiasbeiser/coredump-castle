@@ -15,7 +15,7 @@ class GameState {
 
 	virtual void HandleEvents(GameEngine &game) = 0;
 	virtual void Update(GameEngine &game, const float deltaTime) = 0;
-	virtual void Render(GameEngine &game) = 0;
+	virtual void Render(GameEngine &game, const float alpha) = 0;
 
 	void ChangeState(GameEngine &game, std::unique_ptr<GameState> state) { game.ChangeState(std::move(state)); }
 

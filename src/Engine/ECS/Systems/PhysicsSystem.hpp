@@ -34,6 +34,8 @@ namespace GameEngine::ECS::Systems {
                     vel.velocity.x = move.maxSpeedX * (vel.velocity.x > 0 ? 1 : -1);
                 }
                 pos.position += vel.velocity * timeStep;
+			    pos.previousPosition = pos.position;
+
             };
         };
     };

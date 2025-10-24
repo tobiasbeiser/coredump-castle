@@ -29,20 +29,22 @@ class GameEngine {
 
 	void HandleEvents();
 	void Update(const float deltaTime);
-	void Render();
+	void Render(const float alpha);
 
 	bool Running() const { return running; }
 	void Quit() { running = false; }
 
 	Renderer &GetRenderer() { return renderer; }
 	ECS::Registry registry;
+	InputManager inputManager;
+	TextureManager textureManager;
+	Renderer renderer;
+	std::unique_ptr<GameState> pendingPush;
 
   private:
 	std::vector<std::unique_ptr<GameState>> states;
 	bool running = false;
-	Renderer renderer;
 	const std::string title;
-	InputManager inputManager;
-	TextureManager textureManager;
+
 };
 } // namespace GameEngine
