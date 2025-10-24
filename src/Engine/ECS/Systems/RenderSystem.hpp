@@ -5,10 +5,10 @@
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Render/AnimationComponent.hpp"
 #include "Engine/ECS/Components/Render/BackgroundComponent.hpp"
+#include "Engine/ECS/Components/Render/CenterCameraComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Render/TextureComponent.hpp"
 #include "Engine/ECS/Components/Render/TileComponent.hpp"
-#include "Engine/ECS/Components/Render/CenterCameraComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
 #include "Engine/Graphics/Renderer.hpp"
@@ -34,21 +34,17 @@ class RenderSystem {
 
 			const SDL_FRect *src = nullptr;
 			SDL_FRect *dst = nullptr;
-			if (render.layer == Layer::Parallax) {
-				dstOpt = SDL_FRect{.x = -bg.scrollPos,
-				                   .y = bg.yOffset,
-				                   .w = tex.texture->w * 5.0f,
-				                   .h = static_cast<float>(tex.texture->h)};
+			if (bg.repeatX) {
+				dstOpt = SDL_FRect{.y = bg.yOffset, .h = static_cast<float>(tex.texture->h)};
 			}
 
 			renderItems.push_back(RenderItem{.Layer = render.layer,
 			                                 .texture = tex.texture,
 			                                 .src = srcOpt,
 			                                 .dst = dstOpt,
-			                                 .parallax = (render.layer == Layer::Parallax),
-											 .scrollFactor = bg.scrollingSpeed,
-			                                 .flipX = render.flipX
-											});
+			                                 .parallax = bg.repeatX,
+			                                 .scrollFactor = bg.scrollingSpeed,
+			                                 .flipX = render.flipX});
 		}
 
 		// Tiles, Player
@@ -85,27 +81,17 @@ class RenderSystem {
 		std::sort(renderItems.begin(), renderItems.end(),
 		          [](const RenderItem &a, const RenderItem &b) { return a.Layer < b.Layer; });
 
-
-
-		
 		auto centerCameraView = registry.view<PositionComponent, CenterCameraComponent, TileComponent>();
-		if (centerCameraView.size()==1)
-		{
-			const auto& centerCameraEntity = centerCameraView.at(0);
+		if (centerCameraView.size() == 1) {
+			const auto &centerCameraEntity = centerCameraView.at(0);
 			auto &pos = view.get<PositionComponent>(centerCameraEntity);
 			auto &tile = view.get<TileComponent>(centerCameraEntity);
 
-
 			renderer.CenterCameraOn((pos.position.x + tile.TileSize / 2));
 
-		}else if(centerCameraView.size()>1){
+		} else if (centerCameraView.size() > 1) {
 			throw std::runtime_error("There cannot be more than on entity with a CenterCameraComponent");
 		}
-		
-
-
-
-
 
 		for (auto &renderItem : renderItems) {
 			if (!renderItem.parallax) {
@@ -124,7 +110,7 @@ class RenderSystem {
 		std::optional<SDL_FRect> src;
 		std::optional<SDL_FRect> dst;
 		bool parallax;
-		float scrollFactor=0;
+		float scrollFactor = 0;
 		bool flipX;
 	};
 	std::vector<RenderItem> renderItems;
