@@ -11,7 +11,6 @@ class LevelFactory {
 	void CreateLevel();
 
   private:
-	void SpawnPlayer(tson::Layer &layer, const int layerIndex);
 	void LoadTiles(const tson::Layer &layer, const int layerIndex);
 	void LoadBackground(tson::Layer &layer, const int layerIndex);
 	void CreateBackground(const fs::path &filename, const int layer, const float scrollSpeed = 0,
