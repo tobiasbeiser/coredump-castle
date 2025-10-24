@@ -101,16 +101,33 @@
          "name":"Entities",
          "objects":[
                 {
-                 "height":0,
                  "id":1,
-                 "name":"Player",
-                 "point":true,
+                 "template":"..\/objects\/Player.tj",
+                 "x":80.2045,
+                 "y":343.629
+                }, 
+                {
+                 "height":47.875,
+                 "id":7,
+                 "name":"",
+                 "properties":[
+                        {
+                         "name":"Portal",
+                         "propertytype":"Portal",
+                         "type":"class",
+                         "value":
+                            {
+                             "portalId":"door1",
+                             "targetLevel":"Level2",
+                             "targetPortalId":"door1"
+                            }
+                        }],
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":0,
-                 "x":79.4545,
-                 "y":308.379
+                 "width":30.75,
+                 "x":1061.125,
+                 "y":334.875
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -143,8 +160,8 @@
          "x":0,
          "y":0
         }],
- "nextlayerid":9,
- "nextobjectid":3,
+ "nextlayerid":11,
+ "nextobjectid":8,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",
