@@ -1,6 +1,7 @@
 #pragma once
 #include <SDL3/SDL.h>
 #include <filesystem>
+#include <glm/vec2.hpp>
 #include <memory>
 #include <optional>
 #include <string>
@@ -35,7 +36,7 @@ class Renderer {
 
 	void StartFrame(int red, int green, int blue, int alpha) const;
 	void EndFrame() const;
-	void CenterCameraOn(const float positionX);
+	void CenterCameraOn(const glm::vec2 position, const glm::vec2 levelSize);
 
 	void Resize(Resolution newResolution);
 
@@ -49,8 +50,6 @@ class Renderer {
   private:
 	Resolution currentResolution{1920, 1080};
 	Resolution logicalResolution{768, 432};
-	const int logW = 768;
-	const int logH = 432;
 
 	SDL_FRect viewport{.x = 0,
 	                   .y = 0,

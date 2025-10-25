@@ -1,5 +1,6 @@
 #pragma once
 #include "Engine/DebugSystem.hpp"
+#include "Engine/ECS/Components/Core/LevelComponent.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
@@ -9,7 +10,6 @@
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Render/TextureComponent.hpp"
 #include "Engine/ECS/Components/Render/TileComponent.hpp"
-#include "Engine/ECS/Components/Render/CenterCameraComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
 #include "Engine/Graphics/Renderer.hpp"
@@ -91,8 +91,13 @@ class RenderSystem {
 			auto &pos = view.get<PositionComponent>(centerCameraEntity);
 			auto &tile = view.get<TileComponent>(centerCameraEntity);
 
-			renderer.CenterCameraOn((pos.position.x + tile.TileSize / 2));
-
+			auto levelView = registry.view<LevelComponent>();
+			if (levelView.size() == 1) {
+				auto &level = levelView.get<LevelComponent>(levelView.at(0));
+				renderer.CenterCameraOn((pos.position + tile.TileSize / 2), level.levelSize);
+			} else {
+				throw std::runtime_error("There must be exactly one entity with a LevelComponent to center the camera");
+			}
 		} else if (centerCameraView.size() > 1) {
 			throw std::runtime_error("There cannot be more than on entity with a CenterCameraComponent");
 		}

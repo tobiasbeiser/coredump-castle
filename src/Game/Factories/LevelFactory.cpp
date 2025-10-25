@@ -1,4 +1,5 @@
 #include "LevelFactory.hpp"
+#include "Engine/ECS/Components/Core/LevelComponent.hpp"
 #include "Engine/ECS/Components/Core/PortalComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InteractionComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
@@ -26,6 +27,12 @@ void LevelFactory::CreateLevel()
 	if (map->getStatus() != tson::ParseStatus::OK) {
 		throw std::runtime_error("Failed to load map: " + map->getStatusMessage());
 	}
+
+	auto level = registry.create();
+
+	glm::vec2 levelSize = glm::vec2(static_cast<float>(map->getSize().x * map->getTileSize().x),
+	                                static_cast<float>(map->getSize().y * map->getTileSize().y));
+	registry.register_component<LevelComponent>(level, LevelComponent{.levelSize = levelSize, .levelName = levelFile});
 
 	int layerIndex = 0;
 	for (tson::Layer &layer : map->getLayers()) {
@@ -149,7 +156,7 @@ void LevelFactory::LoadObjects(tson::Layer &layer, int layerIndex)
 			    PortalComponent{.portalId = portalId, .targetLevel = targetLevel, .targetPortalId = targetPortalId});
 
 			if (spawnPoint == portalId) {
-				playerSpawnPosition = glm::vec2(static_cast<float>(obj.getPosition().x - obj.getSize().x / 2.0f), 
+				playerSpawnPosition = glm::vec2(static_cast<float>(obj.getPosition().x - obj.getSize().x / 2.0f),
 				                                static_cast<float>(obj.getPosition().y));
 				playerLayerIndex = layerIndex;
 			}

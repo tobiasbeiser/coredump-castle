@@ -19,6 +19,7 @@ class PlayState : public GameState {
 	void HandleEvents(GameEngine &game) override;
 	void Update(GameEngine &game, const float deltaTime) override;
 	void Render(GameEngine &game, const float alpha) override;
+	// TODO use LevelComponent to get current level name
 	std::string currentLevelName;
 
   private:

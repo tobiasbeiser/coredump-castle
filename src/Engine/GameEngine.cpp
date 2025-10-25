@@ -104,7 +104,7 @@ void GameEngine::Update(const float deltaTime)
 
 void GameEngine::Render(const float alpha)
 {
-	const int red = 25, blue = 25, green = 25;
+	const int red = 12, blue = 19, green = 25;
 	const int opacity = 255;
 	renderer.StartFrame(red, blue, green, opacity);
 	for (auto &state : states) {

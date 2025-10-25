@@ -2,8 +2,8 @@
 #include "Engine/DebugSystem.hpp"
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
-#include <stdexcept>
 #include <numbers>
+#include <stdexcept>
 
 Renderer::Renderer(const std::string &title, Resolution resolution) : currentResolution(resolution)
 {
@@ -20,7 +20,7 @@ Renderer::Renderer(const std::string &title, Resolution resolution) : currentRes
 	if (!renderer)
 		throw std::runtime_error(SDL_GetError());
 
-	SDL_SetRenderLogicalPresentation(renderer.get(), logW, logH, SDL_LOGICAL_PRESENTATION_LETTERBOX);
+	SDL_SetRenderLogicalPresentation(renderer.get(), logicalResolution.width, logicalResolution.height, SDL_LOGICAL_PRESENTATION_LETTERBOX);
 
 	SDL_SetRenderVSync(renderer.get(), 1);
 }
@@ -73,11 +73,24 @@ void Renderer::EndFrame() const
 	SDL_RenderPresent(renderer.get());
 }
 
-void Renderer::CenterCameraOn(const float positionX)
+void Renderer::CenterCameraOn(const glm::vec2 position, const glm::vec2 levelSize)
 {
-	const float newCenter = positionX - (viewport.w / 2);
-	const int tileSize = 32;
-	viewport.x = newCenter > tileSize ? newCenter : tileSize;
+	const float newViewportXCoordinate = position.x - (viewport.w / 2.0f);
+	const float newViewportYCoordinate = position.y - (viewport.h / 2.0f);
+
+    if (levelSize.x <= viewport.w) {
+		// Level is smaller than viewport -> center level horizontally
+		viewport.x = (levelSize.x - viewport.w) / 2.0f;
+	} else {
+		viewport.x = std::clamp(newViewportXCoordinate, 0.0f, levelSize.x - viewport.w);
+	}
+
+	if (levelSize.y <= viewport.h) {
+		// Level is smaller than viewport -> center level vertically
+		viewport.y = (levelSize.y - viewport.h) / 2.0f;
+	} else {
+		viewport.y = std::clamp(newViewportYCoordinate, 0.0f, levelSize.y - viewport.h);
+	}
 }
 
 void Renderer::RenderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, const float scrollFactor) const
@@ -107,7 +120,7 @@ void Renderer::RenderCircularFade(float progress, SDL_FColor color)
 	vertices[0].position = {width / 2.0f, height / 2.0f};
 	vertices[0].color = color;
 
-for (int i = 0; i <= segments; ++i) {
+	for (int i = 0; i <= segments; ++i) {
 		float angle = 2.0f * std::numbers::pi * i / segments;
 		float x = width / 2.0f + radius * cos(angle);
 		float y = height / 2.0f + radius * sin(angle);
@@ -133,6 +146,7 @@ void Renderer::RenderTexture(SDL_Texture &texture, const std::optional<SDL_FRect
 
 	if (dstRect) {
 		dstRect.value().x -= viewport.x;
+		dstRect.value().y -= viewport.y;
 		dstPtr = &dstRect.value();
 	}
 	const SDL_FlipMode flipMode = flip ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
