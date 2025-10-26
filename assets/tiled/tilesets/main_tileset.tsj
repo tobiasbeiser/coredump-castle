@@ -23,7 +23,6 @@
          "objectgroup":
             {
              "draworder":"index",
-             "id":2,
              "name":"",
              "objects":[
                     {
@@ -283,6 +282,14 @@
                 }]
         }, 
         {
+         "id":78,
+         "probability":0.100000001490116
+        }, 
+        {
+         "id":79,
+         "probability":0.100000001490116
+        }, 
+        {
          "id":80,
          "properties":[
                 {
@@ -335,6 +342,14 @@
                  "type":"bool",
                  "value":true
                 }]
+        }, 
+        {
+         "id":100,
+         "probability":0.100000001490116
+        }, 
+        {
+         "id":101,
+         "probability":0.100000001490116
         }, 
         {
          "id":102,
