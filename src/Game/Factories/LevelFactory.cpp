@@ -121,6 +121,7 @@ void LevelFactory::LoadBackground(tson::Layer &layer, const int layerIndex)
 void LevelFactory::CreateBackground(const fs::path &filename, const int layer, const float scrollSpeed,
                                     const float yOffset, const bool repeatX)
 {
+	SDL_Log("Creating background: %s", filename.string().c_str());
 	auto entity = registry.create();
 	registry.register_component<TextureComponent>(entity,
 	                                              TextureComponent{&textureManager.GetTexture(filename.string())});
