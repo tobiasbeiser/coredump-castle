@@ -834,6 +834,15 @@
                 }]
         }, 
         {
+         "id":157,
+         "properties":[
+                {
+                 "name":"collidable",
+                 "type":"bool",
+                 "value":true
+                }]
+        }, 
+        {
          "id":168,
          "properties":[
                 {

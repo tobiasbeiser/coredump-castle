@@ -14,7 +14,7 @@ namespace GameEngine {
 
 void PlayState::Init(GameEngine &game)
 {
-	game.PushState(std::make_unique<TransitionLevelState>("Level1", "Player"));
+	game.PushState(std::make_unique<TransitionLevelState>("MainHub", "Player"));
 }
 
 void PlayState::Cleanup() {}

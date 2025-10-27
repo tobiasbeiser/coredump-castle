@@ -4,6 +4,7 @@
 #include <SDL3_image/SDL_image.h>
 #include <numbers>
 #include <stdexcept>
+#include <cmath>
 
 Renderer::Renderer(const std::string &title, Resolution resolution) : currentResolution(resolution)
 {
