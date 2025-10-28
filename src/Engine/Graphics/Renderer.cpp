@@ -99,6 +99,7 @@ void Renderer::RenderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, cons
 	const float repetitions = 5.0f;
 	dstRect.x = -viewport.x * scrollFactor;
 	dstRect.w = static_cast<float>(texture.w) * repetitions;
+	dstRect.y -= viewport.y;
 
 	SDL_RenderTextureTiled(renderer.get(), &texture, nullptr, 1, &dstRect);
 }
