@@ -1,32 +1,18 @@
 {
     "maps": [
         {
-            "fileName": "maps/Level2.tmj",
-            "height": 416,
-            "width": 960,
-            "x": 608,
-            "y": -672
-        },
-        {
-            "fileName": "maps/SaveArea.json",
-            "height": 448,
-            "width": 512,
-            "x": 1888,
-            "y": -544
-        },
-        {
             "fileName": "maps/area1/level1.json",
-            "height": 192,
+            "height": 576,
             "width": 768,
-            "x": 4832,
-            "y": 224
+            "x": 1152,
+            "y": 384
         },
         {
             "fileName": "maps/MainHub.json",
             "height": 960,
             "width": 1152,
-            "x": 3680,
-            "y": -544
+            "x": 0,
+            "y": 0
         }
     ],
     "onlyShowAdjacentMaps": false,

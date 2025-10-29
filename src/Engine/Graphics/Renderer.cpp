@@ -2,9 +2,9 @@
 #include "Engine/DebugSystem.hpp"
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
+#include <cmath>
 #include <numbers>
 #include <stdexcept>
-#include <cmath>
 
 Renderer::Renderer(const std::string &title, Resolution resolution) : currentResolution(resolution)
 {
@@ -21,7 +21,8 @@ Renderer::Renderer(const std::string &title, Resolution resolution) : currentRes
 	if (!renderer)
 		throw std::runtime_error(SDL_GetError());
 
-	SDL_SetRenderLogicalPresentation(renderer.get(), logicalResolution.width, logicalResolution.height, SDL_LOGICAL_PRESENTATION_LETTERBOX);
+	SDL_SetRenderLogicalPresentation(renderer.get(), logicalResolution.width, logicalResolution.height,
+	                                 SDL_LOGICAL_PRESENTATION_LETTERBOX);
 
 	SDL_SetRenderVSync(renderer.get(), 1);
 }
@@ -74,24 +75,31 @@ void Renderer::EndFrame() const
 	SDL_RenderPresent(renderer.get());
 }
 
-void Renderer::CenterCameraOn(const glm::vec2 position, const glm::vec2 levelSize)
+void Renderer::CenterCameraOn(const glm::vec2 &position, const glm::vec2 &levelPos, const glm::vec2 &levelSize)
 {
 	const float newViewportXCoordinate = position.x - (viewport.w / 2.0f);
 	const float newViewportYCoordinate = position.y - (viewport.h / 2.0f);
 
-    if (levelSize.x <= viewport.w) {
-		// Level is smaller than viewport -> center level horizontally
-		viewport.x = (levelSize.x - viewport.w) / 2.0f;
-	} else {
-		viewport.x = std::clamp(newViewportXCoordinate, 0.0f, levelSize.x - viewport.w);
-	}
+	viewport.x = newViewportXCoordinate;
+	viewport.y = newViewportYCoordinate;
 
-	if (levelSize.y <= viewport.h) {
-		// Level is smaller than viewport -> center level vertically
-		viewport.y = (levelSize.y - viewport.h) / 2.0f;
-	} else {
-		viewport.y = std::clamp(newViewportYCoordinate, 0.0f, levelSize.y - viewport.h);
-	}
+
+	// if  (levelPos.x + levelSize.x <= viewport.w) {
+	// 	// Level is smaller than viewport -> center level horizontally
+	// 	viewport.x = (levelPos.x + levelSize.x   - viewport.w) / 2.0f;
+	// } else {
+	// 	viewport.x = std::clamp(newViewportXCoordinate, levelPos.x, levelSize.x + levelPos.x - viewport.w);
+	// }
+	//
+	// if (levelPos.y + levelSize.y <= viewport.h) {
+	// 	// Level is smaller than viewport -> center level vertically
+	// 	viewport.y = (levelPos.y + levelSize.y - viewport.h) / 2.0f;
+	// } else {
+	// 	// viewport.y = std::clamp(newViewportYCoordinate, levelPos.y, levelSize.y + levelPos.y - viewport.h);
+	// }
+
+	SDL_Log("Center camera on (%f) with level of (pos,size):(%f,%f), viewport (x,y):(%f,%f)", position.x, levelPos.x, levelSize.x, viewport.x, viewport.y);
+
 }
 
 void Renderer::RenderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, const float scrollFactor) const
@@ -141,17 +149,20 @@ void Renderer::RenderCircularFade(float progress, SDL_FColor color)
 }
 
 void Renderer::RenderTexture(SDL_Texture &texture, const std::optional<SDL_FRect> srcRect,
-                             std::optional<SDL_FRect> dstRect, const bool flip) const
+							 std::optional<SDL_FRect> dstRect, const bool flip) const
 {
 	const SDL_FRect *srcPtr = srcRect ? &srcRect.value() : nullptr;
+	SDL_FRect localDst;
+
 	SDL_FRect *dstPtr = nullptr;
-
 	if (dstRect) {
-		dstRect.value().x -= viewport.x;
-		dstRect.value().y -= viewport.y;
-		dstPtr = &dstRect.value();
+		localDst = dstRect.value();
+		localDst.x -= viewport.x;
+		localDst.y -= viewport.y;
+		dstPtr = &localDst;
 	}
-	const SDL_FlipMode flipMode = flip ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
 
+	const SDL_FlipMode flipMode = flip ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
 	SDL_RenderTextureRotated(renderer.get(), &texture, srcPtr, dstPtr, 0, nullptr, flipMode);
 }
+

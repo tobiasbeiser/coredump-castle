@@ -32,8 +32,8 @@ void GameEngine::TransitionLevelState::Update(GameEngine &game, const float delt
 			progress = 1.0f;
 
 			game.registry.clearAll();
-			LevelFactory factory(game.registry, game.textureManager, nextLevelName, spawnPoint);
-			factory.CreateLevel();
+			// LevelFactory factory(game.registry, game.textureManager, nextLevelName, spawnPoint);
+			// factory.CreateLevel();
 			game.getState<PlayState>().currentLevelName = nextLevelName;
 
 			loadingDone = true;

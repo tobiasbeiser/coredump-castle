@@ -7,14 +7,19 @@
 #include "Engine/ECS/Systems/PhysicsSystem.hpp"
 #include "Engine/ECS/Systems/StateSystem.hpp"
 #include "Engine/GameEngine.hpp"
-#include "Game/Factories/LevelFactory.hpp"
-#include <time.h>
+#include "Game/Factories/WorldFactory.hpp"
+
 
 namespace GameEngine {
 
 void PlayState::Init(GameEngine &game)
 {
-	game.PushState(std::make_unique<TransitionLevelState>("MainHub", "Player"));
+	// game.PushState(std::make_unique<TransitionLevelState>("MainHub", "Player"));
+	const std::filesystem::path projectPath = "assets/tiled/CoredumpCastle.tiled-project";
+	auto factory = WorldFactory(game.registry, projectPath, game.textureManager);
+
+	const std::filesystem::path worldPath = "assets/tiled/coredumpCastle.world";
+	factory.CreateWorld(worldPath);
 }
 
 void PlayState::Cleanup() {}
@@ -46,7 +51,6 @@ void PlayState::Update(GameEngine &game, const float deltaTime)
 	ECS::Systems::StateSystem::Update(game.registry);
 	ECS::Systems::AnimationSystem::Update(game.registry, deltaTime);
 
-	
 	ECS::Systems::LevelTransitionData transitionData{history, currentLevelName};
 	ECS::Systems::InteractionSystem::Update(game, game.registry, transitionData);
 }

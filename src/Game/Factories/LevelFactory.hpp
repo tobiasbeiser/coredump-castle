@@ -6,20 +6,18 @@
 
 class LevelFactory {
   public:
-	LevelFactory(GameEngine::ECS::Registry &registry, TextureManager &textureManager, const std::string &levelFile,
-	             const std::string &spawnPoint = "Player");
-	void CreateLevel();
+	LevelFactory(GameEngine::ECS::Registry &registry, TextureManager &textureManager);
+	GameEngine::ECS::Entity CreateLevel(tson::Map& map, const glm::vec2& pos);
 
   private:
-	void LoadTiles(const tson::Layer &layer, const int layerIndex);
+	void LoadTiles(const tson::Layer &layer, const int layerIndex, const glm::vec2& levelPos);
 	void LoadBackground(tson::Layer &layer, const int layerIndex);
 	void CreateBackground(const fs::path &filename, const int layer, const float scrollSpeed = 0,
 	                      const float yOffset = 0, const bool repeatX = false);
-	void LoadLayer(tson::Layer &layer, int &layerIndex);
-	void LoadObjects(tson::Layer &layer, int layerIndex);
+	void LoadLayer(tson::Layer &layer, int &layerIndex, const glm::vec2 &levelPos);
+	void LoadObjects(tson::Layer &layer, int layerIndex, const glm::vec2 &levelPos);
 
 	const std::string levelFile;
-	const std::string spawnPoint;
 	int playerLayerIndex = 0;
 	glm::vec2 playerSpawnPosition = {0,0};
 	GameEngine::ECS::Registry &registry;

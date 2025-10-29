@@ -36,7 +36,7 @@ class Renderer {
 
 	void StartFrame(int red, int green, int blue, int alpha) const;
 	void EndFrame() const;
-	void CenterCameraOn(const glm::vec2 position, const glm::vec2 levelSize);
+	void CenterCameraOn(const glm::vec2 &position, const glm::vec2 &levelPos, const glm::vec2 &levelSize);
 
 	void Resize(Resolution newResolution);
 

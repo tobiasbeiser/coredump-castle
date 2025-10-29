@@ -4,7 +4,6 @@
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
-#include "Engine/ECS/Components/Render/AnimationComponent.hpp"
 #include "Engine/ECS/Components/Render/BackgroundComponent.hpp"
 #include "Engine/ECS/Components/Render/CenterCameraComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
@@ -86,18 +85,28 @@ class RenderSystem {
 		          [](const RenderItem &a, const RenderItem &b) { return a.Layer < b.Layer; });
 
 		auto centerCameraView = registry.view<PositionComponent, CenterCameraComponent, TileComponent>();
+
+		const int ccv_size = centerCameraView.size();
 		if (centerCameraView.size() == 1) {
 			const auto &centerCameraEntity = centerCameraView.at(0);
 			auto &pos = view.get<PositionComponent>(centerCameraEntity);
 			auto &tile = view.get<TileComponent>(centerCameraEntity);
 
-			auto levelView = registry.view<LevelComponent>();
-			if (levelView.size() == 1) {
-				auto &level = levelView.get<LevelComponent>(levelView.at(0));
-				renderer.CenterCameraOn((pos.position + tile.TileSize / 2), level.levelSize);
-			} else {
-				throw std::runtime_error("There must be exactly one entity with a LevelComponent to center the camera");
+			auto levelView = registry.view<LevelComponent, PositionComponent>();
+			for (auto entity : levelView) {
+				auto &level = levelView.get<LevelComponent>(entity);
+				auto &posLvl = levelView.get<PositionComponent>(entity);
+				const bool cameraObjInLevelPos =
+				    pos.position.x >= posLvl.position.x + tile.TileSize / 2 && pos.position.y >= posLvl.position.y;
+				const bool cameraObjInLevelSizeX =
+				    pos.position.x + tile.TileSize / 2 <= posLvl.position.x + level.levelSize.x;
+				const bool cameraObjInLevelSizeY = pos.position.y <= posLvl.position.y + level.levelSize.y;
+
+				if (cameraObjInLevelPos && cameraObjInLevelSizeX && cameraObjInLevelSizeY) {
+					renderer.CenterCameraOn((pos.position + tile.TileSize / 2), posLvl.position, level.levelSize);
+				}
 			}
+
 		} else if (centerCameraView.size() > 1) {
 			throw std::runtime_error("There cannot be more than on entity with a CenterCameraComponent");
 		}
