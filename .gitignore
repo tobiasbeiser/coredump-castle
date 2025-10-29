@@ -3,3 +3,4 @@ build
 /.idea
 *.tiled-session
 /vcpkg_installed
+/.vscode

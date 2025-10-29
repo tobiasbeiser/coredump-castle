@@ -3,8 +3,11 @@
     "sdl3",
     {
       "name": "sdl3-image",
-      "features": [ "png" ]
+      "features": [
+        "png"
+      ]
     },
-    "glm"
+    "glm",
+    "gtest"
   ]
 }
