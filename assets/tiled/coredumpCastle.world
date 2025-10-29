@@ -4,15 +4,15 @@
             "fileName": "maps/area1/level1.json",
             "height": 576,
             "width": 768,
-            "x": 1152,
-            "y": 384
+            "x": 928,
+            "y": 192
         },
         {
             "fileName": "maps/MainHub.json",
             "height": 960,
             "width": 1152,
-            "x": 0,
-            "y": 0
+            "x": -224,
+            "y": -192
         }
     ],
     "onlyShowAdjacentMaps": false,

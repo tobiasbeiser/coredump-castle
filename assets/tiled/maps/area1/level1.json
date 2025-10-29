@@ -3,6 +3,44 @@
  "infinite":false,
  "layers":[
         {
+         "id":7,
+         "layers":[
+                {
+                 "id":8,
+                 "image":"..\/..\/background\/layer_1.png",
+                 "imageheight":180,
+                 "imagewidth":320,
+                 "name":"BG",
+                 "opacity":1,
+                 "type":"imagelayer",
+                 "visible":true,
+                 "x":0,
+                 "y":0
+                }, 
+                {
+                 "id":9,
+                 "image":"..\/..\/background\/layer_2.png",
+                 "imageheight":131,
+                 "imagewidth":320,
+                 "name":"Parallax",
+                 "offsetx":0,
+                 "offsety":796,
+                 "opacity":1,
+                 "parallaxx":1.12,
+                 "repeatx":true,
+                 "type":"imagelayer",
+                 "visible":true,
+                 "x":0,
+                 "y":0
+                }],
+         "name":"Background",
+         "opacity":1,
+         "type":"group",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
          "data":[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -60,7 +98,7 @@
          "x":0,
          "y":0
         }],
- "nextlayerid":7,
+ "nextlayerid":10,
  "nextobjectid":3,
  "orientation":"orthogonal",
  "renderorder":"right-down",

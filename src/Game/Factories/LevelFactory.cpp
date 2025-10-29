@@ -42,7 +42,7 @@ void LevelFactory::LoadLayer(tson::Layer &layer, int &layerIndex, const glm::vec
 {
 	switch (layer.getType()) {
 	case tson::LayerType::ImageLayer:
-		LoadBackground(layer, layerIndex);
+		LoadBackground(layer, layerIndex, levelPos);
 		break;
 	case tson::LayerType::TileLayer:
 		LoadTiles(layer, layerIndex, levelPos);
@@ -99,14 +99,14 @@ void LevelFactory::LoadTiles(const tson::Layer &layer, const int layerIndex, con
 	}
 }
 
-void LevelFactory::LoadBackground(tson::Layer &layer, const int layerIndex)
+void LevelFactory::LoadBackground(tson::Layer &layer, const int layerIndex, const glm::vec2 &levelPos)
 {
 	std::string layername = layer.getName();
 	fs::path backgroundPath = layer.getImage();
 	backgroundPath = "assets/tiled/background" / backgroundPath.filename();
 	if (layer.hasRepeatX()) {
 		const float scrollSpeed = layer.getProp("scroll") ? layer.getProp("scroll")->getValue<float>() : 1;
-		CreateBackground(backgroundPath, layerIndex, scrollSpeed, layer.getOffset().y, true);
+		CreateBackground(backgroundPath, layerIndex, scrollSpeed, layer.getOffset().y+levelPos.y, true);
 	} else {
 		CreateBackground(backgroundPath, layerIndex);
 	}

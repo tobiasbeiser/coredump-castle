@@ -45,8 +45,15 @@ void PlayState::Update(GameEngine &game, const float deltaTime)
 
 	ECS::Systems::JumpSystem::Update(game.registry);
 	ECS::Systems::MovementSystem::Update(game.registry, deltaTime);
+	std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now();
 	ECS::Systems::PhysicsSystem::Update(game.registry, deltaTime);
+	std::chrono::high_resolution_clock::time_point time1 = std::chrono::high_resolution_clock::now();
 	ECS::Systems::CollisionSystem::Update(game.registry);
+	std::chrono::high_resolution_clock::time_point time2 = std::chrono::high_resolution_clock::now();
+
+	/*DebugSystem::Debug("Physics Time: "+ std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(time1 - now).count()) + "\n"+ 
+		"Collision Time: "
+	                   + std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count()));*/
 
 	ECS::Systems::StateSystem::Update(game.registry);
 	ECS::Systems::AnimationSystem::Update(game.registry, deltaTime);
@@ -57,6 +64,9 @@ void PlayState::Update(GameEngine &game, const float deltaTime)
 
 void PlayState::Render(GameEngine &game, const float alpha)
 {
+	//std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now();
 	renderSystem.Update(game.registry, alpha);
+	//std::chrono::high_resolution_clock::time_point time1 = std::chrono::high_resolution_clock::now();
+	//DebugSystem::Debug("Render Time: " + std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(time1 - now).count()));
 }
 } // namespace GameEngine

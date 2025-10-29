@@ -11,7 +11,7 @@ class LevelFactory {
 
   private:
 	void LoadTiles(const tson::Layer &layer, const int layerIndex, const glm::vec2& levelPos);
-	void LoadBackground(tson::Layer &layer, const int layerIndex);
+	void LoadBackground(tson::Layer &layer, const int layerIndex, const glm::vec2 &levelPos);
 	void CreateBackground(const fs::path &filename, const int layer, const float scrollSpeed = 0,
 	                      const float yOffset = 0, const bool repeatX = false);
 	void LoadLayer(tson::Layer &layer, int &layerIndex, const glm::vec2 &levelPos);

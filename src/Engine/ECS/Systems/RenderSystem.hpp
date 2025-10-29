@@ -58,10 +58,13 @@ class RenderSystem {
 			const SDL_FRect src{
 			    .x = tile.TileMapPosition.x, .y = tile.TileMapPosition.y, .w = tile.TileSize, .h = tile.TileSize};
 
-			SDL_FRect dst{.x = pos.previousPosition.x * (1 - alpha) + pos.position.x * alpha,
+			//non interpolation
+
+			SDL_FRect dst{.x = pos.position.x, .y = pos.position.y, .w = tile.TileSize, .h = tile.TileSize};
+			/*SDL_FRect dst{.x = pos.previousPosition.x * (1 - alpha) + pos.position.x * alpha,
 			              .y = pos.previousPosition.y * (1 - alpha) + pos.position.y * alpha,
 			              .w = tile.TileSize,
-			              .h = tile.TileSize};
+			              .h = tile.TileSize};*/
 
 			renderItems.push_back(RenderItem{.Layer = render.layer,
 			                                 .texture = tex.texture,
@@ -89,13 +92,13 @@ class RenderSystem {
 		const int ccv_size = centerCameraView.size();
 		if (centerCameraView.size() == 1) {
 			const auto &centerCameraEntity = centerCameraView.at(0);
-			auto &pos = view.get<PositionComponent>(centerCameraEntity);
-			auto &tile = view.get<TileComponent>(centerCameraEntity);
+			auto &pos = centerCameraView.get<PositionComponent>(centerCameraEntity);
+			auto &tile = centerCameraView.get<TileComponent>(centerCameraEntity);
 
 			auto levelView = registry.view<LevelComponent, PositionComponent>();
 			for (auto entity : levelView) {
-				auto &level = levelView.get<LevelComponent>(entity);
-				auto &posLvl = levelView.get<PositionComponent>(entity);
+				auto &level = view.get<LevelComponent>(entity);
+				auto &posLvl = view.get<PositionComponent>(entity);
 				const bool cameraObjInLevelPos =
 				    pos.position.x >= posLvl.position.x + tile.TileSize / 2 && pos.position.y >= posLvl.position.y;
 				const bool cameraObjInLevelSizeX =

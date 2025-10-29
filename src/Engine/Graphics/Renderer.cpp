@@ -84,21 +84,21 @@ void Renderer::CenterCameraOn(const glm::vec2 &position, const glm::vec2 &levelP
 	viewport.y = newViewportYCoordinate;
 
 
-	// if  (levelPos.x + levelSize.x <= viewport.w) {
-	// 	// Level is smaller than viewport -> center level horizontally
-	// 	viewport.x = (levelPos.x + levelSize.x   - viewport.w) / 2.0f;
-	// } else {
-	// 	viewport.x = std::clamp(newViewportXCoordinate, levelPos.x, levelSize.x + levelPos.x - viewport.w);
-	// }
-	//
-	// if (levelPos.y + levelSize.y <= viewport.h) {
-	// 	// Level is smaller than viewport -> center level vertically
-	// 	viewport.y = (levelPos.y + levelSize.y - viewport.h) / 2.0f;
-	// } else {
-	// 	// viewport.y = std::clamp(newViewportYCoordinate, levelPos.y, levelSize.y + levelPos.y - viewport.h);
-	// }
+	 if  (levelPos.x + levelSize.x <= viewport.w) {
+	 	// Level is smaller than viewport -> center level horizontally
+	 	viewport.x = (levelPos.x + levelSize.x   - viewport.w) / 2.0f;
+	 } else {
+	 	viewport.x = std::clamp(newViewportXCoordinate, levelPos.x, levelSize.x + levelPos.x - viewport.w);
+	 }
+	
+	 if (levelPos.y + levelSize.y <= viewport.h) {
+	 	// Level is smaller than viewport -> center level vertically
+	 	viewport.y = (levelPos.y + levelSize.y - viewport.h) / 2.0f;
+	 } else {
+	 	 viewport.y = std::clamp(newViewportYCoordinate, levelPos.y, levelSize.y + levelPos.y - viewport.h);
+	 }
 
-	SDL_Log("Center camera on (%f) with level of (pos,size):(%f,%f), viewport (x,y):(%f,%f)", position.x, levelPos.x, levelSize.x, viewport.x, viewport.y);
+	//SDL_Log("Center camera on (%f) with level of (pos,size):(%f,%f), viewport (x,y):(%f,%f)", position.x, levelPos.x, levelSize.x, viewport.x, viewport.y);
 
 }
 

@@ -3,7 +3,7 @@
 #include <vector>
 
 struct DebugRenderOptions {
-	bool showBoundingBoxes = true;
+	bool showBoundingBoxes = false;
 };
 
 struct DebugPlayerOptions {
