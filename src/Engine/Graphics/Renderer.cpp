@@ -2,6 +2,7 @@
 #include "Engine/DebugSystem.hpp"
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
+#include <algorithm>
 #include <cmath>
 #include <numbers>
 #include <stdexcept>
@@ -83,23 +84,22 @@ void Renderer::CenterCameraOn(const glm::vec2 &position, const glm::vec2 &levelP
 	viewport.x = newViewportXCoordinate;
 	viewport.y = newViewportYCoordinate;
 
+	if (levelPos.x + levelSize.x <= viewport.w) {
+		// Level is smaller than viewport -> center level horizontally
+		viewport.x = (levelPos.x + levelSize.x - viewport.w) / 2.0f;
+	} else {
+		viewport.x = std::clamp(newViewportXCoordinate, levelPos.x, levelSize.x + levelPos.x - viewport.w);
+	}
 
-	 if  (levelPos.x + levelSize.x <= viewport.w) {
-	 	// Level is smaller than viewport -> center level horizontally
-	 	viewport.x = (levelPos.x + levelSize.x   - viewport.w) / 2.0f;
-	 } else {
-	 	viewport.x = std::clamp(newViewportXCoordinate, levelPos.x, levelSize.x + levelPos.x - viewport.w);
-	 }
-	
-	 if (levelPos.y + levelSize.y <= viewport.h) {
-	 	// Level is smaller than viewport -> center level vertically
-	 	viewport.y = (levelPos.y + levelSize.y - viewport.h) / 2.0f;
-	 } else {
-	 	 viewport.y = std::clamp(newViewportYCoordinate, levelPos.y, levelSize.y + levelPos.y - viewport.h);
-	 }
+	if (levelPos.y + levelSize.y <= viewport.h) {
+		// Level is smaller than viewport -> center level vertically
+		viewport.y = (levelPos.y + levelSize.y - viewport.h) / 2.0f;
+	} else {
+		viewport.y = std::clamp(newViewportYCoordinate, levelPos.y, levelSize.y + levelPos.y - viewport.h);
+	}
 
-	//SDL_Log("Center camera on (%f) with level of (pos,size):(%f,%f), viewport (x,y):(%f,%f)", position.x, levelPos.x, levelSize.x, viewport.x, viewport.y);
-
+	// SDL_Log("Center camera on (%f) with level of (pos,size):(%f,%f), viewport (x,y):(%f,%f)", position.x, levelPos.x,
+	// levelSize.x, viewport.x, viewport.y);
 }
 
 void Renderer::RenderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, const float scrollFactor) const
@@ -149,7 +149,7 @@ void Renderer::RenderCircularFade(float progress, SDL_FColor color)
 }
 
 void Renderer::RenderTexture(SDL_Texture &texture, const std::optional<SDL_FRect> srcRect,
-							 std::optional<SDL_FRect> dstRect, const bool flip) const
+                             std::optional<SDL_FRect> dstRect, const bool flip) const
 {
 	const SDL_FRect *srcPtr = srcRect ? &srcRect.value() : nullptr;
 	SDL_FRect localDst;
@@ -165,4 +165,3 @@ void Renderer::RenderTexture(SDL_Texture &texture, const std::optional<SDL_FRect
 	const SDL_FlipMode flipMode = flip ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
 	SDL_RenderTextureRotated(renderer.get(), &texture, srcPtr, dstPtr, 0, nullptr, flipMode);
 }
-

@@ -1,5 +1,6 @@
 #pragma once
 #include "../Utils/Timer.hpp"
+#include <algorithm>
 
 class Animation {
 	Timer timer;
