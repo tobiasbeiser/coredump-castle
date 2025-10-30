@@ -17,7 +17,8 @@ class Animation {
 		if (!loop && t >= timer.getLength()) {
 			return frameCount - 1;
 		}
-		return static_cast<int>((t / timer.getLength()) * frameCount);
+		auto res = static_cast<int>((t / timer.getLength()) * frameCount);
+		return std::clamp(res, 0, frameCount);
 	}
 
 	void step(float deltaTime) { timer.step(deltaTime, loop); }

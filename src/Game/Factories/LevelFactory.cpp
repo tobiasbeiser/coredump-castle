@@ -80,9 +80,7 @@ void LevelFactory::LoadTiles(const tson::Layer &layer, const int layerIndex, con
 			if (tile->getTileset()->getType() == tson::TilesetType::ImageTileset) {
 				imagePath = tile->getTileset()->getFullImagePath();
 			} else {
-				fs::path basePath = "assets/tiled/tilesets/";
-				auto image = tile->getImage();
-				imagePath = basePath / image;
+				imagePath = basePath / tile->getImage();
 			}
 
 			auto entity = registry.create();
@@ -98,7 +96,7 @@ void LevelFactory::LoadTiles(const tson::Layer &layer, const int layerIndex, con
 			registry.register_component(entity, position_component);
 
 			if (tile->getAnimation().any()) {
-				auto &animation = tile->getAnimation();
+				LoadAnimation(tile, entity);
 			}
 
 			if (tile->getProp("collidable")) {
@@ -116,6 +114,29 @@ void LevelFactory::LoadTiles(const tson::Layer &layer, const int layerIndex, con
 			}
 		}
 	}
+}
+
+void LevelFactory::LoadAnimation(tson::Tile *const &tile, GameEngine::ECS::Entity entity)
+{
+	const glm::ivec2 imageSize = glm::ivec2(tile->getImageSize().x, tile->getImageSize().y);
+
+	auto &animation = tile->getAnimation();
+	int framesCount = animation.size();
+	auto tileset = tile->getTileset();
+
+	AnimationComponent animComp;
+	animComp.animations.push_back(Animation(framesCount, 0.1f * framesCount)); // textures have frame duration of 0.1s
+
+	std::vector<AnimationFrame> frames;
+	for (auto frame : animation.getFrames()) {
+		AnimationFrame animFrame;
+		animFrame.texture = &textureManager.GetTexture(basePath / tileset->getTile(frame.getTileId())->getImage());
+		animFrame.TileMapPosition = glm::ivec2{0, 0};
+		animFrame.TileSize = imageSize;
+		frames.push_back(animFrame);
+	}
+	animComp.frames.push_back(frames);
+	registry.register_component(entity, animComp);
 }
 
 void LevelFactory::LoadBackground(tson::Layer &layer, const int layerIndex, const glm::vec2 &levelPos)

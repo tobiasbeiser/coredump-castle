@@ -22,9 +22,8 @@ class RenderSystem {
 	{
 		renderItems.clear();
 		// Backgrounds
-		auto bgView = registry.view<SpriteComponent, RenderComponent, BackgroundComponent>();
+		auto bgView = registry.view<RenderComponent, BackgroundComponent>();
 		for (auto entity : bgView) {
-			auto &tex = bgView.get<SpriteComponent>(entity);
 			auto &render = bgView.get<RenderComponent>(entity);
 			auto &bg = bgView.get<BackgroundComponent>(entity);
 
@@ -34,11 +33,11 @@ class RenderSystem {
 			const SDL_FRect *src = nullptr;
 			SDL_FRect *dst = nullptr;
 			if (bg.repeatX) {
-				dstOpt = SDL_FRect{.y = bg.yOffset, .h = static_cast<float>(tex.texture->h)};
+				dstOpt = SDL_FRect{.y = bg.yOffset, .h = static_cast<float>(bg.texture->h)};
 			}
 
 			renderItems.push_back(RenderItem{.Layer = render.layer,
-			                                 .texture = tex.texture,
+			                                 .texture = bg.texture,
 			                                 .src = srcOpt,
 			                                 .dst = dstOpt,
 			                                 .parallax = bg.repeatX,
@@ -53,14 +52,17 @@ class RenderSystem {
 			auto &sprite = view.get<SpriteComponent>(entity);
 			auto &render = view.get<RenderComponent>(entity);
 
-			const SDL_FRect src{.x = sprite.TileMapPosition.x,
-			                    .y = sprite.TileMapPosition.y,
-			                    .w = sprite.TileSize.x,
-			                    .h = sprite.TileSize.y};
+			const SDL_FRect src{.x = static_cast<float>(sprite.TileMapPosition.x),
+			                    .y = static_cast<float>(sprite.TileMapPosition.y),
+			                    .w = static_cast<float>(sprite.TileSize.x),
+			                    .h = static_cast<float>(sprite.TileSize.y)};
 
 			// non interpolation
 
-			SDL_FRect dst{.x = pos.position.x, .y = pos.position.y, .w = sprite.TileSize.x, .h = sprite.TileSize.y};
+			SDL_FRect dst{.x = pos.position.x,
+			              .y = pos.position.y,
+			              .w = static_cast<float>(sprite.TileSize.x),
+			              .h = static_cast<float>(sprite.TileSize.y)};
 			/*SDL_FRect dst{.x = pos.previousPosition.x * (1 - alpha) + pos.position.x * alpha,
 			              .y = pos.previousPosition.y * (1 - alpha) + pos.position.y * alpha,
 			              .w = tile.TileSize,

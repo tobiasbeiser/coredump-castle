@@ -36,23 +36,25 @@ struct PlayerFactory {
 		                                               .TileMapPosition = {0, 0}});
 		registry.register_component(e, CenterCameraComponent{});
 
-		AnimationComponent playerAnim{
-		    .animations =
-		        std::vector<Animation>{
-		            Animation(6, 0.6f),        // Idle
-		            Animation(6, 0.6f),        // Attack
-		            Animation(8, 0.8f),        // Walking
-		            Animation(8, 0.4f, false), // Jumping
-		            Animation(8, 0.4f, false)  // Falling
-		        },
-		};
-		playerAnim.stateToAnimationIndex = {{States::Idle, 0},
-		                                    {States::Attacking, 1},
-		                                    {States::Walking, 2},
-		                                    {States::Jumping, 3},
-		                                    {States::Falling, 4}};
+		AnimationComponent playerAnim{};
 
-		registry.register_component(e, std::move(playerAnim));
+		playerAnim.addAnimationFromSpritesheet(States::Idle, 6, 0.6f, &texMgr.GetTexture(texturePath.string()),
+		                                       {56, 56}, {0, 0});
+
+		playerAnim.addAnimationFromSpritesheet(States::Attacking, 6, 0.6f, &texMgr.GetTexture(texturePath.string()),
+		                                       {56, 56}, {0, 56});
+
+		playerAnim.addAnimationFromSpritesheet(States::Walking, 8, 0.8f, &texMgr.GetTexture(texturePath.string()),
+		                                       {56, 56}, {0, 112});
+
+		playerAnim.addAnimationFromSpritesheet(States::Jumping, 8, 0.4f, &texMgr.GetTexture(texturePath.string()),
+		                                       {56, 56}, {0, 168});
+
+		playerAnim.addAnimationFromSpritesheet(States::Falling, 8, 0.4f, &texMgr.GetTexture(texturePath.string()),
+		                                       {56, 56}, {0, 224});
+
+		registry.register_component(e, playerAnim);
+
 		registry.register_component(e, StateComponent{States::Idle});
 		registry.register_component(e, InputComponent{});
 		registry.register_component(e, MovementComponent{});
