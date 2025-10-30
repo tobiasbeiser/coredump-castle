@@ -12,9 +12,7 @@
 #include "Engine/ECS/Components/Render/AnimationComponent.hpp"
 #include "Engine/ECS/Components/Render/CenterCameraComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
-#include "Engine/ECS/Components/Render/TextureComponent.hpp"
-#include "Engine/ECS/Components/Render/TileComponent.hpp"
-#include "Engine/ECS/Components/Render/CenterCameraComponent.hpp"
+#include "Engine/ECS/Components/Render/SpriteComponent.hpp"
 
 #include "Engine/ECS/Components/Physics/GravityComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
@@ -32,9 +30,10 @@ struct PlayerFactory {
 		registry.register_component(e, GroundedComponent{});
 		registry.register_component(e, CollisionComponent{19, 25, 21, 32});
 
-		registry.register_component(e, TextureComponent{&texMgr.GetTexture(texturePath.string())});
 		registry.register_component(e, RenderComponent{.layer = layerIndex, .flipX = false});
-		registry.register_component(e, TileComponent{.TileSize = {56,56}, .TileMapPosition = {0, 0}});
+		registry.register_component(e, SpriteComponent{.texture = &texMgr.GetTexture(texturePath.string()),
+		                                               .TileSize = {56, 56},
+		                                               .TileMapPosition = {0, 0}});
 		registry.register_component(e, CenterCameraComponent{});
 
 		AnimationComponent playerAnim{

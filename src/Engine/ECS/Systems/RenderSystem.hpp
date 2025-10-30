@@ -7,8 +7,7 @@
 #include "Engine/ECS/Components/Render/BackgroundComponent.hpp"
 #include "Engine/ECS/Components/Render/CenterCameraComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
-#include "Engine/ECS/Components/Render/TextureComponent.hpp"
-#include "Engine/ECS/Components/Render/TileComponent.hpp"
+#include "Engine/ECS/Components/Render/SpriteComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
 #include "Engine/Graphics/Renderer.hpp"
@@ -23,9 +22,9 @@ class RenderSystem {
 	{
 		renderItems.clear();
 		// Backgrounds
-		auto bgView = registry.view<TextureComponent, RenderComponent, BackgroundComponent>();
+		auto bgView = registry.view<SpriteComponent, RenderComponent, BackgroundComponent>();
 		for (auto entity : bgView) {
-			auto &tex = bgView.get<TextureComponent>(entity);
+			auto &tex = bgView.get<SpriteComponent>(entity);
 			auto &render = bgView.get<RenderComponent>(entity);
 			auto &bg = bgView.get<BackgroundComponent>(entity);
 
@@ -48,26 +47,27 @@ class RenderSystem {
 		}
 
 		// Tiles, Player
-		auto view = registry.view<PositionComponent, TextureComponent, TileComponent, RenderComponent>();
+		auto view = registry.view<PositionComponent, SpriteComponent, RenderComponent>();
 		for (auto entity : view) {
 			auto &pos = view.get<PositionComponent>(entity);
-			auto &tex = view.get<TextureComponent>(entity);
-			auto &tile = view.get<TileComponent>(entity);
+			auto &sprite = view.get<SpriteComponent>(entity);
 			auto &render = view.get<RenderComponent>(entity);
 
-			const SDL_FRect src{
-			    .x = tile.TileMapPosition.x, .y = tile.TileMapPosition.y, .w = tile.TileSize.x, .h = tile.TileSize.y};
+			const SDL_FRect src{.x = sprite.TileMapPosition.x,
+			                    .y = sprite.TileMapPosition.y,
+			                    .w = sprite.TileSize.x,
+			                    .h = sprite.TileSize.y};
 
 			// non interpolation
 
-			SDL_FRect dst{.x = pos.position.x, .y = pos.position.y, .w = tile.TileSize.x, .h = tile.TileSize.y};
+			SDL_FRect dst{.x = pos.position.x, .y = pos.position.y, .w = sprite.TileSize.x, .h = sprite.TileSize.y};
 			/*SDL_FRect dst{.x = pos.previousPosition.x * (1 - alpha) + pos.position.x * alpha,
 			              .y = pos.previousPosition.y * (1 - alpha) + pos.position.y * alpha,
 			              .w = tile.TileSize,
 			              .h = tile.TileSize};*/
 
 			renderItems.push_back(RenderItem{.Layer = render.layer,
-			                                 .texture = tex.texture,
+			                                 .texture = sprite.texture,
 			                                 .src = src,
 			                                 .dst = dst,
 			                                 .parallax = false,
@@ -87,13 +87,13 @@ class RenderSystem {
 		std::sort(renderItems.begin(), renderItems.end(),
 		          [](const RenderItem &a, const RenderItem &b) { return a.Layer < b.Layer; });
 
-		auto centerCameraView = registry.view<PositionComponent, CenterCameraComponent, TileComponent>();
+		auto centerCameraView = registry.view<PositionComponent, CenterCameraComponent, SpriteComponent>();
 
 		const int ccv_size = centerCameraView.size();
 		if (centerCameraView.size() == 1) {
 			const auto &centerCameraEntity = centerCameraView.at(0);
 			auto &pos = centerCameraView.get<PositionComponent>(centerCameraEntity);
-			auto &tile = centerCameraView.get<TileComponent>(centerCameraEntity);
+			auto &tile = centerCameraView.get<SpriteComponent>(centerCameraEntity);
 
 			auto levelView = registry.view<LevelComponent, PositionComponent>();
 			for (auto entity : levelView) {
@@ -106,7 +106,8 @@ class RenderSystem {
 				const bool cameraObjInLevelSizeY = pos.position.y <= posLvl.position.y + level.levelSize.y;
 
 				if (cameraObjInLevelPos && cameraObjInLevelSizeX && cameraObjInLevelSizeY) {
-					renderer.CenterCameraOn((pos.position + tile.TileSize.x / 2), posLvl.position, level.levelSize);
+					renderer.CenterCameraOn((pos.position + static_cast<glm::vec2>(tile.TileSize / 2)), posLvl.position,
+					                        level.levelSize);
 				}
 			}
 

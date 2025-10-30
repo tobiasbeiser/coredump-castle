@@ -2,6 +2,7 @@
 
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Render/AnimationComponent.hpp"
+#include "Engine/ECS/Components/Render/SpriteComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include <SDL3/SDL.h>
 
@@ -10,10 +11,10 @@ class AnimationSystem {
   public:
 	static void Update(Registry &registry, float stepSize)
 	{
-		auto view = registry.view<AnimationComponent, TileComponent>();
+		auto view = registry.view<AnimationComponent, SpriteComponent>();
 		for (auto entity : view) {
 			auto &anim = view.get<AnimationComponent>(entity);
-			auto &tile = view.get<TileComponent>(entity);
+			auto &tile = view.get<SpriteComponent>(entity);
 
 			if (registry.has<StateComponent>(entity)) {
 				anim.previousAnimation = anim.currentAnimation;

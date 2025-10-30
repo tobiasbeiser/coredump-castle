@@ -4,8 +4,7 @@
 #include "Engine/ECS/Components/Gameplay/InteractionComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Render/BackgroundComponent.hpp"
-#include "Engine/ECS/Components/Render/TextureComponent.hpp"
-#include "Engine/ECS/Components/Render/TileComponent.hpp"
+#include "Engine/ECS/Components/Render/SpriteComponent.hpp"
 #include "Game/Factories/PlayerFactory.hpp"
 #include <glm/vec2.hpp>
 
@@ -89,22 +88,18 @@ void LevelFactory::LoadTiles(const tson::Layer &layer, const int layerIndex, con
 			auto entity = registry.create();
 			registry.register_component(
 			    entity,
-			    TileComponent{.TileSize = {static_cast<float>(imageSize.x), static_cast<float>(imageSize.y)},
-			                  .TileMapPosition = {static_cast<float>(rectSrc.x), static_cast<float>(rectSrc.y)}});
-			registry.register_component(entity, TextureComponent{&textureManager.GetTexture(imagePath)});
+			    SpriteComponent{.texture = &textureManager.GetTexture(imagePath),
+			                    .TileSize = {static_cast<float>(imageSize.x), static_cast<float>(imageSize.y)},
+			                    .TileMapPosition = {static_cast<float>(rectSrc.x), static_cast<float>(rectSrc.y)}});
 			registry.register_component(entity, RenderComponent{.layer = layerIndex});
 			auto position_component = PositionComponent{position * tileSize};
 			position_component.position += offset;
 			position_component.position += levelPos;
 			registry.register_component(entity, position_component);
 
-
-
 			if (tile->getAnimation().any()) {
 				auto &animation = tile->getAnimation();
-
 			}
-
 
 			if (tile->getProp("collidable")) {
 				auto collisionBoxes = tile->getObjectgroup().getObjectsByType(tson::ObjectType::Rectangle);
@@ -140,10 +135,10 @@ void LevelFactory::CreateBackground(const fs::path &filename, const int layer, c
                                     const float yOffset, const bool repeatX)
 {
 	auto entity = registry.create();
-	registry.register_component<TextureComponent>(entity,
-	                                              TextureComponent{&textureManager.GetTexture(filename.string())});
-	registry.register_component(
-	    entity, BackgroundComponent{.scrollingSpeed = scrollSpeed, .yOffset = yOffset, .repeatX = repeatX});
+	registry.register_component(entity, BackgroundComponent{.texture = &textureManager.GetTexture(filename.string()),
+	                                                        .scrollingSpeed = scrollSpeed,
+	                                                        .yOffset = yOffset,
+	                                                        .repeatX = repeatX});
 	registry.register_component(entity, RenderComponent{.layer = layer, .flipX = false});
 }
 
