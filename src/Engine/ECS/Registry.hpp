@@ -17,12 +17,12 @@ class Registry {
 	template <typename T>
 	ComponentStorage<T> &get_storage()
 	{
-		const auto id = std::type_index(typeid(T));
-		if (!storagePools.count(id)) {
-			storagePools[id] = std::make_unique<StorageWrapper<T>>();
+		static const std::type_index id = std::type_index(typeid(T)); // cached once
+		auto it = storagePools.find(id);
+		if (it == storagePools.end()) {
+			it = storagePools.emplace(id, std::make_unique<StorageWrapper<T>>()).first;
 		}
-
-		return static_cast<StorageWrapper<T> *>(storagePools[id].get())->storage;
+		return static_cast<StorageWrapper<T> *>(it->second.get())->storage;
 	}
 
 	void clearAll() { storagePools.clear(); }

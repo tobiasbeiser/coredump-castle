@@ -32,8 +32,8 @@ class AnimationSystem {
 				animation.step(stepSize);
 
 				// Update tile map position based on current animation frame
-				tile.TileMapPosition.x = anim.animations.at(anim.currentAnimation).currentFrame() * tile.TileSize;
-				tile.TileMapPosition.y = anim.currentAnimation * tile.TileSize;
+				tile.TileMapPosition.x = anim.animations.at(anim.currentAnimation).currentFrame() * tile.TileSize.x;
+				tile.TileMapPosition.y = anim.currentAnimation * tile.TileSize.y;
 			}
 		}
 	}

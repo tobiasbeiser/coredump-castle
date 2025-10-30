@@ -34,7 +34,7 @@ struct PlayerFactory {
 
 		registry.register_component(e, TextureComponent{&texMgr.GetTexture(texturePath.string())});
 		registry.register_component(e, RenderComponent{.layer = layerIndex, .flipX = false});
-		registry.register_component(e, TileComponent{.TileSize = 56, .TileMapPosition = {0, 0}});
+		registry.register_component(e, TileComponent{.TileSize = {56,56}, .TileMapPosition = {0, 0}});
 		registry.register_component(e, CenterCameraComponent{});
 
 		AnimationComponent playerAnim{

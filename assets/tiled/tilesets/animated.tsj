@@ -2,17 +2,22 @@
  "fillmode":"preserve-aspect-fit",
  "grid":
     {
-     "height":1,
+     "height":32,
      "orientation":"orthogonal",
-     "width":1
+     "width":32
     },
  "margin":0,
  "name":"animated",
+ "objectalignment":"center",
  "spacing":0,
- "tilecount":97,
+ "tilecount":93,
  "tiledversion":"1.11.2",
  "tileheight":74,
- "tilerendersize":"grid",
+ "tileoffset":
+    {
+     "x":12,
+     "y":0
+    },
  "tiles":[
         {
          "animation":[
@@ -76,12 +81,6 @@
          "imagewidth":8
         }, 
         {
-         "id":13,
-         "image":"animated\/torch_small_background.png",
-         "imageheight":41,
-         "imagewidth":25
-        }, 
-        {
          "animation":[
                 {
                  "duration":100,
@@ -141,12 +140,6 @@
          "image":"animated\/torch_small_blue_6.png",
          "imageheight":40,
          "imagewidth":8
-        }, 
-        {
-         "id":89,
-         "image":"animated\/torch_small_blue_background.png",
-         "imageheight":41,
-         "imagewidth":25
         }, 
         {
          "animation":[
@@ -210,12 +203,6 @@
          "imagewidth":13
         }, 
         {
-         "id":32,
-         "image":"animated\/torch_big_background.png",
-         "imageheight":57,
-         "imagewidth":41
-        }, 
-        {
          "animation":[
                 {
                  "duration":100,
@@ -275,12 +262,6 @@
          "image":"animated\/torch_big_blue_6.png",
          "imageheight":42,
          "imagewidth":13
-        }, 
-        {
-         "id":33,
-         "image":"animated\/torch_big_blue_background.png",
-         "imageheight":57,
-         "imagewidth":41
         }, 
         {
          "id":26,

@@ -56,11 +56,11 @@ class RenderSystem {
 			auto &render = view.get<RenderComponent>(entity);
 
 			const SDL_FRect src{
-			    .x = tile.TileMapPosition.x, .y = tile.TileMapPosition.y, .w = tile.TileSize, .h = tile.TileSize};
+			    .x = tile.TileMapPosition.x, .y = tile.TileMapPosition.y, .w = tile.TileSize.x, .h = tile.TileSize.y};
 
-			//non interpolation
+			// non interpolation
 
-			SDL_FRect dst{.x = pos.position.x, .y = pos.position.y, .w = tile.TileSize, .h = tile.TileSize};
+			SDL_FRect dst{.x = pos.position.x, .y = pos.position.y, .w = tile.TileSize.x, .h = tile.TileSize.y};
 			/*SDL_FRect dst{.x = pos.previousPosition.x * (1 - alpha) + pos.position.x * alpha,
 			              .y = pos.previousPosition.y * (1 - alpha) + pos.position.y * alpha,
 			              .w = tile.TileSize,
@@ -100,13 +100,13 @@ class RenderSystem {
 				auto &level = view.get<LevelComponent>(entity);
 				auto &posLvl = view.get<PositionComponent>(entity);
 				const bool cameraObjInLevelPos =
-				    pos.position.x >= posLvl.position.x + tile.TileSize / 2 && pos.position.y >= posLvl.position.y;
+				    pos.position.x >= posLvl.position.x + tile.TileSize.x / 2 && pos.position.y >= posLvl.position.y;
 				const bool cameraObjInLevelSizeX =
-				    pos.position.x + tile.TileSize / 2 <= posLvl.position.x + level.levelSize.x;
+				    pos.position.x + tile.TileSize.x / 2 <= posLvl.position.x + level.levelSize.x;
 				const bool cameraObjInLevelSizeY = pos.position.y <= posLvl.position.y + level.levelSize.y;
 
 				if (cameraObjInLevelPos && cameraObjInLevelSizeX && cameraObjInLevelSizeY) {
-					renderer.CenterCameraOn((pos.position + tile.TileSize / 2), posLvl.position, level.levelSize);
+					renderer.CenterCameraOn((pos.position + tile.TileSize.x / 2), posLvl.position, level.levelSize);
 				}
 			}
 

@@ -68,19 +68,43 @@ void LevelFactory::LoadTiles(const tson::Layer &layer, const int layerIndex, con
 		if (tile != nullptr) {
 			const glm::ivec2 position = glm::ivec2(std::get<0>(tilePos), std::get<1>(tilePos));
 			const glm::ivec2 tileSize = glm::ivec2(tile->getTileSize().x, tile->getTileSize().y);
+			glm::ivec2 imageSize = glm::ivec2(tile->getImageSize().x, tile->getImageSize().y);
+			const glm::ivec2 offset =
+			    glm::ivec2(tile->getTileset()->getTileOffset().x, tile->getTileset()->getTileOffset().y);
 			const tson::Rect rectSrc = tile->getDrawingRect();
-			const fs::path imagePath = "assets/tiled/tilesets" / tile->getTileset()->getFullImagePath().filename();
+
+			if (imageSize.x == 0 && imageSize.y == 0) {
+				imageSize = tileSize;
+			}
+
+			fs::path imagePath;
+			if (tile->getTileset()->getType() == tson::TilesetType::ImageTileset) {
+				imagePath = tile->getTileset()->getFullImagePath();
+			} else {
+				fs::path basePath = "assets/tiled/tilesets/";
+				auto image = tile->getImage();
+				imagePath = basePath / image;
+			}
 
 			auto entity = registry.create();
-			registry.register_component(entity,
-			                            TileComponent{.TileSize = static_cast<float>(tileSize.x),
-			                                          .TileMapPosition = {(rectSrc.x / rectSrc.width) * tileSize.x,
-			                                                              (rectSrc.y / rectSrc.height) * tileSize.y}});
+			registry.register_component(
+			    entity,
+			    TileComponent{.TileSize = {static_cast<float>(imageSize.x), static_cast<float>(imageSize.y)},
+			                  .TileMapPosition = {static_cast<float>(rectSrc.x), static_cast<float>(rectSrc.y)}});
 			registry.register_component(entity, TextureComponent{&textureManager.GetTexture(imagePath)});
 			registry.register_component(entity, RenderComponent{.layer = layerIndex});
 			auto position_component = PositionComponent{position * tileSize};
+			position_component.position += offset;
 			position_component.position += levelPos;
 			registry.register_component(entity, position_component);
+
+
+
+			if (tile->getAnimation().any()) {
+				auto &animation = tile->getAnimation();
+
+			}
+
 
 			if (tile->getProp("collidable")) {
 				auto collisionBoxes = tile->getObjectgroup().getObjectsByType(tson::ObjectType::Rectangle);
@@ -106,7 +130,7 @@ void LevelFactory::LoadBackground(tson::Layer &layer, const int layerIndex, cons
 	backgroundPath = "assets/tiled/background" / backgroundPath.filename();
 	if (layer.hasRepeatX()) {
 		const float scrollSpeed = layer.getProp("scroll") ? layer.getProp("scroll")->getValue<float>() : 1;
-		CreateBackground(backgroundPath, layerIndex, scrollSpeed, layer.getOffset().y+levelPos.y, true);
+		CreateBackground(backgroundPath, layerIndex, scrollSpeed, layer.getOffset().y + levelPos.y, true);
 	} else {
 		CreateBackground(backgroundPath, layerIndex);
 	}
