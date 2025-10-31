@@ -13,6 +13,6 @@ class ComponentStorage {
 
 	bool contains_component(Entity entity) const { return components.find(entity) != components.end(); }
 
-	T &get_component(Entity entity) { return components.at(entity); }
+	T &get_component(Entity entity) { return components[entity]; }
 };
 } // namespace GameEngine::ECS

@@ -2,6 +2,9 @@
 #include "Engine/DebugSystem.hpp"
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
+#include <algorithm>
+#include <cmath>
+#include <numbers>
 #include <stdexcept>
 
 Renderer::Renderer(const std::string &title, Resolution resolution) : currentResolution(resolution)
@@ -10,7 +13,8 @@ Renderer::Renderer(const std::string &title, Resolution resolution) : currentRes
 		throw std::runtime_error(SDL_GetError());
 	}
 
-	window.reset(SDL_CreateWindow(title.c_str(), currentResolution.width, currentResolution.height, SDL_WINDOW_RESIZABLE));
+	window.reset(
+	    SDL_CreateWindow(title.c_str(), currentResolution.width, currentResolution.height, SDL_WINDOW_RESIZABLE));
 	if (!window)
 		throw std::runtime_error(SDL_GetError());
 
@@ -18,7 +22,8 @@ Renderer::Renderer(const std::string &title, Resolution resolution) : currentRes
 	if (!renderer)
 		throw std::runtime_error(SDL_GetError());
 
-	SDL_SetRenderLogicalPresentation(renderer.get(), logW, logH, SDL_LOGICAL_PRESENTATION_LETTERBOX);
+	SDL_SetRenderLogicalPresentation(renderer.get(), logicalResolution.width, logicalResolution.height,
+	                                 SDL_LOGICAL_PRESENTATION_LETTERBOX);
 
 	SDL_SetRenderVSync(renderer.get(), 1);
 }
@@ -71,11 +76,30 @@ void Renderer::EndFrame() const
 	SDL_RenderPresent(renderer.get());
 }
 
-void Renderer::CenterCameraOn(const float positionX)
+void Renderer::CenterCameraOn(const glm::vec2 &position, const glm::vec2 &levelPos, const glm::vec2 &levelSize)
 {
-	const float newCenter = positionX - (viewport.w / 2);
-	const int tileSize = 32;
-	viewport.x = newCenter > tileSize ? newCenter : tileSize;
+	const float newViewportXCoordinate = position.x - (viewport.w / 2.0f);
+	const float newViewportYCoordinate = position.y - (viewport.h / 2.0f);
+
+	viewport.x = newViewportXCoordinate;
+	viewport.y = newViewportYCoordinate;
+
+	if (levelPos.x + levelSize.x <= viewport.w) {
+		// Level is smaller than viewport -> center level horizontally
+		viewport.x = (levelPos.x + levelSize.x - viewport.w) / 2.0f;
+	} else {
+		viewport.x = std::clamp(newViewportXCoordinate, levelPos.x, levelSize.x + levelPos.x - viewport.w);
+	}
+
+	if (levelPos.y + levelSize.y <= viewport.h) {
+		// Level is smaller than viewport -> center level vertically
+		viewport.y = (levelPos.y + levelSize.y - viewport.h) / 2.0f;
+	} else {
+		viewport.y = std::clamp(newViewportYCoordinate, levelPos.y, levelSize.y + levelPos.y - viewport.h);
+	}
+
+	// SDL_Log("Center camera on (%f) with level of (pos,size):(%f,%f), viewport (x,y):(%f,%f)", position.x, levelPos.x,
+	// levelSize.x, viewport.x, viewport.y);
 }
 
 void Renderer::RenderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, const float scrollFactor) const
@@ -83,21 +107,61 @@ void Renderer::RenderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, cons
 	const float repetitions = 5.0f;
 	dstRect.x = -viewport.x * scrollFactor;
 	dstRect.w = static_cast<float>(texture.w) * repetitions;
+	dstRect.y -= viewport.y;
 
 	SDL_RenderTextureTiled(renderer.get(), &texture, nullptr, 1, &dstRect);
+}
+
+void Renderer::RenderCircularFade(float progress, SDL_FColor color)
+{
+	if (progress <= 0.0f)
+		return;
+
+	if (progress > 1.0f)
+		progress = 1.0f;
+
+	const auto [width, height] = std::make_pair(logicalResolution.width, logicalResolution.height);
+	float maxRadius = std::sqrt(width * width + height * height);
+	float radius = maxRadius * progress;
+
+	const int segments = 64;
+	std::vector<SDL_Vertex> vertices(segments + 2);
+
+	vertices[0].position = {width / 2.0f, height / 2.0f};
+	vertices[0].color = color;
+
+	for (int i = 0; i <= segments; ++i) {
+		float angle = 2.0f * std::numbers::pi * i / segments;
+		float x = width / 2.0f + radius * cos(angle);
+		float y = height / 2.0f + radius * sin(angle);
+		vertices[i + 1].position = {x, y};
+		vertices[i + 1].color = color;
+	}
+
+	std::vector<int> indices;
+	for (int i = 1; i <= segments; ++i) {
+		indices.push_back(0);
+		indices.push_back(i);
+		indices.push_back(i + 1);
+	}
+
+	SDL_RenderGeometry(renderer.get(), nullptr, vertices.data(), vertices.size(), indices.data(), indices.size());
 }
 
 void Renderer::RenderTexture(SDL_Texture &texture, const std::optional<SDL_FRect> srcRect,
                              std::optional<SDL_FRect> dstRect, const bool flip) const
 {
 	const SDL_FRect *srcPtr = srcRect ? &srcRect.value() : nullptr;
+	SDL_FRect localDst;
+
 	SDL_FRect *dstPtr = nullptr;
-
 	if (dstRect) {
-		dstRect.value().x -= viewport.x;
-		dstPtr = &dstRect.value();
+		localDst = dstRect.value();
+		localDst.x -= viewport.x;
+		localDst.y -= viewport.y;
+		dstPtr = &localDst;
 	}
-	const SDL_FlipMode flipMode = flip ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
 
+	const SDL_FlipMode flipMode = flip ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
 	SDL_RenderTextureRotated(renderer.get(), &texture, srcPtr, dstPtr, 0, nullptr, flipMode);
 }

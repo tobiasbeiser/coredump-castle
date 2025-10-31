@@ -75,7 +75,7 @@ void GameEngine::HandleEvents()
 			break;
 
 		case SDL_EVENT_WINDOW_RESIZED:
-			renderer.Resize({.width=event.window.data1, .height=event.window.data2});
+			renderer.Resize({.width = event.window.data1, .height = event.window.data2});
 			break;
 
 		case SDL_EVENT_KEY_DOWN:
@@ -94,13 +94,22 @@ void GameEngine::HandleEvents()
 void GameEngine::Update(const float deltaTime)
 {
 	DebugSystem::Clear();
-	if (!states.empty())
-		states.back()->Update(*this, deltaTime);
+	for (auto &state : states) {
+		state->Update(*this, deltaTime);
+	}
+	if (pendingPush) {
+		PushState(std::move(pendingPush));
+	}
 }
 
-void GameEngine::Render()
+void GameEngine::Render(const float alpha)
 {
-	if (!states.empty())
-		states.back()->Render(*this);
+	const int red = 12, blue = 19, green = 25;
+	const int opacity = 255;
+	renderer.StartFrame(red, blue, green, opacity);
+	for (auto &state : states) {
+		state->Render(*this, alpha);
+	}
+	renderer.EndFrame();
 };
 } // namespace GameEngine

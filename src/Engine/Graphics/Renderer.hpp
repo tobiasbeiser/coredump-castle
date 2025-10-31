@@ -1,6 +1,7 @@
 #pragma once
 #include <SDL3/SDL.h>
 #include <filesystem>
+#include <glm/vec2.hpp>
 #include <memory>
 #include <optional>
 #include <string>
@@ -35,8 +36,7 @@ class Renderer {
 
 	void StartFrame(int red, int green, int blue, int alpha) const;
 	void EndFrame() const;
-	void CenterCameraOn(const float positionX);
-	//SDL_Renderer &getSDLRenderer() const { return *renderer; }
+	void CenterCameraOn(const glm::vec2 &position, const glm::vec2 &levelPos, const glm::vec2 &levelSize);
 
 	void Resize(Resolution newResolution);
 
@@ -45,11 +45,11 @@ class Renderer {
 	                   const bool flip) const;
 	void RenderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, const float scrollFactor) const;
 
+	void RenderCircularFade(float progress, SDL_FColor color = {0, 0, 0, 255});
+
   private:
 	Resolution currentResolution{1920, 1080};
 	Resolution logicalResolution{768, 432};
-	const int logW = 768;
-	const int logH = 432;
 
 	SDL_FRect viewport{.x = 0,
 	                   .y = 0,

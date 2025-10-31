@@ -13,13 +13,14 @@ class View {
   public:
 	View(Registry &reg) : registry(reg)
 	{
-		// TODO Optimize by iterating the smallest storage
-		using FirstComponent = typename std::tuple_element<0, std::tuple<Components...>>::type;
+		using Tuple = std::tuple<Components...>;
+		auto &firstStorage = registry.get_storage<std::tuple_element_t<0, Tuple>>();
 
-		auto &firstStorage = registry.get_storage<typename std::tuple_element_t<0, std::tuple<Components...>>>();
+		// Cache all storages once
+		auto storages = std::make_tuple(&registry.get_storage<Components>()...);
 
 		for (const auto &[entity, _] : firstStorage.components) {
-			if ((registry.get_storage<Components>().contains_component(entity) && ...)) {
+			if ((std::get<ComponentStorage<Components> *>(storages)->components.contains(entity) && ...)) {
 				entities.push_back(entity);
 			}
 		}

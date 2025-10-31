@@ -3,7 +3,7 @@
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
 #include "Engine/Input/InputManager.hpp"
-#include <iostream>
+#include <string>
 
 namespace GameEngine::ECS::Systems {
 class InputSystem {
@@ -12,6 +12,7 @@ class InputSystem {
 
 	void Update(Registry &registry)
 	{
+
 		float horizontalDirection = 0;
 		if (inputManager.IsKeyDown(Key::Left)) {
 			horizontalDirection += -1;
@@ -26,14 +27,43 @@ class InputSystem {
 			input.horizontalDirection = horizontalDirection;
 			input.jumpPressed = inputManager.IsKeyPressed(Key::Up);
 			input.meleePressed = inputManager.IsKeyPressed(Key::Melee);
-			// add logging here
-			if (input.meleePressed) {
-				std::cout << "Entity " << entity << " pressed melee" << std::endl;
-			}
+
+			//SDL_Log("Before %d %d", input.interactPressed, input.interactConsumed);
+			std::string before = std::to_string(static_cast<int>(input.interactPressed)) + " "
+			                                    + std::to_string(static_cast<int>(input.interactConsumed));
+			PressOrConsume(inputManager.IsKeyPressed(Key::Interact), input.interactPressed, input.interactConsumed);
+			std::string after = std::to_string(static_cast<int>(input.interactPressed)) + " "
+			                                    + std::to_string(static_cast<int>(input.interactConsumed));
+
+			//SDL_Log("InputSystem: Entity %d Interact before: %s after: %s", entity, before.c_str(), after.c_str());
 		}
 	}
 
+	// set an input and consume it in the next frame
+	// if the input was already consumed, do not set it again (We update keyboard events once per frame, however we can
+	// have multiple updates per frame)
+
   private:
 	const InputManager &inputManager;
+
+	void PressOrConsume(bool keyPressed, bool &pressedProp, bool &consumedProp)
+	{
+		if (keyPressed) {
+			bool inPressedProp = pressedProp;
+			bool inConsumedProp = consumedProp;
+			if (!consumedProp) {
+				pressedProp = true;
+				consumedProp = true;
+			} else {
+				pressedProp = false;
+			}
+			//SDL_Log(
+			//    "PressOrConsume: keyPressed=%d, inPressedProp=%d, inConsumedProp=%d => pressedProp=%d, consumedProp=%d",
+			//    keyPressed, inPressedProp, inConsumedProp, pressedProp, consumedProp);
+		} else {
+			pressedProp = false;
+			consumedProp = false;
+		}
+	}
 };
 } // namespace GameEngine::ECS::Systems

@@ -18,18 +18,21 @@ int main()
 	while (game.Running()) {
 		const Uint64 currentTime = SDL_GetTicks();
 		const float deltaTime = static_cast<float>(currentTime - prevTime) / 1000.0f;
+		prevTime = currentTime;
 
 		//DebugSystem::Debug(std::to_string(1000 / deltaTime));
 
 		game.HandleEvents();
 
 		accumulator += deltaTime;
+
 		while (accumulator >= stepSize) {
 			accumulator -= stepSize;
 			game.Update(stepSize);
 		}
-		game.Render();
-		prevTime = currentTime;
+
+		float alpha = accumulator / stepSize;
+		game.Render(alpha);
 	}
 	game.Cleanup();
 	return EXIT_SUCCESS;

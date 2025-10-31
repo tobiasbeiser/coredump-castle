@@ -1,0 +1,41 @@
+{
+    "automappingRulesFile": "",
+    "commands": [
+    ],
+    "compatibilityVersion": 1100,
+    "extensionsPath": "extensions",
+    "folders": [
+        "."
+    ],
+    "properties": [
+    ],
+    "propertyTypes": [
+        {
+            "color": "#ffa43c3e",
+            "drawFill": true,
+            "id": 1,
+            "members": [
+                {
+                    "name": "portalId",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "targetLevel",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "targetPortalId",
+                    "type": "string",
+                    "value": ""
+                }
+            ],
+            "name": "Portal",
+            "type": "class",
+            "useAs": [
+                "property"
+            ]
+        }
+    ]
+}
