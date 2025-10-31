@@ -32,10 +32,10 @@ TEST_F(PhysicsSystemTest, UpdatesPositionBasedOnFactors)
 
 	PhysicsSystem::Update(registry, 1.0f);
 
-	auto [position] = registry.get<PositionComponent>(entity);
+	auto &pos = registry.get<PositionComponent>(entity);
 
-	EXPECT_FLOAT_EQ(position.x, 10.0f);
-	EXPECT_FLOAT_EQ(position.y, 5.0f);
+	EXPECT_FLOAT_EQ(pos.position.x, 10.0f);
+	EXPECT_FLOAT_EQ(pos.position.y, 5.0f);
 }
 
 TEST_F(PhysicsSystemTest, RespectsMaxSpeed)
@@ -44,12 +44,11 @@ TEST_F(PhysicsSystemTest, RespectsMaxSpeed)
 
 	PhysicsSystem::Update(registry, 1.0f);
 
-	auto [position] = registry.get<PositionComponent>(entity);
+	auto &pos = registry.get<PositionComponent>(entity);
 	auto [acceleration, move] = registry.get<MovementComponent>(entity);
 	const auto &[velocity] = registry.get<VelocityComponent>(entity);
 
 	EXPECT_LE(std::abs(velocity.x), move);
-	EXPECT_FLOAT_EQ(position.x, velocity.x);
-	EXPECT_FLOAT_EQ(position.y, velocity.y);
+	EXPECT_FLOAT_EQ(pos.position.x, velocity.x);
+	EXPECT_FLOAT_EQ(pos.position.y, velocity.y);
 }
-

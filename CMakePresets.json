@@ -49,6 +49,11 @@
 			"output": {
 				"outputOnFailure": true
 			}
+		},
+		{
+			"name": "release",
+			"configurePreset": "release",
+			"displayName": "Release"
 		}
 	]
 }
