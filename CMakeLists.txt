@@ -7,6 +7,12 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if(NOT DEFINED ENV{CI})
+    if(CLANG_TIDY_EXE)
+        set(CMAKE_CXX_CLANG_TIDY clang-tidy)
+    endif()
+endif()
+
 
 find_package(SDL3 CONFIG REQUIRED)
 find_package(SDL3_image CONFIG REQUIRED)

@@ -1,10 +1,11 @@
 #pragma once
 #include <SDL3/SDL.h>
+#include <filesystem>
+#include <glm/vec2.hpp>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
-#include <optional>
-#include <filesystem>
 
 struct SDLTextureDeleter {
 	void operator()(SDL_Texture *t) const
@@ -17,35 +18,43 @@ struct SDLTextureDeleter {
 class AnimatedGameObject;
 class GameObject;
 
+struct Resolution {
+	int width;
+	int height;
+};
+
 class Renderer {
   public:
+	Renderer(const std::string &title, Resolution resolution);
 	// delete copy, move and assignments as we want only one instance of the renderer (create one at start that lives
 	// until shutdown) Cannot be copied as it manages a unique resource (the SDL_Renderer and SDL_Window)
 	Renderer(const Renderer &) = delete;
 	Renderer(Renderer &&) = delete;
 	Renderer &operator=(Renderer &&) = delete;
 	Renderer &operator=(const Renderer &) = delete;
-	Renderer(const std::string &title, int w, int h);
 	~Renderer();
 
 	void StartFrame(int red, int green, int blue, int alpha) const;
 	void EndFrame() const;
-	void RenderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, const float scale) const;
-	SDL_Renderer& getSDLRenderer() const { return *renderer; }
+	void CenterCameraOn(const glm::vec2 &position, const glm::vec2 &levelPos, const glm::vec2 &levelSize);
 
-	void Resize(int w, int h);
+	void Resize(Resolution newResolution);
 
 	std::unique_ptr<SDL_Texture, SDLTextureDeleter> LoadTexture(const std::filesystem::path &filePath);
 	void RenderTexture(SDL_Texture &texture, const std::optional<SDL_FRect> srcRect, std::optional<SDL_FRect> dstRect,
 	                   const bool flip) const;
+	void RenderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, const float scrollFactor) const;
+
+	void RenderCircularFade(float progress, SDL_FColor color = {0, 0, 0, 255});
 
   private:
-	int width;
-	int height;
-	const int logW = 768;
-	const int logH = 432;
+	Resolution currentResolution{1920, 1080};
+	Resolution logicalResolution{768, 432};
 
-	SDL_FRect viewport{.x = 0, .y = 0, .w = static_cast<float>(logW), .h = static_cast<float>(logH)};
+	SDL_FRect viewport{.x = 0,
+	                   .y = 0,
+	                   .w = static_cast<float>(logicalResolution.width),
+	                   .h = static_cast<float>(logicalResolution.height)};
 	std::vector<std::string> debugMessages;
 
 	struct SDLRendererDeleter {

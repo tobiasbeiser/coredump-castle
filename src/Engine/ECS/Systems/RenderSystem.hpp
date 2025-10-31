@@ -1,13 +1,13 @@
 #pragma once
 #include "Engine/DebugSystem.hpp"
+#include "Engine/ECS/Components/Core/LevelComponent.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
-#include "Engine/ECS/Components/Render/AnimationComponent.hpp"
 #include "Engine/ECS/Components/Render/BackgroundComponent.hpp"
+#include "Engine/ECS/Components/Render/CenterCameraComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
-#include "Engine/ECS/Components/Render/TextureComponent.hpp"
-#include "Engine/ECS/Components/Render/TileComponent.hpp"
+#include "Engine/ECS/Components/Render/SpriteComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
 #include "Engine/Graphics/Renderer.hpp"
@@ -18,13 +18,12 @@ class RenderSystem {
   public:
 	RenderSystem(Renderer &renderer) : renderer(renderer) {}
 
-	void Update(Registry &registry)
+	void Update(Registry &registry, const float alpha)
 	{
 		renderItems.clear();
 		// Backgrounds
-		auto bgView = registry.view<TextureComponent, RenderComponent, BackgroundComponent>();
+		auto bgView = registry.view<RenderComponent, BackgroundComponent>();
 		for (auto entity : bgView) {
-			auto &tex = bgView.get<TextureComponent>(entity);
 			auto &render = bgView.get<RenderComponent>(entity);
 			auto &bg = bgView.get<BackgroundComponent>(entity);
 
@@ -33,36 +32,44 @@ class RenderSystem {
 
 			const SDL_FRect *src = nullptr;
 			SDL_FRect *dst = nullptr;
-			if (render.layer == Layer::Parallax) {
-				dstOpt = SDL_FRect{.x = -bg.scrollPos,
-				                   .y = bg.yOffset,
-				                   .w = tex.texture->w * 5.0f,
-				                   .h = static_cast<float>(tex.texture->h)};
+			if (bg.repeatX) {
+				dstOpt = SDL_FRect{.y = bg.yOffset, .h = static_cast<float>(bg.texture->h)};
 			}
 
 			renderItems.push_back(RenderItem{.Layer = render.layer,
-			                                 .texture = tex.texture,
+			                                 .texture = bg.texture,
 			                                 .src = srcOpt,
 			                                 .dst = dstOpt,
-			                                 .parallax = (render.layer == Layer::Parallax),
+			                                 .parallax = bg.repeatX,
+			                                 .scrollFactor = bg.scrollingSpeed,
 			                                 .flipX = render.flipX});
 		}
 
 		// Tiles, Player
-		auto view = registry.view<PositionComponent, TextureComponent, TileComponent, RenderComponent>();
+		auto view = registry.view<PositionComponent, SpriteComponent, RenderComponent>();
 		for (auto entity : view) {
 			auto &pos = view.get<PositionComponent>(entity);
-			auto &tex = view.get<TextureComponent>(entity);
-			auto &tile = view.get<TileComponent>(entity);
+			auto &sprite = view.get<SpriteComponent>(entity);
 			auto &render = view.get<RenderComponent>(entity);
 
-			const SDL_FRect src{
-			    .x = tile.TileMapPosition.x, .y = tile.TileMapPosition.y, .w = tile.TileSize, .h = tile.TileSize};
+			const SDL_FRect src{.x = static_cast<float>(sprite.TileMapPosition.x),
+			                    .y = static_cast<float>(sprite.TileMapPosition.y),
+			                    .w = static_cast<float>(sprite.TileSize.x),
+			                    .h = static_cast<float>(sprite.TileSize.y)};
 
-			SDL_FRect dst{.x = pos.position.x, .y = pos.position.y, .w = tile.TileSize, .h = tile.TileSize};
+			// non interpolation
+
+			SDL_FRect dst{.x = pos.position.x,
+			              .y = pos.position.y,
+			              .w = static_cast<float>(sprite.TileSize.x),
+			              .h = static_cast<float>(sprite.TileSize.y)};
+			/*SDL_FRect dst{.x = pos.previousPosition.x * (1 - alpha) + pos.position.x * alpha,
+			              .y = pos.previousPosition.y * (1 - alpha) + pos.position.y * alpha,
+			              .w = tile.TileSize,
+			              .h = tile.TileSize};*/
 
 			renderItems.push_back(RenderItem{.Layer = render.layer,
-			                                 .texture = tex.texture,
+			                                 .texture = sprite.texture,
 			                                 .src = src,
 			                                 .dst = dst,
 			                                 .parallax = false,
@@ -82,11 +89,39 @@ class RenderSystem {
 		std::sort(renderItems.begin(), renderItems.end(),
 		          [](const RenderItem &a, const RenderItem &b) { return a.Layer < b.Layer; });
 
+		auto centerCameraView = registry.view<PositionComponent, CenterCameraComponent, SpriteComponent>();
+
+		const int ccv_size = centerCameraView.size();
+		if (centerCameraView.size() == 1) {
+			const auto &centerCameraEntity = centerCameraView.at(0);
+			auto &pos = centerCameraView.get<PositionComponent>(centerCameraEntity);
+			auto &tile = centerCameraView.get<SpriteComponent>(centerCameraEntity);
+
+			auto levelView = registry.view<LevelComponent, PositionComponent>();
+			for (auto entity : levelView) {
+				auto &level = view.get<LevelComponent>(entity);
+				auto &posLvl = view.get<PositionComponent>(entity);
+				const bool cameraObjInLevelPos =
+				    pos.position.x >= posLvl.position.x + tile.TileSize.x / 2 && pos.position.y >= posLvl.position.y;
+				const bool cameraObjInLevelSizeX =
+				    pos.position.x + tile.TileSize.x / 2 <= posLvl.position.x + level.levelSize.x;
+				const bool cameraObjInLevelSizeY = pos.position.y <= posLvl.position.y + level.levelSize.y;
+
+				if (cameraObjInLevelPos && cameraObjInLevelSizeX && cameraObjInLevelSizeY) {
+					renderer.CenterCameraOn((pos.position + static_cast<glm::vec2>(tile.TileSize / 2)), posLvl.position,
+					                        level.levelSize);
+				}
+			}
+
+		} else if (centerCameraView.size() > 1) {
+			throw std::runtime_error("There cannot be more than on entity with a CenterCameraComponent");
+		}
+
 		for (auto &renderItem : renderItems) {
 			if (!renderItem.parallax) {
 				renderer.RenderTexture(*renderItem.texture, renderItem.src, renderItem.dst, renderItem.flipX);
 			} else {
-				renderer.RenderTextureTiled(*renderItem.texture, renderItem.dst.value(), 1);
+				renderer.RenderTextureTiled(*renderItem.texture, renderItem.dst.value(), renderItem.scrollFactor);
 			}
 		}
 		renderItems.clear();
@@ -99,6 +134,7 @@ class RenderSystem {
 		std::optional<SDL_FRect> src;
 		std::optional<SDL_FRect> dst;
 		bool parallax;
+		float scrollFactor = 0;
 		bool flipX;
 	};
 	std::vector<RenderItem> renderItems;

@@ -5,11 +5,8 @@
 
 namespace GameEngine {
 
-GameEngine::GameEngine(const std::string &title, int w, int h) : renderer(title, w, h), textureManager(renderer)
-{
-	width = w;
-	height = h;
-}
+GameEngine::GameEngine(const std::string &title, Resolution resolution)
+    : renderer(title, resolution), textureManager(renderer) {};
 
 GameEngine::~GameEngine()
 {
@@ -19,8 +16,7 @@ GameEngine::~GameEngine()
 bool GameEngine::Init()
 {
 	// game data
-	states.emplace_back(
-	    std::make_unique<PlayState>(inputManager, textureManager, renderer));
+	states.emplace_back(std::make_unique<PlayState>(inputManager, textureManager, renderer));
 	running = true;
 
 	states.back()->Init(*this);
@@ -79,12 +75,10 @@ void GameEngine::HandleEvents()
 			break;
 
 		case SDL_EVENT_WINDOW_RESIZED:
-			renderer.Resize(event.window.data1, event.window.data2);
+			renderer.Resize({.width = event.window.data1, .height = event.window.data2});
 			break;
 
 		case SDL_EVENT_KEY_DOWN:
-			inputManager.Update(&event.key);
-			break;
 		case SDL_EVENT_KEY_UP:
 			inputManager.Update(&event.key);
 			break;
@@ -97,16 +91,25 @@ void GameEngine::HandleEvents()
 		states.back()->HandleEvents(*this);
 }
 
-void GameEngine::Update(const float &deltaTime, const float stepSize)
+void GameEngine::Update(const float deltaTime)
 {
 	DebugSystem::Clear();
-	if (!states.empty())
-		states.back()->Update(*this, deltaTime, stepSize);
+	for (auto &state : states) {
+		state->Update(*this, deltaTime);
+	}
+	if (pendingPush) {
+		PushState(std::move(pendingPush));
+	}
 }
 
-void GameEngine::Render()
+void GameEngine::Render(const float alpha)
 {
-	if (!states.empty())
-		states.back()->Render(*this);
+	const int red = 12, blue = 19, green = 25;
+	const int opacity = 255;
+	renderer.StartFrame(red, blue, green, opacity);
+	for (auto &state : states) {
+		state->Render(*this, alpha);
+	}
+	renderer.EndFrame();
 };
 } // namespace GameEngine

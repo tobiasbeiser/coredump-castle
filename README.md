@@ -5,9 +5,12 @@
 - CMake
 - A C++23 compiler
 - VCPKG
+- clang-tidy
 
-## Setup
+## Building
 
-On Windows, set `VCPKG_DEFAULT_TRIPLET=x64-windows` as system environment variable.
+```
+cmake --preset=release
+cmake --build --preset=release
+```
 
-Set $CC and $CXX to your desired compiler (eg gcc, g++)

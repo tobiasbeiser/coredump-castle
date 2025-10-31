@@ -29,12 +29,14 @@ class PhysicsSystem {
 			auto &acc = view.get<AccelerationComponent>(entity);
 			auto &move = view.get<MovementComponent>(entity);
 
-			vel.velocity += acc.acceleration * timeStep;
-			if (std::abs(vel.velocity.x) > move.maxSpeedX) {
-				vel.velocity.x = move.maxSpeedX * (vel.velocity.x > 0 ? 1 : -1);
-			}
-			pos.position += vel.velocity * timeStep;
-		};
-	};
-};
+                vel.velocity += acc.acceleration * timeStep;
+                if (std::abs(vel.velocity.x) > move.maxSpeedX) {
+                    vel.velocity.x = move.maxSpeedX * (vel.velocity.x > 0 ? 1 : -1);
+                }
+                pos.position += vel.velocity * timeStep;
+			    pos.previousPosition = pos.position;
+
+            };
+        };
+    };
 } // namespace GameEngine::ECS::Systems

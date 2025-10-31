@@ -2,30 +2,37 @@
 #include "Engine/DebugSystem.hpp"
 
 constexpr float stepSize = 1.0f / 240.0f;
-float accumulator = 0.0f;
+
 
 int main()
 {
-	GameEngine::GameEngine game("Coredump Castle", 1920, 1080);
+	const int windowWidth = 1920;
+	const int windowHeight = 1080;
+	GameEngine::GameEngine game("Coredump Castle", Resolution{.width=windowWidth, .height=windowHeight});
 	if (!game.Init())
 		return EXIT_FAILURE;
 
 	Uint64 prevTime = SDL_GetTicks();
+
+	float accumulator = 0.0f;
 	while (game.Running()) {
 		const Uint64 currentTime = SDL_GetTicks();
-		const float deltaTime = (currentTime - prevTime) / 1000.0f;
+		const float deltaTime = static_cast<float>(currentTime - prevTime) / 1000.0f;
+		prevTime = currentTime;
 
 		//DebugSystem::Debug(std::to_string(1000 / deltaTime));
 
 		game.HandleEvents();
 
 		accumulator += deltaTime;
+
 		while (accumulator >= stepSize) {
 			accumulator -= stepSize;
-			game.Update(deltaTime, stepSize);
+			game.Update(stepSize);
 		}
-		game.Render();
-		prevTime = currentTime;
+
+		float alpha = accumulator / stepSize;
+		game.Render(alpha);
 	}
 	game.Cleanup();
 	return EXIT_SUCCESS;

@@ -3,12 +3,11 @@
 
 InputManager::InputManager()
 {
-	scancodeMapping = {
-	    {SDL_SCANCODE_A, Key::Left},
-	    {SDL_SCANCODE_D, Key::Right},
-	    {SDL_SCANCODE_SPACE, Key::Up},
-	    {SDL_SCANCODE_S, Key::Down},
-	};
+	scancodeMapping = {{SDL_SCANCODE_A, Key::Left},
+	                   {SDL_SCANCODE_D, Key::Right},
+	                   {SDL_SCANCODE_SPACE, Key::Up},
+	                   {SDL_SCANCODE_S, Key::Down},
+	                   {SDL_SCANCODE_E, Key::Interact}};
 
 	for (auto &[code, key] : scancodeMapping) {
 		previousKeyStates[key] = false;
@@ -16,12 +15,12 @@ InputManager::InputManager()
 	}
 }
 
-void InputManager::Update(const SDL_KeyboardEvent *e)
+void InputManager::Update(const SDL_KeyboardEvent *event)
 {
 	previousKeyStates = currentKeyStates;
-	if (scancodeMapping.find(e->scancode) != scancodeMapping.end()) {
-		const Key key = scancodeMapping.at(e->scancode);
-		currentKeyStates[key] = e->down;
+	if (scancodeMapping.find(event->scancode) != scancodeMapping.end()) {
+		const Key key = scancodeMapping.at(event->scancode);
+		currentKeyStates[key] = event->down;
 	}
 }
 

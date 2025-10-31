@@ -17,3 +17,5 @@ target_link_libraries(${PROJECT_NAME}  PRIVATE $<IF:$<TARGET_EXISTS:SDL3_image::
 target_link_libraries(${PROJECT_NAME} PRIVATE SDL3::SDL3 glm::glm)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE vendor)
+
+set_target_properties(${PROJECT_NAME} PROPERTIES CXX_EXCEPTIONS ON)
