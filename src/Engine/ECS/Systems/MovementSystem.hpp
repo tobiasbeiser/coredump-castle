@@ -5,23 +5,22 @@
 #include "../Components/Gameplay/MovementComponent.hpp"
 #include "../Components/Physics/AccelerationComponent.hpp"
 #include "../Registry.hpp"
+#include <Engine/ECS/Components/Core/StateComponent.hpp>
+#include <Engine/ECS/Components/Render/RenderComponent.hpp>
 
 namespace GameEngine::ECS::Systems {
 class MovementSystem {
   public:
 	static void Update(ECS::Registry &registry, float stepSize)
 	{
-		auto view = registry.view<VelocityComponent, AccelerationComponent, MovementComponent,
-		                          InputComponent>();
+		auto view = registry.view<VelocityComponent, AccelerationComponent, MovementComponent, InputComponent>();
 		for (auto entity : view) {
 			auto &vel = view.get<VelocityComponent>(entity);
 			auto &acc = view.get<AccelerationComponent>(entity);
 			auto &move = view.get<MovementComponent>(entity);
 			auto &input = view.get<InputComponent>(entity);
 
-
-
-			if (input.horizontalDirection) {
+						if (input.horizontalDirection) {
 
 				if ((vel.velocity.x > 0 && input.horizontalDirection < 0)
 				    || (vel.velocity.x < 0 && input.horizontalDirection > 0)) {
@@ -45,7 +44,7 @@ class MovementSystem {
 				}
 			}
 
-			if(registry.has<RenderComponent>(entity) && vel.velocity.x) {
+			if (registry.has<RenderComponent>(entity) && vel.velocity.x) {
 				registry.get<RenderComponent>(entity).flipX = vel.velocity.x < 0;
 			}
 		}

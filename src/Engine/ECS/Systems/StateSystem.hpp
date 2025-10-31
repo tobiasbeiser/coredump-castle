@@ -1,7 +1,7 @@
 #pragma once
+#include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
-#include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 
 namespace GameEngine::ECS::Systems {
@@ -23,6 +23,8 @@ class StateSystem {
 			} else {
 				if (std::abs(vel.velocity.x) > 0.1f) {
 					state.state = States::Walking;
+				} else if (state.state == States::Attacking) {
+					continue;
 				} else {
 					state.state = States::Idle;
 				}

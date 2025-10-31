@@ -1,9 +1,10 @@
 #include "PlayState.hpp"
 #include "Engine/ECS/Systems/AnimationSystem.hpp"
 #include "Engine/ECS/Systems/CollisionSystem.hpp"
+#include "Engine/ECS/Systems/JumpSystem.hpp"
+#include "Engine/ECS/Systems/MeleeSystem.hpp"
 #include "Engine/ECS/Systems/MovementSystem.hpp"
 #include "Engine/ECS/Systems/PhysicsSystem.hpp"
-#include "Engine/ECS/Systems/JumpSystem.hpp"
 #include "Engine/ECS/Systems/StateSystem.hpp"
 #include "Engine/GameEngine.hpp"
 #include "Game/Factories/LevelFactory.hpp"
@@ -30,6 +31,8 @@ void PlayState::Update(GameEngine &game, const float deltaTime)
 	inputSystem.Update(game.registry);
 
 	ECS::Systems::JumpSystem::Update(game.registry);
+	ECS::Systems::MeleeSystem::Update(game.registry, deltaTime);
+
 	ECS::Systems::MovementSystem::Update(game.registry, deltaTime);
 	ECS::Systems::PhysicsSystem::Update(game.registry, deltaTime);
 	ECS::Systems::CollisionSystem::Update(game.registry);
@@ -40,7 +43,7 @@ void PlayState::Update(GameEngine &game, const float deltaTime)
 
 void PlayState::Render(GameEngine &game)
 {
-	const int red=25, blue=25, green = 25; 
+	const int red = 25, blue = 25, green = 25;
 	const int alpha = 255;
 	game.GetRenderer().StartFrame(red, blue, green, alpha);
 	renderSystem.Update(game.registry);

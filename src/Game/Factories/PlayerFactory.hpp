@@ -13,11 +13,11 @@
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Render/TextureComponent.hpp"
 #include "Engine/ECS/Components/Render/TileComponent.hpp"
-#include "Engine/ECS/Components/Render/CenterCameraComponent.hpp"
 
 #include "Engine/ECS/Components/Physics/GravityComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/Graphics/TextureManager.hpp"
+#include <Engine/ECS/Components/Gameplay/MeleeComponent.hpp>
 
 struct PlayerFactory {
 	static GameEngine::ECS::Entity CreatePlayer(GameEngine::ECS::Registry &registry, TextureManager &texMgr,
@@ -59,6 +59,7 @@ struct PlayerFactory {
 		registry.register_component(e, InputComponent{});
 		registry.register_component(e, MovementComponent{});
 		registry.register_component(e, JumpComponent{});
+		registry.register_component(e, MeleeComponent{});
 		SDL_Log("Player spawned");
 		return e;
 	}

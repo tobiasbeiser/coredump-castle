@@ -1,8 +1,9 @@
 #pragma once
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
+#include "Engine/ECS/View.hpp"
 #include "Engine/Input/InputManager.hpp"
-#include "Engine/ECS/View.hpp"      
+#include <iostream>
 
 namespace GameEngine::ECS::Systems {
 class InputSystem {
@@ -24,6 +25,11 @@ class InputSystem {
 			auto &input = view.get<InputComponent>(entity);
 			input.horizontalDirection = horizontalDirection;
 			input.jumpPressed = inputManager.IsKeyPressed(Key::Up);
+			input.meleePressed = inputManager.IsKeyPressed(Key::Melee);
+			// add logging here
+			if (input.meleePressed) {
+				std::cout << "Entity " << entity << " pressed melee" << std::endl;
+			}
 		}
 	}
 
