@@ -69,6 +69,57 @@ void LevelFactory::LoadLayer(tson::Layer &layer, int &layerIndex, const glm::vec
 	layerIndex++;
 }
 
+void LevelFactory::CreateTile(const int layerIndex, const glm::vec2 &levelPos, tson::Tile &tile,
+                              const glm::vec2 position) const
+{
+	const auto tileSize = glm::vec2(tile.getTileSize().x, tile.getTileSize().y);
+	glm::ivec2 imageSize = glm::ivec2(tile.getImageSize().x, tile.getImageSize().y);
+	const glm::ivec2 offset = glm::ivec2(tile.getTileset()->getTileOffset().x, tile.getTileset()->getTileOffset().y);
+	const tson::Rect rectSrc = tile.getDrawingRect();
+
+	if (imageSize.x == 0 && imageSize.y == 0) {
+		imageSize = tileSize;
+	}
+
+	fs::path imagePath;
+	if (tile.getTileset()->getType() == tson::TilesetType::ImageTileset) {
+		imagePath = tile.getTileset()->getFullImagePath();
+	} else {
+		imagePath = basePath / tile.getImage();
+	}
+
+	const bool flipX = tile.getFlipFlags() == tson::TileFlipFlags::Horizontally;
+	const bool flipY = tile.getFlipFlags() == tson::TileFlipFlags::Horizontally;
+
+	auto entity = registry.create();
+	registry.register_component(
+	    entity, SpriteComponent{.texture = &textureManager.GetTexture(imagePath),
+	                            .TileSize = {static_cast<float>(imageSize.x), static_cast<float>(imageSize.y)},
+	                            .TileMapPosition = {static_cast<float>(rectSrc.x), static_cast<float>(rectSrc.y)}});
+	registry.register_component(entity, RenderComponent{.layer = layerIndex, .flipX = flipX});
+	auto position_component = PositionComponent{position};
+	position_component.position += offset;
+	position_component.position += levelPos;
+	registry.register_component(entity, position_component);
+
+	if (tile.getAnimation().any()) {
+		LoadAnimation(&tile, entity);
+	}
+
+	if (tile.getProp("collidable")) {
+		auto collisionBoxes = tile.getObjectgroup().getObjectsByType(tson::ObjectType::Rectangle);
+		if (!collisionBoxes.empty()) {
+			registry.register_component(entity,
+			                            CollisionComponent{static_cast<float>(collisionBoxes.at(0).getPosition().x),
+			                                               static_cast<float>(collisionBoxes.at(0).getPosition().y),
+			                                               static_cast<float>(collisionBoxes.at(0).getSize().x),
+			                                               static_cast<float>(collisionBoxes.at(0).getSize().y)});
+		} else {
+			registry.register_component(
+			    entity, CollisionComponent{0, 0, static_cast<float>(tileSize.x), static_cast<float>(tileSize.y)});
+		}
+	}
+}
 void LevelFactory::LoadTiles(const tson::Layer &layer, const int layerIndex, const glm::vec2 &levelPos) const
 {
 	std::map<std::tuple<int, int>, tson::Tile *> tileData = layer.getTileData();
@@ -76,54 +127,7 @@ void LevelFactory::LoadTiles(const tson::Layer &layer, const int layerIndex, con
 		if (tile != nullptr) {
 			const glm::ivec2 position = glm::ivec2(std::get<0>(tilePos), std::get<1>(tilePos));
 			const glm::ivec2 tileSize = glm::ivec2(tile->getTileSize().x, tile->getTileSize().y);
-			glm::ivec2 imageSize = glm::ivec2(tile->getImageSize().x, tile->getImageSize().y);
-			const glm::ivec2 offset =
-			    glm::ivec2(tile->getTileset()->getTileOffset().x, tile->getTileset()->getTileOffset().y);
-			const tson::Rect rectSrc = tile->getDrawingRect();
-
-			if (imageSize.x == 0 && imageSize.y == 0) {
-				imageSize = tileSize;
-			}
-
-			fs::path imagePath;
-			if (tile->getTileset()->getType() == tson::TilesetType::ImageTileset) {
-				imagePath = tile->getTileset()->getFullImagePath();
-			} else {
-				imagePath = basePath / tile->getImage();
-			}
-
-			const bool flipX = tile->getFlipFlags() == tson::TileFlipFlags::Vertically;
-			const bool flipY = tile->getFlipFlags() == tson::TileFlipFlags::Horizontally;
-
-			auto entity = registry.create();
-			registry.register_component(
-			    entity,
-			    SpriteComponent{.texture = &textureManager.GetTexture(imagePath),
-			                    .TileSize = {static_cast<float>(imageSize.x), static_cast<float>(imageSize.y)},
-			                    .TileMapPosition = {static_cast<float>(rectSrc.x), static_cast<float>(rectSrc.y)}});
-			registry.register_component(entity, RenderComponent{.layer = layerIndex, .flipX = flipX});
-			auto position_component = PositionComponent{position * tileSize};
-			position_component.position += offset;
-			position_component.position += levelPos;
-			registry.register_component(entity, position_component);
-
-			if (tile->getAnimation().any()) {
-				LoadAnimation(tile, entity);
-			}
-
-			if (tile->getProp("collidable")) {
-				auto collisionBoxes = tile->getObjectgroup().getObjectsByType(tson::ObjectType::Rectangle);
-				if (!collisionBoxes.empty()) {
-					registry.register_component(
-					    entity, CollisionComponent{static_cast<float>(collisionBoxes.at(0).getPosition().x),
-					                               static_cast<float>(collisionBoxes.at(0).getPosition().y),
-					                               static_cast<float>(collisionBoxes.at(0).getSize().x),
-					                               static_cast<float>(collisionBoxes.at(0).getSize().y)});
-				} else {
-					registry.register_component(entity, CollisionComponent{0, 0, static_cast<float>(tileSize.x),
-					                                                       static_cast<float>(tileSize.y)});
-				}
-			}
+			CreateTile(layerIndex, levelPos, *tile, position*tileSize);
 		}
 	}
 }
@@ -180,27 +184,40 @@ void LevelFactory::CreateBackground(const glm::vec2 &levelPos, const fs::path &f
 
 void LevelFactory::LoadObjects(tson::Layer &layer, int layerIndex, const glm::vec2 &levelPos) const
 {
+
 	for (auto &obj : layer.getObjectsByType(tson::ObjectType::Rectangle)) {
 		if (obj.getProperties().hasProperty("Portal")) {
-			const auto portalProp = obj.getProp("Portal");
-			auto portalClass = std::any_cast<tson::TiledClass>(portalProp->getValue());
-			auto portalId = portalClass.get<std::string>("portalId");
-			const auto targetLevel = portalClass.get<std::string>("targetLevel");
-			const auto targetPortalId = portalClass.get<std::string>("targetPortalId");
-
-			const auto entity = registry.create();
-			auto position_component = PositionComponent{
-			    .position = {static_cast<float>(obj.getPosition().x), static_cast<float>(obj.getPosition().y)}};
-			position_component.position += levelPos;
-			registry.register_component(entity, position_component);
-			registry.register_component(
-			    entity, InteractionComponent{.interactionBox{.x = 0,
-			                                                 .y = 0,
-			                                                 .w = static_cast<float>(obj.getSize().x),
-			                                                 .h = static_cast<float>(obj.getSize().y)}});
-			registry.register_component(
-			    entity,
-			    PortalComponent{.portalId = portalId, .targetLevel = targetLevel, .targetPortalId = targetPortalId});
+			LoadPortals(levelPos, obj);
 		}
 	}
+	for (auto &obj : layer.getObjects()) {
+		if (const auto tileset = layer.getMap()->getTilesetByGid(obj.getGid()); tileset != nullptr) {
+			const int tilesetGid = tileset->getFirstgid();
+			if (const auto tile = tileset->getTile(obj.getGid() - tilesetGid + 1); tile != nullptr) {
+				auto position = glm::vec2(obj.getPosition().x, obj.getPosition().y-obj.getSize().y);
+				CreateTile(layerIndex, levelPos, *tile, position);
+			}
+		}
+	}
+}
+
+void LevelFactory::LoadPortals(const glm::vec2 &levelPos, tson::Object &obj) const
+{
+	const auto portalProp = obj.getProp("Portal");
+	auto portalClass = std::any_cast<tson::TiledClass>(portalProp->getValue());
+	auto portalId = portalClass.get<std::string>("portalId");
+	const auto targetLevel = portalClass.get<std::string>("targetLevel");
+	const auto targetPortalId = portalClass.get<std::string>("targetPortalId");
+
+	const auto entity = registry.create();
+	auto position_component = PositionComponent{
+	    .position = {static_cast<float>(obj.getPosition().x), static_cast<float>(obj.getPosition().y)}};
+	position_component.position += levelPos;
+	registry.register_component(entity, position_component);
+	registry.register_component(
+	    entity,
+	    InteractionComponent{.interactionBox{
+	        .x = 0, .y = 0, .w = static_cast<float>(obj.getSize().x), .h = static_cast<float>(obj.getSize().y)}});
+	registry.register_component(
+	    entity, PortalComponent{.portalId = portalId, .targetLevel = targetLevel, .targetPortalId = targetPortalId});
 }

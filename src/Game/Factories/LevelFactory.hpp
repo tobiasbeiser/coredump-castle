@@ -22,8 +22,11 @@ class LevelFactory {
 	void LoadBackground(const tson::Layer &layer, int layerIndex, const glm::vec2 &levelPos) const;
 	void CreateBackground(const glm::vec2 &levelPos, const fs::path &filename, int layer, float scrollSpeed = 0,
 	                      float yOffset = 0, bool repeatX = false) const;
+	void CreateTile(int layerIndex, const glm::vec2 &levelPos, tson::Tile& tile, glm::vec2 position) const;
 	void LoadLayer(tson::Layer &layer, int &layerIndex, const glm::vec2 &levelPos, int &playerLayer);
 	void LoadObjects(tson::Layer &layer, int layerIndex, const glm::vec2 &levelPos) const;
+	void LoadPortals(const glm::vec2 &levelPos, tson::Object &obj) const;
+
 
 	int levelId = 0;
 	int playerLayerIndex = 0;

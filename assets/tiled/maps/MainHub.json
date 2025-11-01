@@ -29,7 +29,7 @@
                  "parallaxx":1.12,
                  "repeatx":true,
                  "type":"imagelayer",
-                 "visible":false,
+                 "visible":true,
                  "x":0,
                  "y":0
                 }],
@@ -110,7 +110,7 @@
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 472, 0, 0, 0, 0, 0, 0, 0, 472, 0, 0, 0, 0, 472, 0, 0, 472, 0, 0, 0, 0, 472, 0, 0, 472, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 295, 296, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 261, 0, 0, 0, 0, 295, 296, 0, 0,
-            0, 0, 0, 298, 299, 0, 0, 0, 0, 0, 0, 315, 316, 0, 301, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 281, 0, 0, 0, 0, 315, 316, 0, 0,
+            0, 0, 0, 298, 299, 236, 0, 0, 0, 0, 0, 315, 316, 0, 301, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 281, 0, 0, 0, 0, 315, 316, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 146, 146, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
          "height":30,
          "id":3,
@@ -119,6 +119,65 @@
          "type":"tilelayer",
          "visible":true,
          "width":36,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
+         "id":9,
+         "name":"Deco",
+         "objects":[
+                {
+                 "gid":505,
+                 "height":7,
+                 "id":8,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":24,
+                 "x":476.441019561351,
+                 "y":661.972732661529
+                }, 
+                {
+                 "gid":302,
+                 "height":32,
+                 "id":9,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":32,
+                 "x":398.912387973655,
+                 "y":662.040425569085
+                }, 
+                {
+                 "gid":474,
+                 "height":26,
+                 "id":10,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":14,
+                 "x":174.444476163289,
+                 "y":927.987153868113
+                }, 
+                {
+                 "gid":508,
+                 "height":28,
+                 "id":11,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":11,
+                 "x":162.170996288895,
+                 "y":927.959463317157
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
          "x":0,
          "y":0
         }, 
@@ -227,8 +286,8 @@
          "x":0,
          "y":0
         }],
- "nextlayerid":9,
- "nextobjectid":2,
+ "nextlayerid":10,
+ "nextobjectid":12,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",
@@ -261,6 +320,10 @@
         {
          "firstgid":470,
          "source":"..\/tilesets\/TorchSmallBackground.tsj"
+        }, 
+        {
+         "firstgid":474,
+         "source":"..\/tilesets\/decorations.tsj"
         }],
  "tilewidth":32,
  "type":"map",
