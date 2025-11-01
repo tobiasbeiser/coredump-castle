@@ -26,16 +26,16 @@ class InputSystem {
 			auto &input = view.get<InputComponent>(entity);
 			input.horizontalDirection = horizontalDirection;
 			input.jumpPressed = inputManager.IsKeyPressed(Key::Up);
-			input.meleePressed = inputManager.IsKeyPressed(Key::Melee);
+			PressOrConsume(inputManager.IsKeyPressed(Key::Melee), input.meleePressed, input.meleeConsumed);
 
-			//SDL_Log("Before %d %d", input.interactPressed, input.interactConsumed);
+			// SDL_Log("Before %d %d", input.interactPressed, input.interactConsumed);
 			std::string before = std::to_string(static_cast<int>(input.interactPressed)) + " "
-			                                    + std::to_string(static_cast<int>(input.interactConsumed));
+			                     + std::to_string(static_cast<int>(input.interactConsumed));
 			PressOrConsume(inputManager.IsKeyPressed(Key::Interact), input.interactPressed, input.interactConsumed);
 			std::string after = std::to_string(static_cast<int>(input.interactPressed)) + " "
-			                                    + std::to_string(static_cast<int>(input.interactConsumed));
+			                    + std::to_string(static_cast<int>(input.interactConsumed));
 
-			//SDL_Log("InputSystem: Entity %d Interact before: %s after: %s", entity, before.c_str(), after.c_str());
+			// SDL_Log("InputSystem: Entity %d Interact before: %s after: %s", entity, before.c_str(), after.c_str());
 		}
 	}
 
@@ -57,9 +57,9 @@ class InputSystem {
 			} else {
 				pressedProp = false;
 			}
-			//SDL_Log(
-			//    "PressOrConsume: keyPressed=%d, inPressedProp=%d, inConsumedProp=%d => pressedProp=%d, consumedProp=%d",
-			//    keyPressed, inPressedProp, inConsumedProp, pressedProp, consumedProp);
+			// SDL_Log(
+			//     "PressOrConsume: keyPressed=%d, inPressedProp=%d, inConsumedProp=%d => pressedProp=%d,
+			//     consumedProp=%d", keyPressed, inPressedProp, inConsumedProp, pressedProp, consumedProp);
 		} else {
 			pressedProp = false;
 			consumedProp = false;

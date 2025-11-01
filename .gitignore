@@ -4,3 +4,5 @@ build
 *.tiled-session
 /vcpkg_installed
 /.vscode
+/vcpkg/*
+/vcpkg/buildtrees

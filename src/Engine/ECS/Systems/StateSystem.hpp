@@ -23,7 +23,7 @@ class StateSystem {
 			} else {
 				if (std::abs(vel.velocity.x) > 0.1f) {
 					state.state = States::Walking;
-				} else if (state.state == States::Attacking) {
+				} else if (state.state == States::Attacking || state.state == States::ConsecutiveAttack) {
 					continue;
 				} else {
 					state.state = States::Idle;
