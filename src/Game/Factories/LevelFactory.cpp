@@ -92,13 +92,16 @@ void LevelFactory::LoadTiles(const tson::Layer &layer, const int layerIndex, con
 				imagePath = basePath / tile->getImage();
 			}
 
+			const bool flipX = tile->getFlipFlags() == tson::TileFlipFlags::Vertically;
+			const bool flipY = tile->getFlipFlags() == tson::TileFlipFlags::Horizontally;
+
 			auto entity = registry.create();
 			registry.register_component(
 			    entity,
 			    SpriteComponent{.texture = &textureManager.GetTexture(imagePath),
 			                    .TileSize = {static_cast<float>(imageSize.x), static_cast<float>(imageSize.y)},
 			                    .TileMapPosition = {static_cast<float>(rectSrc.x), static_cast<float>(rectSrc.y)}});
-			registry.register_component(entity, RenderComponent{.layer = layerIndex});
+			registry.register_component(entity, RenderComponent{.layer = layerIndex, .flipX = flipX});
 			auto position_component = PositionComponent{position * tileSize};
 			position_component.position += offset;
 			position_component.position += levelPos;
