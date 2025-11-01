@@ -1,5 +1,6 @@
 #include "WorldFactory.hpp"
 
+#include "Engine/ECS/Components/Core/LevelComponent.hpp"
 #include "Engine/Graphics/TextureManager.hpp"
 #include "LevelFactory.hpp"
 #include "PlayerFactory.hpp"
@@ -13,7 +14,7 @@ void WorldFactory::CreateWorld(const std::filesystem::path &worldPath)
 	tson::World world;
 	world.parse(worldPath);
 	auto levelFactory = LevelFactory(registry, textureManager);
-	glm::vec2 playerSpawnPosition {0,0};
+	glm::vec2 playerSpawnPosition{0, 0};
 	int playerLayerIndex = 100;
 
 	for (const auto &data : world.getMapData()) {
@@ -21,18 +22,17 @@ void WorldFactory::CreateWorld(const std::filesystem::path &worldPath)
 		glm::vec2 levelPos = glm::vec2(static_cast<float>(data.position.x), static_cast<float>(data.position.y));
 
 		for (auto layer : map->getLayers()) {
-			if (layer.getType() == tson::LayerType::ObjectGroup) {
+			if (layer.getType() == tson::LayerType::ObjectGroup && layer.getObjectsByName("Player").size() > 0) {
 				const auto spawnPointFromMap = layer.getObjectsByName("Player");
 				if (spawnPointFromMap.size() > 1) {
 					throw std::runtime_error("Map must have no more than one Player spawn point");
 				}
 				const tson::Vector2 pos = spawnPointFromMap.at(0).getPosition();
-				playerSpawnPosition = glm::vec2(pos.x, pos.y)+levelPos;
+				playerSpawnPosition = glm::vec2(pos.x, pos.y) + levelPos;
 			}
 		}
 		GameEngine::ECS::Entity level = levelFactory.CreateLevel(*map, levelPos);
 		registry.register_component<PositionComponent>(level, PositionComponent{.position = levelPos});
-
 	}
 
 	PlayerFactory::CreatePlayer(registry, textureManager, playerSpawnPosition,

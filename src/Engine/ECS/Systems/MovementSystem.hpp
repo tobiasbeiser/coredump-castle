@@ -1,10 +1,10 @@
 #pragma once
-#include "../Components/Core/PositionComponent.hpp"
 #include "../Components/Core/VelocityComponent.hpp"
 #include "../Components/Gameplay/InputComponent.hpp"
 #include "../Components/Gameplay/MovementComponent.hpp"
 #include "../Components/Physics/AccelerationComponent.hpp"
 #include "../Registry.hpp"
+#include "Engine/ECS/Components/Render/RenderComponent.hpp"
 
 namespace GameEngine::ECS::Systems {
 class MovementSystem {

@@ -20,7 +20,7 @@
 
 struct PlayerFactory {
 	static GameEngine::ECS::Entity CreatePlayer(GameEngine::ECS::Registry &registry, TextureManager &texMgr,
-	                                            glm::vec2 spawn, const fs::path texturePath, const int layerIndex)
+	                                            const glm::vec2 spawn, const fs::path& texturePath, const int layerIndex)
 	{
 		auto e = registry.create();
 		registry.register_component(e, PositionComponent{.position = spawn});

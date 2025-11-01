@@ -8,6 +8,7 @@
 #include "Engine/ECS/Systems/StateSystem.hpp"
 #include "Engine/GameEngine.hpp"
 #include "Game/Factories/WorldFactory.hpp"
+#include "Engine/ECS/Systems/RenderSystem.hpp"
 
 
 namespace GameEngine {

@@ -24,7 +24,7 @@
                  "imagewidth":320,
                  "name":"Parallax",
                  "offsetx":0,
-                 "offsety":796,
+                 "offsety":416,
                  "opacity":1,
                  "parallaxx":1.12,
                  "repeatx":true,
@@ -36,7 +36,7 @@
          "name":"Background",
          "opacity":1,
          "type":"group",
-         "visible":false,
+         "visible":true,
          "x":0,
          "y":0
         }, 

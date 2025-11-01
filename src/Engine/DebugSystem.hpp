@@ -1,6 +1,8 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <SDL3/SDL_rect.h>
+#include <SDL3/SDL_pixels.h>
 
 struct DebugRenderOptions {
 	bool showBoundingBoxes = false;

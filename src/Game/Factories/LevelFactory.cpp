@@ -13,7 +13,7 @@ LevelFactory::LevelFactory(GameEngine::ECS::Registry &registry, TextureManager &
 
 GameEngine::ECS::Entity LevelFactory::CreateLevel(tson::Map &map, const glm::vec2 &pos)
 {
-	std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now();
+	const std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now();
 
 	if (map.getStatus() != tson::ParseStatus::OK) {
 		throw std::runtime_error("Failed to load map: " + map.getStatusMessage());
@@ -23,21 +23,27 @@ GameEngine::ECS::Entity LevelFactory::CreateLevel(tson::Map &map, const glm::vec
 
 	const glm::vec2 levelSize = glm::vec2(static_cast<float>(map.getSize().x * map.getTileSize().x),
 	                                      static_cast<float>(map.getSize().y * map.getTileSize().y));
-	registry.register_component<LevelComponent>(level, LevelComponent{.levelSize = levelSize, .levelName = levelFile});
 
 	int layerIndex = 0;
+	int playerLayer = 0;
 	for (tson::Layer &layer : map.getLayers()) {
-		LoadLayer(layer, layerIndex, pos);
+		LoadLayer(layer, layerIndex, pos, playerLayer);
 	}
 
-	std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+	registry.register_component<LevelComponent>(
+	    level, LevelComponent{.levelSize = levelSize, .levelId = levelId, .playerLayer = playerLayer});
 
-	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - now).count();
+
+	const std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+
+	const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - now).count();
 	SDL_Log("Level loaded in %ld ms\n", duration);
+
+	levelId++;
 	return level;
 }
 
-void LevelFactory::LoadLayer(tson::Layer &layer, int &layerIndex, const glm::vec2 &levelPos)
+void LevelFactory::LoadLayer(tson::Layer &layer, int &layerIndex, const glm::vec2 &levelPos, int &playerLayer)
 {
 	switch (layer.getType()) {
 	case tson::LayerType::ImageLayer:
@@ -47,11 +53,12 @@ void LevelFactory::LoadLayer(tson::Layer &layer, int &layerIndex, const glm::vec
 		LoadTiles(layer, layerIndex, levelPos);
 		break;
 	case tson::LayerType::ObjectGroup:
+		playerLayer = layerIndex;
 		LoadObjects(layer, layerIndex, levelPos);
 		break;
 	case tson::LayerType::Group:
 		for (auto &subLayer : layer.getLayers()) {
-			LoadLayer(subLayer, layerIndex, levelPos);
+			LoadLayer(subLayer, layerIndex, levelPos, playerLayer);
 		}
 		break;
 	default:
@@ -60,7 +67,7 @@ void LevelFactory::LoadLayer(tson::Layer &layer, int &layerIndex, const glm::vec
 	layerIndex++;
 }
 
-void LevelFactory::LoadTiles(const tson::Layer &layer, const int layerIndex, const glm::vec2 &levelPos)
+void LevelFactory::LoadTiles(const tson::Layer &layer, const int layerIndex, const glm::vec2 &levelPos) const
 {
 	std::map<std::tuple<int, int>, tson::Tile *> tileData = layer.getTileData();
 	for (const auto &[tilePos, tile] : tileData) {
@@ -116,20 +123,20 @@ void LevelFactory::LoadTiles(const tson::Layer &layer, const int layerIndex, con
 	}
 }
 
-void LevelFactory::LoadAnimation(tson::Tile *const &tile, GameEngine::ECS::Entity entity)
+void LevelFactory::LoadAnimation(tson::Tile *const &tile, const GameEngine::ECS::Entity entity) const
 {
-	const glm::ivec2 imageSize = glm::ivec2(tile->getImageSize().x, tile->getImageSize().y);
+	const auto imageSize = glm::ivec2(tile->getImageSize().x, tile->getImageSize().y);
 
-	auto &animation = tile->getAnimation();
-	int framesCount = animation.size();
-	auto tileset = tile->getTileset();
+	const auto &animation = tile->getAnimation();
+	const auto framesCount = animation.size();
+	const auto tileset = tile->getTileset();
 
 	AnimationComponent animComp;
-	animComp.animations.push_back(Animation(framesCount, 0.1f * framesCount)); // textures have frame duration of 0.1s
+	animComp.animations.emplace_back(framesCount, framesCount * 0.07f); // textures have frame duration of 0.1s
 
 	std::vector<AnimationFrame> frames;
-	for (auto frame : animation.getFrames()) {
-		AnimationFrame animFrame;
+	for (const auto frame : animation.getFrames()) {
+		AnimationFrame animFrame{};
 		animFrame.texture = &textureManager.GetTexture(basePath / tileset->getTile(frame.getTileId())->getImage());
 		animFrame.TileMapPosition = glm::ivec2{0, 0};
 		animFrame.TileSize = imageSize;
@@ -139,13 +146,12 @@ void LevelFactory::LoadAnimation(tson::Tile *const &tile, GameEngine::ECS::Entit
 	registry.register_component(entity, animComp);
 }
 
-void LevelFactory::LoadBackground(tson::Layer &layer, const int layerIndex, const glm::vec2 &levelPos)
+void LevelFactory::LoadBackground(const tson::Layer &layer, const int layerIndex, const glm::vec2 &levelPos) const
 {
-	std::string layername = layer.getName();
 	fs::path backgroundPath = layer.getImage();
 	backgroundPath = "assets/tiled/background" / backgroundPath.filename();
 	if (layer.hasRepeatX()) {
-		const float scrollSpeed = layer.getProp("scroll") ? layer.getProp("scroll")->getValue<float>() : 1;
+		const float scrollSpeed = layer.getParallax().x;
 		CreateBackground(backgroundPath, layerIndex, scrollSpeed, layer.getOffset().y + levelPos.y, true);
 	} else {
 		CreateBackground(backgroundPath, layerIndex);
@@ -153,21 +159,19 @@ void LevelFactory::LoadBackground(tson::Layer &layer, const int layerIndex, cons
 }
 
 void LevelFactory::CreateBackground(const fs::path &filename, const int layer, const float scrollSpeed,
-                                    const float yOffset, const bool repeatX)
+                                    const float yOffset, const bool repeatX) const
 {
-	auto entity = registry.create();
+	const auto entity = registry.create();
 	registry.register_component(entity, BackgroundComponent{.texture = &textureManager.GetTexture(filename.string()),
 	                                                        .scrollingSpeed = scrollSpeed,
 	                                                        .yOffset = yOffset,
-	                                                        .repeatX = repeatX});
+	                                                        .repeatX = repeatX,
+	.levelId=levelId,});
 	registry.register_component(entity, RenderComponent{.layer = layer, .flipX = false});
 }
 
-void LevelFactory::LoadObjects(tson::Layer &layer, int layerIndex, const glm::vec2 &levelPos)
+void LevelFactory::LoadObjects(tson::Layer &layer, int layerIndex, const glm::vec2 &levelPos) const
 {
-
-	// Load all portals
-
 	for (auto &obj : layer.getObjectsByType(tson::ObjectType::Rectangle)) {
 		if (obj.getProperties().hasProperty("Portal")) {
 			const auto portalProp = obj.getProp("Portal");
@@ -189,12 +193,6 @@ void LevelFactory::LoadObjects(tson::Layer &layer, int layerIndex, const glm::ve
 			registry.register_component(
 			    entity,
 			    PortalComponent{.portalId = portalId, .targetLevel = targetLevel, .targetPortalId = targetPortalId});
-
-			// if (spawnPoint == portalId) {
-			// 	playerSpawnPosition = glm::vec2(static_cast<float>(obj.getPosition().x - obj.getSize().x / 2.0f),
-			// 	                                static_cast<float>(obj.getPosition().y));
-			// 	playerLayerIndex = layerIndex;
-			// }
 		}
 	}
 }

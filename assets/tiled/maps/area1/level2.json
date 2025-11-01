@@ -24,6 +24,7 @@
                  "imagewidth":320,
                  "name":"Parallax",
                  "opacity":1,
+                 "parallaxx":1.12,
                  "properties":[
                         {
                          "name":"scroll",
