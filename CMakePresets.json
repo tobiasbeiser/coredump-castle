@@ -41,5 +41,19 @@
 			"description": "Build with Ninja/vcpkg (Release)",
 			"configuration": "Release"
 		}
+	],
+	"testPresets": [
+		{
+			"name": "debug",
+			"configurePreset": "debug",
+			"output": {
+				"outputOnFailure": true
+			}
+		},
+		{
+			"name": "release",
+			"configurePreset": "release",
+			"displayName": "Release"
+		}
 	]
 }
