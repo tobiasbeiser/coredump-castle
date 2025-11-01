@@ -11,7 +11,7 @@ class View {
 	std::vector<Entity> entities;
 
   public:
-	explicit View(Registry &reg) : registry(reg)
+	View(Registry &reg) : registry(reg)
 	{
 		using Tuple = std::tuple<Components...>;
 		auto &firstStorage = registry.get_storage<std::tuple_element_t<0, Tuple>>();
