@@ -61,7 +61,8 @@ class MapActivationSystem {
 				const bool cameraObjInLevelSizeY = centerCameraPosition.y <= posLvl.position.y + level.levelSize.y;
 
 				if (cameraObjInLevelPos && cameraObjInLevelSizeX && cameraObjInLevelSizeY) {
-					return ReferenceFrame(posLvl.position.x, posLvl.position.y, level.levelSize.x, level.levelSize.y);
+					return ReferenceFrame(static_cast<int>(posLvl.position.x), static_cast<int>(posLvl.position.y),
+					                      static_cast<int>(level.levelSize.x), static_cast<int>(level.levelSize.y));
 				}
 			}
 		}

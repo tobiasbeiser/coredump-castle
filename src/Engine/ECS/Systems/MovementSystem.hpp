@@ -5,6 +5,7 @@
 #include "../Components/Physics/AccelerationComponent.hpp"
 #include "../Registry.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
+#include "Engine/ECS/Components/Tags/InactiveTag.hpp"
 
 namespace GameEngine::ECS::Systems {
 class MovementSystem {

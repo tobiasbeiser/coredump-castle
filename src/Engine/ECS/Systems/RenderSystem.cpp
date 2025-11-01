@@ -36,7 +36,8 @@ void RenderSystem::Update(Registry &registry, float alpha)
 		std::optional<SDL_FRect> dstOpt;
 
 		if (bg.repeatX) {
-			dstOpt = SDL_FRect{.x= pos.position.x,.y = bg.yOffset+pos.position.y, .h = static_cast<float>(bg.texture->h)};
+			dstOpt = SDL_FRect{
+			    .x = pos.position.x, .y = bg.yOffset + pos.position.y, .h = static_cast<float>(bg.texture->h)};
 		}
 
 		renderItems.push_back(RenderItem{.Layer = layer,

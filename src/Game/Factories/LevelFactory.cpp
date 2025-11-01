@@ -88,9 +88,8 @@ void LevelFactory::CreateTile(const int layerIndex, const glm::vec2 &levelPos, t
 	}
 
 	const bool flipX = tile.getFlipFlags() == tson::TileFlipFlags::Horizontally;
-	const bool flipY = tile.getFlipFlags() == tson::TileFlipFlags::Horizontally;
 
-	auto entity = registry.create();
+	const auto entity = registry.create();
 	registry.register_component(
 	    entity, SpriteComponent{.texture = &textureManager.GetTexture(imagePath),
 	                            .TileSize = {static_cast<float>(imageSize.x), static_cast<float>(imageSize.y)},
