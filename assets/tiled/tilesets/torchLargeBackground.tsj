@@ -7,15 +7,16 @@
      "width":32
     },
  "margin":0,
- "name":"FlameBackgrounds",
+ "name":"torchLargeBackground",
+ "objectalignment":"center",
  "spacing":0,
- "tilecount":4,
+ "tilecount":2,
  "tiledversion":"1.11.2",
  "tileheight":57,
  "tileoffset":
     {
-     "x":4,
-     "y":10
+     "x":-4,
+     "y":23
     },
  "tiles":[
         {
@@ -29,18 +30,6 @@
          "image":"animated\/torch_big_blue_background.png",
          "imageheight":57,
          "imagewidth":41
-        }, 
-        {
-         "id":2,
-         "image":"animated\/torch_small_background.png",
-         "imageheight":41,
-         "imagewidth":25
-        }, 
-        {
-         "id":3,
-         "image":"animated\/torch_small_blue_background.png",
-         "imageheight":41,
-         "imagewidth":25
         }],
  "tilewidth":41,
  "type":"tileset",

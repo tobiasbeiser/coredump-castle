@@ -13,6 +13,13 @@
             "width": 1152,
             "x": -224,
             "y": -192
+        },
+        {
+            "fileName": "maps/area1/level2.json",
+            "height": 576,
+            "width": 768,
+            "x": 1696,
+            "y": 576
         }
     ],
     "onlyShowAdjacentMaps": false,
