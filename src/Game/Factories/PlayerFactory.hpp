@@ -15,14 +15,17 @@
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
 
 #include "Engine/ECS/Components/Physics/GravityComponent.hpp"
+#include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/Graphics/TextureManager.hpp"
 
 struct PlayerFactory {
 	static GameEngine::ECS::Entity CreatePlayer(GameEngine::ECS::Registry &registry, TextureManager &texMgr,
-	                                            const glm::vec2 spawn, const fs::path& texturePath, const int layerIndex)
+	                                            const glm::vec2 spawn, const fs::path &texturePath,
+	                                            const int layerIndex)
 	{
 		auto e = registry.create();
+		registry.register_component(e, PlayerTag{});
 		registry.register_component(e, PositionComponent{.position = spawn});
 		registry.register_component(e, VelocityComponent{.velocity = {0.0f, 0.0f}});
 		registry.register_component(e, AccelerationComponent{.acceleration = {0.0f, 0.0f}});

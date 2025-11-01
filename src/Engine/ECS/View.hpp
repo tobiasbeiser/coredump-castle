@@ -11,7 +11,7 @@ class View {
 	std::vector<Entity> entities;
 
   public:
-	View(Registry &reg) : registry(reg)
+	explicit View(Registry &reg) : registry(reg)
 	{
 		using Tuple = std::tuple<Components...>;
 		auto &firstStorage = registry.get_storage<std::tuple_element_t<0, Tuple>>();
@@ -24,6 +24,19 @@ class View {
 				entities.push_back(entity);
 			}
 		}
+	}
+
+	template <typename... Excluded>
+	View &exclude()
+	{
+		std::vector<Entity> filtered;
+		for (Entity e : entities) {
+			if ((!registry.has<Excluded>(e) && ...)) {
+				filtered.push_back(e);
+			}
+		}
+		entities = std::move(filtered);
+		return *this;
 	}
 
 	auto begin() { return entities.begin(); }

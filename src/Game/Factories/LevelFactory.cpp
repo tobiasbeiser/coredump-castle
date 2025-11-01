@@ -5,6 +5,7 @@
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Render/BackgroundComponent.hpp"
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
+#include "Engine/ECS/Components/Tags/InactiveTag.hpp"
 #include "Game/Factories/PlayerFactory.hpp"
 #include <glm/vec2.hpp>
 
@@ -32,7 +33,8 @@ GameEngine::ECS::Entity LevelFactory::CreateLevel(tson::Map &map, const glm::vec
 
 	registry.register_component<LevelComponent>(
 	    level, LevelComponent{.levelSize = levelSize, .levelId = levelId, .playerLayer = playerLayer});
-
+	registry.register_component(level, PositionComponent{.position = pos});
+	registry.register_component(level, InactiveTag{});
 
 	const std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
 
@@ -162,11 +164,13 @@ void LevelFactory::CreateBackground(const fs::path &filename, const int layer, c
                                     const float yOffset, const bool repeatX) const
 {
 	const auto entity = registry.create();
-	registry.register_component(entity, BackgroundComponent{.texture = &textureManager.GetTexture(filename.string()),
-	                                                        .scrollingSpeed = scrollSpeed,
-	                                                        .yOffset = yOffset,
-	                                                        .repeatX = repeatX,
-	.levelId=levelId,});
+	registry.register_component(entity, BackgroundComponent{
+	                                        .texture = &textureManager.GetTexture(filename.string()),
+	                                        .scrollingSpeed = scrollSpeed,
+	                                        .yOffset = yOffset,
+	                                        .repeatX = repeatX,
+	                                        .levelId = levelId,
+	                                    });
 	registry.register_component(entity, RenderComponent{.layer = layer, .flipX = false});
 }
 

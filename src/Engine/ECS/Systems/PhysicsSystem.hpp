@@ -14,7 +14,7 @@ namespace GameEngine::ECS::Systems {
         static void Update(Registry &registry, float timeStep) {
             // Gravity
 
-            auto viewGravity = registry.view<VelocityComponent, GravityComponent>();
+            auto viewGravity = registry.view<VelocityComponent, GravityComponent>().exclude<InactiveTag>();
             for (auto entity: viewGravity) {
                 auto& vel = viewGravity.get<VelocityComponent>(entity);
                 auto& grav = viewGravity.get<GravityComponent>(entity);
@@ -22,7 +22,7 @@ namespace GameEngine::ECS::Systems {
             }
 
 
-            auto view = registry.view<PositionComponent, VelocityComponent, AccelerationComponent, MovementComponent>();
+            auto view = registry.view<PositionComponent, VelocityComponent, AccelerationComponent, MovementComponent>().exclude<InactiveTag>();
             for (auto entity: view) {
                 auto &pos = view.get<PositionComponent>(entity);
                 auto &vel = view.get<VelocityComponent>(entity);

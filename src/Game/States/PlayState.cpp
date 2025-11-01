@@ -42,6 +42,8 @@ void PlayState::Update(GameEngine &game, const float deltaTime)
 	if (paused) {
 		return;
 	}
+	mapActivationSystem.Update(game.registry);
+
 	inputSystem.Update(game.registry);
 
 	ECS::Systems::JumpSystem::Update(game.registry);
@@ -59,8 +61,7 @@ void PlayState::Update(GameEngine &game, const float deltaTime)
 	ECS::Systems::StateSystem::Update(game.registry);
 	ECS::Systems::AnimationSystem::Update(game.registry, deltaTime);
 
-	ECS::Systems::LevelTransitionData transitionData{history, currentLevelName};
-	ECS::Systems::InteractionSystem::Update(game, game.registry, transitionData);
+	ECS::Systems::InteractionSystem::Update(game, game.registry);
 }
 
 void PlayState::Render(GameEngine &game, const float alpha)

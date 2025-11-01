@@ -49,6 +49,12 @@ class Registry {
 	}
 
 	template <typename T>
+	void remove(Entity entity)
+	{
+		get_storage<T>().remove_component(entity);
+	}
+
+	template <typename T>
 	T &get(Entity entity)
 	{
 		return get_storage<T>().get_component(entity);

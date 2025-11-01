@@ -1,6 +1,5 @@
 #pragma once
 #include "Entity.hpp"
-#include <cstdint>
 #include <unordered_map>
 
 namespace GameEngine::ECS {
@@ -11,7 +10,9 @@ class ComponentStorage {
 
 	void add_component(Entity entity, const T &component) { components[entity] = component; }
 
-	bool contains_component(Entity entity) const { return components.find(entity) != components.end(); }
+	void remove_component(Entity entity) { components.erase(entity); }
+
+	bool contains_component(Entity entity) const { return components.contains(entity); }
 
 	T &get_component(Entity entity) { return components[entity]; }
 };

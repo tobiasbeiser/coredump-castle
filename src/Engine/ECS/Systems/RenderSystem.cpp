@@ -8,7 +8,9 @@
 #include "Engine/ECS/Components/Render/CenterCameraComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
+#include "Engine/ECS/Components/Tags/InactiveTag.hpp"
 #include "Engine/ECS/View.hpp"
+
 #include <algorithm>
 #include <stdexcept>
 #include <vector>
@@ -20,18 +22,13 @@ RenderSystem::RenderSystem(Renderer &renderer) : renderer(renderer) {}
 void RenderSystem::Update(Registry &registry, float alpha)
 {
 	renderItems.clear();
-
-	const int currentLevelId = GetCurrentLevelId(registry);
-	CenterCamera(registry, currentLevelId);
+	CenterCamera(registry);
 
 	// Backgrounds
-	for (auto bgView = registry.view<RenderComponent, BackgroundComponent>(); const auto entity : bgView) {
+	for (auto bgView = registry.view<RenderComponent, BackgroundComponent>().exclude<InactiveTag>();
+	     const auto entity : bgView) {
 		const auto &[layer, flipX] = bgView.get<RenderComponent>(entity);
 		const auto &bg = bgView.get<BackgroundComponent>(entity);
-
-		if (bg.levelId != currentLevelId) {
-			continue;
-		}
 
 		constexpr std::optional<SDL_FRect> srcOpt;
 		std::optional<SDL_FRect> dstOpt;
@@ -50,7 +47,8 @@ void RenderSystem::Update(Registry &registry, float alpha)
 	}
 
 	// Tiles, Player
-	for (auto view = registry.view<PositionComponent, SpriteComponent, RenderComponent>(); const auto entity : view) {
+	for (auto view = registry.view<PositionComponent, SpriteComponent, RenderComponent>().exclude<InactiveTag>();
+	     const auto entity : view) {
 		const auto &[position, previousPosition] = view.get<PositionComponent>(entity);
 		const auto &[texture, TileSize, TileMapPosition] = view.get<SpriteComponent>(entity);
 		const auto &[layer, flipX] = view.get<RenderComponent>(entity);
@@ -96,56 +94,33 @@ void RenderSystem::Update(Registry &registry, float alpha)
 	renderItems.clear();
 }
 
-int RenderSystem::GetCurrentLevelId(Registry &registry)
-{
-	if (auto centerCameraView = registry.view<PositionComponent, CenterCameraComponent, SpriteComponent>();
-	    centerCameraView.size() == 1) {
-		const auto &centerCameraEntity = centerCameraView.at(0);
-		const auto &[position, previousPosition] = centerCameraView.get<PositionComponent>(centerCameraEntity);
-		const auto &tile = centerCameraView.get<SpriteComponent>(centerCameraEntity);
-
-		const auto centerCameraPosition = position + static_cast<glm::vec2>(tile.TileSize / 2);
-		for (auto levelView = registry.view<LevelComponent, PositionComponent>(); const auto entity : levelView) {
-			const auto &level = levelView.get<LevelComponent>(entity);
-			auto &posLvl = levelView.get<PositionComponent>(entity);
-
-			const bool cameraObjInLevelPos =
-			    centerCameraPosition.x >= posLvl.position.x && centerCameraPosition.y >= posLvl.position.y;
-			const bool cameraObjInLevelSizeX = centerCameraPosition.x <= posLvl.position.x + level.levelSize.x;
-			const bool cameraObjInLevelSizeY = centerCameraPosition.y <= posLvl.position.y + level.levelSize.y;
-
-			if (cameraObjInLevelPos && cameraObjInLevelSizeX && cameraObjInLevelSizeY) {
-				return level.levelId;
-			}
-		}
-	}
-	return 0;
-}
-
-void RenderSystem::CenterCamera(Registry &registry, const int levelId) const
+void RenderSystem::CenterCamera(Registry &registry) const
 {
 
-	if (auto centerCameraView = registry.view<PositionComponent, CenterCameraComponent, SpriteComponent>();
+	if (auto centerCameraView =
+	        registry.view<PositionComponent, CenterCameraComponent, SpriteComponent>().exclude<InactiveTag>();
 	    centerCameraView.size() == 1) {
 		const auto &centerCameraEntity = centerCameraView.at(0);
 		auto &[position, previousPosition] = centerCameraView.get<PositionComponent>(centerCameraEntity);
 		const auto &tile = centerCameraView.get<SpriteComponent>(centerCameraEntity);
 
-		for (auto levelView = registry.view<LevelComponent, PositionComponent>(); const auto entity : levelView) {
-			auto &level = levelView.get<LevelComponent>(entity);
-			auto &posLvl = levelView.get<PositionComponent>(entity);
+		auto levelView = registry.view<LevelComponent, PositionComponent>().exclude<InactiveTag>();
 
-			if (level.levelId == levelId) {
-				if (registry.has<RenderComponent>(entity)) {
-					auto &[layer, flipX] = registry.get<RenderComponent>(entity);
-					layer = level.playerLayer;
-				}
+		if (levelView.size() == 1) {
+			const auto levelEntity = levelView.at(0);
+			auto &level = levelView.get<LevelComponent>(levelEntity);
+			auto &posLvl = levelView.get<PositionComponent>(levelEntity);
+			renderer.CenterCameraOn((position + static_cast<glm::vec2>(tile.TileSize / 2)), posLvl.position,
+			                        level.levelSize);
 
-				renderer.CenterCameraOn((position + static_cast<glm::vec2>(tile.TileSize / 2)), posLvl.position,
-				                        level.levelSize);
+			if (registry.has<RenderComponent>(levelEntity)) {
+				auto &[layer, flipX] = registry.get<RenderComponent>(levelEntity);
+				layer = level.playerLayer;
 			}
-		}
 
+		} else if (levelView.size() > 1) {
+			throw std::runtime_error("Level activation error: More than one active level found!");
+		}
 	} else if (centerCameraView.size() > 1) {
 		throw std::runtime_error("There cannot be more than on entity with a CenterCameraComponent");
 	}

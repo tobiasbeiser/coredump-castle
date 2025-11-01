@@ -10,14 +10,10 @@
 
 namespace GameEngine::ECS::Systems {
 
-struct LevelTransitionData {
-	LevelHistory &history;
-	std::string &currentLevel;
-};
 
 class InteractionSystem {
   public:
-	static void Update(GameEngine &game, Registry &registry, LevelTransitionData &transitionData)
+	static void Update(GameEngine &game, Registry &registry)
 	{
 
 		auto view = registry.view<InputComponent, PositionComponent, InteractionComponent>();
@@ -48,7 +44,7 @@ class InteractionSystem {
 
 				if (SDL_HasRectIntersectionFloat(&playerInteractionBox, &objInteractionBox)) {
 					if (registry.has<PortalComponent>(interactableObject)) {
-						TransitionLevel(registry, interactableObject, transitionData, game);
+						// TransitionLevel(registry, interactableObject, transitionData, game);
 					}
 				}
 			}
@@ -56,22 +52,22 @@ class InteractionSystem {
 	}
 
   private:
-	static void TransitionLevel(Registry &registry, Entity &interactableObject,
-	                            Systems::LevelTransitionData &transitionData, GameEngine &game)
-	{
-		auto &portal = registry.get<PortalComponent>(interactableObject);
-
-		const LevelHistory oldHistory = transitionData.history;
-
-		transitionData.history.levelName = transitionData.currentLevel;
-		transitionData.history.spawnPoint = portal.portalId;
-		if (portal.targetLevel == "previous") {
-			game.PushState(
-			    std::make_unique<::GameEngine::TransitionLevelState>(oldHistory.levelName, oldHistory.spawnPoint));
-		} else {
-			game.PushState(
-			    std::make_unique<::GameEngine::TransitionLevelState>(portal.targetLevel, portal.targetPortalId));
-		}
-	}
+	// static void TransitionLevel(Registry &registry, Entity &interactableObject,
+	//                             Systems::LevelTransitionData &transitionData, GameEngine &game)
+	// {
+	// 	auto &portal = registry.get<PortalComponent>(interactableObject);
+	//
+	// 	const LevelHistory oldHistory = transitionData.history;
+	//
+	// 	transitionData.history.levelName = transitionData.currentLevel;
+	// 	transitionData.history.spawnPoint = portal.portalId;
+	// 	if (portal.targetLevel == "previous") {
+	// 		game.PushState(
+	// 		    std::make_unique<::GameEngine::TransitionLevelState>(oldHistory.levelName, oldHistory.spawnPoint));
+	// 	} else {
+	// 		game.PushState(
+	// 		    std::make_unique<::GameEngine::TransitionLevelState>(portal.targetLevel, portal.targetPortalId));
+	// 	}
+	// }
 };
 } // namespace GameEngine::ECS::Systems

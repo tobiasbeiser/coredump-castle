@@ -24,8 +24,7 @@ class RenderSystem {
 
 	Renderer &renderer;
 
-	static int GetCurrentLevelId(Registry & registry);
-	void CenterCamera(Registry &registry, int levelId) const;
+	void CenterCamera(Registry &registry) const;
 
 };
 } // namespace GameEngine::ECS::Systems

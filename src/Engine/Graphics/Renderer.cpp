@@ -98,8 +98,8 @@ void Renderer::CenterCameraOn(const glm::vec2 &position, const glm::vec2 &levelP
 		viewport.y = std::clamp(newViewportYCoordinate, levelPos.y, levelSize.y + levelPos.y - viewport.h);
 	}
 
-	SDL_Log("Center camera on (%f) with level of (pos,size):(%f,%f), viewport (x,y):(%f,%f)", position.x, levelPos.x,
-	levelSize.x, viewport.x, viewport.y);
+	// SDL_Log("Center camera on (%f) with level of (pos,size):(%f,%f), viewport (x,y):(%f,%f)", position.x, levelPos.x,
+	// levelSize.x, viewport.x, viewport.y);
 }
 
 void Renderer::RenderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, const float scrollFactor) const

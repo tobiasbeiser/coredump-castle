@@ -9,44 +9,40 @@
 namespace GameEngine::ECS::Systems {
 class MovementSystem {
   public:
-	static void Update(ECS::Registry &registry, float stepSize)
+	static void Update(ECS::Registry &registry, const float stepSize)
 	{
-		auto view = registry.view<VelocityComponent, AccelerationComponent, MovementComponent,
-		                          InputComponent>();
-		for (auto entity : view) {
-			auto &vel = view.get<VelocityComponent>(entity);
-			auto &acc = view.get<AccelerationComponent>(entity);
-			auto &move = view.get<MovementComponent>(entity);
-			auto &input = view.get<InputComponent>(entity);
+		for (auto view = registry.view<VelocityComponent, AccelerationComponent, MovementComponent, InputComponent>()
+		                     .exclude<InactiveTag>();
+		     const auto entity : view) {
+			auto &[velocity] = view.get<VelocityComponent>(entity);
+			auto &[acceleration] = view.get<AccelerationComponent>(entity);
+			const auto &[accelerationRate, maxSpeedX] = view.get<MovementComponent>(entity);
 
-
-
-			if (input.horizontalDirection) {
-
-				if ((vel.velocity.x > 0 && input.horizontalDirection < 0)
-				    || (vel.velocity.x < 0 && input.horizontalDirection > 0)) {
+			if (const auto &input = view.get<InputComponent>(entity); input.horizontalDirection != 0.0f) {
+				if ((velocity.x > 0 && input.horizontalDirection < 0)
+				    || (velocity.x < 0 && input.horizontalDirection > 0)) {
 					// Directional change, apply stronger acceleration
-					acc.acceleration.x = input.horizontalDirection * move.accelerationRate * 7.5f;
+					acceleration.x = input.horizontalDirection * accelerationRate * 7.5f;
 				} else {
-					acc.acceleration.x = input.horizontalDirection * move.accelerationRate;
+					acceleration.x = input.horizontalDirection * accelerationRate;
 				}
 			} else {
 				// decelerate
-				if (vel.velocity.x) {
-					const float factor = vel.velocity.x > 0 ? -2.5f : 2.5f;
-					const float amount = factor * move.accelerationRate * stepSize;
-					if (std::abs(vel.velocity.x) < std::abs(amount)) {
-						acc.acceleration.x = 0;
-						vel.velocity.x = 0;
+				if (velocity.x) {
+					const float factor = velocity.x > 0 ? -2.5f : 2.5f;
+					const float amount = factor * accelerationRate * stepSize;
+					if (std::abs(velocity.x) < std::abs(amount)) {
+						acceleration.x = 0;
+						velocity.x = 0;
 					} else {
-						acc.acceleration.x += amount;
-						vel.velocity.x += amount;
+						acceleration.x += amount;
+						velocity.x += amount;
 					}
 				}
 			}
 
-			if(registry.has<RenderComponent>(entity) && vel.velocity.x) {
-				registry.get<RenderComponent>(entity).flipX = vel.velocity.x < 0;
+			if (registry.has<RenderComponent>(entity) && velocity.x) {
+				registry.get<RenderComponent>(entity).flipX = velocity.x < 0;
 			}
 		}
 	}
