@@ -31,8 +31,8 @@ GameEngine::ECS::Entity LevelFactory::CreateLevel(tson::Map &map, const glm::vec
 		LoadLayer(layer, layerIndex, pos, playerLayer);
 	}
 
-	registry.register_component<LevelComponent>(
-	    level, LevelComponent{.levelSize = levelSize, .playerLayer = playerLayer});
+	registry.register_component<LevelComponent>(level,
+	                                            LevelComponent{.levelSize = levelSize, .playerLayer = playerLayer});
 	registry.register_component(level, PositionComponent{.position = pos});
 	registry.register_component(level, InactiveTag{});
 
@@ -126,7 +126,7 @@ void LevelFactory::LoadTiles(const tson::Layer &layer, const int layerIndex, con
 		if (tile != nullptr) {
 			const glm::ivec2 position = glm::ivec2(std::get<0>(tilePos), std::get<1>(tilePos));
 			const glm::ivec2 tileSize = glm::ivec2(tile->getTileSize().x, tile->getTileSize().y);
-			CreateTile(layerIndex, levelPos, *tile, position*tileSize);
+			CreateTile(layerIndex, levelPos, *tile, position * tileSize);
 		}
 	}
 }
@@ -170,13 +170,10 @@ void LevelFactory::CreateBackground(const glm::vec2 &levelPos, const fs::path &f
                                     const float scrollSpeed, const float yOffset, const bool repeatX) const
 {
 	const auto entity = registry.create();
-	registry.register_component(entity, BackgroundComponent{
-	                                        .texture = &textureManager.GetTexture(filename.string()),
-	                                        .scrollingSpeed = scrollSpeed,
-	                                        .yOffset = yOffset,
-	                                        .repeatX = repeatX,
-	                                        .levelId = levelId,
-	                                    });
+	registry.register_component(entity, BackgroundComponent{.texture = &textureManager.GetTexture(filename.string()),
+	                                                        .scrollingSpeed = scrollSpeed,
+	                                                        .yOffset = yOffset,
+	                                                        .repeatX = repeatX});
 	registry.register_component(entity, RenderComponent{.layer = layer, .flipX = false});
 	registry.register_component(entity, PositionComponent{.position = levelPos});
 }
@@ -193,7 +190,7 @@ void LevelFactory::LoadObjects(tson::Layer &layer, int layerIndex, const glm::ve
 		if (const auto tileset = layer.getMap()->getTilesetByGid(obj.getGid()); tileset != nullptr) {
 			const int tilesetGid = tileset->getFirstgid();
 			if (const auto tile = tileset->getTile(obj.getGid() - tilesetGid + 1); tile != nullptr) {
-				auto position = glm::vec2(obj.getPosition().x, obj.getPosition().y-obj.getSize().y);
+				auto position = glm::vec2(obj.getPosition().x, obj.getPosition().y - obj.getSize().y);
 				CreateTile(layerIndex, levelPos, *tile, position);
 			}
 		}

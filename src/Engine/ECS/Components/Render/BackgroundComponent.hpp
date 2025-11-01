@@ -6,5 +6,4 @@ struct BackgroundComponent {
 	float scrollPos = 0.0f;
 	float yOffset = 0.0f;
 	bool repeatX = false;
-	int levelId = 0;
 };
