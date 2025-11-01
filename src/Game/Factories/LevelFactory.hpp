@@ -28,7 +28,6 @@ class LevelFactory {
 	void LoadPortals(const glm::vec2 &levelPos, tson::Object &obj) const;
 
 
-	int levelId = 0;
 	int playerLayerIndex = 0;
 	glm::vec2 playerSpawnPosition = {0, 0};
 	GameEngine::ECS::Registry &registry;

@@ -9,8 +9,6 @@
 #include "Engine/ECS/View.hpp"
 #include <glm/glm.hpp>
 
-#include "Engine/ECS/Components/Physics/GravityComponent.hpp"
-
 namespace GameEngine::ECS::Systems {
 class PhysicsSystem {
   public:

@@ -32,7 +32,7 @@ GameEngine::ECS::Entity LevelFactory::CreateLevel(tson::Map &map, const glm::vec
 	}
 
 	registry.register_component<LevelComponent>(
-	    level, LevelComponent{.levelSize = levelSize, .levelId = levelId, .playerLayer = playerLayer});
+	    level, LevelComponent{.levelSize = levelSize, .playerLayer = playerLayer});
 	registry.register_component(level, PositionComponent{.position = pos});
 	registry.register_component(level, InactiveTag{});
 
@@ -41,7 +41,6 @@ GameEngine::ECS::Entity LevelFactory::CreateLevel(tson::Map &map, const glm::vec
 	const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - now).count();
 	SDL_Log("Level loaded in %ld ms\n", duration);
 
-	levelId++;
 	return level;
 }
 
