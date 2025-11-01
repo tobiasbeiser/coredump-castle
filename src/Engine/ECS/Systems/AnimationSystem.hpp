@@ -12,9 +12,9 @@ class AnimationSystem {
 	static void Update(Registry &registry, float stepSize)
 	{
 		auto view = registry.view<AnimationComponent, SpriteComponent>();
-		for (auto entity : view) {
+		for (const auto entity : view) {
 			auto &anim = view.get<AnimationComponent>(entity);
-			auto &sprite = view.get<SpriteComponent>(entity);
+			auto &[texture, TileSize, TileMapPosition] = view.get<SpriteComponent>(entity);
 
 			if (registry.has<StateComponent>(entity)) {
 				anim.previousAnimation = anim.currentAnimation;
@@ -33,10 +33,10 @@ class AnimationSystem {
 
 				// Update tile map position based on current animation frame#
 				auto animFrames = anim.frames.at(anim.currentAnimation);
-				int currentFrame = animation.currentFrame();
-				sprite.texture = animFrames.at(currentFrame).texture;
-				sprite.TileSize = anim.frames.at(anim.currentAnimation).at(animation.currentFrame()).TileSize;
-				sprite.TileMapPosition =
+				const int currentFrame = animation.currentFrame();
+				texture = animFrames.at(currentFrame).texture;
+				TileSize = anim.frames.at(anim.currentAnimation).at(animation.currentFrame()).TileSize;
+				TileMapPosition =
 				    anim.frames.at(anim.currentAnimation).at(animation.currentFrame()).TileMapPosition;
 			}
 		}

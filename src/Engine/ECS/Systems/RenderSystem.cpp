@@ -25,16 +25,18 @@ void RenderSystem::Update(Registry &registry, float alpha)
 	CenterCamera(registry);
 
 	// Backgrounds
-	for (auto bgView = registry.view<RenderComponent, BackgroundComponent>().exclude<InactiveTag>();
+
+	for (auto bgView = registry.view<RenderComponent, BackgroundComponent, PositionComponent>().exclude<InactiveTag>();
 	     const auto entity : bgView) {
 		const auto &[layer, flipX] = bgView.get<RenderComponent>(entity);
+		const auto &pos = bgView.get<PositionComponent>(entity);
 		const auto &bg = bgView.get<BackgroundComponent>(entity);
 
 		constexpr std::optional<SDL_FRect> srcOpt;
 		std::optional<SDL_FRect> dstOpt;
 
 		if (bg.repeatX) {
-			dstOpt = SDL_FRect{.y = bg.yOffset, .h = static_cast<float>(bg.texture->h)};
+			dstOpt = SDL_FRect{.x= pos.position.x,.y = bg.yOffset+pos.position.y, .h = static_cast<float>(bg.texture->h)};
 		}
 
 		renderItems.push_back(RenderItem{.Layer = layer,
@@ -108,8 +110,8 @@ void RenderSystem::CenterCamera(Registry &registry) const
 
 		if (levelView.size() == 1) {
 			const auto levelEntity = levelView.at(0);
-			auto &level = levelView.get<LevelComponent>(levelEntity);
-			auto &posLvl = levelView.get<PositionComponent>(levelEntity);
+			const auto &level = levelView.get<LevelComponent>(levelEntity);
+			const auto &posLvl = levelView.get<PositionComponent>(levelEntity);
 			renderer.CenterCameraOn((position + static_cast<glm::vec2>(tile.TileSize / 2)), posLvl.position,
 			                        level.levelSize);
 

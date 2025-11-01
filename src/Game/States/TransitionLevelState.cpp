@@ -23,7 +23,7 @@ void GameEngine::TransitionLevelState::Update(GameEngine &game, const float delt
 {
 	if (!loadingDone) {
 		// if no level is loaded start with black screen
-		if (game.registry.size() == 0) {
+		if (game.GetRegistry().size() == 0) {
 			progress = 1.0f;
 		} else {
 			progress += deltaTime / duration;

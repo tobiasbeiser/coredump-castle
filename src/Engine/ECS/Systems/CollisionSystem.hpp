@@ -21,8 +21,6 @@ struct CollisionSystem {
 		auto staticView = registry.view<PositionComponent, CollisionComponent>().exclude<InactiveTag>();
 		std::chrono::high_resolution_clock::time_point time2 = std::chrono::high_resolution_clock::now();
 
-		SDL_Log("active entities: %d", staticView.size());
-
 		DebugSystem::Debug(
 		    "coll views: "
 		    + std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count()) + " us");

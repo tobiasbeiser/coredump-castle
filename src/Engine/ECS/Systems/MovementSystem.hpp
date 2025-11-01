@@ -9,7 +9,7 @@
 namespace GameEngine::ECS::Systems {
 class MovementSystem {
   public:
-	static void Update(ECS::Registry &registry, const float stepSize)
+	static void Update(Registry &registry, const float stepSize)
 	{
 		for (auto view = registry.view<VelocityComponent, AccelerationComponent, MovementComponent, InputComponent>()
 		                     .exclude<InactiveTag>();

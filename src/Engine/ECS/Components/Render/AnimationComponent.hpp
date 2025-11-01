@@ -19,7 +19,7 @@ struct AnimationComponent {
 	void addAnimationFromSpritesheet(int state, int frameCount, float length, SDL_Texture *texture, glm::ivec2 tileSize,
 	                                 glm::ivec2 tileMapPos)
 	{
-		Animation anim(frameCount, length);
+		const Animation anim(frameCount, length);
 		if (state >= animations.size()) {
 			animations.resize(state + 1);
 		}

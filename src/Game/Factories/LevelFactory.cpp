@@ -154,14 +154,14 @@ void LevelFactory::LoadBackground(const tson::Layer &layer, const int layerIndex
 	backgroundPath = "assets/tiled/background" / backgroundPath.filename();
 	if (layer.hasRepeatX()) {
 		const float scrollSpeed = layer.getParallax().x;
-		CreateBackground(backgroundPath, layerIndex, scrollSpeed, layer.getOffset().y + levelPos.y, true);
+		CreateBackground(levelPos, backgroundPath, layerIndex, scrollSpeed, layer.getOffset().y, true);
 	} else {
-		CreateBackground(backgroundPath, layerIndex);
+		CreateBackground(levelPos, backgroundPath, layerIndex);
 	}
 }
 
-void LevelFactory::CreateBackground(const fs::path &filename, const int layer, const float scrollSpeed,
-                                    const float yOffset, const bool repeatX) const
+void LevelFactory::CreateBackground(const glm::vec2 &levelPos, const fs::path &filename, const int layer,
+                                    const float scrollSpeed, const float yOffset, const bool repeatX) const
 {
 	const auto entity = registry.create();
 	registry.register_component(entity, BackgroundComponent{
@@ -172,6 +172,7 @@ void LevelFactory::CreateBackground(const fs::path &filename, const int layer, c
 	                                        .levelId = levelId,
 	                                    });
 	registry.register_component(entity, RenderComponent{.layer = layer, .flipX = false});
+	registry.register_component(entity, PositionComponent{.position = levelPos});
 }
 
 void LevelFactory::LoadObjects(tson::Layer &layer, int layerIndex, const glm::vec2 &levelPos) const

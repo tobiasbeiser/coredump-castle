@@ -25,6 +25,5 @@ class RenderSystem {
 	Renderer &renderer;
 
 	void CenterCamera(Registry &registry) const;
-
 };
 } // namespace GameEngine::ECS::Systems

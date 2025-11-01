@@ -94,20 +94,17 @@ void GameEngine::HandleEvents()
 void GameEngine::Update(const float deltaTime)
 {
 	DebugSystem::Clear();
-	for (auto &state : states) {
+	for (const auto &state : states) {
 		state->Update(*this, deltaTime);
-	}
-	if (pendingPush) {
-		PushState(std::move(pendingPush));
 	}
 }
 
 void GameEngine::Render(const float alpha)
 {
-	const int red = 12, blue = 19, green = 25;
-	const int opacity = 255;
-	renderer.StartFrame(red, blue, green, opacity);
-	for (auto &state : states) {
+	constexpr int red = 12, blue = 19, green = 25;
+	constexpr int opacity = 255;
+	renderer.StartFrame(red, green, blue, opacity);
+	for (const auto &state : states) {
 		state->Render(*this, alpha);
 	}
 	renderer.EndFrame();
