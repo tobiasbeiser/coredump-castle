@@ -1,6 +1,9 @@
+#pragma once
+
+
 struct JumpComponent {
-	float jumpStrength = 350;
-	bool allowDoubleJump = false;
+	float jumpStrength = 380;
+	bool allowDoubleJump = true;
 	int jumpsLeft = 1;
-	int maxJumps = 1;
+	int maxJumps = 2;
 };

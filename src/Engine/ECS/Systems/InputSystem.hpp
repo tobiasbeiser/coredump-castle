@@ -25,16 +25,8 @@ class InputSystem {
 		for (auto &entity : view) {
 			auto &input = view.get<InputComponent>(entity);
 			input.horizontalDirection = horizontalDirection;
-			input.jumpPressed = inputManager.IsKeyPressed(Key::Up);
-
-			//SDL_Log("Before %d %d", input.interactPressed, input.interactConsumed);
-			std::string before = std::to_string(static_cast<int>(input.interactPressed)) + " "
-			                                    + std::to_string(static_cast<int>(input.interactConsumed));
+			PressOrConsume(inputManager.IsKeyPressed(Key::Up), input.jumpPressed, input.jumpConsumed);
 			PressOrConsume(inputManager.IsKeyPressed(Key::Interact), input.interactPressed, input.interactConsumed);
-			std::string after = std::to_string(static_cast<int>(input.interactPressed)) + " "
-			                                    + std::to_string(static_cast<int>(input.interactConsumed));
-
-			//SDL_Log("InputSystem: Entity %d Interact before: %s after: %s", entity, before.c_str(), after.c_str());
 		}
 	}
 

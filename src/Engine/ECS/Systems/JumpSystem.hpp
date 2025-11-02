@@ -8,19 +8,25 @@ namespace GameEngine::ECS::Systems {
 struct JumpSystem {
 	static void Update(Registry &registry)
 	{
-		auto view = registry.view<JumpComponent, GroundedComponent, VelocityComponent, InputComponent>();
-		for (auto entity : view) {
+
+		for (auto view = registry.view<JumpComponent, GroundedComponent, VelocityComponent, InputComponent>();
+		     const auto entity : view) {
+
 			auto &jump = registry.get<JumpComponent>(entity);
-			auto &grounded = registry.get<GroundedComponent>(entity);
-			auto &vel = registry.get<VelocityComponent>(entity);
-			auto &input = registry.get<InputComponent>(entity);
-			if (grounded.grounded) {
-				jump.jumpsLeft = jump.maxJumps;
+			const auto &[grounded] = registry.get<GroundedComponent>(entity);
+			auto &[velocity] = registry.get<VelocityComponent>(entity);
+			const auto &input = registry.get<InputComponent>(entity);
+			if (grounded) {
+				if (jump.allowDoubleJump) {
+					jump.jumpsLeft = jump.maxJumps;
+				} else {
+					jump.jumpsLeft = 1;
+				}
 			}
 
-			if (jump.jumpsLeft && input.jumpPressed) {
+			if (jump.jumpsLeft && input.jumpPressed && velocity.y <= 0) {
+				velocity.y = -jump.jumpStrength;
 				jump.jumpsLeft--;
-				vel.velocity.y = -jump.jumpStrength;
 			}
 		}
 	}
