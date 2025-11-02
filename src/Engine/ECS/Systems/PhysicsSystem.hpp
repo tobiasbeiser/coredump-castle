@@ -16,16 +16,16 @@ class PhysicsSystem {
 	{
 		// Gravity
 
-		auto viewGravity = registry.view<VelocityComponent, GravityComponent>().exclude<InactiveTag>();
-		for (auto entity : viewGravity) {
+		for (auto viewGravity = registry.view<VelocityComponent, GravityComponent>().exclude<InactiveTag>();
+		     auto &entity : viewGravity) {
 			auto &vel = viewGravity.get<VelocityComponent>(entity);
 			auto &grav = viewGravity.get<GravityComponent>(entity);
 			vel.velocity += glm::vec2(0, grav.gravity) * timeStep;
 		}
 
-		auto view = registry.view<PositionComponent, VelocityComponent, AccelerationComponent, MovementComponent>()
-		                .exclude<InactiveTag>();
-		for (auto entity : view) {
+		for (auto view = registry.view<PositionComponent, VelocityComponent, AccelerationComponent, MovementComponent>()
+		                     .exclude<InactiveTag>();
+		     auto entity : view) {
 			auto &pos = view.get<PositionComponent>(entity);
 			auto &vel = view.get<VelocityComponent>(entity);
 			auto &acc = view.get<AccelerationComponent>(entity);
