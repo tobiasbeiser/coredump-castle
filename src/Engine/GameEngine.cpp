@@ -6,7 +6,7 @@
 namespace GameEngine {
 
 GameEngine::GameEngine(const std::string &title, Resolution resolution)
-    : renderer(title, resolution), textureManager(renderer) {};
+    : renderer(title, resolution), texture_manager(renderer) {};
 
 GameEngine::~GameEngine()
 {
@@ -16,7 +16,7 @@ GameEngine::~GameEngine()
 bool GameEngine::Init()
 {
 	// game data
-	states.emplace_back(std::make_unique<PlayState>(inputManager, textureManager, renderer));
+	states.emplace_back(std::make_unique<PlayState>(input_manager, texture_manager, renderer));
 	running = true;
 
 	states.back()->Init(*this);
@@ -80,7 +80,7 @@ void GameEngine::HandleEvents()
 
 		case SDL_EVENT_KEY_DOWN:
 		case SDL_EVENT_KEY_UP:
-			inputManager.Update(&event.key);
+			input_manager.Update(&event.key);
 			break;
 		default:
 			break;

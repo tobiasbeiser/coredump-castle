@@ -5,15 +5,15 @@
 #include "LevelFactory.hpp"
 #include "PlayerFactory.hpp"
 WorldFactory::WorldFactory(GameEngine::ECS::Registry &registry, const std::filesystem::path &projectPath,
-                           TextureManager &textureManager)
-    : registry(registry), project(tson::Project{projectPath}), textureManager(textureManager)
+                           TextureManager &texture_manager)
+    : registry(registry), project(tson::Project{projectPath}), texture_manager(texture_manager)
 {
 }
 void WorldFactory::CreateWorld(const std::filesystem::path &worldPath)
 {
 	tson::World world;
 	world.parse(worldPath);
-	auto levelFactory = LevelFactory(registry, textureManager);
+	auto levelFactory = LevelFactory(registry, texture_manager);
 	glm::vec2 playerSpawnPosition{0, 0};
 	int playerLayerIndex = 100;
 
@@ -35,6 +35,6 @@ void WorldFactory::CreateWorld(const std::filesystem::path &worldPath)
 		registry.register_component<PositionComponent>(level, PositionComponent{.position = levelPos});
 	}
 
-	PlayerFactory::CreatePlayer(registry, textureManager, playerSpawnPosition,
+	PlayerFactory::CreatePlayer(registry, texture_manager, playerSpawnPosition,
 	                            std::filesystem::path("assets/player/char_blue_1.png"), playerLayerIndex);
 }

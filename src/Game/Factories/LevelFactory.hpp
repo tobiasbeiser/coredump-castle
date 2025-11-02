@@ -6,7 +6,7 @@
 
 class LevelFactory {
   public:
-	LevelFactory(GameEngine::ECS::Registry &registry, TextureManager &textureManager);
+	LevelFactory(GameEngine::ECS::Registry &registry, TextureManager &texture_manager);
 
 	LevelFactory(LevelFactory &&) = delete;
 	LevelFactory &operator=(LevelFactory &&) = delete;
@@ -31,6 +31,6 @@ class LevelFactory {
 	int playerLayerIndex = 0;
 	glm::vec2 playerSpawnPosition = {0, 0};
 	GameEngine::ECS::Registry &registry;
-	TextureManager &textureManager;
+	TextureManager &texture_manager;
 	const std::filesystem::path basePath = "assets/tiled/tilesets/";
 };

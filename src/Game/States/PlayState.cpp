@@ -16,7 +16,7 @@ void PlayState::Init(GameEngine &game)
 {
 	// game.PushState(std::make_unique<TransitionLevelState>("MainHub", "Player"));
 	const std::filesystem::path projectPath = "assets/tiled/CoredumpCastle.tiled-project";
-	auto factory = WorldFactory(game.GetRegistry(), projectPath, game.GetTextureManager());
+	auto factory = WorldFactory(game.get_registry(), projectPath, game.get_texture_manager());
 
 	const std::filesystem::path worldPath = "assets/tiled/coredumpCastle.world";
 	factory.CreateWorld(worldPath);
@@ -41,16 +41,16 @@ void PlayState::Update(GameEngine &game, const float deltaTime)
 	if (paused) {
 		return;
 	}
-	mapActivationSystem.Update(game.GetRegistry());
+	mapActivationSystem.Update(game.get_registry());
 
-	inputSystem.Update(game.GetRegistry());
+	inputSystem.Update(game.get_registry());
 
-	ECS::Systems::JumpSystem::Update(game.GetRegistry());
-	ECS::Systems::MovementSystem::Update(game.GetRegistry(), deltaTime);
+	ECS::Systems::JumpSystem::Update(game.get_registry());
+	ECS::Systems::MovementSystem::Update(game.get_registry(), deltaTime);
 	std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now();
-	ECS::Systems::PhysicsSystem::Update(game.GetRegistry(), deltaTime);
+	ECS::Systems::PhysicsSystem::Update(game.get_registry(), deltaTime);
 	std::chrono::high_resolution_clock::time_point time1 = std::chrono::high_resolution_clock::now();
-	ECS::Systems::CollisionSystem::Update(game.GetRegistry());
+	ECS::Systems::CollisionSystem::Update(game.get_registry());
 	std::chrono::high_resolution_clock::time_point time2 = std::chrono::high_resolution_clock::now();
 
 	/*DebugSystem::Debug("Physics Time: "+ std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(time1 -
@@ -58,16 +58,16 @@ void PlayState::Update(GameEngine &game, const float deltaTime)
 	                   + std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(time2 -
 	   time1).count()));*/
 
-	ECS::Systems::StateSystem::Update(game.GetRegistry());
-	ECS::Systems::AnimationSystem::Update(game.GetRegistry(), deltaTime);
+	ECS::Systems::StateSystem::Update(game.get_registry());
+	ECS::Systems::AnimationSystem::Update(game.get_registry(), deltaTime);
 
-	ECS::Systems::InteractionSystem::Update(game, game.GetRegistry());
+	ECS::Systems::InteractionSystem::Update(game, game.get_registry());
 }
 
 void PlayState::Render(GameEngine &game, const float alpha)
 {
 	// std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now();
-	renderSystem.Update(game.GetRegistry(), alpha);
+	renderSystem.Update(game.get_registry(), alpha);
 	// std::chrono::high_resolution_clock::time_point time1 = std::chrono::high_resolution_clock::now();
 	// DebugSystem::Debug("Render Time: " + std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(time1 -
 	// now).count()));

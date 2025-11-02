@@ -8,16 +8,16 @@
 namespace GameEngine::ECS::Systems {
 class InputSystem {
   public:
-	InputSystem(const InputManager &inputManager) : inputManager(inputManager) {}
+	InputSystem(const InputManager &input_manager) : input_manager(input_manager) {}
 
 	void Update(Registry &registry)
 	{
 
 		float horizontalDirection = 0;
-		if (inputManager.IsKeyDown(Key::Left)) {
+		if (input_manager.IsKeyDown(Key::Left)) {
 			horizontalDirection += -1;
 		}
-		if (inputManager.IsKeyDown(Key::Right)) {
+		if (input_manager.IsKeyDown(Key::Right)) {
 			horizontalDirection += 1;
 		}	
 
@@ -25,12 +25,12 @@ class InputSystem {
 		for (auto &entity : view) {
 			auto &input = view.get<InputComponent>(entity);
 			input.horizontalDirection = horizontalDirection;
-			input.jumpPressed = inputManager.IsKeyPressed(Key::Up);
+			input.jumpPressed = input_manager.IsKeyPressed(Key::Up);
 
 			//SDL_Log("Before %d %d", input.interactPressed, input.interactConsumed);
 			std::string before = std::to_string(static_cast<int>(input.interactPressed)) + " "
 			                                    + std::to_string(static_cast<int>(input.interactConsumed));
-			PressOrConsume(inputManager.IsKeyPressed(Key::Interact), input.interactPressed, input.interactConsumed);
+			PressOrConsume(input_manager.IsKeyPressed(Key::Interact), input.interactPressed, input.interactConsumed);
 			std::string after = std::to_string(static_cast<int>(input.interactPressed)) + " "
 			                                    + std::to_string(static_cast<int>(input.interactConsumed));
 
@@ -43,7 +43,7 @@ class InputSystem {
 	// have multiple updates per frame)
 
   private:
-	const InputManager &inputManager;
+	const InputManager &input_manager;
 
 	void PressOrConsume(bool keyPressed, bool &pressedProp, bool &consumedProp)
 	{

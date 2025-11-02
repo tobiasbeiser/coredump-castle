@@ -7,7 +7,7 @@
 class WorldFactory {
   public:
 	WorldFactory(GameEngine::ECS::Registry &registry, const std::filesystem::path &projectPath,
-	             TextureManager &textureManager);
+	             TextureManager &texture_manager);
 
 	WorldFactory(const WorldFactory &) = delete;
 	WorldFactory &operator=(const WorldFactory &) = delete;
@@ -21,5 +21,5 @@ class WorldFactory {
 	GameEngine::ECS::Registry &registry;
 	tson::Project project;
 	tson::Tileson tileson{&project};
-	TextureManager &textureManager;
+	TextureManager &texture_manager;
 };
