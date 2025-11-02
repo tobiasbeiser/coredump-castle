@@ -48,10 +48,10 @@ class GameEngine {
 	bool Running() const { return running; }
 	void Quit() { running = false; }
 
-	Renderer &get_renderer() { return renderer; }
-	ECS::Registry &get_registry() { return registry; }
-	InputManager &get_input_manager() { return input_manager; }
-	TextureManager &get_texture_manager() { return texture_manager; }
+	Renderer &getRenderer() { return renderer; }
+	ECS::Registry &getRegistry() { return registry; }
+	InputManager &getInputManager() { return inputManager; }
+	TextureManager &getTextureManager() { return textureManager; }
 
   private:
 	std::vector<std::unique_ptr<GameState>> states;
@@ -59,7 +59,7 @@ class GameEngine {
 	const std::string title;
 	ECS::Registry registry;
 	Renderer renderer;
-	InputManager input_manager;
-	TextureManager texture_manager;
+	InputManager inputManager;
+	TextureManager textureManager;
 };
 } // namespace GameEngine

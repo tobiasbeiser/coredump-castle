@@ -9,8 +9,8 @@
 #include "Game/Factories/PlayerFactory.hpp"
 #include <glm/vec2.hpp>
 
-LevelFactory::LevelFactory(GameEngine::ECS::Registry &registry, TextureManager &texture_manager)
-    : registry(registry), texture_manager(texture_manager) {};
+LevelFactory::LevelFactory(GameEngine::ECS::Registry &registry, TextureManager &textureManager)
+    : registry(registry), textureManager(textureManager) {};
 
 GameEngine::ECS::Entity LevelFactory::CreateLevel(tson::Map &map, const glm::vec2 &pos)
 {
@@ -91,7 +91,7 @@ void LevelFactory::CreateTile(const int layerIndex, const glm::vec2 &levelPos, t
 
 	const auto entity = registry.create();
 	registry.register_component(
-	    entity, SpriteComponent{.texture = &texture_manager.GetTexture(imagePath),
+	    entity, SpriteComponent{.texture = &textureManager.GetTexture(imagePath),
 	                            .TileSize = {static_cast<float>(imageSize.x), static_cast<float>(imageSize.y)},
 	                            .TileMapPosition = {static_cast<float>(rectSrc.x), static_cast<float>(rectSrc.y)}});
 	registry.register_component(entity, RenderComponent{.layer = layerIndex, .flipX = flipX});
@@ -144,7 +144,7 @@ void LevelFactory::LoadAnimation(tson::Tile *const &tile, const GameEngine::ECS:
 	std::vector<AnimationFrame> frames;
 	for (const auto frame : animation.getFrames()) {
 		AnimationFrame animFrame{};
-		animFrame.texture = &texture_manager.GetTexture(basePath / tileset->getTile(frame.getTileId())->getImage());
+		animFrame.texture = &textureManager.GetTexture(basePath / tileset->getTile(frame.getTileId())->getImage());
 		animFrame.TileMapPosition = glm::ivec2{0, 0};
 		animFrame.TileSize = imageSize;
 		frames.push_back(animFrame);
@@ -169,7 +169,7 @@ void LevelFactory::CreateBackground(const glm::vec2 &levelPos, const fs::path &f
                                     const float scrollSpeed, const float yOffset, const bool repeatX) const
 {
 	const auto entity = registry.create();
-	registry.register_component(entity, BackgroundComponent{.texture = &texture_manager.GetTexture(filename.string()),
+	registry.register_component(entity, BackgroundComponent{.texture = &textureManager.GetTexture(filename.string()),
 	                                                        .scrollingSpeed = scrollSpeed,
 	                                                        .yOffset = yOffset,
 	                                                        .repeatX = repeatX});

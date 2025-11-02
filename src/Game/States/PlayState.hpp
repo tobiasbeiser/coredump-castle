@@ -9,8 +9,8 @@ namespace GameEngine {
 class PlayState : public GameState {
 	// Inherited via GameState
   public:
-	PlayState(const InputManager &input, TextureManager &texture_manager, Renderer &renderer)
-	    : input_manager(input), texture_manager(texture_manager), renderer(renderer)
+	PlayState(const InputManager &input, TextureManager &textureManager, Renderer &renderer)
+	    : inputManager(input), textureManager(textureManager), renderer(renderer)
 	{
 	}
 	void Init(GameEngine &game) override;
@@ -24,11 +24,11 @@ class PlayState : public GameState {
 
   private:
 	LevelHistory history;
-	const InputManager &input_manager;
-	TextureManager &texture_manager;
+	const InputManager &inputManager;
+	TextureManager &textureManager;
 	Renderer &renderer;
 	ECS::Systems::RenderSystem renderSystem{renderer};
-	ECS::Systems::InputSystem inputSystem{input_manager};
+	ECS::Systems::InputSystem inputSystem{inputManager};
 	ECS::Systems::MapActivationSystem mapActivationSystem;
 	bool paused = false;
 };
