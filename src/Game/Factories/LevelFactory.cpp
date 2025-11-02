@@ -139,7 +139,8 @@ void LevelFactory::LoadAnimation(tson::Tile *const &tile, const GameEngine::ECS:
 	const auto tileset = tile->getTileset();
 
 	AnimationComponent animComp;
-	animComp.animations.emplace_back(framesCount, framesCount * 0.07f); // textures have frame duration of 0.1s
+	animComp.animations.emplace_back(static_cast<int>(framesCount),
+	                                 framesCount * 0.07f); // textures have frame duration of 0.1s
 
 	std::vector<AnimationFrame> frames;
 	for (const auto frame : animation.getFrames()) {

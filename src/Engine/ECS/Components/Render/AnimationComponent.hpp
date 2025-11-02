@@ -2,6 +2,8 @@
 #include "Engine/Graphics/Animation.hpp"
 #include <unordered_map>
 #include <vector>
+#include <SDL3/SDL_render.h>
+#include <glm/vec2.hpp>
 
 struct AnimationFrame {
 	SDL_Texture *texture;
