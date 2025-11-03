@@ -55,7 +55,7 @@ void PlayState::Update(GameEngine &game, const float deltaTime)
 		accumulator -= stepSize;
 
 		ECS::Systems::PhysicsSystem::Update(game.getRegistry(), stepSize);
-		ECS::Systems::CollisionSystem::Update(game.getRegistry());
+		ECS::Systems::CollisionSystem::update(game.getRegistry());
 	}
 
 	ECS::Systems::StateSystem::Update(game.getRegistry());
