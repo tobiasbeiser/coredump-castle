@@ -21,8 +21,7 @@ class InputSystem {
 			horizontalDirection += 1;
 		}	
 
-		auto view = registry.view<InputComponent>();
-		for (auto &entity : view) {
+		for (auto view = registry.view<InputComponent>(); const auto &entity : view) {
 			auto &input = view.get<InputComponent>(entity);
 			input.horizontalDirection = horizontalDirection;
 			PressOrConsume(inputManager.IsKeyPressed(Key::Up), input.jumpPressed, input.jumpConsumed);

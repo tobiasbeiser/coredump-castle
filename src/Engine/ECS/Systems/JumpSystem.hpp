@@ -1,5 +1,6 @@
 #pragma once
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/JumpComponent.hpp"
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
@@ -17,11 +18,7 @@ struct JumpSystem {
 			auto &[velocity] = registry.get<VelocityComponent>(entity);
 			const auto &input = registry.get<InputComponent>(entity);
 			if (grounded) {
-				if (jump.allowDoubleJump) {
-					jump.jumpsLeft = jump.maxJumps;
-				} else {
-					jump.jumpsLeft = 1;
-				}
+				jump.jumpsLeft = jump.maxJumps;
 			}
 
 			if (jump.jumpsLeft && input.jumpPressed && velocity.y <= 0) {
