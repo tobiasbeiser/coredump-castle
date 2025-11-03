@@ -21,7 +21,6 @@ class PlayState : public GameState {
 	void Update(GameEngine &game, float deltaTime) override;
 	void Render(GameEngine &game, float alpha) override;
 
-
   private:
 	LevelHistory history;
 	const InputManager &inputManager;
@@ -31,5 +30,7 @@ class PlayState : public GameState {
 	ECS::Systems::InputSystem inputSystem{inputManager};
 	ECS::Systems::MapActivationSystem mapActivationSystem;
 	bool paused = false;
+	float accumulator = 0.0f;
+	static constexpr float stepSize = 1.0f / 240.0f;
 };
 } // namespace GameEngine

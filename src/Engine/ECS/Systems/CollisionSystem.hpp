@@ -11,19 +11,13 @@ namespace GameEngine::ECS::Systems {
 struct CollisionSystem {
 	static void Update(Registry &registry)
 	{
-		std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now();
 		// Get all entities that move (dynamic)
 		auto dynamicView =
 		    registry.view<PositionComponent, VelocityComponent, CollisionComponent>().exclude<InactiveTag>();
-		std::chrono::high_resolution_clock::time_point time1 = std::chrono::high_resolution_clock::now();
+
 
 		// Get all static colliders (tiles)
 		auto staticView = registry.view<PositionComponent, CollisionComponent>().exclude<InactiveTag>();
-		std::chrono::high_resolution_clock::time_point time2 = std::chrono::high_resolution_clock::now();
-
-		DebugSystem::Debug(
-		    "coll views: "
-		    + std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count()) + " us");
 
 		for (auto dynEntity : dynamicView) {
 			auto &pos = dynamicView.get<PositionComponent>(dynEntity);
@@ -68,10 +62,6 @@ struct CollisionSystem {
 				}
 			}
 		}
-		std::chrono::high_resolution_clock::time_point time3 = std::chrono::high_resolution_clock::now();
-		DebugSystem::Debug(
-		    "coll res: " + std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(time3 - time2).count())
-		    + " us");
 	}
 
   private:
