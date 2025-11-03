@@ -50,7 +50,7 @@ std::unique_ptr<SDL_Texture, SDLTextureDeleter> Renderer::LoadTexture(const std:
 	return std::unique_ptr<SDL_Texture, SDLTextureDeleter>(tex);
 }
 
-void Renderer::StartFrame(int red, int green, int blue, int alpha) const
+void Renderer::StartFrame(const int red, const int green, const int blue, const int alpha) const
 {
 	SDL_SetRenderDrawColor(renderer.get(), red, green, blue, alpha);
 	SDL_RenderClear(renderer.get());
@@ -105,7 +105,7 @@ void Renderer::CenterCameraOn(const glm::vec2 &position, const glm::vec2 &levelP
 void Renderer::RenderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, const float scrollFactor) const
 {
 	const float repetitions = 5.0f;
-	dstRect.x = -viewport.x * scrollFactor;
+	dstRect.x -= viewport.x * scrollFactor;
 	dstRect.w = static_cast<float>(texture.w) * repetitions;
 	dstRect.y -= viewport.y;
 

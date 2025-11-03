@@ -4,5 +4,5 @@
 
 struct LevelComponent {
 	glm::vec2 levelSize{0.0f, 0.0f};
-	std::string levelName{""};
+	int playerLayer;
 };

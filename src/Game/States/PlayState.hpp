@@ -1,5 +1,6 @@
 #pragma once
 #include "Engine/ECS/Systems/InputSystem.hpp"
+#include "Engine/ECS/Systems/MapActivationSystem.hpp"
 #include "Engine/ECS/Systems/RenderSystem.hpp"
 #include "Engine/GameState.hpp"
 #include "Engine/Utils/LevelHistory.hpp"
@@ -17,10 +18,9 @@ class PlayState : public GameState {
 	void Pause() override;
 	void Resume() override;
 	void HandleEvents(GameEngine &game) override;
-	void Update(GameEngine &game, const float deltaTime) override;
-	void Render(GameEngine &game, const float alpha) override;
-	// TODO use LevelComponent to get current level name
-	std::string currentLevelName;
+	void Update(GameEngine &game, float deltaTime) override;
+	void Render(GameEngine &game, float alpha) override;
+
 
   private:
 	LevelHistory history;
@@ -29,6 +29,7 @@ class PlayState : public GameState {
 	Renderer &renderer;
 	ECS::Systems::RenderSystem renderSystem{renderer};
 	ECS::Systems::InputSystem inputSystem{inputManager};
+	ECS::Systems::MapActivationSystem mapActivationSystem;
 	bool paused = false;
 };
 } // namespace GameEngine

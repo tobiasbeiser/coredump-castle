@@ -6,7 +6,14 @@
 
 class WorldFactory {
   public:
-	WorldFactory(GameEngine::ECS::Registry &registry, const std::filesystem::path &projectPath, TextureManager &textureManager);
+	WorldFactory(GameEngine::ECS::Registry &registry, const std::filesystem::path &projectPath,
+	             TextureManager &textureManager);
+
+	WorldFactory(const WorldFactory &) = delete;
+	WorldFactory &operator=(const WorldFactory &) = delete;
+	WorldFactory(WorldFactory &&) = delete;
+	WorldFactory &operator=(WorldFactory &&) = delete;
+	~WorldFactory() = default;
 
 	void CreateWorld(const std::filesystem::path &worldPath);
 

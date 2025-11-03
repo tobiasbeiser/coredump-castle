@@ -23,7 +23,7 @@ void GameEngine::TransitionLevelState::Update(GameEngine &game, const float delt
 {
 	if (!loadingDone) {
 		// if no level is loaded start with black screen
-		if (game.registry.size() == 0) {
+		if (game.getRegistry().size() == 0) {
 			progress = 1.0f;
 		} else {
 			progress += deltaTime / duration;
@@ -31,10 +31,6 @@ void GameEngine::TransitionLevelState::Update(GameEngine &game, const float delt
 		if (progress >= 1.0f) {
 			progress = 1.0f;
 
-			game.registry.clearAll();
-			// LevelFactory factory(game.registry, game.textureManager, nextLevelName, spawnPoint);
-			// factory.CreateLevel();
-			game.getState<PlayState>().currentLevelName = nextLevelName;
 
 			loadingDone = true;
 		}
@@ -50,5 +46,5 @@ void GameEngine::TransitionLevelState::Update(GameEngine &game, const float delt
 void GameEngine::TransitionLevelState::Render(GameEngine &game, const float alpha)
 {
 	SDL_FColor black = {0, 0, 0, 255};
-	game.GetRenderer().RenderCircularFade(progress, black);
+	game.getRenderer().RenderCircularFade(progress, black);
 }

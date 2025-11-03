@@ -2,6 +2,8 @@
 #include "Engine/Graphics/Animation.hpp"
 #include <unordered_map>
 #include <vector>
+#include <SDL3/SDL_render.h>
+#include <glm/vec2.hpp>
 
 struct AnimationFrame {
 	SDL_Texture *texture;
@@ -19,7 +21,7 @@ struct AnimationComponent {
 	void addAnimationFromSpritesheet(int state, int frameCount, float length, SDL_Texture *texture, glm::ivec2 tileSize,
 	                                 glm::ivec2 tileMapPos)
 	{
-		Animation anim(frameCount, length);
+		const Animation anim(frameCount, length);
 		if (state >= animations.size()) {
 			animations.resize(state + 1);
 		}

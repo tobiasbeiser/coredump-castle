@@ -3,7 +3,6 @@
 #include "Graphics/Renderer.hpp"
 #include "Graphics/TextureManager.hpp"
 #include "Input/InputManager.hpp"
-#include <SDL3/SDL.h>
 #include <concepts>
 #include <memory>
 #include <string>
@@ -32,8 +31,8 @@ class GameEngine {
 	void PopState();
 
 	void HandleEvents();
-	void Update(const float deltaTime);
-	void Render(const float alpha);
+	void Update(float deltaTime);
+	void Render(float alpha);
 
 	template <DerivedFromGameState T>
 	T &getState()
@@ -49,16 +48,18 @@ class GameEngine {
 	bool Running() const { return running; }
 	void Quit() { running = false; }
 
-	Renderer &GetRenderer() { return renderer; }
-	ECS::Registry registry;
-	InputManager inputManager;
-	TextureManager textureManager;
-	Renderer renderer;
-	std::unique_ptr<GameState> pendingPush;
+	Renderer &getRenderer() { return renderer; }
+	ECS::Registry &getRegistry() { return registry; }
+	InputManager &getInputManager() { return inputManager; }
+	TextureManager &getTextureManager() { return textureManager; }
 
   private:
 	std::vector<std::unique_ptr<GameState>> states;
 	bool running = false;
 	const std::string title;
+	ECS::Registry registry;
+	Renderer renderer;
+	InputManager inputManager;
+	TextureManager textureManager;
 };
 } // namespace GameEngine
