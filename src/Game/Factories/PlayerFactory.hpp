@@ -45,7 +45,7 @@ struct PlayerFactory {
 		playerAnim.addAnimationFromSpritesheet(States::Attacking, 6, 0.6f, &texMgr.GetTexture(texturePath.string()),
 		                                       {56, 56}, {0, 56});
 
-		playerAnim.addAnimationFromSpritesheet(States::ConsecutiveAttack, 2, 0.2f,
+		playerAnim.addAnimationFromSpritesheet(States::ConsecutiveAttacking, 2, 0.2f,
 		                                       &texMgr.GetTexture(texturePath.string()), {56, 56}, {336, 56});
 
 		playerAnim.addAnimationFromSpritesheet(States::Walking, 8, 0.8f, &texMgr.GetTexture(texturePath.string()),

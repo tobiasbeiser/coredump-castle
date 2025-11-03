@@ -2,10 +2,10 @@
 #include "../Components/Core/PositionComponent.hpp"
 #include "../Components/Core/VelocityComponent.hpp"
 #include "../Components/Gameplay/InputComponent.hpp"
+#include "../Components/Gameplay/MeleeComponent.hpp"
 #include "../Components/Gameplay/MovementComponent.hpp"
 #include "../Components/Physics/AccelerationComponent.hpp"
 #include "../Registry.hpp"
-#include <Engine/ECS/Components/Core/StateComponent.hpp>
 #include <Engine/ECS/Components/Render/RenderComponent.hpp>
 
 namespace GameEngine::ECS::Systems {
@@ -20,7 +20,13 @@ class MovementSystem {
 			auto &move = view.get<MovementComponent>(entity);
 			auto &input = view.get<InputComponent>(entity);
 
-						if (input.horizontalDirection) {
+			bool isAttacking = false;
+			if (registry.has<MeleeComponent>(entity)) {
+				auto &melee = registry.get<MeleeComponent>(entity);
+				isAttacking = melee.isAttacking;
+			}
+
+			if (input.horizontalDirection && !isAttacking) {
 
 				if ((vel.velocity.x > 0 && input.horizontalDirection < 0)
 				    || (vel.velocity.x < 0 && input.horizontalDirection > 0)) {

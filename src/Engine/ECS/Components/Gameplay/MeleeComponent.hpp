@@ -1,5 +1,7 @@
+#pragma once
 struct MeleeComponent {
 	bool isAttacking{false};
+	bool isComboAttack{false};
 	float range{10.0f};
 	int damage{10}; // depends on health system. For now it will not be used
 	float attackDuration{0.6f};
@@ -9,4 +11,5 @@ struct MeleeComponent {
 	float hitboxActiveEnd{0.35f};
 	float comboInputWindow{0.5f};
 	bool comboInputReceived{false};
+	float comboAttackDuration{0.2f};
 };

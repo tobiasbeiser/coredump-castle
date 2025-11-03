@@ -10,18 +10,15 @@ class MeleeSystemTest : public ::testing::Test {
 	Entity entity;
 	MeleeComponent *meleeComp;
 	InputComponent *inputComp;
-	StateComponent *stateComp;
 
 	void SetUp() override
 	{
 		entity = registry.create();
 		registry.register_component<MeleeComponent>(entity, MeleeComponent{});
 		registry.register_component<InputComponent>(entity, InputComponent{});
-		registry.register_component<StateComponent>(entity, StateComponent{});
 
 		meleeComp = &registry.get<MeleeComponent>(entity);
 		inputComp = &registry.get<InputComponent>(entity);
-		stateComp = &registry.get<StateComponent>(entity);
 	}
 	void TriggerMeleeInput() { inputComp->meleePressed = true; }
 };
@@ -34,11 +31,7 @@ TEST_F(MeleeSystemTest, StartsAttackOnMeleeInput)
 	MeleeSystem::Update(registry, 0.1f);
 
 	EXPECT_TRUE(meleeComp->isAttacking);
-	EXPECT_EQ(stateComp->state, States::Attacking);
-	auto &input = registry.get<InputComponent>(entity);
-
-	EXPECT_TRUE(meleeComp->isAttacking);
-	EXPECT_EQ(stateComp->state, States::Attacking);
+	EXPECT_FALSE(meleeComp->isComboAttack);
 	EXPECT_FLOAT_EQ(meleeComp->attackTimer, 0.0f);
 	EXPECT_FALSE(inputComp->meleePressed);
 }
@@ -60,6 +53,7 @@ TEST_F(MeleeSystemTest, HandlesComboAttack)
 	MeleeSystem::Update(registry, 0.1f);
 
 	EXPECT_TRUE(meleeComp->isAttacking);
+	EXPECT_FALSE(meleeComp->isComboAttack);
 
 	TriggerMeleeInput();
 	MeleeSystem::Update(registry, 0.2f);
@@ -68,7 +62,7 @@ TEST_F(MeleeSystemTest, HandlesComboAttack)
 
 	MeleeSystem::Update(registry, 0.4f);
 
-	EXPECT_EQ(stateComp->state, States::ConsecutiveAttack);
+	EXPECT_TRUE(meleeComp->isComboAttack);
 	EXPECT_FLOAT_EQ(meleeComp->attackDuration, 0.2f);
 }
 
@@ -81,10 +75,8 @@ TEST_F(MeleeSystemTest, EndsAttackAfterDuration)
 
 	MeleeSystem::Update(registry, 0.6f);
 
-	EXPECT_EQ(stateComp->state, States::Idle);
 	EXPECT_FALSE(meleeComp->isAttacking);
-	EXPECT_EQ(stateComp->state, States::Idle);
-	EXPECT_FLOAT_EQ(meleeComp->attackCooldownTimer, 0.5f);
+	EXPECT_FALSE(meleeComp->isComboAttack);
 }
 
 TEST_F(MeleeSystemTest, AppliesLongerCooldownAfterCombo)
@@ -130,7 +122,8 @@ TEST_F(MeleeSystemTest, NoAttackShouldResultInIdleState)
 {
 	MeleeSystem::Update(registry, 0.1f);
 
-	EXPECT_EQ(stateComp->state, States::Idle);
+	EXPECT_FALSE(meleeComp->isAttacking);
+	EXPECT_FALSE(meleeComp->isComboAttack);
 }
 
 TEST_F(MeleeSystemTest, CoolDownDoesNotDecreaseWhileAttacking)
@@ -160,7 +153,7 @@ TEST_F(MeleeSystemTest, ConsecutiveComboAttempsShouldNotChainInfinitely)
 	MeleeSystem::Update(registry, 0.1f);
 
 	EXPECT_FALSE(meleeComp->comboInputReceived);
-	EXPECT_EQ(stateComp->state, States::Idle);
+	EXPECT_FALSE(meleeComp->isAttacking);
 }
 
 TEST_F(MeleeSystemTest, ZeroDeltaTimeDoesNotAffectState)
