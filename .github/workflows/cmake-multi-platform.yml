@@ -54,6 +54,7 @@ jobs:
         with:
           configurePreset: 'release'
           buildPreset: 'release'
+          testPreset: 'release'
 
     # On failure, zip the out directory
       - name: Zip out directory on failure
