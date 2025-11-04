@@ -6,10 +6,10 @@
 #include "Engine/Utils/LevelHistory.hpp"
 namespace GameEngine {
 
-class PlayState : public GameState {
+class PlayState final : public GameState {
 	// Inherited via GameState
   public:
-	PlayState(const InputManager &input, TextureManager &textureManager, Renderer &renderer)
+	PlayState(InputManager &input, TextureManager &textureManager, Renderer &renderer)
 	    : inputManager(input), textureManager(textureManager), renderer(renderer)
 	{
 	}
@@ -23,7 +23,7 @@ class PlayState : public GameState {
 
   private:
 	LevelHistory history;
-	const InputManager &inputManager;
+	InputManager &inputManager;
 	TextureManager &textureManager;
 	Renderer &renderer;
 	ECS::Systems::RenderSystem renderSystem{renderer};

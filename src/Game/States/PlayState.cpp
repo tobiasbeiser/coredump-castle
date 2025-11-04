@@ -46,7 +46,7 @@ void PlayState::Update(GameEngine &game, const float deltaTime)
 
 	mapActivationSystem.Update(game.getRegistry());
 
-	inputSystem.Update(game.getRegistry());
+	inputSystem.update(game.getRegistry());
 
 	ECS::Systems::JumpSystem::Update(game.getRegistry());
 	ECS::Systems::MovementSystem::Update(game.getRegistry(), deltaTime);
