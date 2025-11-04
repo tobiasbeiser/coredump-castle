@@ -42,10 +42,14 @@ struct PlayerFactory {
 
 		AnimationComponent playerAnim{};
 
+		constexpr auto meleeComp = MeleeComponent{};
+		registry.register_component(e, meleeComp);
+
+
 		playerAnim.addAnimationFromSpritesheet(States::Idle, 6, 0.6f, &texMgr.GetTexture(texturePath.string()),
 		                                       {56, 56}, {0, 0});
 
-		playerAnim.addAnimationFromSpritesheet(States::Attacking, 6, 0.6f, &texMgr.GetTexture(texturePath.string()),
+		playerAnim.addAnimationFromSpritesheet(States::Attacking, 6, meleeComp.attackDuration, &texMgr.GetTexture(texturePath.string()),
 		                                       {56, 56}, {0, 56});
 
 		playerAnim.addAnimationFromSpritesheet(States::ConsecutiveAttacking, 2, 0.2f,
@@ -68,7 +72,6 @@ struct PlayerFactory {
 		registry.register_component(e, JumpComponent{});
 
 		registry.register_component(e, InteractionComponent{19, 25, 21, 32});
-		registry.register_component(e, MeleeComponent{});
 		return e;
 	}
 };

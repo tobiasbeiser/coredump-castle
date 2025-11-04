@@ -31,13 +31,8 @@ class InputSystem {
 			auto &input = view.get<InputComponent>(entity);
 			input.horizontalDirection = horizontalDirection;
 			input.jumpPressed = inputManager.isKeyPressed(Key::Up);
-			PressOrConsume(inputManager.isKeyPressed(Key::Melee), input.meleePressed, input.meleeConsumed);
-
-			std::string before = std::to_string(static_cast<int>(input.interactPressed)) + " "
-			                     + std::to_string(static_cast<int>(input.interactConsumed));
-			PressOrConsume(inputManager.isKeyPressed(Key::Interact), input.interactPressed, input.interactConsumed);
-			std::string after = std::to_string(static_cast<int>(input.interactPressed)) + " "
-			                    + std::to_string(static_cast<int>(input.interactConsumed));
+			input.meleePressed = inputManager.isKeyPressed(Key::Melee);
+			input.interactPressed = inputManager.isKeyPressed(Key::Interact);
 		}
 
 		// update input manager for next frame (for correct handling of isKeyPressed and isKeyReleased, this has to be
@@ -64,9 +59,9 @@ class InputSystem {
 			} else {
 				pressedProp = false;
 			}
-			//SDL_Log(
-			//    "PressOrConsume: keyPressed=%d, inPressedProp=%d, inConsumedProp=%d => pressedProp=%d, consumedProp=%d",
-			//    keyPressed, inPressedProp, inConsumedProp, pressedProp, consumedProp);
+			// SDL_Log(
+			//     "PressOrConsume: keyPressed=%d, inPressedProp=%d, inConsumedProp=%d => pressedProp=%d,
+			//     consumedProp=%d", keyPressed, inPressedProp, inConsumedProp, pressedProp, consumedProp);
 		} else {
 			pressedProp = false;
 			consumedProp = false;

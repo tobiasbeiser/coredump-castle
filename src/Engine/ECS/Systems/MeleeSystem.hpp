@@ -8,21 +8,20 @@ namespace GameEngine::ECS::Systems {
 struct MeleeSystem {
 	static void Update(Registry &registry, const float deltaTime)
 	{
-		auto view = registry.view<MeleeComponent, InputComponent>();
-		for (auto entity : view) {
+		for (auto view = registry.view<MeleeComponent, InputComponent>(); const auto entity : view) {
 			auto &melee = registry.get<MeleeComponent>(entity);
-			auto &input = registry.get<InputComponent>(entity);
+			const auto &input = registry.get<InputComponent>(entity);
 
 			UpdateCoolDown(melee, deltaTime);
 
 			if (input.meleePressed && !melee.isAttacking && melee.attackCooldownTimer <= 0.0f) {
-				StartAttack(melee, input);
+				StartAttack(melee);
 			} else if (melee.isAttacking) {
 				ProcessAttack(melee, input, deltaTime);
 
 				if (melee.attackTimer >= melee.attackDuration) {
 					if (melee.comboInputReceived) {
-						StartComboAttack(melee, input);
+						StartComboAttack(melee);
 					} else {
 						EndAttack(melee);
 					}
@@ -39,25 +38,23 @@ struct MeleeSystem {
 		}
 	}
 
-	static void StartAttack(MeleeComponent &melee, InputComponent &input)
+	static void StartAttack(MeleeComponent &melee)
 	{
 		melee.isAttacking = true;
 		melee.isComboAttack = false;
 		melee.attackTimer = 0.0f;
-		input.meleePressed = false;
 	}
 
-	static void ProcessAttack(MeleeComponent &melee, InputComponent &input, float deltaTime)
+	static void ProcessAttack(MeleeComponent &melee, const InputComponent &input, const float deltaTime)
 	{
 		melee.attackTimer += deltaTime;
 
 		if (!melee.isComboAttack && input.meleePressed && melee.attackTimer < melee.comboInputWindow) {
 			melee.comboInputReceived = true;
-			input.meleePressed = false;
 		}
 	}
 
-	static void StartComboAttack(MeleeComponent &melee, InputComponent &input)
+	static void StartComboAttack(MeleeComponent &melee)
 	{
 		melee.isAttacking = true;
 		melee.isComboAttack = true;
