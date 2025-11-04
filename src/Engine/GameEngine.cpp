@@ -80,7 +80,7 @@ void GameEngine::HandleEvents()
 
 		case SDL_EVENT_KEY_DOWN:
 		case SDL_EVENT_KEY_UP:
-			inputManager.Update(&event.key);
+			inputManager.processEvent(&event.key);
 			break;
 		default:
 			break;

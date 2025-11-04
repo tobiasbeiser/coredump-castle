@@ -1,5 +1,4 @@
 #pragma once
-#include "Engine/DebugSystem.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
@@ -9,73 +8,56 @@
 
 namespace GameEngine::ECS::Systems {
 struct CollisionSystem {
-	static void Update(Registry &registry)
+	static void update(Registry &registry)
 	{
-		std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now();
 		// Get all entities that move (dynamic)
 		auto dynamicView =
 		    registry.view<PositionComponent, VelocityComponent, CollisionComponent>().exclude<InactiveTag>();
-		std::chrono::high_resolution_clock::time_point time1 = std::chrono::high_resolution_clock::now();
-
 		// Get all static colliders (tiles)
 		auto staticView = registry.view<PositionComponent, CollisionComponent>().exclude<InactiveTag>();
-		std::chrono::high_resolution_clock::time_point time2 = std::chrono::high_resolution_clock::now();
+		for (const auto dynEntity : dynamicView) {
 
-		DebugSystem::Debug(
-		    "coll views: "
-		    + std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count()) + " us");
+			auto &[position, previousPosition] = dynamicView.get<PositionComponent>(dynEntity);
+			auto &[velocity] = dynamicView.get<VelocityComponent>(dynEntity);
+			const auto &[collisionBox] = dynamicView.get<CollisionComponent>(dynEntity);
 
-		for (auto dynEntity : dynamicView) {
-			auto &pos = dynamicView.get<PositionComponent>(dynEntity);
-			auto &vel = dynamicView.get<VelocityComponent>(dynEntity);
-			auto &col = dynamicView.get<CollisionComponent>(dynEntity);
-
-			SDL_FRect entityBox{pos.position.x + col.collisionBox.x, pos.position.y + col.collisionBox.y,
-			                    col.collisionBox.w, col.collisionBox.h};
+			SDL_FRect entityBox{position.x + collisionBox.x, position.y + collisionBox.y, collisionBox.w,
+			                    collisionBox.h};
 
 			bool grounded = false;
 
 			// --- Iterate over collidable tiles/entities ---
-			for (auto staticEntity : staticView) {
-				// Optionally skip self
+			for (const auto staticEntity : staticView) {
 				if (staticEntity == dynEntity)
 					continue;
 
-				auto &sPos = staticView.get<PositionComponent>(staticEntity);
-				auto &sCol = staticView.get<CollisionComponent>(staticEntity);
+				const auto &[staticPosition, staticPreviousPosition] = staticView.get<PositionComponent>(staticEntity);
+				const auto &[staticCollisionBox] = staticView.get<CollisionComponent>(staticEntity);
 
-				SDL_FRect tileBox{sPos.position.x + sCol.collisionBox.x, sPos.position.y + sCol.collisionBox.y,
-				                  sCol.collisionBox.w, sCol.collisionBox.h};
+				SDL_FRect tileBox{staticPosition.x + staticCollisionBox.x, staticPosition.y + staticCollisionBox.y,
+				                  staticCollisionBox.w, staticCollisionBox.h};
 
-				// DebugSystem::Instance().debugRects.push_back({tileBox, SDL_Color{0, 255, 0, 255}});
-
-				ResolveAABBCollision(entityBox, tileBox, pos.position, vel.velocity);
-				pos.previousPosition = pos.position;
+				resolveAabbCollision(entityBox, tileBox, position, velocity);
+				previousPosition = position;
 
 				if (registry.has<GroundedComponent>(dynEntity)) {
-					// Ground check
-					SDL_FRect sensorBox{pos.position.x + col.collisionBox.x,
-					                    pos.position.y + col.collisionBox.y + col.collisionBox.h, col.collisionBox.w,
-					                    1};
+					SDL_FRect sensorBox{position.x + collisionBox.x, position.y + collisionBox.y + collisionBox.h,
+					                    collisionBox.w, 1};
 
 					SDL_FRect sensorIntersection;
 					if (SDL_GetRectIntersectionFloat(&sensorBox, &tileBox, &sensorIntersection)) {
 						if (sensorIntersection.w > sensorIntersection.h)
 							grounded = true;
 					}
-					auto &groundedComp = registry.get<GroundedComponent>(dynEntity);
-					groundedComp.grounded = grounded;
+					auto &[cGrounded] = registry.get<GroundedComponent>(dynEntity);
+					cGrounded = grounded;
 				}
 			}
 		}
-		std::chrono::high_resolution_clock::time_point time3 = std::chrono::high_resolution_clock::now();
-		DebugSystem::Debug(
-		    "coll res: " + std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(time3 - time2).count())
-		    + " us");
 	}
 
   private:
-	static void ResolveAABBCollision(const SDL_FRect &entityBox, const SDL_FRect &tileBox, glm::vec2 &pos,
+	static void resolveAabbCollision(const SDL_FRect &entityBox, const SDL_FRect &tileBox, glm::vec2 &pos,
 	                                 glm::vec2 &vel)
 	{
 		SDL_FRect intersection;

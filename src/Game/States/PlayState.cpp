@@ -42,24 +42,24 @@ void PlayState::Update(GameEngine &game, const float deltaTime)
 	if (paused) {
 		return;
 	}
+
+	accumulator += deltaTime;
+
 	mapActivationSystem.Update(game.getRegistry());
 
-	inputSystem.Update(game.getRegistry());
+	inputSystem.update(game.getRegistry());
 
 	ECS::Systems::JumpSystem::Update(game.getRegistry());
 	ECS::Systems::MeleeSystem::Update(game.getRegistry(), deltaTime);
 
 	ECS::Systems::MovementSystem::Update(game.getRegistry(), deltaTime);
-	std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now();
-	ECS::Systems::PhysicsSystem::Update(game.getRegistry(), deltaTime);
-	std::chrono::high_resolution_clock::time_point time1 = std::chrono::high_resolution_clock::now();
-	ECS::Systems::CollisionSystem::Update(game.getRegistry());
-	std::chrono::high_resolution_clock::time_point time2 = std::chrono::high_resolution_clock::now();
 
-	/*DebugSystem::Debug("Physics Time: "+ std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(time1 -
-	   now).count()) + "\n"+ "Collision Time: "
-	                   + std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(time2 -
-	   time1).count()));*/
+	while (accumulator >= stepSize) {
+		accumulator -= stepSize;
+
+		ECS::Systems::PhysicsSystem::Update(game.getRegistry(), stepSize);
+		ECS::Systems::CollisionSystem::update(game.getRegistry());
+	}
 
 	ECS::Systems::StateSystem::Update(game.getRegistry());
 	ECS::Systems::AnimationSystem::Update(game.getRegistry(), deltaTime);

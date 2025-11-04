@@ -8,16 +8,21 @@
 namespace GameEngine::ECS::Systems {
 class InputSystem {
   public:
-	InputSystem(const InputManager &inputManager) : inputManager(inputManager) {}
+	explicit InputSystem(InputManager &inputManager) : inputManager(inputManager) {}
+	InputSystem(const InputSystem &) = delete;
+	InputSystem(InputSystem &&) = delete;
+	InputSystem &operator=(InputSystem &&) = delete;
+	InputSystem &operator=(const InputSystem &) = delete;
+	~InputSystem() = default;
 
-	void Update(Registry &registry)
+	void update(Registry &registry)
 	{
 
 		float horizontalDirection = 0;
-		if (inputManager.IsKeyDown(Key::Left)) {
+		if (inputManager.isKeyDown(Key::Left)) {
 			horizontalDirection += -1;
 		}
-		if (inputManager.IsKeyDown(Key::Right)) {
+		if (inputManager.isKeyDown(Key::Right)) {
 			horizontalDirection += 1;
 		}
 
@@ -25,15 +30,19 @@ class InputSystem {
 		for (auto &entity : view) {
 			auto &input = view.get<InputComponent>(entity);
 			input.horizontalDirection = horizontalDirection;
-			input.jumpPressed = inputManager.IsKeyPressed(Key::Up);
-			PressOrConsume(inputManager.IsKeyPressed(Key::Melee), input.meleePressed, input.meleeConsumed);
+			input.jumpPressed = inputManager.isKeyPressed(Key::Up);
+			PressOrConsume(inputManager.isKeyPressed(Key::Melee), input.meleePressed, input.meleeConsumed);
 
 			std::string before = std::to_string(static_cast<int>(input.interactPressed)) + " "
 			                     + std::to_string(static_cast<int>(input.interactConsumed));
-			PressOrConsume(inputManager.IsKeyPressed(Key::Interact), input.interactPressed, input.interactConsumed);
+			PressOrConsume(inputManager.isKeyPressed(Key::Interact), input.interactPressed, input.interactConsumed);
 			std::string after = std::to_string(static_cast<int>(input.interactPressed)) + " "
 			                    + std::to_string(static_cast<int>(input.interactConsumed));
 		}
+
+		// update input manager for next frame (for correct handling of isKeyPressed and isKeyReleased, this has to be
+		// at the end)
+		inputManager.update();
 	}
 
 	// set an input and consume it in the next frame
@@ -41,8 +50,9 @@ class InputSystem {
 	// have multiple updates per frame)
 
   private:
-	const InputManager &inputManager;
+	InputManager &inputManager;
 
+	// TODO delete after attack and double jump have been merged
 	void PressOrConsume(bool keyPressed, bool &pressedProp, bool &consumedProp)
 	{
 		if (keyPressed) {
@@ -54,7 +64,9 @@ class InputSystem {
 			} else {
 				pressedProp = false;
 			}
-
+			//SDL_Log(
+			//    "PressOrConsume: keyPressed=%d, inPressedProp=%d, inConsumedProp=%d => pressedProp=%d, consumedProp=%d",
+			//    keyPressed, inPressedProp, inConsumedProp, pressedProp, consumedProp);
 		} else {
 			pressedProp = false;
 			consumedProp = false;
