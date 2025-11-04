@@ -19,7 +19,7 @@ class Animation {
 			return frameCount - 1;
 		}
 		auto res = static_cast<int>((t / timer.getLength()) * frameCount);
-		return std::clamp(res, 0, frameCount);
+		return std::clamp(res, 0, frameCount-1);
 	}
 
 	void step(float deltaTime) { timer.step(deltaTime, loop); }
