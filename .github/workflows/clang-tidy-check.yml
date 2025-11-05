@@ -42,11 +42,10 @@ jobs:
         with:
           configurePreset: 'release'
 
-      - uses: HorstBaerbel/action-clang-tidy@1.2
-            # These are optional (defaults displayed)
-        with:
-          scandir: '.'
-          builddir: 'out/build/release'
-          excludedirs: ''
-          extensions: 'cpp,hpp'
-          cmakeoptions: ''
+      # Run clang-tidy on all C++ source files
+      - name: Run clang-tidy
+        run: |
+          find . -name '*.cpp' -o -name '*.hpp' | while read file; do
+            echo "Checking $file"
+            clang-tidy "$file" -p out/build/release || exit 1
+          done
