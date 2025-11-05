@@ -1,0 +1,35 @@
+name: Clang-Tidy Check
+
+on:
+  pull_request:
+    branches: [ "main" ]
+  push:
+    branches: [ "main" ]
+
+jobs:
+  clang-tidy:
+    runs-on: ubuntu-latest  # single representative platform
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      # Install dependencies for clang-tidy
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y clang-tidy cmake
+
+      # Configure project to generate compile_commands.json
+      - name: CMake configure
+        run: |
+          cmake -S . -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Release
+
+      # Run clang-tidy on all C++ source files
+      - name: Run clang-tidy
+        run: |
+          find . -name '*.cpp' -o -name '*.cc' -o -name '*.cxx' | while read file; do
+            echo "Checking $file"
+            clang-tidy "$file" -p build || exit 1
+          done
