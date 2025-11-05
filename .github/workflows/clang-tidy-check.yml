@@ -44,4 +44,4 @@ jobs:
 
       # Run clang-tidy on all C++ source files
       - name: Run clang-tidy
-        run: run-clang-tidy.py -p=out/build/release || exit 1
+        run: run-clang-tidy -p out/build/release || exit 1
