@@ -1,5 +1,31 @@
+Checks: >
+  cppcoreguidelines-*,
+  bugprone-*,
+  readability-identifier-naming,
+  -cppcoreguidelines-pro-type-union-access
 
-Checks: cppcoreguidelines-*,bugprone-*, -cppcoreguidelines-pro-type-union-access
 WarningsAsErrors: '*'
+
 ExtraArgs: 
   - "-EHsc"          # for MSVC / Windows
+
+CheckOptions:
+  # === Naming Conventions ===
+  - key: readability-identifier-naming.VariableCase
+    value: camelBack
+  - key: readability-identifier-naming.FunctionCase
+    value: camelBack
+  - key: readability-identifier-naming.MethodCase
+    value: camelBack
+  - key: readability-identifier-naming.ClassCase
+    value: CamelCase
+  - key: readability-identifier-naming.StructCase
+    value: CamelCase
+  - key: readability-identifier-naming.EnumCase
+    value: CamelCase
+  - key: readability-identifier-naming.EnumConstantCase
+    value: CamelCase
+  - key: readability-identifier-naming.NamespaceCase
+    value: CamelCase
+  - key: readability-identifier-naming.MemberCase
+    value: camelBack
