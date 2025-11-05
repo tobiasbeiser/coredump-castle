@@ -1,7 +1,6 @@
 #pragma once
 #include "../Components/Core/VelocityComponent.hpp"
 #include "../Components/Gameplay/InputComponent.hpp"
-#include "../Components/Gameplay/MeleeComponent.hpp"
 #include "../Components/Gameplay/MovementComponent.hpp"
 #include "../Components/Physics/AccelerationComponent.hpp"
 #include "../Registry.hpp"
@@ -20,12 +19,7 @@ class MovementSystem {
 			auto &[acceleration] = view.get<AccelerationComponent>(entity);
 			const auto &[accelerationRate, maxSpeedX] = view.get<MovementComponent>(entity);
 
-			bool isAttacking = false;
-			if (registry.has<MeleeComponent>(entity)) {
-				auto &melee = registry.get<MeleeComponent>(entity);
-				isAttacking = melee.isAttacking;
-			}
-			if (const auto &input = view.get<InputComponent>(entity); input.horizontalDirection != 0.0f && !isAttacking) {
+			if (const auto &input = view.get<InputComponent>(entity); input.horizontalDirection != 0.0f) {
 				if ((velocity.x > 0 && input.horizontalDirection < 0)
 				    || (velocity.x < 0 && input.horizontalDirection > 0)) {
 					// Directional change, apply stronger acceleration

@@ -67,7 +67,7 @@ struct MeleeSystem {
 	{
 		melee.isAttacking = false;
 		melee.attackTimer = 0.0f;
-		melee.attackDuration = 0.6f; // Reset to base attack duration
+		melee.attackDuration = 0.3f; // Reset to base attack duration
 		if (melee.isComboAttack) {
 			melee.attackCooldownTimer = 0.5f;
 		} else {
