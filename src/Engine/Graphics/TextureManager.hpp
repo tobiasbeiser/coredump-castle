@@ -11,9 +11,9 @@ class TextureManager {
   public:
 	TextureManager(Renderer &renderer) : renderer(renderer) {};
 
-	SDL_Texture &GetTexture(const std::filesystem::path &filePath);
+	SDL_Texture &getTexture(const std::filesystem::path &filePath);
 
-	void Cleanup() { textures.clear(); }
+	void cleanup() { textures.clear(); }
 
   private:
 	std::unordered_map<std::filesystem::path, std::unique_ptr<SDL_Texture, SDLTextureDeleter>> textures;
