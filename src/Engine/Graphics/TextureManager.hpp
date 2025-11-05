@@ -10,6 +10,11 @@
 class TextureManager {
   public:
 	TextureManager(Renderer &renderer) : renderer(renderer) {};
+	TextureManager(const TextureManager &) = delete;
+	TextureManager &operator=(const TextureManager &) = delete;
+	TextureManager(TextureManager &&) = delete;
+	TextureManager &operator=(TextureManager &&) = delete;
+	~TextureManager() = default;
 
 	SDL_Texture &getTexture(const std::filesystem::path &filePath);
 

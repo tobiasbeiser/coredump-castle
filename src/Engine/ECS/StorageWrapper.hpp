@@ -2,11 +2,11 @@
 #include "ComponentStorage.hpp"
 #include "IStorage.hpp"
 
-namespace GameEngine { namespace ECS {
+namespace GameEngine::ECS {
 
 template <typename T>
 class StorageWrapper : public IStorage {
   public:
 	ComponentStorage<T> storage;
 };
-} } // namespace GameEngine::ECS
+} // namespace GameEngine::ECS

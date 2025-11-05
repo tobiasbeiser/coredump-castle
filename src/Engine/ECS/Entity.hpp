@@ -1,6 +1,6 @@
 #pragma once
 #include <cstdint>
 
-namespace GameEngine { namespace ECS {
+namespace GameEngine::ECS {
 using Entity = std::uint32_t;
-} }
+}
