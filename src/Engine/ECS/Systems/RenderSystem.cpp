@@ -90,7 +90,7 @@ void RenderSystem::update(Registry &registry, float alpha)
 	for (auto &renderItem : renderItems) {
 		if (!renderItem.parallax) {
 			renderer.renderTexture(*renderItem.texture, renderItem.src, renderItem.dst, renderItem.flipX);
-		} else {
+		} else if(renderItem.dst.has_value()) {
 			renderer.renderTextureTiled(*renderItem.texture, renderItem.dst.value(), renderItem.scrollFactor);
 		}
 	}

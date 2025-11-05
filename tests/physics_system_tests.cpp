@@ -8,8 +8,8 @@
 using namespace GameEngine::ECS;
 using namespace GameEngine::ECS::Systems;
 
-class PhysicsSystemTest : public ::testing::Test {
-  protected:
+struct PhysicsSystemTest : public ::testing::Test {
+  
 	void SetUp() override
 	{
 		entity = registry.create();
