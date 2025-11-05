@@ -1,12 +1,12 @@
 #pragma once
 #include "Engine/ECS/Components/Core/PortalComponent.hpp"
+#include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InteractionComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/GameEngine.hpp"
 
 namespace GameEngine::ECS::Systems {
-
 
 class InteractionSystem {
   public:
