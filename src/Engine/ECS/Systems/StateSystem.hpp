@@ -29,7 +29,7 @@ class StateSystem {
 			}
 
 			if (DebugSystem::instance().player.showState) {
-				DebugSystem::debug("Entity " + std::to_string(entity) + " State: " + to_string(state.state));
+				DebugSystem::debug("Entity " + std::to_string(entity) + " State: " + toString(state.state));
 			}
 		}
 	}
