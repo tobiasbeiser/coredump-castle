@@ -30,12 +30,7 @@ class InputSystem {
 			    view.get<InputComponent>(entity);
 			horizontalDirectionTarget = horizontalDirection;
 			jumpPressed = inputManager.isKeyPressed(Key::Up);
-
-			std::string before = std::to_string(static_cast<int>(interactPressed)) + " "
-			                     + std::to_string(static_cast<int>(interactConsumed));
-			pressOrConsume(inputManager.isKeyPressed(Key::Interact), interactPressed, interactConsumed);
-			std::string after = std::to_string(static_cast<int>(interactPressed)) + " "
-			                    + std::to_string(static_cast<int>(interactConsumed));
+			interactPressed = inputManager.isKeyPressed(Key::Interact);
 		}
 
 		// update input manager for next frame (for correct handling of isKeyPressed and isKeyReleased, this has to be
@@ -49,26 +44,5 @@ class InputSystem {
 
   private:
 	InputManager &inputManager;
-
-	// TODO delete after attack and double jump have been merged
-	void pressOrConsume(bool keyPressed, bool &pressedProp, bool &consumedProp)
-	{
-		if (keyPressed) {
-			bool inPressedProp = pressedProp;
-			bool inConsumedProp = consumedProp;
-			if (!consumedProp) {
-				pressedProp = true;
-				consumedProp = true;
-			} else {
-				pressedProp = false;
-			}
-			// SDL_Log(
-			//     "PressOrConsume: keyPressed=%d, inPressedProp=%d, inConsumedProp=%d => pressedProp=%d,
-			//     consumedProp=%d", keyPressed, inPressedProp, inConsumedProp, pressedProp, consumedProp);
-		} else {
-			pressedProp = false;
-			consumedProp = false;
-		}
-	}
 };
 } // namespace GameEngine::ECS::Systems

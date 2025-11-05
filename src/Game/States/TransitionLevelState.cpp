@@ -4,8 +4,7 @@
 #include <chrono>
 #include <thread>
 
-GameEngine::TransitionLevelState::TransitionLevelState(const std::string levelName, const std::string spawnPoint)
-    : nextLevelName(levelName), spawnPoint(spawnPoint)
+GameEngine::TransitionLevelState::TransitionLevelState()
 {
 }
 

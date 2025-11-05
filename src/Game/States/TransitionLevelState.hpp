@@ -6,7 +6,7 @@ namespace GameEngine {
 class TransitionLevelState : public GameState {
 	
 	public:
-	TransitionLevelState(const std::string levelName, const std::string spawnPoint);
+	TransitionLevelState();
 
 	// Inherited via GameState
 	void init(GameEngine &game) override;
@@ -18,8 +18,6 @@ class TransitionLevelState : public GameState {
 	void render(GameEngine &game, const float alpha) override;
 
   private:
-	const std::string nextLevelName;
-	const std::string spawnPoint;
 	float progress = 0.0f; // 0 = start, 1 = full black
 	float duration = 0.5f;
 	bool loadingDone = false;

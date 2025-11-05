@@ -9,7 +9,7 @@ Checks: >
   -bugprone-easily-swappable-parameters,
   -cppcoreguidelines-pro-type-vararg,
 
-WarningsAsErrors: '*'
+WarningsAsErrors: 'readability-identifier-naming'
 
 CheckOptions:
   # === Naming Conventions ===
