@@ -92,7 +92,7 @@ void LevelFactory::createTile(const int layerIndex, const glm::vec2 &levelPos, t
 
 	const auto entity = registry.create();
 	registry.registerComponent(
-	    entity, SpriteComponent{.texture = &textureManager.GetTexture(imagePath),
+	    entity, SpriteComponent{.texture = &textureManager.getTexture(imagePath),
 	                            .tileSize = {static_cast<float>(imageSize.x), static_cast<float>(imageSize.y)},
 	                            .tileMapPosition = {static_cast<float>(rectSrc.x), static_cast<float>(rectSrc.y)}});
 	registry.registerComponent(entity, RenderComponent{.layer = layerIndex, .flipX = flipX});
@@ -146,7 +146,7 @@ void LevelFactory::loadAnimation(tson::Tile *const &tile, const GameEngine::ECS:
 	std::vector<AnimationFrame> frames;
 	for (const auto frame : animation.getFrames()) {
 		AnimationFrame animFrame{};
-		animFrame.texture = &textureManager.GetTexture(basePath / tileset->getTile(frame.getTileId())->getImage());
+		animFrame.texture = &textureManager.getTexture(basePath / tileset->getTile(frame.getTileId())->getImage());
 		animFrame.tileMapPosition = glm::ivec2{0, 0};
 		animFrame.tileSize = imageSize;
 		frames.push_back(animFrame);
@@ -171,7 +171,7 @@ void LevelFactory::createBackground(const glm::vec2 &levelPos, const fs::path &f
                                     const float scrollSpeed, const float yOffset, const bool repeatX) const
 {
 	const auto entity = registry.create();
-	registry.registerComponent(entity, BackgroundComponent{.texture = &textureManager.GetTexture(filename.string()),
+	registry.registerComponent(entity, BackgroundComponent{.texture = &textureManager.getTexture(filename.string()),
 	                                                        .scrollingSpeed = scrollSpeed,
 	                                                        .yOffset = yOffset,
 	                                                        .repeatX = repeatX});
