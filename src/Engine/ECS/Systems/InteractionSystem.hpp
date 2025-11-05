@@ -4,16 +4,13 @@
 #include "Engine/ECS/Components/Gameplay/InteractionComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/GameEngine.hpp"
-#include "Engine/Utils/LevelHistory.hpp"
-#include "Game/States/TransitionLevelState.hpp"
-#include <memory>
 
 namespace GameEngine::ECS::Systems {
 
 
 class InteractionSystem {
   public:
-	static void Update(GameEngine &game, Registry &registry)
+	static void update(GameEngine &game, Registry &registry)
 	{
 
 		auto view = registry.view<InputComponent, PositionComponent, InteractionComponent>();

@@ -12,31 +12,31 @@
 
 namespace GameEngine {
 
-void PlayState::Init(GameEngine &game)
+void PlayState::init(GameEngine &game)
 {
 	// game.PushState(std::make_unique<TransitionLevelState>("MainHub", "Player"));
 	const std::filesystem::path projectPath = "assets/tiled/CoredumpCastle.tiled-project";
 	auto factory = WorldFactory(game.getRegistry(), projectPath, game.getTextureManager());
 
 	const std::filesystem::path worldPath = "assets/tiled/coredumpCastle.world";
-	factory.CreateWorld(worldPath);
+	factory.createWorld(worldPath);
 }
 
-void PlayState::Cleanup() {}
+void PlayState::cleanup() {}
 
-void PlayState::Pause()
+void PlayState::pause()
 {
 	paused = true;
 }
 
-void PlayState::Resume()
+void PlayState::resume()
 {
 	paused = false;
 }
 
-void PlayState::HandleEvents(GameEngine &game) {}
+void PlayState::handleEvents(GameEngine &game) {}
 
-void PlayState::Update(GameEngine &game, const float deltaTime)
+void PlayState::update(GameEngine &game, const float deltaTime)
 {
 	if (paused) {
 		return;
@@ -44,30 +44,30 @@ void PlayState::Update(GameEngine &game, const float deltaTime)
 
 	accumulator += deltaTime;
 
-	mapActivationSystem.Update(game.getRegistry());
+	mapActivationSystem.update(game.getRegistry());
 
 	inputSystem.update(game.getRegistry());
 
-	ECS::Systems::JumpSystem::Update(game.getRegistry());
-	ECS::Systems::MovementSystem::Update(game.getRegistry(), deltaTime);
+	ECS::Systems::JumpSystem::update(game.getRegistry());
+	ECS::Systems::MovementSystem::update(game.getRegistry(), deltaTime);
 
 	while (accumulator >= stepSize) {
 		accumulator -= stepSize;
 
-		ECS::Systems::PhysicsSystem::Update(game.getRegistry(), stepSize);
+		ECS::Systems::PhysicsSystem::update(game.getRegistry(), stepSize);
 		ECS::Systems::CollisionSystem::update(game.getRegistry());
 	}
 
-	ECS::Systems::StateSystem::Update(game.getRegistry());
-	ECS::Systems::AnimationSystem::Update(game.getRegistry(), deltaTime);
+	ECS::Systems::StateSystem::update(game.getRegistry());
+	ECS::Systems::AnimationSystem::update(game.getRegistry(), deltaTime);
 
-	ECS::Systems::InteractionSystem::Update(game, game.getRegistry());
+	ECS::Systems::InteractionSystem::update(game, game.getRegistry());
 }
 
-void PlayState::Render(GameEngine &game, const float alpha)
+void PlayState::render(GameEngine &game, const float alpha)
 {
 	// std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now();
-	renderSystem.Update(game.getRegistry(), alpha);
+	renderSystem.update(game.getRegistry(), alpha);
 	// std::chrono::high_resolution_clock::time_point time1 = std::chrono::high_resolution_clock::now();
 	// DebugSystem::Debug("Render Time: " + std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(time1 -
 	// now).count()));

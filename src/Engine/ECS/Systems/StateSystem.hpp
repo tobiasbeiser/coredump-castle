@@ -7,7 +7,7 @@
 namespace GameEngine::ECS::Systems {
 class StateSystem {
   public:
-	static void Update(Registry &registry)
+	static void update(Registry &registry)
 	{
 		auto view = registry.view<StateComponent, VelocityComponent, GroundedComponent>();
 		for (auto entity : view) {
@@ -28,8 +28,8 @@ class StateSystem {
 				}
 			}
 
-			if (DebugSystem::Instance().player.showState) {
-				DebugSystem::Debug("Entity " + std::to_string(entity) + " State: " + std::to_string(state.state));
+			if (DebugSystem::instance().player.showState) {
+				DebugSystem::debug("Entity " + std::to_string(entity) + " State: " + std::to_string(state.state));
 			}
 		}
 	}

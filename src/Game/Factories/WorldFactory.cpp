@@ -9,7 +9,7 @@ WorldFactory::WorldFactory(GameEngine::ECS::Registry &registry, const std::files
     : registry(registry), project(tson::Project{projectPath}), textureManager(textureManager)
 {
 }
-void WorldFactory::CreateWorld(const std::filesystem::path &worldPath)
+void WorldFactory::createWorld(const std::filesystem::path &worldPath)
 {
 	tson::World world;
 	world.parse(worldPath);
@@ -31,10 +31,10 @@ void WorldFactory::CreateWorld(const std::filesystem::path &worldPath)
 				playerSpawnPosition = glm::vec2(pos.x, pos.y) + levelPos;
 			}
 		}
-		GameEngine::ECS::Entity level = levelFactory.CreateLevel(*map, levelPos);
-		registry.register_component<PositionComponent>(level, PositionComponent{.position = levelPos});
+		GameEngine::ECS::Entity level = levelFactory.createLevel(*map, levelPos);
+		registry.registerComponent<PositionComponent>(level, PositionComponent{.position = levelPos});
 	}
 
-	PlayerFactory::CreatePlayer(registry, textureManager, playerSpawnPosition,
+	PlayerFactory::createPlayer(registry, textureManager, playerSpawnPosition,
 	                            std::filesystem::path("assets/player/char_blue_1.png"), playerLayerIndex);
 }

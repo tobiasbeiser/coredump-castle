@@ -8,6 +8,6 @@ SDL_Texture &TextureManager::GetTexture(const std::filesystem::path &filePath)
 		return *(iterator->second); // found in cache
 	}
 
-	textures[filePath] = std::move(renderer.LoadTexture(filePath));
+	textures[filePath] = std::move(renderer.loadTexture(filePath));
 	return *(textures[filePath]);
 }

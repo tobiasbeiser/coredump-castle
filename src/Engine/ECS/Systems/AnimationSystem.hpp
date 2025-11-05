@@ -4,12 +4,11 @@
 #include "Engine/ECS/Components/Render/AnimationComponent.hpp"
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
-#include <SDL3/SDL.h>
 
 namespace GameEngine::ECS::Systems {
 class AnimationSystem {
   public:
-	static void Update(Registry &registry, float stepSize)
+	static void update(Registry &registry, float stepSize)
 	{
 		auto view = registry.view<AnimationComponent, SpriteComponent>();
 		for (const auto entity : view) {
@@ -35,9 +34,9 @@ class AnimationSystem {
 				auto animFrames = anim.frames.at(anim.currentAnimation);
 				const int currentFrame = animation.currentFrame();
 				texture = animFrames.at(currentFrame).texture;
-				TileSize = anim.frames.at(anim.currentAnimation).at(animation.currentFrame()).TileSize;
+				TileSize = anim.frames.at(anim.currentAnimation).at(animation.currentFrame()).tileSize;
 				TileMapPosition =
-				    anim.frames.at(anim.currentAnimation).at(animation.currentFrame()).TileMapPosition;
+				    anim.frames.at(anim.currentAnimation).at(animation.currentFrame()).tileMapPosition;
 			}
 		}
 	}

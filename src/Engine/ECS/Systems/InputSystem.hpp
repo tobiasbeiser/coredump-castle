@@ -33,7 +33,7 @@ class InputSystem {
 
 			std::string before = std::to_string(static_cast<int>(interactPressed)) + " "
 			                     + std::to_string(static_cast<int>(interactConsumed));
-			PressOrConsume(inputManager.isKeyPressed(Key::Interact), interactPressed, interactConsumed);
+			pressOrConsume(inputManager.isKeyPressed(Key::Interact), interactPressed, interactConsumed);
 			std::string after = std::to_string(static_cast<int>(interactPressed)) + " "
 			                    + std::to_string(static_cast<int>(interactConsumed));
 		}
@@ -51,7 +51,7 @@ class InputSystem {
 	InputManager &inputManager;
 
 	// TODO delete after attack and double jump have been merged
-	void PressOrConsume(bool keyPressed, bool &pressedProp, bool &consumedProp)
+	void pressOrConsume(bool keyPressed, bool &pressedProp, bool &consumedProp)
 	{
 		if (keyPressed) {
 			bool inPressedProp = pressedProp;

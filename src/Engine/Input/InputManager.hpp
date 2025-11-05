@@ -13,7 +13,7 @@ class InputManager {
 	bool isKeyReleased(Key key) const; // Key was just released this frame
 
   private:
-	std::unordered_map<Key, bool> currentKeyStates;
-	std::unordered_map<Key, bool> previousKeyStates;
-	std::unordered_map<SDL_Scancode, Key> scancodeMapping;
+	std::unordered_map<Key, bool> currentKeyStates{};
+	std::unordered_map<Key, bool> previousKeyStates{};
+	std::unordered_map<SDL_Scancode, Key> scancodeMapping{};
 };

@@ -6,7 +6,7 @@
 
 namespace GameEngine::ECS::Systems {
 struct JumpSystem {
-	static void Update(Registry &registry)
+	static void update(Registry &registry)
 	{
 		auto view = registry.view<JumpComponent, GroundedComponent, VelocityComponent, InputComponent>();
 		for (auto entity : view) {

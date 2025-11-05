@@ -13,22 +13,22 @@ class PlayState final : public GameState {
 	    : inputManager(input), textureManager(textureManager), renderer(renderer)
 	{
 	}
-	void Init(GameEngine &game) override;
-	void Cleanup() override;
-	void Pause() override;
-	void Resume() override;
-	void HandleEvents(GameEngine &game) override;
-	void Update(GameEngine &game, float deltaTime) override;
-	void Render(GameEngine &game, float alpha) override;
+	void init(GameEngine &game) override;
+	void cleanup() override;
+	void pause() override;
+	void resume() override;
+	void handleEvents(GameEngine &game) override;
+	void update(GameEngine &game, float deltaTime) override;
+	void render(GameEngine &game, float alpha) override;
 
   private:
-	LevelHistory history;
+	LevelHistory history{};
 	InputManager &inputManager;
 	TextureManager &textureManager;
 	Renderer &renderer;
 	ECS::Systems::RenderSystem renderSystem{renderer};
 	ECS::Systems::InputSystem inputSystem{inputManager};
-	ECS::Systems::MapActivationSystem mapActivationSystem;
+	ECS::Systems::MapActivationSystem mapActivationSystem{};
 	bool paused = false;
 	float accumulator = 0.0f;
 	static constexpr float stepSize = 1.0f / 240.0f;

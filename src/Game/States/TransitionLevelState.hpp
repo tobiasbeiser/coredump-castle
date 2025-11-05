@@ -9,13 +9,13 @@ class TransitionLevelState : public GameState {
 	TransitionLevelState(const std::string levelName, const std::string spawnPoint);
 
 	// Inherited via GameState
-	void Init(GameEngine &game) override;
-	void Cleanup() override;
-	void Pause() override;
-	void Resume() override;
-	void HandleEvents(GameEngine &game) override;
-	void Update(GameEngine &game, const float deltaTime) override;
-	void Render(GameEngine &game, const float alpha) override;
+	void init(GameEngine &game) override;
+	void cleanup() override;
+	void pause() override;
+	void resume() override;
+	void handleEvents(GameEngine &game) override;
+	void update(GameEngine &game, const float deltaTime) override;
+	void render(GameEngine &game, const float alpha) override;
 
   private:
 	const std::string nextLevelName;

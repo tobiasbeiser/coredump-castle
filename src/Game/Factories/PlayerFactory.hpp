@@ -20,24 +20,24 @@
 #include "Engine/Graphics/TextureManager.hpp"
 
 struct PlayerFactory {
-	static GameEngine::ECS::Entity CreatePlayer(GameEngine::ECS::Registry &registry, TextureManager &texMgr,
+	static GameEngine::ECS::Entity createPlayer(GameEngine::ECS::Registry &registry, TextureManager &texMgr,
 	                                            const glm::vec2 spawn, const fs::path &texturePath,
 	                                            const int layerIndex)
 	{
 		auto e = registry.create();
-		registry.register_component(e, PlayerTag{});
-		registry.register_component(e, PositionComponent{.position = spawn});
-		registry.register_component(e, VelocityComponent{.velocity = {0.0f, 0.0f}});
-		registry.register_component(e, AccelerationComponent{.acceleration = {0.0f, 0.0f}});
-		registry.register_component(e, GravityComponent{});
-		registry.register_component(e, GroundedComponent{});
-		registry.register_component(e, CollisionComponent{19, 25, 21, 32});
+		registry.registerComponent(e, PlayerTag{});
+		registry.registerComponent(e, PositionComponent{.position = spawn});
+		registry.registerComponent(e, VelocityComponent{.velocity = {0.0f, 0.0f}});
+		registry.registerComponent(e, AccelerationComponent{.acceleration = {0.0f, 0.0f}});
+		registry.registerComponent(e, GravityComponent{});
+		registry.registerComponent(e, GroundedComponent{});
+		registry.registerComponent(e, CollisionComponent{19, 25, 21, 32});
 
-		registry.register_component(e, RenderComponent{.layer = layerIndex, .flipX = false});
-		registry.register_component(e, SpriteComponent{.texture = &texMgr.GetTexture(texturePath.string()),
-		                                               .TileSize = {56, 56},
-		                                               .TileMapPosition = {0, 0}});
-		registry.register_component(e, CenterCameraComponent{});
+		registry.registerComponent(e, RenderComponent{.layer = layerIndex, .flipX = false});
+		registry.registerComponent(e, SpriteComponent{.texture = &texMgr.GetTexture(texturePath.string()),
+		                                               .tileSize = {56, 56},
+		                                               .tileMapPosition = {0, 0}});
+		registry.registerComponent(e, CenterCameraComponent{});
 
 		AnimationComponent playerAnim{};
 
@@ -56,14 +56,14 @@ struct PlayerFactory {
 		playerAnim.addAnimationFromSpritesheet(States::Falling, 8, 0.4f, &texMgr.GetTexture(texturePath.string()),
 		                                       {56, 56}, {0, 224});
 
-		registry.register_component(e, playerAnim);
+		registry.registerComponent(e, playerAnim);
 
-		registry.register_component(e, StateComponent{States::Idle});
-		registry.register_component(e, InputComponent{});
-		registry.register_component(e, MovementComponent{});
-		registry.register_component(e, JumpComponent{});
+		registry.registerComponent(e, StateComponent{States::Idle});
+		registry.registerComponent(e, InputComponent{});
+		registry.registerComponent(e, MovementComponent{});
+		registry.registerComponent(e, JumpComponent{});
 
-		registry.register_component(e, InteractionComponent{19, 25, 21, 32});
+		registry.registerComponent(e, InteractionComponent{19, 25, 21, 32});
 		return e;
 	}
 };

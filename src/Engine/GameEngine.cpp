@@ -10,62 +10,62 @@ GameEngine::GameEngine(const std::string &title, Resolution resolution)
 
 GameEngine::~GameEngine()
 {
-	Cleanup();
+	cleanup();
 }
 
-bool GameEngine::Init()
+bool GameEngine::init()
 {
 	// game data
 	states.emplace_back(std::make_unique<PlayState>(inputManager, textureManager, renderer));
 	running = true;
 
-	states.back()->Init(*this);
+	states.back()->init(*this);
 
 	return true;
 }
 
-void GameEngine::Cleanup() noexcept {}
+void GameEngine::cleanup() noexcept {}
 
-void GameEngine::ChangeState(std::unique_ptr<GameState> state)
+void GameEngine::changeState(std::unique_ptr<GameState> state)
 {
 	// cleanup the current state
 	if (!states.empty()) {
-		states.back()->Cleanup();
+		states.back()->cleanup();
 		states.pop_back();
 	}
 
 	// store and init the new state
 	states.push_back(std::move(state));
-	states.back()->Init(*this);
+	states.back()->init(*this);
 }
 
-void GameEngine::PushState(std::unique_ptr<GameState> state)
+void GameEngine::pushState(std::unique_ptr<GameState> state)
 {
 	// pause current state
 	if (!states.empty()) {
-		states.back()->Pause();
+		states.back()->pause();
 	}
 
 	// store and init the new state
 	states.push_back(std::move(state));
-	states.back()->Init(*this);
+	states.back()->init(*this);
 }
 
-void GameEngine::PopState()
+void GameEngine::popState()
 {
 	// cleanup the current state
 	if (!states.empty()) {
-		states.back()->Cleanup();
+		states.back()->cleanup();
 		states.pop_back();
 	}
 
 	// resume previous state
 	if (!states.empty()) {
-		states.back()->Resume();
+		states.back()->resume();
 	}
 }
 
-void GameEngine::HandleEvents()
+void GameEngine::handleEvents()
 {
 	SDL_Event event{0};
 	while (SDL_PollEvent(&event)) {
@@ -75,7 +75,7 @@ void GameEngine::HandleEvents()
 			break;
 
 		case SDL_EVENT_WINDOW_RESIZED:
-			renderer.Resize({.width = event.window.data1, .height = event.window.data2});
+			renderer.resize({.width = event.window.data1, .height = event.window.data2});
 			break;
 
 		case SDL_EVENT_KEY_DOWN:
@@ -88,25 +88,25 @@ void GameEngine::HandleEvents()
 	}
 
 	if (!states.empty())
-		states.back()->HandleEvents(*this);
+		states.back()->handleEvents(*this);
 }
 
-void GameEngine::Update(const float deltaTime)
+void GameEngine::update(const float deltaTime)
 {
-	DebugSystem::Clear();
+	DebugSystem::clear();
 	for (const auto &state : states) {
-		state->Update(*this, deltaTime);
+		state->update(*this, deltaTime);
 	}
 }
 
-void GameEngine::Render(const float alpha)
+void GameEngine::render(const float alpha)
 {
 	constexpr int red = 12, green = 19, blue = 25;
 	constexpr int opacity = 255;
-	renderer.StartFrame(red, green, blue, opacity);
+	renderer.startFrame(red, green, blue, opacity);
 	for (const auto &state : states) {
-		state->Render(*this, alpha);
+		state->render(*this, alpha);
 	}
-	renderer.EndFrame();
+	renderer.endFrame();
 };
 } // namespace GameEngine

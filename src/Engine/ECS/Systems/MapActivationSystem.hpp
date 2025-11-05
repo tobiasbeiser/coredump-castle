@@ -12,9 +12,9 @@ namespace GameEngine::ECS::Systems {
 class MapActivationSystem {
 
   public:
-	void Update(Registry &registry)
+	void update(Registry &registry)
 	{
-		if (const auto referenceFrame = GetReferenceFrame(registry); referenceFrame != previousReferenceFrame) {
+		if (const auto referenceFrame = getReferenceFrame(registry); referenceFrame != previousReferenceFrame) {
 			previousReferenceFrame = referenceFrame;
 			for (auto view = registry.view<PositionComponent>().exclude<PlayerTag>(); const auto entity : view) {
 				if (auto &[position, previousPosition] = registry.get<PositionComponent>(entity);
@@ -28,7 +28,7 @@ class MapActivationSystem {
 						registry.remove<InactiveTag>(entity);
 					}
 				} else {
-					registry.register_component(entity, InactiveTag{});
+					registry.registerComponent(entity, InactiveTag{});
 				}
 			}
 		}
@@ -42,7 +42,7 @@ class MapActivationSystem {
 
 	ReferenceFrame previousReferenceFrame{};
 
-	static ReferenceFrame GetReferenceFrame(Registry &registry)
+	static ReferenceFrame getReferenceFrame(Registry &registry)
 	{
 		if (auto centerCameraView = registry.view<PositionComponent, CenterCameraComponent, SpriteComponent>();
 		    centerCameraView.size() == 1) {
@@ -50,7 +50,7 @@ class MapActivationSystem {
 			const auto &[position, previousPosition] = centerCameraView.get<PositionComponent>(centerCameraEntity);
 			const auto &tile = centerCameraView.get<SpriteComponent>(centerCameraEntity);
 
-			const auto centerCameraPosition = position + static_cast<glm::vec2>(tile.TileSize / 2);
+			const auto centerCameraPosition = position + static_cast<glm::vec2>(tile.tileSize / 2);
 			for (auto levelView = registry.view<LevelComponent, PositionComponent>(); const auto entity : levelView) {
 				const auto &level = levelView.get<LevelComponent>(entity);
 				auto &posLvl = levelView.get<PositionComponent>(entity);

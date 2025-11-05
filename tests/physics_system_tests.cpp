@@ -13,14 +13,14 @@ class PhysicsSystemTest : public ::testing::Test {
 	void SetUp() override
 	{
 		entity = registry.create();
-		registry.register_component(entity, PositionComponent{{0.0f, 0.0f}});
-		registry.register_component(entity, AccelerationComponent{{0.0f, 0.0f}});
-		registry.register_component(entity, MovementComponent{});
+		registry.registerComponent(entity, PositionComponent{{0.0f, 0.0f}});
+		registry.registerComponent(entity, AccelerationComponent{{0.0f, 0.0f}});
+		registry.registerComponent(entity, MovementComponent{});
 	}
 
 	void SetVelocity(float x, float y)
 	{
-		registry.register_component(entity, VelocityComponent{{x, y}});
+		registry.registerComponent(entity, VelocityComponent{{x, y}});
 	}
 
 	Registry registry;
