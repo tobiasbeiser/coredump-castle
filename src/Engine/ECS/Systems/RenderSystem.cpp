@@ -26,7 +26,7 @@ void RenderSystem::update(Registry &registry, float alpha)
 
 	// Backgrounds
 
-	for (auto &bgView = registry.view<RenderComponent, BackgroundComponent, PositionComponent>().exclude<InactiveTag>();
+	for (auto bgView = registry.view<RenderComponent, BackgroundComponent, PositionComponent>().exclude<InactiveTag>();
 	     const auto entity : bgView) {
 		const auto &[layer, flipX] = bgView.get<RenderComponent>(entity);
 		const auto &pos = bgView.get<PositionComponent>(entity);
@@ -50,7 +50,7 @@ void RenderSystem::update(Registry &registry, float alpha)
 	}
 
 	// Tiles, Player
-	for (auto &view = registry.view<PositionComponent, SpriteComponent, RenderComponent>().exclude<InactiveTag>();
+	for (auto view = registry.view<PositionComponent, SpriteComponent, RenderComponent>().exclude<InactiveTag>();
 	     const auto entity : view) {
 		const auto &[position, previousPosition] = view.get<PositionComponent>(entity);
 		const auto &[texture, TileSize, TileMapPosition] = view.get<SpriteComponent>(entity);
@@ -100,14 +100,14 @@ void RenderSystem::update(Registry &registry, float alpha)
 void RenderSystem::centerCamera(Registry &registry) const
 {
 
-	if (auto &centerCameraView =
+	if (auto centerCameraView =
 	        registry.view<PositionComponent, CenterCameraComponent, SpriteComponent>().exclude<InactiveTag>();
 	    centerCameraView.size() == 1) {
 		const auto &centerCameraEntity = centerCameraView.at(0);
 		auto &[position, previousPosition] = centerCameraView.get<PositionComponent>(centerCameraEntity);
 		const auto &tile = centerCameraView.get<SpriteComponent>(centerCameraEntity);
 
-		auto &levelView = registry.view<LevelComponent, PositionComponent>().exclude<InactiveTag>();
+		auto levelView = registry.view<LevelComponent, PositionComponent>().exclude<InactiveTag>();
 
 		if (levelView.size() == 1) {
 			const auto levelEntity = levelView.at(0);

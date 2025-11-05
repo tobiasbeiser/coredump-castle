@@ -41,24 +41,24 @@ struct PlayerFactory {
 
 		AnimationComponent playerAnim{};
 
-		playerAnim.addAnimationFromSpritesheet(States::Idle, 6, 0.6f, &texMgr.getTexture(texturePath.string()),
+		playerAnim.addAnimationFromSpritesheet(State::Idle, 6, 0.6f, &texMgr.getTexture(texturePath.string()),
 		                                       {56, 56}, {0, 0});
 
-		playerAnim.addAnimationFromSpritesheet(States::Attacking, 6, 0.6f, &texMgr.getTexture(texturePath.string()),
+		playerAnim.addAnimationFromSpritesheet(State::Attacking, 6, 0.6f, &texMgr.getTexture(texturePath.string()),
 		                                       {56, 56}, {0, 56});
 
-		playerAnim.addAnimationFromSpritesheet(States::Walking, 8, 0.8f, &texMgr.getTexture(texturePath.string()),
+		playerAnim.addAnimationFromSpritesheet(State::Walking, 8, 0.8f, &texMgr.getTexture(texturePath.string()),
 		                                       {56, 56}, {0, 112});
 
-		playerAnim.addAnimationFromSpritesheet(States::Jumping, 8, 0.4f, &texMgr.getTexture(texturePath.string()),
+		playerAnim.addAnimationFromSpritesheet(State::Jumping, 8, 0.4f, &texMgr.getTexture(texturePath.string()),
 		                                       {56, 56}, {0, 168});
 
-		playerAnim.addAnimationFromSpritesheet(States::Falling, 8, 0.4f, &texMgr.getTexture(texturePath.string()),
+		playerAnim.addAnimationFromSpritesheet(State::Falling, 8, 0.4f, &texMgr.getTexture(texturePath.string()),
 		                                       {56, 56}, {0, 224});
 
 		registry.registerComponent(e, playerAnim);
 
-		registry.registerComponent(e, StateComponent{States::Idle});
+		registry.registerComponent(e, StateComponent{State::Idle});
 		registry.registerComponent(e, InputComponent{});
 		registry.registerComponent(e, MovementComponent{});
 		registry.registerComponent(e, JumpComponent{});

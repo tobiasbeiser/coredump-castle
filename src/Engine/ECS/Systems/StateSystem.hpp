@@ -16,20 +16,20 @@ class StateSystem {
 			auto &ground = view.get<GroundedComponent>(entity);
 			if (!ground.grounded) {
 				if (vel.velocity.y < 0) {
-					state.state = States::Jumping;
+					state.state = State::Jumping;
 				} else {
-					state.state = States::Falling;
+					state.state = State::Falling;
 				}
 			} else {
 				if (std::abs(vel.velocity.x) > 0.1f) {
-					state.state = States::Walking;
+					state.state = State::Walking;
 				} else {
-					state.state = States::Idle;
+					state.state = State::Idle;
 				}
 			}
 
 			if (DebugSystem::instance().player.showState) {
-				DebugSystem::debug("Entity " + std::to_string(entity) + " State: " + std::to_string(state.state));
+				DebugSystem::debug("Entity " + std::to_string(entity) + " State: " + to_string(state.state));
 			}
 		}
 	}

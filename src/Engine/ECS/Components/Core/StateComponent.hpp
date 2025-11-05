@@ -1,7 +1,26 @@
 #pragma once
+#include <string>
 
-enum States { Idle, Walking, Jumping, Falling, Attacking, Crouching };
+enum class State { Idle, Walking, Jumping, Falling, Attacking };
+
+inline std::string to_string(State state)
+{
+	switch (state) {
+	case State::Idle:
+		return "Idle";
+	case State::Walking:
+		return "Walking";
+	case State::Jumping:
+		return "Jumping";
+	case State::Falling:
+		return "Falling";
+	case State::Attacking:
+		return "Attacking";
+	default:
+		return "Unknown";
+	}
+}
 
 struct StateComponent {
-	int state = 0;
+	State state = State::Idle;
 };

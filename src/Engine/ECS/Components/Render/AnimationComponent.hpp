@@ -18,14 +18,15 @@ struct AnimationComponent {
 	int previousAnimation = 0;
 	std::unordered_map<int, int> stateToAnimationIndex{};
 
-	void addAnimationFromSpritesheet(int state, int frameCount, float length, SDL_Texture *texture, glm::ivec2 tileSize,
-	                                 glm::ivec2 tileMapPos)
+	void addAnimationFromSpritesheet(const State &state, int frameCount, float length, SDL_Texture *texture,
+	                                 glm::ivec2 tileSize, glm::ivec2 tileMapPos)
 	{
+		int stateIndex = static_cast<int>(state);
 		const Animation anim(frameCount, length);
-		if (state >= animations.size()) {
-			animations.resize(state + 1);
+		if (stateIndex >= animations.size()) {
+			animations.resize(stateIndex + 1);
 		}
-		animations[state] = anim;
+		animations[stateIndex] = anim;
 
 		std::vector<AnimationFrame> animationFrames{};
 
@@ -36,9 +37,9 @@ struct AnimationComponent {
 			frame.tileMapPosition = glm::ivec2(tileMapPos.x + i * tileSize.x, tileMapPos.y);
 			animationFrames.push_back(frame);
 		}
-		if (state >= frames.size()) {
-			frames.resize(state + 1);
+		if (stateIndex >= frames.size()) {
+			frames.resize(stateIndex + 1);
 		}
-		frames[state] = animationFrames;
+		frames[stateIndex] = animationFrames;
 	}
 };

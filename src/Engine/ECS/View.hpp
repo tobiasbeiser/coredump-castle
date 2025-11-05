@@ -7,17 +7,17 @@ namespace GameEngine::ECS {
 
 template <typename... Components>
 class View {
-	Registry &registry;
+	Registry *registry;
 	std::vector<Entity> entities;
 
   public:
-	View(Registry &reg) : registry(reg)
+	View(Registry &reg) : registry(&reg)
 	{
 		using Tuple = std::tuple<Components...>;
-		auto &firstStorage = registry.getStorage<std::tuple_element_t<0, Tuple>>();
+		auto &firstStorage = registry->getStorage<std::tuple_element_t<0, Tuple>>();
 
 		// Cache all storages once
-		auto storages = std::make_tuple(&registry.getStorage<Components>()...);
+		auto storages = std::make_tuple(&registry->getStorage<Components>()...);
 
 		for (const auto &[entity, _] : firstStorage.components) {
 			if ((std::get<ComponentStorage<Components> *>(storages)->components.contains(entity) && ...)) {
@@ -27,21 +27,21 @@ class View {
 	}
 	View(const View &) = delete;
 	View &operator=(const View &) = delete;
-	View(View &&) = delete;
-	View &operator=(View &&) = delete;
+	View(View &&) = default;
+	View &operator=(View &&) = default;
 	~View() = default;
 
 	template <typename... Excluded>
-	View &exclude()
+	View exclude() &&
 	{
 		std::vector<Entity> filtered;
 		for (Entity e : entities) {
-			if ((!registry.has<Excluded>(e) && ...)) {
+			if ((!registry->has<Excluded>(e) && ...)) {
 				filtered.push_back(e);
 			}
 		}
 		entities = std::move(filtered);
-		return *this;
+		return std::move(*this);
 	}
 
 	auto begin() { return entities.begin(); }
@@ -53,7 +53,7 @@ class View {
 	template <typename T>
 	T &get(Entity e)
 	{
-		return registry.getStorage<T>().getComponent(e);
+		return registry->getStorage<T>().getComponent(e);
 	}
 };
 } // namespace GameEngine::ECS

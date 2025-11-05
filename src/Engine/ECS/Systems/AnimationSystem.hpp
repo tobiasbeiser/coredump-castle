@@ -17,7 +17,7 @@ class AnimationSystem {
 
 			if (registry.has<StateComponent>(entity)) {
 				anim.previousAnimation = anim.currentAnimation;
-				anim.currentAnimation = registry.get<StateComponent>(entity).state;
+				anim.currentAnimation = static_cast<int>(registry.get<StateComponent>(entity).state);
 			}
 
 			if (anim.currentAnimation != -1) {

@@ -12,7 +12,7 @@ class MovementSystem {
   public:
 	static void update(Registry &registry, const float stepSize)
 	{
-		for (auto &view = registry.view<VelocityComponent, AccelerationComponent, MovementComponent, InputComponent>()
+		for (auto view = registry.view<VelocityComponent, AccelerationComponent, MovementComponent, InputComponent>()
 		                      .exclude<InactiveTag>();
 		     const auto entity : view) {
 			auto &[velocity] = view.get<VelocityComponent>(entity);
