@@ -60,7 +60,7 @@ struct CollisionSystem {
 	static void resolveAabbCollision(const SDL_FRect &entityBox, const SDL_FRect &tileBox, glm::vec2 &pos,
 	                                 glm::vec2 &vel)
 	{
-		SDL_FRect intersection;
+		SDL_FRect intersection{};
 		if (SDL_GetRectIntersectionFloat(&entityBox, &tileBox, &intersection)) {
 			if (intersection.w < intersection.h) {
 				// Horizontal

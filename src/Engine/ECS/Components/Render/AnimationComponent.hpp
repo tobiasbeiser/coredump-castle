@@ -30,7 +30,7 @@ struct AnimationComponent {
 		std::vector<AnimationFrame> animationFrames{};
 
 		for (size_t i = 0; i < frameCount; i++) {
-			AnimationFrame frame;
+			AnimationFrame frame{};
 			frame.texture = texture;
 			frame.tileSize = tileSize;
 			frame.tileMapPosition = glm::ivec2(tileMapPos.x + i * tileSize.x, tileMapPos.y);
