@@ -6,6 +6,7 @@ class Animation {
 	Timer timer;
 	int frameCount;
 	bool loop = true;
+	int ThisShouldFail = 0;
 
   public:
 	Animation() : timer(0), frameCount(0) {}
