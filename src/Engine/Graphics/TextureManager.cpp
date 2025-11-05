@@ -1,7 +1,7 @@
 #include "TextureManager.hpp"
 #include <stdexcept>
 
-SDL_Texture &TextureManager::GetTexture(const std::filesystem::path &filePath)
+SDL_Texture &TextureManager::getTexture(const std::filesystem::path &filePath)
 {
 	auto iterator = textures.find(filePath);
 	if (iterator != textures.end()) {
