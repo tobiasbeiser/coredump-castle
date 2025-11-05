@@ -8,6 +8,13 @@ namespace GameEngine::ECS::Systems {
 class RenderSystem {
   public:
 	explicit RenderSystem(Renderer &renderer);
+
+	RenderSystem(const RenderSystem &) = delete;
+	RenderSystem &operator=(RenderSystem &&) = delete;
+	RenderSystem(RenderSystem &&) = delete;
+	RenderSystem &operator=(const RenderSystem &) = delete;
+	~RenderSystem() = default;
+
 	void update(Registry &registry, float alpha);
 
   private:

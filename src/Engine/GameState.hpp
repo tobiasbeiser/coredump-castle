@@ -6,7 +6,12 @@
 namespace GameEngine {
 class GameState {
   public:
+	GameState(const GameState &) = delete;
+	GameState &operator=(const GameState &) = delete;
+	GameState(GameState &&) = delete;
+	GameState &operator=(GameState &&) = delete;
 	virtual ~GameState() = default;
+
 	virtual void init(GameEngine &game) = 0;
 	virtual void cleanup() = 0;
 

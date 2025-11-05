@@ -16,7 +16,7 @@ class MapActivationSystem {
 	{
 		if (const auto referenceFrame = getReferenceFrame(registry); referenceFrame != previousReferenceFrame) {
 			previousReferenceFrame = referenceFrame;
-			for (auto view = registry.view<PositionComponent>().exclude<PlayerTag>(); const auto entity : view) {
+			for (auto &view = registry.view<PositionComponent>().exclude<PlayerTag>(); const auto entity : view) {
 				if (auto &[position, previousPosition] = registry.get<PositionComponent>(entity);
 				    position.x >= static_cast<float>(referenceFrame.x)
 				    && position.y >= static_cast<float>(referenceFrame.y)

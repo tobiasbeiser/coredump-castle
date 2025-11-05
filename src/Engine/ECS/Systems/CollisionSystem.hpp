@@ -11,10 +11,10 @@ struct CollisionSystem {
 	static void update(Registry &registry)
 	{
 		// Get all entities that move (dynamic)
-		auto dynamicView =
+		auto &dynamicView =
 		    registry.view<PositionComponent, VelocityComponent, CollisionComponent>().exclude<InactiveTag>();
 		// Get all static colliders (tiles)
-		auto staticView = registry.view<PositionComponent, CollisionComponent>().exclude<InactiveTag>();
+		auto &staticView = registry.view<PositionComponent, CollisionComponent>().exclude<InactiveTag>();
 		for (const auto dynEntity : dynamicView) {
 
 			auto &[position, previousPosition] = dynamicView.get<PositionComponent>(dynEntity);

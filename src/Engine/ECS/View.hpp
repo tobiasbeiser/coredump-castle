@@ -25,6 +25,11 @@ class View {
 			}
 		}
 	}
+	View(const View &) = delete;
+	View &operator=(const View &) = delete;
+	View(View &&) = delete;
+	View &operator=(View &&) = delete;
+	~View() = default;
 
 	template <typename... Excluded>
 	View &exclude()
