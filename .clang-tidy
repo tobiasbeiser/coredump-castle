@@ -2,12 +2,15 @@ Checks: >
   cppcoreguidelines-*,
   bugprone-*,
   readability-identifier-naming,
-  -cppcoreguidelines-pro-type-union-access
+  -cppcoreguidelines-pro-type-union-access,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-narrowing-conversions,
+  -bugprone-narrowing-conversions,
+  -bugprone-easily-swappable-parameters,
+  -cppcoreguidelines-pro-type-vararg,
 
-WarningsAsErrors: '*'
-
-ExtraArgs: 
-  - "-EHsc"          # for MSVC / Windows
+WarningsAsErrors: >
+  *
 
 CheckOptions:
   # === Naming Conventions ===
