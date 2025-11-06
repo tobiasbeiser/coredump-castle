@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "AnimationFactory.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
@@ -19,13 +20,17 @@
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/Graphics/TextureManager.hpp"
 
-struct PlayerFactory {
+class PlayerFactory {
+  public:
 	static GameEngine::ECS::Entity createPlayer(GameEngine::ECS::Registry &registry, TextureManager &texMgr,
-	                                            const glm::vec2 spawn, const fs::path &texturePath,
-	                                            const int layerIndex)
+	                                     tson::Object &player, const glm::vec2 &levelPos, tson::Map &map)
 	{
-		auto e = registry.create();
+		const auto e = registry.create();
 		registry.registerComponent(e, PlayerTag{});
+
+		const tson::Vector2 pos = player.getPosition();
+		const glm::vec2 spawn = glm::vec2(pos.x, pos.y) + levelPos;
+
 		registry.registerComponent(e, PositionComponent{.position = spawn});
 		registry.registerComponent(e, VelocityComponent{.velocity = {0.0f, 0.0f}});
 		registry.registerComponent(e, AccelerationComponent{.acceleration = {0.0f, 0.0f}});
@@ -33,30 +38,31 @@ struct PlayerFactory {
 		registry.registerComponent(e, GroundedComponent{});
 		registry.registerComponent(e, CollisionComponent{19, 25, 21, 32});
 
-		registry.registerComponent(e, RenderComponent{.layer = layerIndex, .flipX = false});
-		registry.registerComponent(e, SpriteComponent{.texture = &texMgr.getTexture(texturePath.string()),
-		                                              .tileSize = {56, 56},
-		                                              .tileMapPosition = {0, 0}});
+		registry.registerComponent(e, RenderComponent{.layer = 100, .flipX = false});
+		registry.registerComponent(e, SpriteComponent{.texture = nullptr, // to be set by AnimationSystem //TODO add to animation factory
+		                       .tileSize = {56, 56},
+		                       .tileMapPosition = {0, 0}});
 		registry.registerComponent(e, CenterCameraComponent{});
 
-		AnimationComponent playerAnim{};
+		if (const auto prop = player.getProp("animations"); prop != nullptr && prop->getType() == tson::Type::File) {
 
-		playerAnim.addAnimationFromSpritesheet(State::Idle, 6, 0.6f, &texMgr.getTexture(texturePath.string()), {56, 56},
-		                                       {0, 0});
+			const std::filesystem::path basePath = "assets/tiled/tilesets/";
+			const auto tilesetPath = basePath / prop->getValue<std::filesystem::path>();
+			tson::Tileset tileset;
 
-		playerAnim.addAnimationFromSpritesheet(State::Attacking, 6, 0.6f, &texMgr.getTexture(texturePath.string()),
-		                                       {56, 56}, {0, 56});
+			tson::Json11 json;
+			auto result = json.parse(tilesetPath);
+			tileset.parse(json, &map); // map is required to read project enums
 
-		playerAnim.addAnimationFromSpritesheet(State::Walking, 8, 0.8f, &texMgr.getTexture(texturePath.string()),
-		                                       {56, 56}, {0, 112});
+			const AnimationFactory animFactory(registry, texMgr);
 
-		playerAnim.addAnimationFromSpritesheet(State::Jumping, 8, 0.4f, &texMgr.getTexture(texturePath.string()),
-		                                       {56, 56}, {0, 168});
+			for (auto tile : tileset.getTiles()) {
+				if (auto anim = tile.getAnimation(); anim.any()) {
+					animFactory.loadAnimation(&tile, e);
+				}
+			}
+		}
 
-		playerAnim.addAnimationFromSpritesheet(State::Falling, 8, 0.4f, &texMgr.getTexture(texturePath.string()),
-		                                       {56, 56}, {0, 224});
-
-		registry.registerComponent(e, playerAnim);
 
 		registry.registerComponent(e, StateComponent{State::Idle});
 		registry.registerComponent(e, InputComponent{});

@@ -14,6 +14,9 @@ class Animation {
 	float getLength() const { return timer.getLength(); }
 	int currentFrame() const
 	{
+		if (frameCount == 0) {
+			return 0;
+		}
 		const float t = timer.getTime();
 		if (!loop && t >= timer.getLength()) {
 			return frameCount - 1;

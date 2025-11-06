@@ -6,6 +6,7 @@
 #include "Engine/ECS/Registry.hpp"
 
 namespace GameEngine::ECS::Systems {
+
 class AnimationSystem {
   public:
 	static void update(Registry &registry, float stepSize)
@@ -15,29 +16,31 @@ class AnimationSystem {
 			auto &anim = view.get<AnimationComponent>(entity);
 			auto &[texture, TileSize, TileMapPosition] = view.get<SpriteComponent>(entity);
 
+			// Determine current animation from state
 			if (registry.has<StateComponent>(entity)) {
 				anim.previousAnimation = anim.currentAnimation;
-				anim.currentAnimation = static_cast<int>(registry.get<StateComponent>(entity).state);
+				const auto &stateComp = registry.get<StateComponent>(entity);
+				anim.currentAnimation = static_cast<int>(stateComp.state);
 			}
 
-			if (anim.currentAnimation != -1) {
-
+			if (anim.currentAnimation != -1 && anim.animations.count(anim.currentAnimation) > 0) {
 				auto &animation = anim.animations.at(anim.currentAnimation);
+				auto &animFrames = anim.frames.at(anim.currentAnimation);
 
+				// Restart animation if changed
 				if (anim.previousAnimation != anim.currentAnimation) {
 					animation.start();
 				}
 
 				animation.step(stepSize);
 
-				// Update tile map position based on current animation frame#
-				auto animFrames = anim.frames.at(anim.currentAnimation);
 				const int currentFrame = animation.currentFrame();
-				texture = animFrames.at(currentFrame).texture;
-				TileSize = anim.frames.at(anim.currentAnimation).at(animation.currentFrame()).tileSize;
-				TileMapPosition = anim.frames.at(anim.currentAnimation).at(animation.currentFrame()).tileMapPosition;
+				texture = animFrames[currentFrame].texture;
+				TileSize = animFrames[currentFrame].tileSize;
+				TileMapPosition = animFrames[currentFrame].tileMapPosition;
 			}
 		}
 	}
 };
+
 } // namespace GameEngine::ECS::Systems
