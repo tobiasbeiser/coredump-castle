@@ -269,16 +269,10 @@
          "name":"Entities",
          "objects":[
                 {
-                 "height":0,
-                 "id":1,
-                 "name":"Player",
-                 "point":true,
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":0,
-                 "x":116.475002920855,
-                 "y":857.948221882444
+                 "id":12,
+                 "template":"..\/objects\/Player.tj",
+                 "x":100.5,
+                 "y":866.25
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -287,7 +281,7 @@
          "y":0
         }],
  "nextlayerid":10,
- "nextobjectid":12,
+ "nextobjectid":13,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",

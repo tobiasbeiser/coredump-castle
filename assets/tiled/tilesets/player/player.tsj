@@ -1,4 +1,4 @@
-﻿{ "columns":8,
+{ "columns":8,
  "image":"..\/..\/..\/player\/char_blue_1.png",
  "imageheight":616,
  "imagewidth":448,
@@ -155,40 +155,15 @@
                 {
                  "duration":100,
                  "tileid":31
-                }, 
-                {
-                 "duration":100,
-                 "tileid":32
-                }, 
-                {
-                 "duration":100,
-                 "tileid":33
-                }, 
-                {
-                 "duration":100,
-                 "tileid":34
-                }, 
-                {
-                 "duration":100,
-                 "tileid":35
-                }, 
-                {
-                 "duration":100,
-                 "tileid":36
-                }, 
-                {
-                 "duration":100,
-                 "tileid":37
-                }, 
-                {
-                 "duration":100,
-                 "tileid":38
-                }, 
-                {
-                 "duration":100,
-                 "tileid":39
                 }],
-         "id":24
+         "id":24,
+         "properties":[
+                {
+                 "name":"state",
+                 "propertytype":"State",
+                 "type":"int",
+                 "value":3
+                }]
         }, 
         {
          "animation":[

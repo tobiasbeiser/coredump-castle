@@ -36,6 +36,20 @@
             "useAs": [
                 "property"
             ]
+        },
+        {
+            "id": 2,
+            "name": "State",
+            "storageType": "int",
+            "type": "enum",
+            "values": [
+                "Idle",
+                "Walking",
+                "Attacking",
+                "Jumping",
+                "Falling"
+            ],
+            "valuesAsFlags": false
         }
     ]
 }
