@@ -1,7 +1,7 @@
 #pragma once
+#include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
-#include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 
 namespace GameEngine::ECS::Systems {

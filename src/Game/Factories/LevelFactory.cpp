@@ -11,7 +11,7 @@
 #include <glm/vec2.hpp>
 
 LevelFactory::LevelFactory(GameEngine::ECS::Registry &registry, TextureManager &textureManager)
-    : registry(registry), textureManager(textureManager) {};
+    : registry(registry), textureManager(textureManager){};
 
 GameEngine::ECS::Entity LevelFactory::createLevel(tson::Map &map, const glm::vec2 &pos)
 {
@@ -33,7 +33,7 @@ GameEngine::ECS::Entity LevelFactory::createLevel(tson::Map &map, const glm::vec
 	}
 
 	registry.registerComponent<LevelComponent>(level,
-	                                            LevelComponent{.levelSize = levelSize, .playerLayer = playerLayer});
+	                                           LevelComponent{.levelSize = levelSize, .playerLayer = playerLayer});
 	registry.registerComponent(level, PositionComponent{.position = pos});
 	registry.registerComponent(level, InactiveTag{});
 
@@ -109,10 +109,10 @@ void LevelFactory::createTile(const int layerIndex, const glm::vec2 &levelPos, t
 		auto collisionBoxes = tile.getObjectgroup().getObjectsByType(tson::ObjectType::Rectangle);
 		if (!collisionBoxes.empty()) {
 			registry.registerComponent(entity,
-			                            CollisionComponent{static_cast<float>(collisionBoxes.at(0).getPosition().x),
-			                                               static_cast<float>(collisionBoxes.at(0).getPosition().y),
-			                                               static_cast<float>(collisionBoxes.at(0).getSize().x),
-			                                               static_cast<float>(collisionBoxes.at(0).getSize().y)});
+			                           CollisionComponent{static_cast<float>(collisionBoxes.at(0).getPosition().x),
+			                                              static_cast<float>(collisionBoxes.at(0).getPosition().y),
+			                                              static_cast<float>(collisionBoxes.at(0).getSize().x),
+			                                              static_cast<float>(collisionBoxes.at(0).getSize().y)});
 		} else {
 			registry.registerComponent(
 			    entity, CollisionComponent{0, 0, static_cast<float>(tileSize.x), static_cast<float>(tileSize.y)});
@@ -172,9 +172,9 @@ void LevelFactory::createBackground(const glm::vec2 &levelPos, const fs::path &f
 {
 	const auto entity = registry.create();
 	registry.registerComponent(entity, BackgroundComponent{.texture = &textureManager.getTexture(filename.string()),
-	                                                        .scrollingSpeed = scrollSpeed,
-	                                                        .yOffset = yOffset,
-	                                                        .repeatX = repeatX});
+	                                                       .scrollingSpeed = scrollSpeed,
+	                                                       .yOffset = yOffset,
+	                                                       .repeatX = repeatX});
 	registry.registerComponent(entity, RenderComponent{.layer = layer, .flipX = false});
 	registry.registerComponent(entity, PositionComponent{.position = levelPos});
 }

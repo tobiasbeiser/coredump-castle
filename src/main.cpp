@@ -2,7 +2,6 @@
 #include "Engine/GameEngine.hpp"
 #include "math.h"
 
-
 int main()
 {
 	const int windowWidth = 1920;

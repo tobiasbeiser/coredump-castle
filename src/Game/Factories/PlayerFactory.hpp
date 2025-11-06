@@ -35,14 +35,14 @@ struct PlayerFactory {
 
 		registry.registerComponent(e, RenderComponent{.layer = layerIndex, .flipX = false});
 		registry.registerComponent(e, SpriteComponent{.texture = &texMgr.getTexture(texturePath.string()),
-		                                               .tileSize = {56, 56},
-		                                               .tileMapPosition = {0, 0}});
+		                                              .tileSize = {56, 56},
+		                                              .tileMapPosition = {0, 0}});
 		registry.registerComponent(e, CenterCameraComponent{});
 
 		AnimationComponent playerAnim{};
 
-		playerAnim.addAnimationFromSpritesheet(State::Idle, 6, 0.6f, &texMgr.getTexture(texturePath.string()),
-		                                       {56, 56}, {0, 0});
+		playerAnim.addAnimationFromSpritesheet(State::Idle, 6, 0.6f, &texMgr.getTexture(texturePath.string()), {56, 56},
+		                                       {0, 0});
 
 		playerAnim.addAnimationFromSpritesheet(State::Attacking, 6, 0.6f, &texMgr.getTexture(texturePath.string()),
 		                                       {56, 56}, {0, 56});

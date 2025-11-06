@@ -29,10 +29,7 @@ class Registry {
 
 	int size() const { return next; }
 
-	Entity create()
-	{
-		return next++;
-	}
+	Entity create() { return next++; }
 
 	template <typename T>
 	void registerComponent(Entity entity, T component)

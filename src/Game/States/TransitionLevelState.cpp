@@ -4,9 +4,7 @@
 #include <chrono>
 #include <thread>
 
-GameEngine::TransitionLevelState::TransitionLevelState()
-{
-}
+GameEngine::TransitionLevelState::TransitionLevelState() {}
 
 void GameEngine::TransitionLevelState::init(GameEngine &game) {}
 
@@ -29,7 +27,6 @@ void GameEngine::TransitionLevelState::update(GameEngine &game, const float delt
 		}
 		if (progress >= 1.0f) {
 			progress = 1.0f;
-
 
 			loadingDone = true;
 		}

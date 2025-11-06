@@ -1,8 +1,8 @@
 #pragma once
+#include <SDL3/SDL_pixels.h>
+#include <SDL3/SDL_rect.h>
 #include <string>
 #include <vector>
-#include <SDL3/SDL_rect.h>
-#include <SDL3/SDL_pixels.h>
 
 struct DebugRenderOptions {
 	bool showBoundingBoxes = false;
@@ -18,7 +18,6 @@ struct DebugPlayerOptions {
 struct DebugRect {
 	SDL_FRect rect{};
 	SDL_Color color{};
-	
 };
 
 class DebugSystem {

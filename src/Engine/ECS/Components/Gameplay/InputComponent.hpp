@@ -6,4 +6,3 @@ struct InputComponent {
 	bool interactPressed{false};
 	bool interactConsumed{false};
 };
-

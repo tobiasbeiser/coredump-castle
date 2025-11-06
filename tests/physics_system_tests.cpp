@@ -9,7 +9,7 @@ using namespace GameEngine::ECS;
 using namespace GameEngine::ECS::Systems;
 
 struct PhysicsSystemTest : public ::testing::Test {
-  
+
 	void SetUp() override
 	{
 		entity = registry.create();
@@ -18,10 +18,7 @@ struct PhysicsSystemTest : public ::testing::Test {
 		registry.registerComponent(entity, MovementComponent{});
 	}
 
-	void setVelocity(float x, float y)
-	{
-		registry.registerComponent(entity, VelocityComponent{{x, y}});
-	}
+	void setVelocity(float x, float y) { registry.registerComponent(entity, VelocityComponent{{x, y}}); }
 
 	Registry registry;
 	Entity entity{};

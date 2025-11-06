@@ -12,4 +12,4 @@ class IStorage {
   protected:
 	IStorage() = default;
 };
-} // namespace GameEngine
+} // namespace GameEngine::ECS

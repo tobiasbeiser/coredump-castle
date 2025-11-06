@@ -4,8 +4,8 @@
 
 namespace GameEngine {
 class TransitionLevelState : public GameState {
-	
-	public:
+
+  public:
 	TransitionLevelState();
 
 	// Inherited via GameState
@@ -21,7 +21,5 @@ class TransitionLevelState : public GameState {
 	float progress = 0.0f; // 0 = start, 1 = full black
 	float duration = 0.5f;
 	bool loadingDone = false;
-
-
 };
 } // namespace GameEngine

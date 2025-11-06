@@ -6,7 +6,7 @@
 namespace GameEngine {
 
 GameEngine::GameEngine(const std::string &title, Resolution resolution)
-    : renderer(title, resolution), textureManager(renderer) {};
+    : renderer(title, resolution), textureManager(renderer){};
 
 GameEngine::~GameEngine()
 {

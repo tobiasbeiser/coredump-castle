@@ -35,8 +35,7 @@ class AnimationSystem {
 				const int currentFrame = animation.currentFrame();
 				texture = animFrames.at(currentFrame).texture;
 				TileSize = anim.frames.at(anim.currentAnimation).at(animation.currentFrame()).tileSize;
-				TileMapPosition =
-				    anim.frames.at(anim.currentAnimation).at(animation.currentFrame()).tileMapPosition;
+				TileMapPosition = anim.frames.at(anim.currentAnimation).at(animation.currentFrame()).tileMapPosition;
 			}
 		}
 	}
