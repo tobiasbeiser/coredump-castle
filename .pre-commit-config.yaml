@@ -6,3 +6,4 @@ repos:
     hooks:
       - id: clang-format
         args: [-i]
+      - id: clang-tidy
