@@ -11,7 +11,7 @@
 #include <glm/vec2.hpp>
 
 LevelFactory::LevelFactory(GameEngine::ECS::Registry &registry, TextureManager &textureManager)
-    : registry(registry), textureManager(textureManager){};
+    : registry(registry), textureManager(textureManager) {};
 
 GameEngine::ECS::Entity LevelFactory::createLevel(tson::Map &map, const glm::vec2 &pos)
 {
@@ -40,7 +40,7 @@ GameEngine::ECS::Entity LevelFactory::createLevel(tson::Map &map, const glm::vec
 	const std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
 
 	const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - now).count();
-	SDL_Log("Level loaded in %lld ms\n", duration);
+	SDL_Log("Level loaded in %ld ms\n", static_cast<long>(duration));
 
 	return level;
 }
