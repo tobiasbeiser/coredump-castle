@@ -23,7 +23,7 @@
 class PlayerFactory {
   public:
 	static GameEngine::ECS::Entity createPlayer(GameEngine::ECS::Registry &registry, TextureManager &texMgr,
-	                                     tson::Object &player, const glm::vec2 &levelPos, tson::Map &map)
+	                                            tson::Object &player, const glm::vec2 &levelPos, tson::Map &map)
 	{
 		const auto e = registry.create();
 		registry.registerComponent(e, PlayerTag{});
@@ -37,11 +37,7 @@ class PlayerFactory {
 		registry.registerComponent(e, GravityComponent{});
 		registry.registerComponent(e, GroundedComponent{});
 		registry.registerComponent(e, CollisionComponent{19, 25, 21, 32});
-
 		registry.registerComponent(e, RenderComponent{.layer = 100, .flipX = false});
-		registry.registerComponent(e, SpriteComponent{.texture = nullptr, // to be set by AnimationSystem //TODO add to animation factory
-		                       .tileSize = {56, 56},
-		                       .tileMapPosition = {0, 0}});
 		registry.registerComponent(e, CenterCameraComponent{});
 
 		if (const auto prop = player.getProp("animations"); prop != nullptr && prop->getType() == tson::Type::File) {
@@ -63,8 +59,6 @@ class PlayerFactory {
 			}
 		}
 
-
-		registry.registerComponent(e, StateComponent{State::Idle});
 		registry.registerComponent(e, InputComponent{});
 		registry.registerComponent(e, MovementComponent{});
 		registry.registerComponent(e, JumpComponent{});

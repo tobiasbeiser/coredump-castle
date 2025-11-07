@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "Engine/ECS/Components/Render/AnimationComponent.hpp"
+#include "Engine/ECS/Components/Render/SpriteComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/Graphics/TextureManager.hpp"
 #include "tileson.hpp"
@@ -59,8 +60,7 @@ class AnimationFactory {
 			std::filesystem::path frameImagePath = basePath;
 			if (tileset->getTile(frame.getTileId())->getImage().empty()) {
 				const auto correctTile = tileset->getTile(frame.getTileId());
-				tileMapPosition =
-				    glm::ivec2(correctTile->getDrawingRect().x, correctTile->getDrawingRect().y);
+				tileMapPosition = glm::ivec2(correctTile->getDrawingRect().x, correctTile->getDrawingRect().y);
 				glm::ivec2 levelTileSize =
 				    glm::ivec2(correctTile->getMap()->getTileSize().x, correctTile->getMap()->getTileSize().y);
 				imageSize = glm::ivec2(tileset->getTileSize().x, tileset->getTileSize().y);
@@ -68,7 +68,6 @@ class AnimationFactory {
 				tileMapPosition =
 				    tileMapPosition / levelTileSize
 				    * imageSize; // tileson parses the tile size from the map, but we need the tileset tile size here
-
 
 				for (const auto &part : tileset->getImage()) {
 					if (part != "..") {
@@ -91,11 +90,20 @@ class AnimationFactory {
 
 			const tson::EnumValue &enumValue = prop->getValue<tson::EnumValue>();
 			const State state = getStateFromString(enumValue.getValueName());
+			if (!registry.has<StateComponent>(entity)) {
+				registry.registerComponent(entity, StateComponent{});
+			}
 			animComp.addAnimation(state, frames, duration);
 		} else {
 			int key = 0;
 			animComp.animations[key] = Animation(static_cast<int>(frames.size()), duration);
 			animComp.frames[key] = frames;
+		}
+
+		if (!registry.has<SpriteComponent>(entity)) {
+			registry.registerComponent(entity, SpriteComponent{.texture = nullptr, // to be set by AnimationSystem
+			                                                   .tileSize = imageSize,
+			                                                   .tileMapPosition = {0, 0}});
 		}
 	}
 

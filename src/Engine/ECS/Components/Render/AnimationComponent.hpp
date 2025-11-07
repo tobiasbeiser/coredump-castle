@@ -1,7 +1,6 @@
 ﻿#pragma once
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/Graphics/Animation.hpp"
-#include <SDL3/SDL_log.h>
 #include <SDL3/SDL_render.h>
 #include <glm/vec2.hpp>
 #include <unordered_map>
