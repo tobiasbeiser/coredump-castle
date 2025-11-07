@@ -318,6 +318,10 @@
         {
          "firstgid":571,
          "source":"..\/tilesets\/decorations.tsj"
+        }, 
+        {
+         "firstgid":612,
+         "source":"..\/tilesets\/player\/player.tsj"
         }],
  "tilewidth":32,
  "type":"map",

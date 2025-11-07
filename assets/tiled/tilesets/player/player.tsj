@@ -131,7 +131,18 @@
                 {
                  "duration":100,
                  "tileid":25
-                }, 
+                }],
+         "id":24,
+         "properties":[
+                {
+                 "name":"state",
+                 "propertytype":"State",
+                 "type":"int",
+                 "value":3
+                }]
+        }, 
+        {
+         "animation":[
                 {
                  "duration":100,
                  "tileid":26
@@ -147,7 +158,18 @@
                 {
                  "duration":100,
                  "tileid":29
-                }, 
+                }],
+         "id":26,
+         "properties":[
+                {
+                 "name":"state",
+                 "propertytype":"State",
+                 "type":"int",
+                 "value":5
+                }]
+        }, 
+        {
+         "animation":[
                 {
                  "duration":100,
                  "tileid":30
@@ -155,22 +177,22 @@
                 {
                  "duration":100,
                  "tileid":31
+                }, 
+                {
+                 "duration":100,
+                 "tileid":32
                 }],
-         "id":24,
+         "id":30,
          "properties":[
                 {
                  "name":"state",
                  "propertytype":"State",
                  "type":"int",
-                 "value":3
+                 "value":4
                 }]
         }, 
         {
          "animation":[
-                {
-                 "duration":100,
-                 "tileid":32
-                }, 
                 {
                  "duration":100,
                  "tileid":33
@@ -186,7 +208,18 @@
                 {
                  "duration":100,
                  "tileid":36
-                }, 
+                }],
+         "id":33,
+         "properties":[
+                {
+                 "name":"state",
+                 "propertytype":"State",
+                 "type":"int",
+                 "value":6
+                }]
+        }, 
+        {
+         "animation":[
                 {
                  "duration":100,
                  "tileid":37
@@ -199,13 +232,13 @@
                  "duration":100,
                  "tileid":39
                 }],
-         "id":32,
+         "id":37,
          "properties":[
                 {
                  "name":"state",
                  "propertytype":"State",
                  "type":"int",
-                 "value":4
+                 "value":7
                 }]
         }],
  "tilewidth":56,

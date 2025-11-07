@@ -46,8 +46,11 @@
                 "Idle",
                 "Walking",
                 "Attacking",
-                "Jumping",
-                "Falling"
+                "JumpStart",
+                "JumpReload",
+                "FlyingUp",
+                "Falling",
+                "Landing"
             ],
             "valuesAsFlags": false
         }
