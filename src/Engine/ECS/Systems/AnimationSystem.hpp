@@ -11,39 +11,39 @@ class AnimationSystem {
   public:
 	static void handleJumping(AnimationComponent &anim)
 	{
-		switch (anim.previousAnimation) {
+		switch (anim.getAnimation()) {
 		case AnimationType::None:
 		case AnimationType::Idle:
 		case AnimationType::Walking:
 		case AnimationType::Landing:
 		case AnimationType::Attacking:
-			anim.currentAnimation = AnimationType::JumpStart;
+			anim.setAnimation(AnimationType::JumpStart);
 			break;
 		case AnimationType::JumpStart:
-			if (!anim.hasFinished(anim.previousAnimation)) {
-				anim.currentAnimation = AnimationType::JumpStart;
+			if (!anim.hasFinished(anim.getAnimation())) {
+				anim.setAnimation(AnimationType::JumpStart);
 			} else {
-				anim.currentAnimation = AnimationType::FlyingUp;
+				anim.setAnimation(AnimationType::FlyingUp);
 			}
 			break;
 		case AnimationType::FlyingUp:
-			anim.currentAnimation = AnimationType::FlyingUp;
+			anim.setAnimation(AnimationType::FlyingUp);
 			break;
 		case AnimationType::JumpReload:
-			if (!anim.hasFinished(anim.previousAnimation)) {
-				anim.currentAnimation = AnimationType::JumpReload;
+			if (!anim.hasFinished(anim.getAnimation())) {
+				anim.setAnimation(AnimationType::JumpReload);
 			} else {
-				anim.currentAnimation = AnimationType::FlyingUp;
+				anim.setAnimation(AnimationType::FlyingUp);
 			}
 			break;
 		case AnimationType::Falling:
-			anim.currentAnimation = AnimationType::JumpReload;
+			anim.setAnimation(AnimationType::JumpReload);
 			break;
 		}
 	}
 	static void handleFalling(AnimationComponent &anim)
 	{
-		switch (anim.previousAnimation) {
+		switch (anim.getAnimation()) {
 
 		case AnimationType::None:
 		case AnimationType::Idle:
@@ -52,48 +52,46 @@ class AnimationSystem {
 		case AnimationType::FlyingUp:
 		case AnimationType::Attacking:
 		case AnimationType::Landing:
-			anim.currentAnimation = AnimationType::JumpReload;
+			anim.setAnimation(AnimationType::JumpReload);
 			break;
 		case AnimationType::JumpReload:
-			if (!anim.hasFinished(anim.previousAnimation)) {
-				anim.currentAnimation = AnimationType::JumpReload;
+			if (!anim.hasFinished(anim.getAnimation())) {
+				anim.setAnimation(AnimationType::JumpReload);
 			} else {
-				anim.currentAnimation = AnimationType::Falling;
+				anim.setAnimation(AnimationType::Falling);
 			}
 			break;
 		case AnimationType::Falling:
-			anim.currentAnimation = AnimationType::Falling;
+			anim.setAnimation(AnimationType::Falling);
 			break;
 		}
-		anim.currentAnimation = AnimationType::Falling;
+		anim.setAnimation(AnimationType::Falling);
 	}
-	static void handleFalling(AnimationComponent &anim, const AnimationType fallback)
+	static void handleLanding(AnimationComponent &anim, const AnimationType fallback)
 	{
-		if (anim.previousAnimation == AnimationType::Falling) {
-			anim.currentAnimation = AnimationType::Landing;
-		} else if (anim.previousAnimation == AnimationType::Landing && !anim.hasFinished(anim.previousAnimation)) {
-			anim.currentAnimation = AnimationType::Landing;
+		if (anim.getAnimation() == AnimationType::Falling
+		    || (anim.getAnimation() == AnimationType::Landing && !anim.hasFinished(anim.getAnimation()))) {
+			anim.setAnimation(AnimationType::Landing);
 		} else {
-			anim.currentAnimation = fallback;
+			anim.setAnimation(fallback);
 		}
 	}
 	static void update(Registry &registry, const float deltaTime)
 	{
 		for (auto view = registry.view<AnimationComponent, SpriteComponent>(); const auto entity : view) {
 			auto &anim = view.get<AnimationComponent>(entity);
-			auto &[texture, TileSize, TileMapPosition] = view.get<SpriteComponent>(entity);
+			auto &[texture, tileSize, tileMapPosition] = view.get<SpriteComponent>(entity);
 
 			// Determine current animation from state
 			if (registry.has<StateComponent>(entity)) {
 
-				anim.previousAnimation = anim.currentAnimation;
 				switch (const auto &[state] = registry.get<StateComponent>(entity); state) {
 
 				case State::Idle:
-					handleFalling(anim, AnimationType::Idle);
+					handleLanding(anim, AnimationType::Idle);
 					break;
 				case State::Walking:
-					handleFalling(anim, AnimationType::Walking);
+					handleLanding(anim, AnimationType::Walking);
 					break;
 				case State::Jumping:
 					handleJumping(anim);
@@ -102,24 +100,19 @@ class AnimationSystem {
 					handleFalling(anim);
 					break;
 				case State::Attacking:
-					anim.currentAnimation = AnimationType::Attacking;
+					anim.setAnimation(AnimationType::Attacking);
 					break;
 				}
 			}
 
-			if (anim.hasAnimation(anim.currentAnimation)) {
+			if (anim.hasAnimation(anim.getAnimation())) {
 
-				// Restart animation if changed
-				if (anim.previousAnimation != anim.currentAnimation) {
-					anim.startAnimation(anim.currentAnimation);
-				}
+				anim.stepAnimation(anim.getAnimation(), deltaTime);
 
-				anim.stepAnimation(anim.currentAnimation, deltaTime);
-
-				const auto currentFrame = anim.currentFrame(anim.currentAnimation);
-				texture = currentFrame.texture;
-				TileSize = currentFrame.tileSize;
-				TileMapPosition = currentFrame.tileMapPosition;
+				const auto [frameTexture, frameTileSize, frameTileMapPosition] = anim.currentFrame(anim.getAnimation());
+				texture = frameTexture;
+				tileSize = frameTileSize;
+				tileMapPosition = frameTileMapPosition;
 			}
 		}
 	}

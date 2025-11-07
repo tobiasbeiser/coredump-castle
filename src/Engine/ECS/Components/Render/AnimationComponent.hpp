@@ -15,8 +15,6 @@ enum class AnimationType { None, Idle, Walking, JumpStart, FlyingUp, JumpReload,
 
 class AnimationComponent {
   public:
-	AnimationType currentAnimation = AnimationType::None;
-	AnimationType previousAnimation = AnimationType::None;
 	void addAnimation(const AnimationType &type, const std::vector<AnimationFrame> &animationFrames, float duration)
 	{
 		animations[type] = Animation(static_cast<int>(animationFrames.size()), duration);
@@ -46,14 +44,26 @@ class AnimationComponent {
 	bool hasFinished(const AnimationType &type) const
 	{
 		if (!animations.contains(type)) {
-			return true; // when an animation is missing always mark it as finished so it does not block the animation queue
+			return true; // when an animation is missing always mark it as finished so it does not block the animation
+			             // queue
 		}
 		return animations.at(type).completed();
 	}
-	void startAnimation(const AnimationType &type) { animations.at(type).start(); }
+
 	void stepAnimation(const AnimationType &type, const float deltaTime) { animations.at(type).step(deltaTime); }
 
+	AnimationType getAnimation() const { return currentAnimation; }
+	void setAnimation(const AnimationType &type)
+	{
+		if (currentAnimation != type) {
+			startAnimation(type);
+		}
+		currentAnimation = type;
+	}
+
   private:
+	void startAnimation(const AnimationType &type) { animations.at(type).start(); }
 	std::unordered_map<AnimationType, Animation> animations{};
 	std::unordered_map<AnimationType, std::vector<AnimationFrame>> frames{};
+	AnimationType currentAnimation = AnimationType::None;
 };
