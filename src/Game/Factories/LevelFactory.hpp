@@ -1,4 +1,3 @@
-#include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/Graphics/TextureManager.hpp"
 #include "Game/Factories/AnimationFactory.hpp"

@@ -40,6 +40,8 @@ class PlayerFactory {
 		registry.registerComponent(e, RenderComponent{.layer = 100, .flipX = false});
 		registry.registerComponent(e, CenterCameraComponent{});
 
+		registry.registerComponent(e, StateComponent{});
+
 		if (const auto prop = player.getProp("animations"); prop != nullptr && prop->getType() == tson::Type::File) {
 
 			const std::filesystem::path basePath = "assets/tiled/tilesets/";

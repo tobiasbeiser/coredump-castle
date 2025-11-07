@@ -20,22 +20,31 @@ class AnimationFactory {
 	AnimationFactory &operator=(AnimationFactory &&) = delete;
 	~AnimationFactory() = default;
 
-	static State getStateFromString(const std::string &string)
+	static AnimationType getAnimationType(const std::string &string)
 	{
 		if (string == "Idle") {
-			return State::Idle;
+			return AnimationType::Idle;
 		}
 		if (string == "Walking") {
-			return State::Walking;
+			return AnimationType::Walking;
 		}
 		if (string == "Attacking") {
-			return State::Attacking;
+			return AnimationType::Attacking;
 		}
-		if (string == "Jumping") {
-			return State::Jumping;
+		if (string == "JumpStart") {
+			return AnimationType::JumpStart;
+		}
+		if (string == "FlyingUp") {
+			return AnimationType::FlyingUp;
+		}
+		if (string == "JumpReload") {
+			return AnimationType::JumpReload;
 		}
 		if (string == "Falling") {
-			return State::Falling;
+			return AnimationType::Falling;
+		}
+		if (string =="Landing") {
+			return AnimationType::Landing;
 		}
 
 		throw std::runtime_error("unknown state: " + string);
@@ -89,15 +98,11 @@ class AnimationFactory {
 		if (const tson::Property *prop = tile->getProp("state"); prop && prop->getType() == tson::Type::Enum) {
 
 			const tson::EnumValue &enumValue = prop->getValue<tson::EnumValue>();
-			const State state = getStateFromString(enumValue.getValueName());
-			if (!registry.has<StateComponent>(entity)) {
-				registry.registerComponent(entity, StateComponent{});
-			}
+			const AnimationType state = getAnimationType(enumValue.getValueName());
+
 			animComp.addAnimation(state, frames, duration);
 		} else {
-			int key = 0;
-			animComp.animations[key] = Animation(static_cast<int>(frames.size()), duration);
-			animComp.frames[key] = frames;
+			animComp.addAnimation(AnimationType::None, frames, duration);
 		}
 
 		if (!registry.has<SpriteComponent>(entity)) {
