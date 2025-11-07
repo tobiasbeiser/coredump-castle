@@ -131,7 +131,6 @@ void LevelFactory::loadTiles(const tson::Layer &layer, const int layerIndex, con
 	}
 }
 
-
 void LevelFactory::loadBackground(const tson::Layer &layer, const int layerIndex, const glm::vec2 &levelPos) const
 {
 	fs::path backgroundPath = layer.getImage();

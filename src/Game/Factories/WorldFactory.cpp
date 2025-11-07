@@ -30,5 +30,4 @@ void WorldFactory::createWorld(const std::filesystem::path &worldPath)
 		registry.registerComponent<PositionComponent>(level, PositionComponent{.position = levelPos});
 	}
 
-
 }
