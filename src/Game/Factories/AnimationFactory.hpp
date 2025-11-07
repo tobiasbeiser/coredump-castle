@@ -13,6 +13,12 @@ class AnimationFactory {
 	{
 	}
 
+	AnimationFactory(const AnimationFactory &) = delete;
+	AnimationFactory &operator=(const AnimationFactory &) = delete;
+	AnimationFactory(AnimationFactory &&) = delete;
+	AnimationFactory &operator=(AnimationFactory &&) = delete;
+	~AnimationFactory() = default;
+
 	static State getStateFromString(const std::string &string)
 	{
 		if (string == "Idle") {
@@ -39,7 +45,6 @@ class AnimationFactory {
 		auto imageSize = glm::ivec2(tile->getImageSize().x, tile->getImageSize().y);
 
 		const auto &animation = tile->getAnimation();
-		const auto framesCount = animation.size();
 		const auto tileset = tile->getTileset();
 
 		if (!registry.has<AnimationComponent>(entity)) {

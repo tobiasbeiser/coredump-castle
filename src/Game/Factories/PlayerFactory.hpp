@@ -51,7 +51,7 @@ class PlayerFactory {
 			tson::Tileset tileset;
 
 			tson::Json11 json;
-			auto result = json.parse(tilesetPath);
+			json.parse(tilesetPath);
 			tileset.parse(json, &map); // map is required to read project enums
 
 			const AnimationFactory animFactory(registry, texMgr);
