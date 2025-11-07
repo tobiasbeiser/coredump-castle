@@ -38,7 +38,7 @@ class AnimationFactory {
 			return State::Falling;
 		}
 
-		throw std::runtime_error("unknown state: " + string);
+		throw std::runtime_error("Unknown state: " + string);
 	}
 
 	void loadAnimation(tson::Tile *const &tile, const GameEngine::ECS::Entity entity) const
