@@ -7,4 +7,6 @@ repos:
       - id: clang-format
         args: [-i]
       - id: clang-tidy
-        args: [-p out/build/debug]
+        args:
+          - -p=out/build/debug
+          - -header-filter=src/
