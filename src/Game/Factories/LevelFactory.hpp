@@ -17,7 +17,7 @@ class LevelFactory {
 	GameEngine::ECS::Entity createLevel(tson::Map &map, const glm::vec2 &pos);
 
   private:
-	void loadTiles(const tson::Layer &layer, int layerIndex, const glm::vec2 &levelPos) const;
+	void loadTiles(tson::Layer &layer, int layerIndex, const glm::vec2 &levelPos) const;
 	void loadBackground(const tson::Layer &layer, int layerIndex, const glm::vec2 &levelPos) const;
 	void createBackground(const glm::vec2 &levelPos, const fs::path &filename, int layer, float scrollSpeed = 0,
 	                      float yOffset = 0, bool repeatX = false) const;

@@ -5,6 +5,7 @@
 #include "Engine/ECS/Components/Gameplay/InteractionComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InventoryComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/KeyComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/LockComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/GameEngine.hpp"
 
@@ -46,9 +47,15 @@ class InteractionSystem {
 						// TransitionLevel(registry, interactableObject, transitionData, game);
 					}
 					if (registry.has<KeyComponent>(interactableObject)) {
-						const auto &[id] = registry.get<KeyComponent>(interactableObject);
+						const auto [id] = registry.get<KeyComponent>(interactableObject);
 						inventory.emplace_back(id);
 						registry.deleteEntity(interactableObject);
+
+						for (auto lockView = registry.view<LockComponent>(); const auto lockEntity : lockView) {
+							if (const auto &[lockId] = lockView.get<LockComponent>(lockEntity); lockId == id) {
+								registry.deleteEntity(lockEntity);
+							}
+						}
 					}
 				}
 			}
@@ -56,7 +63,6 @@ class InteractionSystem {
 	}
 
   private:
-
 	// static void TransitionLevel(Registry &registry, Entity &interactableObject,
 	//                             Systems::LevelTransitionData &transitionData, GameEngine &game)
 	// {
