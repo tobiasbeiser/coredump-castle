@@ -3,6 +3,8 @@
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InteractionComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/InventoryComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/KeyComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/GameEngine.hpp"
 
@@ -13,27 +15,27 @@ class InteractionSystem {
 	static void update(GameEngine &game, Registry &registry)
 	{
 
-		auto view = registry.view<InputComponent, PositionComponent, InteractionComponent>();
-		for (auto &entity : view) {
-			auto &pInput = view.get<InputComponent>(entity);
-			auto &pPos = view.get<PositionComponent>(entity);
-			auto &pInt = view.get<InteractionComponent>(entity);
+		for (auto playerView =
+		         registry.view<InputComponent, PositionComponent, InteractionComponent, InventoryComponent>();
+		     const auto &entity : playerView) {
+			const auto &pInput = playerView.get<InputComponent>(entity);
+			const auto &[playerPosition, _] = playerView.get<PositionComponent>(entity);
+			const auto &[interactionBox] = playerView.get<InteractionComponent>(entity);
+			auto &[inventory] = playerView.get<InventoryComponent>(entity);
 
 			if (!pInput.interactPressed) {
 				return;
 			}
-			SDL_FRect playerInteractionBox{pPos.position.x + pInt.interactionBox.x,
-			                               pPos.position.y + pInt.interactionBox.y, pInt.interactionBox.w,
-			                               pInt.interactionBox.h};
+			SDL_FRect playerInteractionBox{playerPosition.x + interactionBox.x, playerPosition.y + interactionBox.y,
+			                               interactionBox.w, interactionBox.h};
 
-			auto interactableObjects = registry.view<PositionComponent, InteractionComponent>();
-
-			for (auto &interactableObject : interactableObjects) {
+			for (auto interactableObjects = registry.view<PositionComponent, InteractionComponent>();
+			     auto &interactableObject : interactableObjects) {
 				if (entity == interactableObject) {
 					continue;
 				}
-				auto &objPos = interactableObjects.get<PositionComponent>(interactableObject);
-				auto &objInt = interactableObjects.get<InteractionComponent>(interactableObject);
+				const auto &objPos = interactableObjects.get<PositionComponent>(interactableObject);
+				const auto &objInt = interactableObjects.get<InteractionComponent>(interactableObject);
 
 				SDL_FRect objInteractionBox{objPos.position.x + objInt.interactionBox.x,
 				                            objPos.position.y + objInt.interactionBox.y, objInt.interactionBox.w,
@@ -43,12 +45,18 @@ class InteractionSystem {
 					if (registry.has<PortalComponent>(interactableObject)) {
 						// TransitionLevel(registry, interactableObject, transitionData, game);
 					}
+					if (registry.has<KeyComponent>(interactableObject)) {
+						const auto &[id] = registry.get<KeyComponent>(interactableObject);
+						inventory.emplace_back(id);
+						registry.deleteEntity(interactableObject);
+					}
 				}
 			}
 		}
 	}
 
   private:
+
 	// static void TransitionLevel(Registry &registry, Entity &interactableObject,
 	//                             Systems::LevelTransitionData &transitionData, GameEngine &game)
 	// {

@@ -1,8 +1,9 @@
 #pragma once
 #include "ComponentStorage.hpp"
 #include "IStorage.hpp"
-#include "StorageWrapper.hpp"
+#include "TypedStorage.hpp"
 #include <memory>
+#include <ranges>
 #include <typeindex>
 #include <unordered_map>
 
@@ -20,9 +21,16 @@ class Registry {
 		static const std::type_index id = std::type_index(typeid(T)); // cached once
 		auto it = storagePools.find(id);
 		if (it == storagePools.end()) {
-			it = storagePools.emplace(id, std::make_unique<StorageWrapper<T>>()).first;
+			it = storagePools.emplace(id, std::make_unique<TypedStorage<T>>()).first;
 		}
-		return static_cast<StorageWrapper<T> *>(it->second.get())->storage;
+		return static_cast<TypedStorage<T> *>(it->second.get())->storage;
+	}
+
+	void deleteEntity(const Entity entity) const
+	{
+		for (const auto &storagePool : storagePools | std::views::values) {
+			storagePool->removeComponent(entity);
+		}
 	}
 
 	void clearAll() { storagePools.clear(); }
@@ -40,7 +48,7 @@ class Registry {
 	template <typename T>
 	bool has(Entity entity)
 	{
-		if (!storagePools.count(std::type_index(typeid(T))))
+		if (!storagePools.contains(std::type_index(typeid(T))))
 			return false;
 		return getStorage<T>().containsComponent(entity);
 	}

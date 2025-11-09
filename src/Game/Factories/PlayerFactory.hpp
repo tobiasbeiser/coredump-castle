@@ -5,17 +5,17 @@
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InteractionComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/InventoryComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/JumpComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
 #include "Engine/ECS/Components/Physics/AccelerationComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
+#include "Engine/ECS/Components/Physics/GravityComponent.hpp"
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
 #include "Engine/ECS/Components/Render/AnimationComponent.hpp"
 #include "Engine/ECS/Components/Render/CenterCameraComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
-
-#include "Engine/ECS/Components/Physics/GravityComponent.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/Graphics/TextureManager.hpp"
@@ -39,6 +39,7 @@ class PlayerFactory {
 		registry.registerComponent(e, CollisionComponent{19, 25, 21, 32});
 		registry.registerComponent(e, RenderComponent{.layer = 100, .flipX = false});
 		registry.registerComponent(e, CenterCameraComponent{});
+		registry.registerComponent(e, InventoryComponent{});
 
 		registry.registerComponent(e, StateComponent{});
 

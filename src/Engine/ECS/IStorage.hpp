@@ -9,6 +9,8 @@ class IStorage {
 	IStorage &operator=(const IStorage &&) = delete;
 	virtual ~IStorage() = default;
 
+	virtual void removeComponent(Entity entity) = 0;
+
   protected:
 	IStorage() = default;
 };

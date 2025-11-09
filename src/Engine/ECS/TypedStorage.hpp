@@ -5,8 +5,13 @@
 namespace GameEngine::ECS {
 
 template <typename T>
-class StorageWrapper : public IStorage {
+class TypedStorage final : public IStorage {
   public:
 	ComponentStorage<T> storage;
+
+	void removeComponent(Entity entity) override
+	{
+		storage.removeComponent(entity);
+	}
 };
 } // namespace GameEngine::ECS
