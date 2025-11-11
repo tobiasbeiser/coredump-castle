@@ -19,10 +19,10 @@ using namespace GameEngine::ECS::Systems;
 
 RenderSystem::RenderSystem(Renderer &renderer) : renderer(renderer) {}
 
-void RenderSystem::Update(Registry &registry, float alpha)
+void RenderSystem::update(Registry &registry, float alpha)
 {
 	renderItems.clear();
-	CenterCamera(registry);
+	centerCamera(registry);
 
 	// Backgrounds
 
@@ -40,7 +40,7 @@ void RenderSystem::Update(Registry &registry, float alpha)
 			    .x = pos.position.x, .y = bg.yOffset + pos.position.y, .h = static_cast<float>(bg.texture->h)};
 		}
 
-		renderItems.push_back(RenderItem{.Layer = layer,
+		renderItems.push_back(RenderItem{.layer = layer,
 		                                 .texture = bg.texture,
 		                                 .src = srcOpt,
 		                                 .dst = dstOpt,
@@ -72,32 +72,32 @@ void RenderSystem::Update(Registry &registry, float alpha)
 		              .h = tile.TileSize};*/
 
 		renderItems.push_back(
-		    RenderItem{.Layer = layer, .texture = texture, .src = src, .dst = dst, .parallax = false, .flipX = flipX});
+		    RenderItem{.layer = layer, .texture = texture, .src = src, .dst = dst, .parallax = false, .flipX = flipX});
 
-		if (DebugSystem::Instance().render.showBoundingBoxes && registry.has<CollisionComponent>(entity)) {
+		if (DebugSystem::instance().render.showBoundingBoxes && registry.has<CollisionComponent>(entity)) {
 			auto col = registry.get<CollisionComponent>(entity).collisionBox;
 			col.x = position.x + col.x;
 			col.y = position.y + col.y;
 
 			const SDL_Color color =
 			    registry.has<MovementComponent>(entity) ? SDL_Color{0, 0, 255, 255} : SDL_Color{255, 0, 0, 255};
-			DebugSystem::Instance().debugRects.push_back({col, color});
+			DebugSystem::instance().debugRects.push_back({col, color});
 		}
 	}
 
-	std::ranges::sort(renderItems, [](const RenderItem &a, const RenderItem &b) { return a.Layer < b.Layer; });
+	std::ranges::sort(renderItems, [](const RenderItem &a, const RenderItem &b) { return a.layer < b.layer; });
 
 	for (auto &renderItem : renderItems) {
 		if (!renderItem.parallax) {
-			renderer.RenderTexture(*renderItem.texture, renderItem.src, renderItem.dst, renderItem.flipX);
-		} else {
-			renderer.RenderTextureTiled(*renderItem.texture, renderItem.dst.value(), renderItem.scrollFactor);
+			renderer.renderTexture(*renderItem.texture, renderItem.src, renderItem.dst, renderItem.flipX);
+		} else if (renderItem.dst.has_value()) {
+			renderer.renderTextureTiled(*renderItem.texture, renderItem.dst.value(), renderItem.scrollFactor);
 		}
 	}
 	renderItems.clear();
 }
 
-void RenderSystem::CenterCamera(Registry &registry) const
+void RenderSystem::centerCamera(Registry &registry) const
 {
 
 	if (auto centerCameraView =
@@ -113,7 +113,7 @@ void RenderSystem::CenterCamera(Registry &registry) const
 			const auto levelEntity = levelView.at(0);
 			const auto &level = levelView.get<LevelComponent>(levelEntity);
 			const auto &posLvl = levelView.get<PositionComponent>(levelEntity);
-			renderer.CenterCameraOn((position + static_cast<glm::vec2>(tile.TileSize / 2)), posLvl.position,
+			renderer.centerCameraOn((position + static_cast<glm::vec2>(tile.tileSize / 2)), posLvl.position,
 			                        level.levelSize);
 
 			if (registry.has<RenderComponent>(levelEntity)) {

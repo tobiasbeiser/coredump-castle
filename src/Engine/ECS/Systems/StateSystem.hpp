@@ -1,17 +1,14 @@
 #pragma once
-#include "Engine/DebugSystem.hpp"
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MeleeComponent.hpp"
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
-#include "Engine/ECS/View.hpp"
-#include <cmath>
 
 namespace GameEngine::ECS::Systems {
 class StateSystem {
   public:
-	static void Update(Registry &registry)
+	static void update(Registry &registry)
 	{
 		auto meleeView = registry.view<StateComponent, MeleeComponent>();
 		for (auto entity : meleeView) {
@@ -20,18 +17,18 @@ class StateSystem {
 
 			if (melee.isAttacking) {
 				if (melee.isComboAttack) {
-					state.state = States::ConsecutiveAttacking;
+					state.state = State::ConsecutiveAttacking;
 				} else {
-					state.state = States::Attacking;
+					state.state = State::Attacking;
 				}
 			}
 		}
 
-		auto movementView = registry.view<StateComponent, VelocityComponent, GroundedComponent>();
-		for (auto entity : movementView) {
-			auto &state = movementView.get<StateComponent>(entity);
-			auto &vel = movementView.get<VelocityComponent>(entity);
-			auto &ground = movementView.get<GroundedComponent>(entity);
+		auto view = registry.view<StateComponent, VelocityComponent, GroundedComponent>();
+		for (auto entity : view) {
+			auto &state = view.get<StateComponent>(entity);
+			auto &vel = view.get<VelocityComponent>(entity);
+			auto &ground = view.get<GroundedComponent>(entity);
 
 			// melee system takes priority
 			if (registry.has<MeleeComponent>(entity)) {
@@ -43,20 +40,20 @@ class StateSystem {
 
 			if (!ground.grounded) {
 				if (vel.velocity.y < 0) {
-					state.state = States::Jumping;
+					state.state = State::Jumping;
 				} else {
-					state.state = States::Falling;
+					state.state = State::Falling;
 				}
 			} else {
 				if (std::abs(vel.velocity.x) > 0.1f) {
-					state.state = States::Walking;
+					state.state = State::Walking;
 				} else {
-					state.state = States::Idle;
+					state.state = State::Idle;
 				}
 			}
 
-			if (DebugSystem::Instance().player.showState) {
-				DebugSystem::Debug("Entity " + std::to_string(entity) + " State: " + std::to_string(state.state));
+			if (DebugSystem::instance().player.showState) {
+				DebugSystem::debug("Entity " + std::to_string(entity) + " State: " + toString(state.state));
 			}
 		}
 	}

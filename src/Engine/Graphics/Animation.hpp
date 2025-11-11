@@ -14,13 +14,18 @@ class Animation {
 	float getLength() const { return timer.getLength(); }
 	int currentFrame() const
 	{
+		if (frameCount == 0) {
+			return 0;
+		}
 		const float t = timer.getTime();
 		if (!loop && t >= timer.getLength()) {
 			return frameCount - 1;
 		}
 		auto res = static_cast<int>((t / timer.getLength()) * frameCount);
-		return std::clamp(res, 0, frameCount-1);
+		return std::clamp(res, 0, frameCount - 1);
 	}
+
+	bool completed() const { return timer.isTimeout(); };
 
 	void step(float deltaTime) { timer.step(deltaTime, loop); }
 	void start() { timer.reset(); }

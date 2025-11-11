@@ -8,22 +8,29 @@ namespace GameEngine::ECS::Systems {
 class RenderSystem {
   public:
 	explicit RenderSystem(Renderer &renderer);
-	void Update(Registry &registry, float alpha);
+
+	RenderSystem(const RenderSystem &) = delete;
+	RenderSystem &operator=(RenderSystem &&) = delete;
+	RenderSystem(RenderSystem &&) = delete;
+	RenderSystem &operator=(const RenderSystem &) = delete;
+	~RenderSystem() = default;
+
+	void update(Registry &registry, float alpha);
 
   private:
 	struct RenderItem {
-		int Layer = 0;
+		int layer = 0;
 		SDL_Texture *texture = nullptr;
-		std::optional<SDL_FRect> src;
-		std::optional<SDL_FRect> dst;
+		std::optional<SDL_FRect> src{};
+		std::optional<SDL_FRect> dst{};
 		bool parallax = false;
 		float scrollFactor = 0;
 		bool flipX = false;
 	};
-	std::vector<RenderItem> renderItems;
+	std::vector<RenderItem> renderItems{};
 
 	Renderer &renderer;
 
-	void CenterCamera(Registry &registry) const;
+	void centerCamera(Registry &registry) const;
 };
 } // namespace GameEngine::ECS::Systems

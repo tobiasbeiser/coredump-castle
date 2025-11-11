@@ -12,7 +12,7 @@ namespace GameEngine {
 class GameState;
 
 template <typename T>
-concept DerivedFromGameState = std::derived_from<T, GameState>;
+concept derivedFromGameState = std::derived_from<T, GameState>;
 
 class GameEngine {
   public:
@@ -23,18 +23,18 @@ class GameEngine {
 	GameEngine &operator=(const GameEngine &) = delete;
 	GameEngine(GameEngine &&) = delete;
 	GameEngine &operator=(GameEngine &&) = delete;
-	bool Init();
-	void Cleanup() noexcept;
+	bool init();
+	void cleanup() noexcept;
 
-	void ChangeState(std::unique_ptr<GameState> state);
-	void PushState(std::unique_ptr<GameState> state);
-	void PopState();
+	void changeState(std::unique_ptr<GameState> state);
+	void pushState(std::unique_ptr<GameState> state);
+	void popState();
 
-	void HandleEvents();
-	void Update(float deltaTime);
-	void Render(float alpha);
+	void handleEvents();
+	void update(float deltaTime);
+	void render(float alpha);
 
-	template <DerivedFromGameState T>
+	template <derivedFromGameState T>
 	T &getState()
 	{
 		for (auto &state : states) {
@@ -45,8 +45,8 @@ class GameEngine {
 		throw std::runtime_error("State of requested type not found");
 	}
 
-	bool Running() const { return running; }
-	void Quit() { running = false; }
+	bool isRunning() const { return running; }
+	void quit() { running = false; }
 
 	Renderer &getRenderer() { return renderer; }
 	ECS::Registry &getRegistry() { return registry; }
@@ -54,7 +54,7 @@ class GameEngine {
 	TextureManager &getTextureManager() { return textureManager; }
 
   private:
-	std::vector<std::unique_ptr<GameState>> states;
+	std::vector<std::unique_ptr<GameState>> states{};
 	bool running = false;
 	const std::string title;
 	ECS::Registry registry;

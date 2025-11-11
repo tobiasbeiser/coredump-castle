@@ -1,8 +1,9 @@
 #pragma once
 #include "ComponentStorage.hpp"
 #include "IStorage.hpp"
-#include "StorageWrapper.hpp"
+#include "TypedStorage.hpp"
 #include <memory>
+#include <ranges>
 #include <typeindex>
 #include <unordered_map>
 
@@ -15,49 +16,53 @@ class Registry {
 
   public:
 	template <typename T>
-	ComponentStorage<T> &get_storage()
+	ComponentStorage<T> &getStorage()
 	{
 		static const std::type_index id = std::type_index(typeid(T)); // cached once
 		auto it = storagePools.find(id);
 		if (it == storagePools.end()) {
-			it = storagePools.emplace(id, std::make_unique<StorageWrapper<T>>()).first;
+			it = storagePools.emplace(id, std::make_unique<TypedStorage<T>>()).first;
 		}
-		return static_cast<StorageWrapper<T> *>(it->second.get())->storage;
+		return static_cast<TypedStorage<T> *>(it->second.get())->storage;
+	}
+
+	void deleteEntity(const Entity entity) const
+	{
+		for (const auto &storagePool : storagePools | std::views::values) {
+			storagePool->removeComponent(entity);
+		}
 	}
 
 	void clearAll() { storagePools.clear(); }
 
 	int size() const { return next; }
 
-	Entity create()
-	{
-		return next++;
-	}
+	Entity create() { return next++; }
 
 	template <typename T>
-	void register_component(Entity entity, T component)
+	void registerComponent(Entity entity, T component)
 	{
-		get_storage<T>().add_component(entity, std::move(component));
+		getStorage<T>().addComponent(entity, std::move(component));
 	}
 
 	template <typename T>
 	bool has(Entity entity)
 	{
-		if (!storagePools.count(std::type_index(typeid(T))))
+		if (!storagePools.contains(std::type_index(typeid(T))))
 			return false;
-		return get_storage<T>().contains_component(entity);
+		return getStorage<T>().containsComponent(entity);
 	}
 
 	template <typename T>
 	void remove(Entity entity)
 	{
-		get_storage<T>().remove_component(entity);
+		getStorage<T>().removeComponent(entity);
 	}
 
 	template <typename T>
 	T &get(Entity entity)
 	{
-		return get_storage<T>().get_component(entity);
+		return getStorage<T>().getComponent(entity);
 	}
 
 	template <typename... Components>

@@ -1,5 +1,6 @@
 #include "Renderer.hpp"
 #include "Engine/DebugSystem.hpp"
+#include "math.h"
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
 #include <algorithm>
@@ -33,13 +34,13 @@ Renderer::~Renderer()
 	SDL_Quit();
 }
 
-void Renderer::Resize(Resolution newResolution)
+void Renderer::resize(Resolution newResolution)
 {
 	currentResolution = newResolution;
 	SDL_SetWindowSize(window.get(), currentResolution.width, currentResolution.height);
 }
 
-std::unique_ptr<SDL_Texture, SDLTextureDeleter> Renderer::LoadTexture(const std::filesystem::path &filePath)
+std::unique_ptr<SDL_Texture, SDLTextureDeleter> Renderer::loadTexture(const std::filesystem::path &filePath)
 {
 	SDL_Texture *tex = IMG_LoadTexture(renderer.get(), filePath.string().c_str());
 	if (!tex) {
@@ -50,33 +51,33 @@ std::unique_ptr<SDL_Texture, SDLTextureDeleter> Renderer::LoadTexture(const std:
 	return std::unique_ptr<SDL_Texture, SDLTextureDeleter>(tex);
 }
 
-void Renderer::StartFrame(const int red, const int green, const int blue, const int alpha) const
+void Renderer::startFrame(const int red, const int green, const int blue, const int alpha) const
 {
 	SDL_SetRenderDrawColor(renderer.get(), red, green, blue, alpha);
 	SDL_RenderClear(renderer.get());
 }
 
-void Renderer::EndFrame() const
+void Renderer::endFrame() const
 {
-	for (auto &debug : DebugSystem::Instance().debugRects) {
+	for (auto &debug : DebugSystem::instance().debugRects) {
 		SDL_SetRenderDrawColor(renderer.get(), debug.color.r, debug.color.g, debug.color.b, debug.color.a);
 		SDL_RenderRect(renderer.get(), &debug.rect);
 	}
 
-	std::string DebugMessage;
-	for (std::string message : DebugSystem::Instance().debugMessages) {
-		DebugMessage.append(message + "\n");
+	std::string debugMessage;
+	for (std::string message : DebugSystem::instance().debugMessages) {
+		debugMessage.append(message + "\n");
 	}
 	const std::uint8_t red = 255, green = 255, blue = 255, alpha = 255;
 	SDL_SetRenderDrawColor(renderer.get(), red, green, blue, alpha);
 
 	const float debugTextX = 5, debugTextY = 5;
-	SDL_RenderDebugText(renderer.get(), debugTextX, debugTextY, DebugMessage.c_str());
+	SDL_RenderDebugText(renderer.get(), debugTextX, debugTextY, debugMessage.c_str());
 
 	SDL_RenderPresent(renderer.get());
 }
 
-void Renderer::CenterCameraOn(const glm::vec2 &position, const glm::vec2 &levelPos, const glm::vec2 &levelSize)
+void Renderer::centerCameraOn(const glm::vec2 &position, const glm::vec2 &levelPos, const glm::vec2 &levelSize)
 {
 	const float newViewportXCoordinate = position.x - (viewport.w / 2.0f);
 	const float newViewportYCoordinate = position.y - (viewport.h / 2.0f);
@@ -102,7 +103,7 @@ void Renderer::CenterCameraOn(const glm::vec2 &position, const glm::vec2 &levelP
 	// levelSize.x, viewport.x, viewport.y);
 }
 
-void Renderer::RenderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, const float scrollFactor) const
+void Renderer::renderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, const float scrollFactor) const
 {
 	const float repetitions = 5.0f;
 	dstRect.x -= viewport.x * scrollFactor;
@@ -112,7 +113,7 @@ void Renderer::RenderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, cons
 	SDL_RenderTextureTiled(renderer.get(), &texture, nullptr, 1, &dstRect);
 }
 
-void Renderer::RenderCircularFade(float progress, SDL_FColor color)
+void Renderer::renderCircularFade(float progress, SDL_FColor color)
 {
 	if (progress <= 0.0f)
 		return;
@@ -148,7 +149,7 @@ void Renderer::RenderCircularFade(float progress, SDL_FColor color)
 	SDL_RenderGeometry(renderer.get(), nullptr, vertices.data(), vertices.size(), indices.data(), indices.size());
 }
 
-void Renderer::RenderTexture(SDL_Texture &texture, const std::optional<SDL_FRect> srcRect,
+void Renderer::renderTexture(SDL_Texture &texture, const std::optional<SDL_FRect> srcRect,
                              std::optional<SDL_FRect> dstRect, const bool flip) const
 {
 	const SDL_FRect *srcPtr = srcRect ? &srcRect.value() : nullptr;

@@ -12,7 +12,7 @@
 namespace GameEngine::ECS::Systems {
 class PhysicsSystem {
   public:
-	static void Update(Registry &registry, float timeStep)
+	static void update(Registry &registry, float timeStep)
 	{
 		// Gravity
 

@@ -15,11 +15,11 @@ class WorldFactory {
 	WorldFactory &operator=(WorldFactory &&) = delete;
 	~WorldFactory() = default;
 
-	void CreateWorld(const std::filesystem::path &worldPath);
+	void createWorld(const std::filesystem::path &worldPath);
 
   private:
 	GameEngine::ECS::Registry &registry;
-	tson::Project project;
+	tson::Project project{};
 	tson::Tileson tileson{&project};
 	TextureManager &textureManager;
 };
