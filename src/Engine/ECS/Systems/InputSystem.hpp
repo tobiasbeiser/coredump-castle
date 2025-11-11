@@ -27,8 +27,8 @@ class InputSystem {
 		}
 
 		for (auto view = registry.view<InputComponent>(); const auto entity : view) {
-			auto &[horizontalDirectionTarget, jumpPressed, meleePressed, interactPressed, interactConsumed] =
-			    view.get<InputComponent>(entity);
+			auto &[horizontalDirectionTarget, jumpPressed, meleePressed, meleeConsumed, interactPressed, interactConsumed] =
+				view.get<InputComponent>(entity);
 			horizontalDirectionTarget = horizontalDirection;
 			jumpPressed = inputManager.isKeyPressed(Key::Up);
 			meleePressed = inputManager.isKeyPressed(Key::Melee);
