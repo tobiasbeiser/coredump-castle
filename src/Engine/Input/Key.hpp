@@ -4,6 +4,6 @@ enum class Key {
 	Down,
 	Left,
 	Right,
-	Melee,
+	Attack,
 	Interact,
 };

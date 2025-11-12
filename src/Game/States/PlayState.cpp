@@ -1,5 +1,4 @@
 #include "PlayState.hpp"
-#include "../../Engine/ECS/Systems/CombatSystem/PlayerAttackSystem.hpp"
 #include "Engine/ECS/Systems/AnimationSystem.hpp"
 #include "Engine/ECS/Systems/CollisionSystem.hpp"
 #include "Engine/ECS/Systems/InteractionSystem.hpp"
@@ -7,6 +6,7 @@
 #include "Engine/ECS/Systems/MovementSystem.hpp"
 #include "Engine/ECS/Systems/PhysicsSystem.hpp"
 #include "Engine/ECS/Systems/RenderSystem.hpp"
+#include "Engine/ECS/Systems/CombatSystem/AttackSystem.hpp"
 #include "Engine/ECS/Systems/StateSystem.hpp"
 #include "Engine/GameEngine.hpp"
 #include "Game/Factories/WorldFactory.hpp"
@@ -51,8 +51,7 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 
 	ECS::Systems::JumpSystem::update(game.getRegistry());
 	ECS::Systems::MovementSystem::update(game.getRegistry(), deltaTime);
-	ECS::Systems::PlayerAttackSystem::Update(game.getRegistry(), deltaTime);
-
+	ECS::Systems::AttackSystem::update(game.getRegistry(), deltaTime);
 
 	while (accumulator >= stepSize) {
 		accumulator -= stepSize;

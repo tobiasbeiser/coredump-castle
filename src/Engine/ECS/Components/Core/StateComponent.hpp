@@ -1,9 +1,9 @@
 #pragma once
 #include <string>
 
-enum State { Idle, Walking, Jumping, Falling, Attacking, ConsecutiveAttacking };
+enum class State { Idle, Walking, Jumping, Falling, Attacking };
 
-inline std::string toString(State state)
+inline std::string toString(const State state)
 {
 	switch (state) {
 	case State::Idle:

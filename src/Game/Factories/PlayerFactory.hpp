@@ -4,8 +4,6 @@
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
-#include "Engine/ECS/Components/Gameplay/Combat/AttackStateComponent.hpp"
-#include "Engine/ECS/Components/Gameplay/Combat/ComboComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InteractionComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InventoryComponent.hpp"
@@ -47,22 +45,10 @@ class PlayerFactory {
 		registry.registerComponent(e, StateComponent{});
 
 		// Configure attack stats for the player here so factories own tuning
-		AttackComponent attackComp{.range = 10, .attackDuration = 0.3f, .damage = 10};
-		ComboComponent comboComp{.comboInputWindow = 0.2f, .comboAttackDuration = 0.2f};
-
-
+		AttackComponent attackComp{.attackTimer = {0.6f}, .attackCoolDownTimer = {0.2f}};
+		attackComp.attackCoolDownTimer.step(0.2f, false); //set cooldown to already complete when spawning
 		registry.registerComponent(e, attackComp);
-		registry.registerComponent(e, AttackStateComponent{});
-		registry.registerComponent(e, comboComp);
 
-
-		/*playerAnim.addAnimationFromSpritesheet(States::Attacking, 6, meleeComp.attackDuration, &texMgr.GetTexture(texturePath.string()),
-		                                       {56, 56}, {0, 56});
-
-		playerAnim.addAnimationFromSpritesheet(States::ConsecutiveAttacking, 2, 0.2f,
-		                                       &texMgr.GetTexture(texturePath.string()), {56, 56}, {336, 56});
-
-*/
 		if (const auto prop = player.getProp("animations"); prop != nullptr && prop->getType() == tson::Type::File) {
 
 			const std::filesystem::path basePath = "assets/tiled/tilesets/";
