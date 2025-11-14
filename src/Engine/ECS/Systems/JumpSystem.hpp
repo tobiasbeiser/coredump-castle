@@ -19,10 +19,7 @@ struct JumpSystem {
 			const auto &input = registry.get<InputComponent>(entity);
 
 			if (grounded) {
-				jump.jumpInitiated = false;
-				if (input.jumpPressed) {
-					jump.jumpInitiated = true;
-				}
+				jump.jumpInitiated = input.jumpPressed;
 				jump.jumpsLeft = jump.maxJumps;
 				jump.coyoteTimer.reset();
 			} else{
