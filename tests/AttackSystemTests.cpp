@@ -65,7 +65,7 @@ TEST_F(AttackSystemTest, EndsAttackAfterDuration)
 
 	EXPECT_TRUE(GameEngine::ECS::Systems::AttackSystem::isAttacking(attack));
 
-	GameEngine::ECS::Systems::AttackSystem::update(registry, 0.7f);
+	GameEngine::ECS::Systems::AttackSystem::update(registry, 0.6f);
 
 	EXPECT_FALSE(GameEngine::ECS::Systems::AttackSystem::isAttacking(attack));
 }

@@ -11,12 +11,12 @@ class Timer {
 	{
 		time += deltaTime;
 		if (loop) {
-			if (time > length) {
+			if (time >= length) {
 				time -= length;
 				timeout = true;
 			}
 		} else {
-			if (time > length) {
+			if (time >= length) {
 				time = length;
 				timeout = true;
 			}

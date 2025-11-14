@@ -44,8 +44,7 @@ class PlayerFactory {
 
 		registry.registerComponent(e, StateComponent{});
 
-		AttackComponent attackComp{.attackTimer = {0.6f}, .attackCoolDownTimer = {0.2f}};
-		registry.registerComponent(e, attackComp);
+		registry.registerComponent(e, AttackComponent{.attackTimer = {0.6f}, .attackCoolDownTimer = {0.2f}});
 
 		if (const auto prop = player.getProp("animations"); prop != nullptr && prop->getType() == tson::Type::File) {
 
