@@ -1,35 +1,45 @@
 #pragma once
+#include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
-#include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
+#include <Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp>
+#include <Engine/ECS/Components/Render/AnimationComponent.hpp>
 
 namespace GameEngine::ECS::Systems {
 class StateSystem {
   public:
-	static void Update(Registry &registry)
+	static void update(Registry &registry)
 	{
-		auto view = registry.view<StateComponent, VelocityComponent, GroundedComponent>();
-		for (auto entity : view) {
-			auto &state = view.get<StateComponent>(entity);
-			auto &vel = view.get<VelocityComponent>(entity);
-			auto &ground = view.get<GroundedComponent>(entity);
+
+		auto movementView = registry.view<StateComponent, VelocityComponent, GroundedComponent, AttackComponent>();
+		for (const auto entity : movementView) {
+			auto &state = movementView.get<StateComponent>(entity);
+			const auto &vel = movementView.get<VelocityComponent>(entity);
+			const auto &ground = movementView.get<GroundedComponent>(entity);
+			const auto &attack = movementView.get<AttackComponent>(entity);
+
+			if (AttackSystem::isAttacking(attack)) {
+				state.state = State::Attacking;
+				continue;
+			}
+
 			if (!ground.grounded) {
 				if (vel.velocity.y < 0) {
-					state.state = States::Jumping;
+					state.state = State::Jumping;
 				} else {
-					state.state = States::Falling;
+					state.state = State::Falling;
 				}
 			} else {
 				if (std::abs(vel.velocity.x) > 0.1f) {
-					state.state = States::Walking;
+					state.state = State::Walking;
 				} else {
-					state.state = States::Idle;
+					state.state = State::Idle;
 				}
 			}
 
-			if (DebugSystem::Instance().player.showState) {
-				DebugSystem::Debug("Entity " + std::to_string(entity) + " State: " + std::to_string(state.state));
+			if (DebugSystem::instance().player.showState) {
+				DebugSystem::debug("Entity " + std::to_string(entity) + " State: " + toString(state.state));
 			}
 		}
 	}

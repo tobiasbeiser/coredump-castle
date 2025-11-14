@@ -1,4 +1,4 @@
 #pragma once
 
-struct CenterCameraComponent
-{};
+struct CenterCameraComponent {
+};

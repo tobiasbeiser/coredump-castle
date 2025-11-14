@@ -14,7 +14,8 @@
 			"displayName": "Debug",
 			"inherits": "base",
 			"cacheVariables": {
-				"CMAKE_BUILD_TYPE": "Debug"
+				"CMAKE_BUILD_TYPE": "Debug",
+				"CMAKE_EXPORT_COMPILE_COMMANDS": "Yes"
 			}
 		},
 		{
@@ -22,7 +23,8 @@
 			"displayName": "Release",
 			"inherits": "base",
 			"cacheVariables": {
-				"CMAKE_BUILD_TYPE": "Release"
+				"CMAKE_BUILD_TYPE": "Release",
+				"CMAKE_EXPORT_COMPILE_COMMANDS": "Yes"
 			}
 		}
 	],

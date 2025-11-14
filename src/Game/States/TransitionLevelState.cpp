@@ -4,26 +4,23 @@
 #include <chrono>
 #include <thread>
 
-GameEngine::TransitionLevelState::TransitionLevelState(const std::string levelName, const std::string spawnPoint)
-    : nextLevelName(levelName), spawnPoint(spawnPoint)
-{
-}
+GameEngine::TransitionLevelState::TransitionLevelState() {}
 
-void GameEngine::TransitionLevelState::Init(GameEngine &game) {}
+void GameEngine::TransitionLevelState::init(GameEngine &game) {}
 
-void GameEngine::TransitionLevelState::Cleanup() {}
+void GameEngine::TransitionLevelState::cleanup() {}
 
-void GameEngine::TransitionLevelState::Pause() {}
+void GameEngine::TransitionLevelState::pause() {}
 
-void GameEngine::TransitionLevelState::Resume() {}
+void GameEngine::TransitionLevelState::resume() {}
 
-void GameEngine::TransitionLevelState::HandleEvents(GameEngine &game) {}
+void GameEngine::TransitionLevelState::handleEvents(GameEngine &game) {}
 
-void GameEngine::TransitionLevelState::Update(GameEngine &game, const float deltaTime)
+void GameEngine::TransitionLevelState::update(GameEngine &game, const float deltaTime)
 {
 	if (!loadingDone) {
 		// if no level is loaded start with black screen
-		if (game.registry.size() == 0) {
+		if (game.getRegistry().size() == 0) {
 			progress = 1.0f;
 		} else {
 			progress += deltaTime / duration;
@@ -31,24 +28,19 @@ void GameEngine::TransitionLevelState::Update(GameEngine &game, const float delt
 		if (progress >= 1.0f) {
 			progress = 1.0f;
 
-			game.registry.clearAll();
-			// LevelFactory factory(game.registry, game.textureManager, nextLevelName, spawnPoint);
-			// factory.CreateLevel();
-			game.getState<PlayState>().currentLevelName = nextLevelName;
-
 			loadingDone = true;
 		}
 	} else {
 		// Optional: fade back in
 		progress -= deltaTime / duration;
 		if (progress <= 0.0f) {
-			game.PopState(); // done, remove transition
+			game.popState(); // done, remove transition
 		}
 	}
 }
 
-void GameEngine::TransitionLevelState::Render(GameEngine &game, const float alpha)
+void GameEngine::TransitionLevelState::render(GameEngine &game, const float alpha)
 {
 	SDL_FColor black = {0, 0, 0, 255};
-	game.GetRenderer().RenderCircularFade(progress, black);
+	game.getRenderer().renderCircularFade(progress, black);
 }

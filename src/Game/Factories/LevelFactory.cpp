@@ -2,18 +2,22 @@
 #include "Engine/ECS/Components/Core/LevelComponent.hpp"
 #include "Engine/ECS/Components/Core/PortalComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InteractionComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/KeyComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/LockComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Render/BackgroundComponent.hpp"
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
+#include "Engine/ECS/Components/Tags/InactiveTag.hpp"
 #include "Game/Factories/PlayerFactory.hpp"
+
 #include <glm/vec2.hpp>
 
 LevelFactory::LevelFactory(GameEngine::ECS::Registry &registry, TextureManager &textureManager)
     : registry(registry), textureManager(textureManager) {};
 
-GameEngine::ECS::Entity LevelFactory::CreateLevel(tson::Map &map, const glm::vec2 &pos)
+GameEngine::ECS::Entity LevelFactory::createLevel(tson::Map &map, const glm::vec2 &pos)
 {
-	std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now();
+	const std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now();
 
 	if (map.getStatus() != tson::ParseStatus::OK) {
 		throw std::runtime_error("Failed to load map: " + map.getStatusMessage());
@@ -23,35 +27,42 @@ GameEngine::ECS::Entity LevelFactory::CreateLevel(tson::Map &map, const glm::vec
 
 	const glm::vec2 levelSize = glm::vec2(static_cast<float>(map.getSize().x * map.getTileSize().x),
 	                                      static_cast<float>(map.getSize().y * map.getTileSize().y));
-	registry.register_component<LevelComponent>(level, LevelComponent{.levelSize = levelSize, .levelName = levelFile});
 
 	int layerIndex = 0;
+	int playerLayer = 0;
 	for (tson::Layer &layer : map.getLayers()) {
-		LoadLayer(layer, layerIndex, pos);
+		loadLayer(layer, layerIndex, pos, playerLayer);
 	}
 
-	std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+	registry.registerComponent<LevelComponent>(level,
+	                                           LevelComponent{.levelSize = levelSize, .playerLayer = playerLayer});
+	registry.registerComponent(level, PositionComponent{.position = pos});
+	registry.registerComponent(level, InactiveTag{});
 
-	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - now).count();
-	SDL_Log("Level loaded in %ld ms\n", duration);
+	const std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+
+	const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - now).count();
+	SDL_Log("Level loaded in %ld ms\n", static_cast<long>(duration));
+
 	return level;
 }
 
-void LevelFactory::LoadLayer(tson::Layer &layer, int &layerIndex, const glm::vec2 &levelPos)
+void LevelFactory::loadLayer(tson::Layer &layer, int &layerIndex, const glm::vec2 &levelPos, int &playerLayer)
 {
 	switch (layer.getType()) {
 	case tson::LayerType::ImageLayer:
-		LoadBackground(layer, layerIndex, levelPos);
+		loadBackground(layer, layerIndex, levelPos);
 		break;
 	case tson::LayerType::TileLayer:
-		LoadTiles(layer, layerIndex, levelPos);
+		loadTiles(layer, layerIndex, levelPos);
 		break;
 	case tson::LayerType::ObjectGroup:
-		LoadObjects(layer, layerIndex, levelPos);
+		playerLayer = layerIndex;
+		loadObjects(layer, layerIndex, levelPos);
 		break;
 	case tson::LayerType::Group:
 		for (auto &subLayer : layer.getLayers()) {
-			LoadLayer(subLayer, layerIndex, levelPos);
+			loadLayer(subLayer, layerIndex, levelPos, playerLayer);
 		}
 		break;
 	default:
@@ -60,141 +71,141 @@ void LevelFactory::LoadLayer(tson::Layer &layer, int &layerIndex, const glm::vec
 	layerIndex++;
 }
 
-void LevelFactory::LoadTiles(const tson::Layer &layer, const int layerIndex, const glm::vec2 &levelPos)
+GameEngine::ECS::Entity LevelFactory::createTile(const int layerIndex, const glm::vec2 &levelPos, tson::Tile &tile,
+                                                 const glm::vec2 position) const
+{
+	const auto tileSize = glm::vec2(tile.getTileSize().x, tile.getTileSize().y);
+	glm::ivec2 imageSize = glm::ivec2(tile.getImageSize().x, tile.getImageSize().y);
+	const glm::ivec2 offset = glm::ivec2(tile.getTileset()->getTileOffset().x, tile.getTileset()->getTileOffset().y);
+	const tson::Rect rectSrc = tile.getDrawingRect();
+
+	if (imageSize.x == 0 && imageSize.y == 0) {
+		imageSize = tileSize;
+	}
+
+	fs::path imagePath;
+	if (tile.getTileset()->getType() == tson::TilesetType::ImageTileset) {
+		imagePath = tile.getTileset()->getFullImagePath();
+	} else {
+		imagePath = basePath / tile.getImage();
+	}
+
+	const bool flipX = tile.getFlipFlags() == tson::TileFlipFlags::Horizontally;
+
+	const auto entity = registry.create();
+	registry.registerComponent(
+	    entity, SpriteComponent{.texture = &textureManager.getTexture(imagePath),
+	                            .tileSize = {static_cast<float>(imageSize.x), static_cast<float>(imageSize.y)},
+	                            .tileMapPosition = {static_cast<float>(rectSrc.x), static_cast<float>(rectSrc.y)}});
+	registry.registerComponent(entity, RenderComponent{.layer = layerIndex, .flipX = flipX});
+	auto positionComponent = PositionComponent{position};
+	positionComponent.position += offset;
+	positionComponent.position += levelPos;
+	registry.registerComponent(entity, positionComponent);
+
+	if (tile.getAnimation().any()) {
+		animationFactory.loadAnimation(&tile, entity);
+	}
+
+	if (tile.getProp("collidable")) {
+		auto collisionBoxes = tile.getObjectgroup().getObjectsByType(tson::ObjectType::Rectangle);
+		if (!collisionBoxes.empty()) {
+			registry.registerComponent(entity,
+			                           CollisionComponent{static_cast<float>(collisionBoxes.at(0).getPosition().x),
+			                                              static_cast<float>(collisionBoxes.at(0).getPosition().y),
+			                                              static_cast<float>(collisionBoxes.at(0).getSize().x),
+			                                              static_cast<float>(collisionBoxes.at(0).getSize().y)});
+		} else {
+			registry.registerComponent(
+			    entity, CollisionComponent{0, 0, static_cast<float>(tileSize.x), static_cast<float>(tileSize.y)});
+		}
+	}
+
+	return entity;
+}
+void LevelFactory::loadTiles(tson::Layer &layer, const int layerIndex, const glm::vec2 &levelPos) const
 {
 	std::map<std::tuple<int, int>, tson::Tile *> tileData = layer.getTileData();
 	for (const auto &[tilePos, tile] : tileData) {
 		if (tile != nullptr) {
 			const glm::ivec2 position = glm::ivec2(std::get<0>(tilePos), std::get<1>(tilePos));
 			const glm::ivec2 tileSize = glm::ivec2(tile->getTileSize().x, tile->getTileSize().y);
-			glm::ivec2 imageSize = glm::ivec2(tile->getImageSize().x, tile->getImageSize().y);
-			const glm::ivec2 offset =
-			    glm::ivec2(tile->getTileset()->getTileOffset().x, tile->getTileset()->getTileOffset().y);
-			const tson::Rect rectSrc = tile->getDrawingRect();
-
-			if (imageSize.x == 0 && imageSize.y == 0) {
-				imageSize = tileSize;
+			const GameEngine::ECS::Entity entity = createTile(layerIndex, levelPos, *tile, position * tileSize);
+			if (layer.getProperties().hasProperty("lock")) {
+				const auto lock = LockComponent{layer.get<int>("lock")};
+				registry.registerComponent(entity, lock);
 			}
+		}
+	}
+}
 
-			fs::path imagePath;
-			if (tile->getTileset()->getType() == tson::TilesetType::ImageTileset) {
-				imagePath = tile->getTileset()->getFullImagePath();
-			} else {
-				imagePath = basePath / tile->getImage();
-			}
+void LevelFactory::loadBackground(const tson::Layer &layer, const int layerIndex, const glm::vec2 &levelPos) const
+{
+	fs::path backgroundPath = layer.getImage();
+	backgroundPath = "assets/tiled/background" / backgroundPath.filename();
+	if (layer.hasRepeatX()) {
+		const float scrollSpeed = layer.getParallax().x;
+		createBackground(levelPos, backgroundPath, layerIndex, scrollSpeed, layer.getOffset().y, true);
+	} else {
+		createBackground(levelPos, backgroundPath, layerIndex);
+	}
+}
 
-			auto entity = registry.create();
-			registry.register_component(
-			    entity,
-			    SpriteComponent{.texture = &textureManager.GetTexture(imagePath),
-			                    .TileSize = {static_cast<float>(imageSize.x), static_cast<float>(imageSize.y)},
-			                    .TileMapPosition = {static_cast<float>(rectSrc.x), static_cast<float>(rectSrc.y)}});
-			registry.register_component(entity, RenderComponent{.layer = layerIndex});
-			auto position_component = PositionComponent{position * tileSize};
-			position_component.position += offset;
-			position_component.position += levelPos;
-			registry.register_component(entity, position_component);
+void LevelFactory::createBackground(const glm::vec2 &levelPos, const fs::path &filename, const int layer,
+                                    const float scrollSpeed, const float yOffset, const bool repeatX) const
+{
+	const auto entity = registry.create();
+	registry.registerComponent(entity, BackgroundComponent{.texture = &textureManager.getTexture(filename.string()),
+	                                                       .scrollingSpeed = scrollSpeed,
+	                                                       .yOffset = yOffset,
+	                                                       .repeatX = repeatX});
+	registry.registerComponent(entity, RenderComponent{.layer = layer, .flipX = false});
+	registry.registerComponent(entity, PositionComponent{.position = levelPos});
+}
 
-			if (tile->getAnimation().any()) {
-				LoadAnimation(tile, entity);
-			}
+void LevelFactory::loadObjects(tson::Layer &layer, int layerIndex, const glm::vec2 &levelPos) const
+{
 
-			if (tile->getProp("collidable")) {
-				auto collisionBoxes = tile->getObjectgroup().getObjectsByType(tson::ObjectType::Rectangle);
-				if (!collisionBoxes.empty()) {
-					registry.register_component(
-					    entity, CollisionComponent{static_cast<float>(collisionBoxes.at(0).getPosition().x),
-					                               static_cast<float>(collisionBoxes.at(0).getPosition().y),
-					                               static_cast<float>(collisionBoxes.at(0).getSize().x),
-					                               static_cast<float>(collisionBoxes.at(0).getSize().y)});
-				} else {
-					registry.register_component(entity, CollisionComponent{0, 0, static_cast<float>(tileSize.x),
-					                                                       static_cast<float>(tileSize.y)});
+	for (auto &obj : layer.getObjectsByType(tson::ObjectType::Rectangle)) {
+		if (obj.getProperties().hasProperty("Portal")) {
+			loadPortals(levelPos, obj);
+		}
+	}
+	for (auto &obj : layer.getObjects()) {
+		if (const auto tileset = layer.getMap()->getTilesetByGid(obj.getGid()); tileset != nullptr) {
+			const int tilesetGid = tileset->getFirstgid();
+			if (const auto tile = tileset->getTile(obj.getGid() - tilesetGid + 1); tile != nullptr) {
+				auto position = glm::vec2(obj.getPosition().x, obj.getPosition().y - obj.getSize().y);
+				const GameEngine::ECS::Entity entity = createTile(layerIndex, levelPos, *tile, position);
+
+				if (obj.getProp("key")) {
+					const auto key = obj.get<int>("key");
+					registry.registerComponent(entity, KeyComponent{key});
+					registry.registerComponent(entity, InteractionComponent{0, 0, static_cast<float>(obj.getSize().x),
+					                                                        static_cast<float>(obj.getSize().y)});
 				}
 			}
 		}
 	}
 }
 
-void LevelFactory::LoadAnimation(tson::Tile *const &tile, GameEngine::ECS::Entity entity)
+void LevelFactory::loadPortals(const glm::vec2 &levelPos, tson::Object &obj) const
 {
-	const glm::ivec2 imageSize = glm::ivec2(tile->getImageSize().x, tile->getImageSize().y);
+	const auto portalProp = obj.getProp("Portal");
+	auto portalClass = std::any_cast<tson::TiledClass>(portalProp->getValue());
+	auto portalId = portalClass.get<std::string>("portalId");
+	const auto targetLevel = portalClass.get<std::string>("targetLevel");
+	const auto targetPortalId = portalClass.get<std::string>("targetPortalId");
 
-	auto &animation = tile->getAnimation();
-	int framesCount = animation.size();
-	auto tileset = tile->getTileset();
-
-	AnimationComponent animComp;
-	animComp.animations.push_back(Animation(framesCount, 0.1f * framesCount)); // textures have frame duration of 0.1s
-
-	std::vector<AnimationFrame> frames;
-	for (auto frame : animation.getFrames()) {
-		AnimationFrame animFrame;
-		animFrame.texture = &textureManager.GetTexture(basePath / tileset->getTile(frame.getTileId())->getImage());
-		animFrame.TileMapPosition = glm::ivec2{0, 0};
-		animFrame.TileSize = imageSize;
-		frames.push_back(animFrame);
-	}
-	animComp.frames.push_back(frames);
-	registry.register_component(entity, animComp);
-}
-
-void LevelFactory::LoadBackground(tson::Layer &layer, const int layerIndex, const glm::vec2 &levelPos)
-{
-	std::string layername = layer.getName();
-	fs::path backgroundPath = layer.getImage();
-	backgroundPath = "assets/tiled/background" / backgroundPath.filename();
-	if (layer.hasRepeatX()) {
-		const float scrollSpeed = layer.getProp("scroll") ? layer.getProp("scroll")->getValue<float>() : 1;
-		CreateBackground(backgroundPath, layerIndex, scrollSpeed, layer.getOffset().y + levelPos.y, true);
-	} else {
-		CreateBackground(backgroundPath, layerIndex);
-	}
-}
-
-void LevelFactory::CreateBackground(const fs::path &filename, const int layer, const float scrollSpeed,
-                                    const float yOffset, const bool repeatX)
-{
-	auto entity = registry.create();
-	registry.register_component(entity, BackgroundComponent{.texture = &textureManager.GetTexture(filename.string()),
-	                                                        .scrollingSpeed = scrollSpeed,
-	                                                        .yOffset = yOffset,
-	                                                        .repeatX = repeatX});
-	registry.register_component(entity, RenderComponent{.layer = layer, .flipX = false});
-}
-
-void LevelFactory::LoadObjects(tson::Layer &layer, int layerIndex, const glm::vec2 &levelPos)
-{
-
-	// Load all portals
-
-	for (auto &obj : layer.getObjectsByType(tson::ObjectType::Rectangle)) {
-		if (obj.getProperties().hasProperty("Portal")) {
-			const auto portalProp = obj.getProp("Portal");
-			auto portalClass = std::any_cast<tson::TiledClass>(portalProp->getValue());
-			auto portalId = portalClass.get<std::string>("portalId");
-			const auto targetLevel = portalClass.get<std::string>("targetLevel");
-			const auto targetPortalId = portalClass.get<std::string>("targetPortalId");
-
-			const auto entity = registry.create();
-			auto position_component = PositionComponent{
-			    .position = {static_cast<float>(obj.getPosition().x), static_cast<float>(obj.getPosition().y)}};
-			position_component.position += levelPos;
-			registry.register_component(entity, position_component);
-			registry.register_component(
-			    entity, InteractionComponent{.interactionBox{.x = 0,
-			                                                 .y = 0,
-			                                                 .w = static_cast<float>(obj.getSize().x),
-			                                                 .h = static_cast<float>(obj.getSize().y)}});
-			registry.register_component(
-			    entity,
-			    PortalComponent{.portalId = portalId, .targetLevel = targetLevel, .targetPortalId = targetPortalId});
-
-			// if (spawnPoint == portalId) {
-			// 	playerSpawnPosition = glm::vec2(static_cast<float>(obj.getPosition().x - obj.getSize().x / 2.0f),
-			// 	                                static_cast<float>(obj.getPosition().y));
-			// 	playerLayerIndex = layerIndex;
-			// }
-		}
-	}
+	const auto entity = registry.create();
+	auto positionComponent = PositionComponent{
+	    .position = {static_cast<float>(obj.getPosition().x), static_cast<float>(obj.getPosition().y)}};
+	positionComponent.position += levelPos;
+	registry.registerComponent(entity, positionComponent);
+	registry.registerComponent(
+	    entity,
+	    InteractionComponent{.interactionBox{
+	        .x = 0, .y = 0, .w = static_cast<float>(obj.getSize().x), .h = static_cast<float>(obj.getSize().y)}});
+	registry.registerComponent(
+	    entity, PortalComponent{.portalId = portalId, .targetLevel = targetLevel, .targetPortalId = targetPortalId});
 }

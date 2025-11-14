@@ -8,25 +8,36 @@
 namespace GameEngine::ECS::Systems {
 class InputSystem {
   public:
-	InputSystem(const InputManager &inputManager) : inputManager(inputManager) {}
+	explicit InputSystem(InputManager &inputManager) : inputManager(inputManager) {}
+	InputSystem(const InputSystem &) = delete;
+	InputSystem(InputSystem &&) = delete;
+	InputSystem &operator=(InputSystem &&) = delete;
+	InputSystem &operator=(const InputSystem &) = delete;
+	~InputSystem() = default;
 
-	void Update(Registry &registry)
+	void update(Registry &registry) const
 	{
 
 		float horizontalDirection = 0;
-		if (inputManager.IsKeyDown(Key::Left)) {
+		if (inputManager.isKeyDown(Key::Left)) {
 			horizontalDirection += -1;
 		}
-		if (inputManager.IsKeyDown(Key::Right)) {
+		if (inputManager.isKeyDown(Key::Right)) {
 			horizontalDirection += 1;
-		}	
-
-		for (auto view = registry.view<InputComponent>(); const auto &entity : view) {
-			auto &input = view.get<InputComponent>(entity);
-			input.horizontalDirection = horizontalDirection;
-			PressOrConsume(inputManager.IsKeyPressed(Key::Up), input.jumpPressed, input.jumpConsumed);
-			PressOrConsume(inputManager.IsKeyPressed(Key::Interact), input.interactPressed, input.interactConsumed);
 		}
+
+		for (auto view = registry.view<InputComponent>(); const auto entity : view) {
+			auto &[horizontalDirectionTarget, jumpPressed, attackPressed, interactPressed, interactConsumed] =
+			    view.get<InputComponent>(entity);
+			horizontalDirectionTarget = horizontalDirection;
+			jumpPressed = inputManager.isKeyPressed(Key::Up);
+			attackPressed = inputManager.isKeyPressed(Key::Attack);
+			interactPressed = inputManager.isKeyPressed(Key::Interact);
+		}
+
+		// update input manager for next frame (for correct handling of isKeyPressed and isKeyReleased, this has to be
+		// at the end)
+		inputManager.update();
 	}
 
 	// set an input and consume it in the next frame
@@ -34,26 +45,6 @@ class InputSystem {
 	// have multiple updates per frame)
 
   private:
-	const InputManager &inputManager;
-
-	void PressOrConsume(bool keyPressed, bool &pressedProp, bool &consumedProp)
-	{
-		if (keyPressed) {
-			bool inPressedProp = pressedProp;
-			bool inConsumedProp = consumedProp;
-			if (!consumedProp) {
-				pressedProp = true;
-				consumedProp = true;
-			} else {
-				pressedProp = false;
-			}
-			//SDL_Log(
-			//    "PressOrConsume: keyPressed=%d, inPressedProp=%d, inConsumedProp=%d => pressedProp=%d, consumedProp=%d",
-			//    keyPressed, inPressedProp, inConsumedProp, pressedProp, consumedProp);
-		} else {
-			pressedProp = false;
-			consumedProp = false;
-		}
-	}
+	InputManager &inputManager;
 };
 } // namespace GameEngine::ECS::Systems

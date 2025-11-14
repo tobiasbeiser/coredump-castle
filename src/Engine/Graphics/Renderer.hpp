@@ -34,18 +34,18 @@ class Renderer {
 	Renderer &operator=(const Renderer &) = delete;
 	~Renderer();
 
-	void StartFrame(int red, int green, int blue, int alpha) const;
-	void EndFrame() const;
-	void CenterCameraOn(const glm::vec2 &position, const glm::vec2 &levelPos, const glm::vec2 &levelSize);
+	void startFrame(int red, int green, int blue, int alpha) const;
+	void endFrame() const;
+	void centerCameraOn(const glm::vec2 &position, const glm::vec2 &levelPos, const glm::vec2 &levelSize);
 
-	void Resize(Resolution newResolution);
+	void resize(Resolution newResolution);
 
-	std::unique_ptr<SDL_Texture, SDLTextureDeleter> LoadTexture(const std::filesystem::path &filePath);
-	void RenderTexture(SDL_Texture &texture, const std::optional<SDL_FRect> srcRect, std::optional<SDL_FRect> dstRect,
+	std::unique_ptr<SDL_Texture, SDLTextureDeleter> loadTexture(const std::filesystem::path &filePath);
+	void renderTexture(SDL_Texture &texture, const std::optional<SDL_FRect> srcRect, std::optional<SDL_FRect> dstRect,
 	                   const bool flip) const;
-	void RenderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, const float scrollFactor) const;
+	void renderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, const float scrollFactor) const;
 
-	void RenderCircularFade(float progress, SDL_FColor color = {0, 0, 0, 255});
+	void renderCircularFade(float progress, SDL_FColor color = {0, 0, 0, 255});
 
   private:
 	Resolution currentResolution{1920, 1080};
@@ -55,7 +55,7 @@ class Renderer {
 	                   .y = 0,
 	                   .w = static_cast<float>(logicalResolution.width),
 	                   .h = static_cast<float>(logicalResolution.height)};
-	std::vector<std::string> debugMessages;
+	std::vector<std::string> debugMessages{};
 
 	struct SDLRendererDeleter {
 		void operator()(SDL_Renderer *r) const noexcept
@@ -72,6 +72,6 @@ class Renderer {
 		}
 	};
 
-	std::unique_ptr<SDL_Renderer, SDLRendererDeleter> renderer;
-	std::unique_ptr<SDL_Window, SDLWindowDeleter> window;
+	std::unique_ptr<SDL_Renderer, SDLRendererDeleter> renderer{};
+	std::unique_ptr<SDL_Window, SDLWindowDeleter> window{};
 };

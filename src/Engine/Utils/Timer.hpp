@@ -1,22 +1,22 @@
 #pragma once
 
 class Timer {
-	float length, time;
+	float length, time{0};
 	bool timeout = false;
 
   public:
-	Timer(float length) : length(length), time(0) {}
+	Timer(float length) : length(length) {}
 
 	void step(float deltaTime, bool loop) noexcept
 	{
 		time += deltaTime;
 		if (loop) {
-			if (time > length) {
+			if (time >= length) {
 				time -= length;
 				timeout = true;
 			}
 		} else {
-			if (time > length) {
+			if (time >= length) {
 				time = length;
 				timeout = true;
 			}

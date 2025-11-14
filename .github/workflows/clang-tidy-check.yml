@@ -1,0 +1,47 @@
+name: Clang-Tidy Check
+
+on:
+  pull_request:
+    branches: [ "main" ]
+  push:
+    branches: [ "main" ]
+
+jobs:
+  clang-tidy:
+    runs-on: ubuntu-latest  # single representative platform
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      # Install dependencies for clang-tidy
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y clang-tidy 
+      # libltdl-dev
+
+      - uses: lukka/get-cmake@latest
+
+      - name: Set up vcpkg
+        uses: lukka/run-vcpkg@5e0cab206a5ea620130caf672fce3e4a6b5666a1 # v11.5
+        env:
+          VCPKG_BINARY_SOURCES: default,rw
+
+      - name: Set up binary cache
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: ${{ runner.os }}-vcpkg-binary-cache-${{ hashFiles('vcpkg*.json') }}
+          restore-keys: |
+            ${{ runner.os }}-vcpkg-binary-cache-
+
+      - name: Run CMake consuming CMakePreset.json and run vcpkg to build packages
+        uses: lukka/run-cmake@v10
+        with:
+          configurePreset: 'release'
+
+      # Run clang-tidy on all C++ source files
+      - name: Run clang-tidy
+        run: run-clang-tidy -p out/build/release -header-filter /src /src || exit 1

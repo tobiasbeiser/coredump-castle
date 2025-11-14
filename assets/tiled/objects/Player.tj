@@ -4,6 +4,12 @@
      "id":1,
      "name":"Player",
      "point":true,
+     "properties":[
+            {
+             "name":"animations",
+             "type":"file",
+             "value":"..\/tilesets\/player\/player.tsj"
+            }],
      "rotation":0,
      "type":"",
      "visible":true,
