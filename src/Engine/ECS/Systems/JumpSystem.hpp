@@ -13,27 +13,27 @@ struct JumpSystem {
 		for (auto view = registry.view<JumpComponent, GroundedComponent, VelocityComponent, InputComponent>();
 		     const auto entity : view) {
 
-			auto &jump = registry.get<JumpComponent>(entity);
+			auto &[jumpStrength, jumpsLeft, maxJumps, jumpInitiated, coyoteTimer] = registry.get<JumpComponent>(entity);
 			const auto &[grounded] = registry.get<GroundedComponent>(entity);
 			auto &[velocity] = registry.get<VelocityComponent>(entity);
 			const auto &input = registry.get<InputComponent>(entity);
 
 			if (grounded) {
-				jump.jumpInitiated = input.jumpPressed;
-				jump.jumpsLeft = jump.maxJumps;
-				jump.coyoteTimer.reset();
+				jumpInitiated = input.jumpPressed;
+				jumpsLeft = maxJumps;
+				coyoteTimer.reset();
 			} else{
-				if (!jump.jumpInitiated && jump.jumpsLeft > 0 && !jump.coyoteTimer.isTimeout()) {
-					jump.coyoteTimer.step(deltaTime, false);
-					jump.jumpsLeft = 1;
-				} else if (jump.coyoteTimer.isTimeout()) {
-					jump.jumpsLeft = 0;
+				if (!jumpInitiated && jumpsLeft > 0 && !coyoteTimer.isTimeout()) {
+					coyoteTimer.step(deltaTime, false);
+					jumpsLeft = 1;
+				} else if (coyoteTimer.isTimeout()) {
+					jumpsLeft = 0;
 				}
 			}
 
-			if (jump.jumpsLeft && input.jumpPressed) {
-				velocity.y = -jump.jumpStrength;
-				jump.jumpsLeft--;
+			if (jumpsLeft && input.jumpPressed) {
+				velocity.y = -jumpStrength;
+				jumpsLeft--;
 			}
 		}
 
