@@ -61,6 +61,8 @@ void Renderer::endFrame() const
 {
 	for (auto &debug : DebugSystem::instance().debugRects) {
 		SDL_SetRenderDrawColor(renderer.get(), debug.color.r, debug.color.g, debug.color.b, debug.color.a);
+		debug.rect.x -= viewport.x;
+		debug.rect.y -= viewport.y;
 		SDL_RenderRect(renderer.get(), &debug.rect);
 	}
 
