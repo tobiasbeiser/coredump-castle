@@ -7,7 +7,7 @@
 
 namespace GameEngine::ECS::Systems {
 struct JumpSystem {
-	static void update(Registry &registry)
+	static void update(Registry &registry, const float deltaTime)
 	{
 
 		for (auto view = registry.view<JumpComponent, GroundedComponent, VelocityComponent, InputComponent>();
@@ -17,15 +17,29 @@ struct JumpSystem {
 			const auto &[grounded] = registry.get<GroundedComponent>(entity);
 			auto &[velocity] = registry.get<VelocityComponent>(entity);
 			const auto &input = registry.get<InputComponent>(entity);
+
 			if (grounded) {
+				jump.jumpInitiated = false;
+				if (input.jumpPressed) {
+					jump.jumpInitiated = true;
+				}
 				jump.jumpsLeft = jump.maxJumps;
+				jump.coyoteTimer.reset();
+			} else{
+				if (!jump.jumpInitiated && jump.jumpsLeft > 0 && !jump.coyoteTimer.isTimeout()) {
+					jump.coyoteTimer.step(deltaTime, false);
+					jump.jumpsLeft = 1;
+				} else if (jump.coyoteTimer.isTimeout()) {
+					jump.jumpsLeft = 0;
+				}
 			}
 
-			if (jump.jumpsLeft && input.jumpPressed && velocity.y <= 0) {
+			if (jump.jumpsLeft && input.jumpPressed) {
 				velocity.y = -jump.jumpStrength;
 				jump.jumpsLeft--;
 			}
 		}
+
 	}
 };
 
