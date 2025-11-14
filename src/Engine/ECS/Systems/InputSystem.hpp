@@ -15,7 +15,7 @@ class InputSystem {
 	InputSystem &operator=(const InputSystem &) = delete;
 	~InputSystem() = default;
 
-	void update(Registry &registry)
+	void update(Registry &registry) const
 	{
 
 		float horizontalDirection = 0;
@@ -27,8 +27,8 @@ class InputSystem {
 		}
 
 		for (auto view = registry.view<InputComponent>(); const auto entity : view) {
-			auto &[horizontalDirectionTarget, jumpPressed, attackPressed, attackConsumed, interactPressed,
-			       interactConsumed] = view.get<InputComponent>(entity);
+			auto &[horizontalDirectionTarget, jumpPressed, attackPressed, interactPressed, interactConsumed] =
+			    view.get<InputComponent>(entity);
 			horizontalDirectionTarget = horizontalDirection;
 			jumpPressed = inputManager.isKeyPressed(Key::Up);
 			attackPressed = inputManager.isKeyPressed(Key::Attack);

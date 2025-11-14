@@ -14,9 +14,9 @@ struct AttackSystem {
 
 			updateCoolDown(attack, deltaTime);
 
-			if (input.attackPressed && !attack.isAttacking && attack.attackCoolDownTimer.getTime() >= attack.attackCoolDownTimer.getLength()) {
-				startAttack(attack);
-			} else if (attack.isAttacking) {
+			if (input.attackPressed && !isAttacking(attack) && isCoolDown(attack)) {
+				startAttack(attack, deltaTime);
+			}else if (isAttacking(attack)) {
 				processAttack(attack, deltaTime);
 
 				if (attack.attackTimer.isTimeout()) {
@@ -26,15 +26,29 @@ struct AttackSystem {
 		}
 	}
 
-  private:
-	static void updateCoolDown(AttackComponent &state, const float deltaTime)
+	static bool isAttacking(const AttackComponent &attack)
 	{
-		if (!state.attackCoolDownTimer.isTimeout() && !state.isAttacking) {
-			state.attackCoolDownTimer.step(deltaTime, false);
+		return attack.attackTimer.getTime() > 0.0f && !attack.attackTimer.isTimeout();
+	}
+
+  private:
+	static bool isCoolDown(const AttackComponent &attack)
+	{
+		return attack.attackCoolDownTimer.getTime() >= attack.attackCoolDownTimer.getLength();
+	}
+
+	static void updateCoolDown(AttackComponent &attack, const float deltaTime)
+	{
+		if (!attack.attackCoolDownTimer.isTimeout() && !isAttacking(attack)) {
+			attack.attackCoolDownTimer.step(deltaTime, false);
 		}
 	}
 
-	static void startAttack(AttackComponent &state) { state.isAttacking = true; }
+	static void startAttack(AttackComponent &attack, const float deltaTime)
+	{
+		attack.attackTimer.reset();
+		attack.attackTimer.step(deltaTime, false);
+	}
 
 	static void processAttack(AttackComponent &attack, const float deltaTime)
 	{
@@ -43,7 +57,6 @@ struct AttackSystem {
 
 	static void endAttack(AttackComponent &attack)
 	{
-		attack.isAttacking = false;
 		attack.attackTimer.reset();
 		attack.attackCoolDownTimer.reset();
 	}

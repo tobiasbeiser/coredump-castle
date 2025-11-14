@@ -13,13 +13,13 @@ class StateSystem {
 	{
 
 		auto movementView = registry.view<StateComponent, VelocityComponent, GroundedComponent, AttackComponent>();
-		for (auto entity : movementView) {
+		for (const auto entity : movementView) {
 			auto &state = movementView.get<StateComponent>(entity);
-			auto &vel = movementView.get<VelocityComponent>(entity);
-			auto &ground = movementView.get<GroundedComponent>(entity);
-			auto &attack = movementView.get<AttackComponent>(entity);
+			const auto &vel = movementView.get<VelocityComponent>(entity);
+			const auto &ground = movementView.get<GroundedComponent>(entity);
+			const auto &attack = movementView.get<AttackComponent>(entity);
 
-			if (attack.isAttacking) {
+			if (AttackSystem::isAttacking(attack)) {
 				state.state = State::Attacking;
 				continue;
 			}

@@ -44,9 +44,7 @@ class PlayerFactory {
 
 		registry.registerComponent(e, StateComponent{});
 
-		// Configure attack stats for the player here so factories own tuning
 		AttackComponent attackComp{.attackTimer = {0.6f}, .attackCoolDownTimer = {0.2f}};
-		attackComp.attackCoolDownTimer.step(0.2f, false); //set cooldown to already complete when spawning
 		registry.registerComponent(e, attackComp);
 
 		if (const auto prop = player.getProp("animations"); prop != nullptr && prop->getType() == tson::Type::File) {
