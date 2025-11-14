@@ -133,6 +133,10 @@ void LevelFactory::loadTiles(tson::Layer &layer, const int layerIndex, const glm
 			const GameEngine::ECS::Entity entity = createTile(layerIndex, levelPos, *tile, position * tileSize);
 			if (layer.getProperties().hasProperty("lock")) {
 				const auto lock = LockComponent{layer.get<int>("lock")};
+				if (!registry.has<CollisionComponent>(entity)) {
+					registry.registerComponent(entity, CollisionComponent{0, 0, static_cast<float>(tileSize.x),
+					                                                      static_cast<float>(tileSize.y)});
+				}
 				registry.registerComponent(entity, lock);
 			}
 		}
