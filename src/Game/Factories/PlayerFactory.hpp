@@ -13,10 +13,8 @@
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Physics/GravityComponent.hpp"
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
-#include "Engine/ECS/Components/Render/AnimationComponent.hpp"
 #include "Engine/ECS/Components/Render/CenterCameraComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
-#include "Engine/ECS/Components/Render/SpriteComponent.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/Graphics/TextureManager.hpp"
@@ -47,17 +45,14 @@ class PlayerFactory {
 		registry.registerComponent(e, AttackComponent{.attackTimer = {0.6f}, .attackCoolDownTimer = {0.2f}});
 
 		if (const auto prop = player.getProp("animations"); prop != nullptr && prop->getType() == tson::Type::File) {
-
 			const std::filesystem::path basePath = "assets/tiled/tilesets/";
 			const auto tilesetPath = basePath / prop->getValue<std::filesystem::path>();
 			tson::Tileset tileset;
-
 			tson::Json11 json;
 			json.parse(tilesetPath);
 			tileset.parse(json, &map); // map is required to read project enums
 
 			const AnimationFactory animFactory(registry, texMgr);
-
 			for (auto tile : tileset.getTiles()) {
 				if (auto anim = tile.getAnimation(); anim.any()) {
 					animFactory.loadAnimation(&tile, e);

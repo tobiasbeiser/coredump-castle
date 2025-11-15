@@ -31,6 +31,6 @@ class PlayState final : public GameState {
 	ECS::Systems::MapActivationSystem mapActivationSystem{};
 	bool paused = false;
 	float accumulator = 0.0f;
-	static constexpr float stepSize = 1.0f / 240.0f;
+	static constexpr float stepSize = 1.0f / 120.0f;
 };
 } // namespace GameEngine

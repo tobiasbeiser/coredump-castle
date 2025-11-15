@@ -1,0 +1,14 @@
+{ "columns":50,
+ "image":"locks.png",
+ "imageheight":2080,
+ "imagewidth":1616,
+ "margin":0,
+ "name":"void",
+ "spacing":0,
+ "tilecount":13130,
+ "tiledversion":"1.11.2",
+ "tileheight":32,
+ "tilewidth":32,
+ "type":"tileset",
+ "version":"1.10"
+}
