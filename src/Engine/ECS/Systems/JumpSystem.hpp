@@ -4,6 +4,7 @@
 #include "Engine/ECS/Components/Gameplay/JumpComponent.hpp"
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
+#include "Engine/ECS/View.hpp"
 
 namespace GameEngine::ECS::Systems {
 struct JumpSystem {
@@ -14,7 +15,7 @@ struct JumpSystem {
 		     const auto entity : view) {
 
 			auto &[jumpStrength, jumpsLeft, maxJumps, jumpInitiated, coyoteTimer] = registry.get<JumpComponent>(entity);
-			const auto &[grounded] = registry.get<GroundedComponent>(entity);
+			auto &[grounded] = registry.get<GroundedComponent>(entity);
 			auto &[velocity] = registry.get<VelocityComponent>(entity);
 			const auto &input = registry.get<InputComponent>(entity);
 
@@ -23,17 +24,16 @@ struct JumpSystem {
 				jumpsLeft = maxJumps;
 				coyoteTimer.reset();
 			} else{
-				if (!jumpInitiated && jumpsLeft > 0 && !coyoteTimer.isTimeout()) {
+				if (!jumpInitiated && jumpsLeft > 0) { //check for jumpsLeft > 0 to see if jump was already consumed
 					coyoteTimer.step(deltaTime, false);
-					jumpsLeft = 1;
-				} else if (coyoteTimer.isTimeout()) {
-					jumpsLeft = 0;
+					jumpsLeft = coyoteTimer.isTimeout() ? 0 : 1;
 				}
 			}
 
 			if (jumpsLeft && input.jumpPressed) {
 				velocity.y = -jumpStrength;
 				jumpsLeft--;
+				grounded = false;
 			}
 		}
 
