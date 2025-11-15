@@ -15,7 +15,7 @@ struct JumpSystem {
 		for (auto view = registry.view<JumpComponent, GroundedComponent, VelocityComponent, InputComponent>();
 		     const auto entity : view) {
 
-			auto &[jumpStrength, jumpsLeft, maxJumps, jumpInitiated, coyoteTimer] = registry.get<JumpComponent>(entity);
+			auto &[jumpStrength, jumpsLeft, maxJumps, coyoteTimer] = registry.get<JumpComponent>(entity);
 			const auto &[grounded] = registry.get<GroundedComponent>(entity);
 			auto &[velocity] = registry.get<VelocityComponent>(entity);
 			const auto &input = registry.get<InputComponent>(entity);
