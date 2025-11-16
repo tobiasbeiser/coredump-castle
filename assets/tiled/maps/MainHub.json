@@ -291,6 +291,12 @@
                  "width":24,
                  "x":401.309459862728,
                  "y":927.10753009052
+                }, 
+                {
+                 "id":13,
+                 "template":"..\/objects\/Enemy.tj",
+                 "x":446.022727272727,
+                 "y":884.090909090909
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -346,7 +352,7 @@
          "y":0
         }],
  "nextlayerid":11,
- "nextobjectid":13,
+ "nextobjectid":16,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",

@@ -50,7 +50,9 @@
                 "JumpReload",
                 "FlyingUp",
                 "Falling",
-                "Landing"
+                "Landing",
+                "Hurting",
+                "Dead"
             ],
             "valuesAsFlags": false
         }

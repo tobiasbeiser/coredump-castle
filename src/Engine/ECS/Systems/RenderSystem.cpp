@@ -54,7 +54,7 @@ void RenderSystem::update(Registry &registry, float alpha)
 	     const auto entity : view) {
 		const auto &[position, previousPosition] = view.get<PositionComponent>(entity);
 		const auto &[texture, TileSize, TileMapPosition] = view.get<SpriteComponent>(entity);
-		const auto &[layer, flipX] = view.get<RenderComponent>(entity);
+		const auto &[layer, flipX, scale] = view.get<RenderComponent>(entity);
 
 		const SDL_FRect src{.x = static_cast<float>(TileMapPosition.x),
 		                    .y = static_cast<float>(TileMapPosition.y),

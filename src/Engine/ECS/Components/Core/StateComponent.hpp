@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 
-enum class State { Idle, Walking, Jumping, Falling, Attacking };
+enum class State { Idle, Walking, Jumping, Falling, Attacking, Hurting, Dead };
 
 inline std::string toString(const State state)
 {
@@ -16,6 +16,10 @@ inline std::string toString(const State state)
 		return "Falling";
 	case State::Attacking:
 		return "Attacking";
+	case State::Hurting:
+		return "Hurting";
+	case State::Dead:
+		return "Dead";
 	default:
 		return "Unknown";
 	}
