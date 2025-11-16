@@ -1,9 +1,12 @@
 #pragma once
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
+#include "Engine/ECS/Components/Physics/AccelerationComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
+#include "Engine/ECS/Components/Tags/InactiveTag.hpp"
 #include "Engine/ECS/Registry.hpp"
+#include "Engine/ECS/View.hpp"
 #include <SDL3/SDL_rect.h>
 
 namespace GameEngine::ECS::Systems {
@@ -12,17 +15,16 @@ struct CollisionSystem {
 	{
 		// Get all entities that move (dynamic)
 		auto dynamicView =
-		    registry.view<PositionComponent, VelocityComponent, CollisionComponent>().exclude<InactiveTag>();
+		    registry.view<PositionComponent, VelocityComponent, CollisionComponent, AccelerationComponent>()
+		        .exclude<InactiveTag>();
 		// Get all static colliders (tiles)
 		auto staticView = registry.view<PositionComponent, CollisionComponent>().exclude<InactiveTag>();
 		for (const auto dynEntity : dynamicView) {
 
 			auto &[position, previousPosition] = dynamicView.get<PositionComponent>(dynEntity);
 			auto &[velocity] = dynamicView.get<VelocityComponent>(dynEntity);
+			auto &[acceleration] = dynamicView.get<AccelerationComponent>(dynEntity);
 			const auto &[collisionBox] = dynamicView.get<CollisionComponent>(dynEntity);
-
-			SDL_FRect entityBox{position.x + collisionBox.x, position.y + collisionBox.y, collisionBox.w,
-			                    collisionBox.h};
 
 			bool grounded = false;
 
@@ -37,8 +39,8 @@ struct CollisionSystem {
 				SDL_FRect tileBox{staticPosition.x + staticCollisionBox.x, staticPosition.y + staticCollisionBox.y,
 				                  staticCollisionBox.w, staticCollisionBox.h};
 
-				resolveAabbCollision(entityBox, tileBox, position, velocity);
-				previousPosition = position;
+				resolveHorizontal(collisionBox, tileBox, position, velocity, acceleration);
+				resolveVertical(collisionBox, tileBox, position, velocity, acceleration);
 
 				if (registry.has<GroundedComponent>(dynEntity)) {
 					SDL_FRect sensorBox{position.x + collisionBox.x, position.y + collisionBox.y + collisionBox.h,
@@ -53,34 +55,56 @@ struct CollisionSystem {
 					cGrounded = grounded;
 				}
 			}
+
+			previousPosition = position;
 		}
 	}
 
   private:
-	static void resolveAabbCollision(const SDL_FRect &entityBox, const SDL_FRect &tileBox, glm::vec2 &pos,
-	                                 glm::vec2 &vel)
+	static void resolveHorizontal(const SDL_FRect &collisionA, const SDL_FRect &tileBox, glm::vec2 &pos, glm::vec2 &vel,
+	                              glm::vec2 &acc)
 	{
 		SDL_FRect intersection{};
-		if (SDL_GetRectIntersectionFloat(&entityBox, &tileBox, &intersection)) {
-			if (intersection.w < intersection.h) {
-				// Horizontal
-				if (vel.x > 0) {
-					pos.x -= intersection.w;
-					vel.x = 0;
-				} else if (vel.x < 0) {
-					pos.x += intersection.w;
-					vel.x = 0;
-				}
+		const SDL_FRect entityBox{pos.x + collisionA.x, pos.y + collisionA.y, collisionA.w, collisionA.h};
+
+		if (!SDL_GetRectIntersectionFloat(&entityBox, &tileBox, &intersection))
+			return;
+
+		const float entityCenterX = entityBox.x + entityBox.w * 0.5f;
+		const float tileCenterX = tileBox.x + tileBox.w * 0.5f;
+
+		if (intersection.w < intersection.h && intersection.w > 0) {
+			// Horizontal
+			if (entityCenterX < tileCenterX) {
+				pos.x -= intersection.w;
 			} else {
-				// Vertical
-				if (vel.y > 0) {
-					pos.y -= intersection.h;
-					vel.y = 0;
-				} else if (vel.y < 0) {
-					pos.y += intersection.h;
-					vel.y = 0;
-				}
+				pos.x += intersection.w;
 			}
+			vel.x = 0;
+			acc.x = 0;
+		}
+	}
+
+	static void resolveVertical(const SDL_FRect &collisionA, const SDL_FRect &tileBox, glm::vec2 &pos, glm::vec2 &vel,
+	                            glm::vec2 &acc)
+	{
+		SDL_FRect intersection{};
+		const SDL_FRect entityBox{pos.x + collisionA.x, pos.y + collisionA.y, collisionA.w, collisionA.h};
+
+		if (!SDL_GetRectIntersectionFloat(&entityBox, &tileBox, &intersection))
+			return;
+
+		const float entityCenterY = entityBox.y + entityBox.h * 0.5f;
+		const float tileCenterY = tileBox.y + tileBox.h * 0.5f;
+
+		if (intersection.w > intersection.h && intersection.h > 0) {
+			if (entityCenterY < tileCenterY) {
+				pos.y -= intersection.h;
+			} else {
+				pos.y += intersection.h;
+			}
+			vel.y = 0;
+			acc.y = 0;
 		}
 	}
 };
