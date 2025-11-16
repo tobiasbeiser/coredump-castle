@@ -295,8 +295,8 @@
                 {
                  "id":13,
                  "template":"..\/objects\/Enemy.tj",
-                 "x":438.636363636363,
-                 "y":903.409090909091
+                 "x":440.018908726379,
+                 "y":911.635480305637
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -350,9 +350,42 @@
          "width":36,
          "x":0,
          "y":0
+        }, 
+        {
+         "draworder":"topdown",
+         "id":12,
+         "name":"EnemyPath",
+         "objects":[
+                {
+                 "height":28.9772727272727,
+                 "id":17,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":157.081023814895,
+                 "x":320.870057361993,
+                 "y":898.948430601656
+                }, 
+                {
+                 "height":28.9772727272727,
+                 "id":19,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":157.081023814895,
+                 "x":320.870057361993,
+                 "y":898.948430601656
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
         }],
- "nextlayerid":11,
- "nextobjectid":16,
+ "nextlayerid":13,
+ "nextobjectid":20,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",

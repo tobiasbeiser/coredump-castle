@@ -14,6 +14,7 @@
 #include "Engine/DebugSystem.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
 
+#include <Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp>
 #include <Engine/ECS/Components/Tags/EnemyTag.hpp>
 #include <tileson.hpp>
 
@@ -53,6 +54,13 @@ class EnemyFactory {
 
 		configureEnemyByType(registry, entity, enemyType, scale);
 
+		if (auto patrolRect = findPatrolRect(enemyObj, levelPos, map)) {
+			registry.registerComponent(entity, PatrolComponent{.minBounds = patrolRect->min,
+			                                                   .maxBounds = patrolRect->max,
+			                                                   .speed = 50.0f,
+			                                                   .direction = 1});
+		}
+
 		if (const auto prop = enemyObj.getProp("animations"); prop != nullptr && prop->getType() == tson::Type::File) {
 
 			const std::filesystem::path basePath = "assets/tiled/tilesets/";
@@ -75,6 +83,10 @@ class EnemyFactory {
 	}
 
   private:
+	struct PatrolRect {
+		glm::vec2 min;
+		glm::vec2 max;
+	};
 	static float getScaleForEnemyType(EnemyType type)
 	{
 		switch (type) {
@@ -98,5 +110,29 @@ class EnemyFactory {
 		case EnemyType::Boss:
 			break;
 		}
+	}
+	static std::optional<PatrolRect> findPatrolRect(const tson::Object &enemyObj, const glm::vec2 &levelPos,
+	                                                tson::Map &map)
+	{
+		auto *pathLayer = map.getLayer("EnemyPath");
+		if (!pathLayer) {
+			return std::nullopt;
+		}
+
+		const glm::vec2 enemyPos = glm::vec2(enemyObj.getPosition().x, enemyObj.getPosition().y) + levelPos;
+
+		const glm::vec2 enemySize = glm::vec2(enemyObj.getSize().x, enemyObj.getSize().y);
+
+		for (auto &obj : pathLayer->getObjects()) {
+			const glm::vec2 rectPos = glm::vec2(obj.getPosition().x, obj.getPosition().y) + levelPos;
+			const glm::vec2 rectSize = glm::vec2(obj.getSize().x, obj.getSize().y);
+
+			if ((enemyPos.x >= rectPos.x && enemyPos.x <= rectPos.x + rectSize.x)
+			    && (enemyPos.y >= rectPos.y && enemyPos.y <= rectPos.y + rectSize.y)) {
+				return PatrolRect{.min = rectPos, .max = rectPos + rectSize - enemySize};
+			}
+		}
+
+		return std::nullopt;
 	}
 };
