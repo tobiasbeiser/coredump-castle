@@ -11,7 +11,19 @@ struct AnimationFrame {
 	glm::ivec2 tileMapPosition{};
 };
 
-enum class AnimationType { None, Idle, Walking, JumpStart, FlyingUp, JumpReload, Falling, Landing, Attacking };
+enum class AnimationType {
+	None,
+	Idle,
+	Walking,
+	JumpStart,
+	FlyingUp,
+	JumpReload,
+	Falling,
+	Landing,
+	Attacking,
+	Hurting,
+	Dead
+};
 
 class AnimationComponent {
   public:

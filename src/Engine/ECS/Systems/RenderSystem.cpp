@@ -28,7 +28,7 @@ void RenderSystem::update(Registry &registry, float alpha)
 
 	for (auto bgView = registry.view<RenderComponent, BackgroundComponent, PositionComponent>().exclude<InactiveTag>();
 	     const auto entity : bgView) {
-		const auto &[layer, flipX] = bgView.get<RenderComponent>(entity);
+		const auto &[layer, flipX, scale] = bgView.get<RenderComponent>(entity);
 		const auto &pos = bgView.get<PositionComponent>(entity);
 		const auto &bg = bgView.get<BackgroundComponent>(entity);
 
@@ -62,8 +62,10 @@ void RenderSystem::update(Registry &registry, float alpha)
 		                    .h = static_cast<float>(TileSize.y)};
 
 		// non interpolation
-		SDL_FRect dst{
-		    .x = position.x, .y = position.y, .w = static_cast<float>(TileSize.x), .h = static_cast<float>(TileSize.y)};
+		SDL_FRect dst{.x = position.x,
+		              .y = position.y,
+		              .w = static_cast<float>(TileSize.x) * scale,
+		              .h = static_cast<float>(TileSize.y) * scale};
 
 		// interpolation
 		/*SDL_FRect dst{.x = pos.previousPosition.x * (1 - alpha) + pos.position.x * alpha,
@@ -117,7 +119,7 @@ void RenderSystem::centerCamera(Registry &registry) const
 			                        level.levelSize);
 
 			if (registry.has<RenderComponent>(levelEntity)) {
-				auto &[layer, flipX] = registry.get<RenderComponent>(levelEntity);
+				auto &[layer, flipX, scale] = registry.get<RenderComponent>(levelEntity);
 				layer = level.playerLayer;
 			}
 

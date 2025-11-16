@@ -14,6 +14,7 @@
 #include "Engine/DebugSystem.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
 
+#include <Engine/ECS/Components/Tags/EnemyTag.hpp>
 #include <tileson.hpp>
 
 class EnemyFactory {
@@ -22,9 +23,24 @@ class EnemyFactory {
 	                                           tson::Object &enemyObj, const glm::vec2 &levelPos, tson::Map &map)
 	{
 		const auto entity = registry.create();
+		registry.registerComponent(entity, EnemyTag{});
+
+		const auto enemyTypeProp = enemyObj.getProp("enemyType");
+		EnemyType enemyType = EnemyType::Base;
+		if (enemyTypeProp != nullptr && enemyTypeProp->getType() == tson::Type::String) {
+			const auto typeStr = enemyTypeProp->getValue<std::string>();
+			if (typeStr == "Long") {
+				enemyType = EnemyType::Long;
+			} else if (typeStr == "Advanced") {
+				enemyType = EnemyType::Advanced;
+			} else if (typeStr == "Boss") {
+				enemyType = EnemyType::Boss;
+			}
+		}
 
 		const tson::Vector2 pos = enemyObj.getPosition();
 		const glm::vec2 spawn = glm::vec2(pos.x, pos.y) + levelPos;
+		const float scale = getScaleForEnemyType(enemyType);
 
 		registry.registerComponent(entity, PositionComponent{.position = spawn});
 		registry.registerComponent(entity, VelocityComponent{.velocity = {0.0f, 0.0f}});
@@ -32,9 +48,10 @@ class EnemyFactory {
 		registry.registerComponent(entity, MovementComponent{});
 		registry.registerComponent(entity, GravityComponent{});
 		registry.registerComponent(entity, GroundedComponent{});
-		registry.registerComponent(entity, CollisionComponent{6, 8, 12, 12});
-		registry.registerComponent(entity, RenderComponent{.layer = 90, .flipX = false});
+		registry.registerComponent(entity, RenderComponent{.layer = 90, .flipX = false, .scale = scale});
 		registry.registerComponent(entity, StateComponent{});
+
+		configureEnemyByType(registry, entity, enemyType, scale);
 
 		if (const auto prop = enemyObj.getProp("animations"); prop != nullptr && prop->getType() == tson::Type::File) {
 
@@ -55,5 +72,31 @@ class EnemyFactory {
 		}
 
 		return entity;
+	}
+
+  private:
+	static float getScaleForEnemyType(EnemyType type)
+	{
+		switch (type) {
+		case EnemyType::Base:
+			return 1.8f;
+		default:
+			return 1.0f;
+		}
+	}
+	static void configureEnemyByType(GameEngine::ECS::Registry &registry, const GameEngine::ECS::Entity entity,
+	                                 const EnemyType type, const float scale)
+	{
+		switch (type) {
+		case EnemyType::Base:
+			registry.registerComponent(entity, CollisionComponent{6 * scale, 10 * scale, 22 * scale, 14 * scale});
+			break;
+		case EnemyType::Long:
+			break;
+		case EnemyType::Advanced:
+			break;
+		case EnemyType::Boss:
+			break;
+		}
 	}
 };

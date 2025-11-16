@@ -57,6 +57,11 @@
          "id":4,
          "properties":[
                 {
+                 "name":"enemyType",
+                 "type":"string",
+                 "value":"Base"
+                }, 
+                {
                  "name":"state",
                  "propertytype":"State",
                  "type":"int",

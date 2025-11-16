@@ -43,8 +43,14 @@ class AnimationFactory {
 		if (string == "Falling") {
 			return AnimationType::Falling;
 		}
-		if (string =="Landing") {
+		if (string == "Landing") {
 			return AnimationType::Landing;
+		}
+		if (string == "Hurting") {
+			return AnimationType::Hurting;
+		}
+		if (string == "Dead") {
+			return AnimationType::Dead;
 		}
 
 		throw std::runtime_error("Unknown state: " + string);

@@ -102,7 +102,13 @@ class AnimationSystem {
 				case State::Attacking:
 					anim.setAnimation(AnimationType::Attacking);
 					break;
-				}
+				case State::Hurting:
+					anim.setAnimation(AnimationType::Hurting);
+					break;
+				case State::Dead:
+					anim.setAnimation(AnimationType::Dead);
+					break;
+								}
 			}
 
 			if (anim.hasAnimation(anim.getAnimation())) {
