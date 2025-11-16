@@ -70,11 +70,9 @@ struct CollisionSystem {
 		if (!SDL_GetRectIntersectionFloat(&entityBox, &tileBox, &intersection))
 			return;
 
-		const float entityCenterX = entityBox.x + entityBox.w * 0.5f;
-		const float tileCenterX = tileBox.x + tileBox.w * 0.5f;
-
 		if (intersection.w < intersection.h && intersection.w > 0) {
-			// Horizontal
+			const float entityCenterX = entityBox.x + entityBox.w * 0.5f;
+			const float tileCenterX = tileBox.x + tileBox.w * 0.5f;
 			if (entityCenterX < tileCenterX) {
 				pos.x -= intersection.w;
 			} else {
@@ -94,10 +92,9 @@ struct CollisionSystem {
 		if (!SDL_GetRectIntersectionFloat(&entityBox, &tileBox, &intersection))
 			return;
 
-		const float entityCenterY = entityBox.y + entityBox.h * 0.5f;
-		const float tileCenterY = tileBox.y + tileBox.h * 0.5f;
-
 		if (intersection.w > intersection.h && intersection.h > 0) {
+			const float entityCenterY = entityBox.y + entityBox.h * 0.5f;
+			const float tileCenterY = tileBox.y + tileBox.h * 0.5f;
 			if (entityCenterY < tileCenterY) {
 				pos.y -= intersection.h;
 			} else {
