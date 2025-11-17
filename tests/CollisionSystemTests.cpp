@@ -41,7 +41,8 @@ TEST_F(CollisionSystemTest, NoCollisionWhenApart)
 	acceleration = {100.0f, 100.0f};
 	velocity = {200.0f, 200.0f};
 
-	GameEngine::ECS::Systems::CollisionSystem::update(registry);
+	GameEngine::ECS::Systems::CollisionSystem::resolveHorizontalCollisions(dynamicEntity, registry);
+	GameEngine::ECS::Systems::CollisionSystem::resolveVerticalCollisions(dynamicEntity, registry);
 
 	EXPECT_EQ(position, glm::vec2(0.0f, 0.0f));
 	EXPECT_EQ(acceleration, glm::vec2(100.0f, 100.0f));
@@ -65,7 +66,8 @@ TEST_F(CollisionSystemTest, NoVerticalCollisionWhenApartVertical)
 	acceleration = {100.0f, 100.0f};
 	velocity = {200.0f, 200.0f};
 
-	GameEngine::ECS::Systems::CollisionSystem::update(registry);
+	GameEngine::ECS::Systems::CollisionSystem::resolveHorizontalCollisions(dynamicEntity, registry);
+	GameEngine::ECS::Systems::CollisionSystem::resolveVerticalCollisions(dynamicEntity, registry);
 
 	EXPECT_EQ(position, glm::vec2(0.0f, 0.0f));
 	EXPECT_EQ(acceleration, glm::vec2(100.0f, 100.0f));
@@ -89,7 +91,8 @@ TEST_F(CollisionSystemTest, NoHorizontalCollisionWhenApartHorizontal)
 	acceleration = {100.0f, 100.0f};
 	velocity = {200.0f, 200.0f};
 
-	GameEngine::ECS::Systems::CollisionSystem::update(registry);
+	GameEngine::ECS::Systems::CollisionSystem::resolveHorizontalCollisions(dynamicEntity, registry);
+	GameEngine::ECS::Systems::CollisionSystem::resolveVerticalCollisions(dynamicEntity, registry);
 
 	EXPECT_EQ(position, glm::vec2(0.0f, 0.0f));
 	EXPECT_EQ(acceleration, glm::vec2(100.0f, 100.0f));
@@ -113,7 +116,8 @@ TEST_F(CollisionSystemTest, HorizontalCollisionFromLeftResolvesCorrectly)
 	acceleration = {100.0f, 100.0f};
 	velocity = {200.0f, 200.0f};
 
-	GameEngine::ECS::Systems::CollisionSystem::update(registry);
+	GameEngine::ECS::Systems::CollisionSystem::resolveHorizontalCollisions(dynamicEntity, registry);
+	GameEngine::ECS::Systems::CollisionSystem::resolveVerticalCollisions(dynamicEntity, registry);
 
 	EXPECT_EQ(position, glm::vec2(0.0f, 0.0f));
 	EXPECT_EQ(acceleration, glm::vec2(0.0f, 100.0f));
@@ -137,7 +141,8 @@ TEST_F(CollisionSystemTest, HorizontalCollisionFromRightResolvesCorrectly)
 	acceleration = {100.0f, 100.0f};
 	velocity = {200.0f, 200.0f};
 
-	GameEngine::ECS::Systems::CollisionSystem::update(registry);
+	GameEngine::ECS::Systems::CollisionSystem::resolveHorizontalCollisions(dynamicEntity, registry);
+	GameEngine::ECS::Systems::CollisionSystem::resolveVerticalCollisions(dynamicEntity, registry);
 
 	EXPECT_EQ(position, glm::vec2(collisionBoxSize, 0.0f));
 	EXPECT_EQ(acceleration, glm::vec2(0.0f, 100.0f));
@@ -161,7 +166,8 @@ TEST_F(CollisionSystemTest, VerticalCollisionFromTopResolvesCorrectly)
 	acceleration = {100.0f, 100.0f};
 	velocity = {200.0f, 200.0f};
 
-	GameEngine::ECS::Systems::CollisionSystem::update(registry);
+	GameEngine::ECS::Systems::CollisionSystem::resolveHorizontalCollisions(dynamicEntity, registry);
+	GameEngine::ECS::Systems::CollisionSystem::resolveVerticalCollisions(dynamicEntity, registry);
 
 	EXPECT_EQ(position, glm::vec2(0.0f, 0.0f));
 	EXPECT_EQ(acceleration, glm::vec2(100.0f, 0.0f));
@@ -184,7 +190,8 @@ TEST_F(CollisionSystemTest, VerticalCollisionFromBottomResolvesCorrectly)
 	acceleration = {100.0f, 100.0f};
 	velocity = {200.0f, 200.0f};
 
-	GameEngine::ECS::Systems::CollisionSystem::update(registry);
+	GameEngine::ECS::Systems::CollisionSystem::resolveHorizontalCollisions(dynamicEntity, registry);
+	GameEngine::ECS::Systems::CollisionSystem::resolveVerticalCollisions(dynamicEntity, registry);
 
 	EXPECT_EQ(position, glm::vec2(0, collisionBoxSize));
 	EXPECT_EQ(acceleration, glm::vec2(100.0f, 0.0f));
@@ -210,7 +217,8 @@ TEST_F(CollisionSystemTest, TopLeftCornerCollisionResolvesCorrectly)
 	acceleration = {100.0f, 100.0f};
 	velocity = {200.0f, 200.0f};
 
-	GameEngine::ECS::Systems::CollisionSystem::update(registry);
+	GameEngine::ECS::Systems::CollisionSystem::resolveHorizontalCollisions(dynamicEntity, registry);
+	GameEngine::ECS::Systems::CollisionSystem::resolveVerticalCollisions(dynamicEntity, registry);
 
 	EXPECT_EQ(position, glm::vec2(collisionBoxSize, collisionBoxSize));
 	EXPECT_EQ(acceleration, glm::vec2(0.0f, 0.0f));
@@ -233,7 +241,8 @@ TEST_F(CollisionSystemTest, TopRightCornerCollisionResolvesCorrectly)
 	acceleration = {100.0f, 100.0f};
 	velocity = {200.0f, 200.0f};
 
-	GameEngine::ECS::Systems::CollisionSystem::update(registry);
+	GameEngine::ECS::Systems::CollisionSystem::resolveHorizontalCollisions(dynamicEntity, registry);
+	GameEngine::ECS::Systems::CollisionSystem::resolveVerticalCollisions(dynamicEntity, registry);
 
 	EXPECT_EQ(position, glm::vec2(0, collisionBoxSize));
 	EXPECT_EQ(acceleration, glm::vec2(0.0f, 0.0f));
@@ -256,7 +265,8 @@ TEST_F(CollisionSystemTest, BottomLeftCornerCollisionResolvesCorrectly)
 	acceleration = {100.0f, 100.0f};
 	velocity = {200.0f, 200.0f};
 
-	GameEngine::ECS::Systems::CollisionSystem::update(registry);
+	GameEngine::ECS::Systems::CollisionSystem::resolveHorizontalCollisions(dynamicEntity, registry);
+	GameEngine::ECS::Systems::CollisionSystem::resolveVerticalCollisions(dynamicEntity, registry);
 
 	EXPECT_EQ(position, glm::vec2(collisionBoxSize, 0));
 	EXPECT_EQ(acceleration, glm::vec2(0.0f, 0.0f));
@@ -279,7 +289,8 @@ TEST_F(CollisionSystemTest, BottomRightCornerCollisionResolvesCorrectly)
 	acceleration = {100.0f, 100.0f};
 	velocity = {200.0f, 200.0f};
 
-	GameEngine::ECS::Systems::CollisionSystem::update(registry);
+	GameEngine::ECS::Systems::CollisionSystem::resolveHorizontalCollisions(dynamicEntity, registry);
+	GameEngine::ECS::Systems::CollisionSystem::resolveVerticalCollisions(dynamicEntity, registry);
 
 	EXPECT_EQ(position, glm::vec2(0, 0));
 	EXPECT_EQ(acceleration, glm::vec2(0.0f, 0.0f));
