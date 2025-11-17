@@ -1,6 +1,8 @@
 #pragma once
 #include "Engine/ECS/Components/Core/LevelComponent.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
+#include "Engine/ECS/Components/Core/VelocityComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/JumpComponent.hpp"
 #include "Engine/ECS/Components/Render/CenterCameraComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
@@ -16,6 +18,10 @@ class MapActivationSystem {
 	void update(Registry &registry)
 	{
 		if (const auto referenceFrame = getReferenceFrame(registry); referenceFrame != previousReferenceFrame) {
+
+			const bool transitionFromBottomToTop =
+			    referenceFrame.y + referenceFrame.h < previousReferenceFrame.y + previousReferenceFrame.h;
+
 			previousReferenceFrame = referenceFrame;
 
 			// Activate/deactivate entities if they are inside/outside the current level
@@ -36,9 +42,15 @@ class MapActivationSystem {
 			}
 
 			// Set player layer correctly
-			for (auto playerView = registry.view<PlayerTag, RenderComponent>(); const auto playerEntity : playerView) {
-				auto &render = playerView.get<RenderComponent>(playerEntity);
-				render.layer = referenceFrame.playerLayer;
+			for (auto playerView = registry.view<PlayerTag, RenderComponent, VelocityComponent>();
+			     const auto playerEntity : playerView) {
+				auto &[layer, flipX] = playerView.get<RenderComponent>(playerEntity);
+				layer = referenceFrame.playerLayer;
+				if (transitionFromBottomToTop) {
+					if (auto &[velocity] = playerView.get<VelocityComponent>(playerEntity); velocity.y < 0) {
+						velocity.y = -400;
+					}
+				}
 			}
 		}
 	};
