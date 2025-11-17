@@ -101,6 +101,7 @@ GameEngine::ECS::Entity LevelFactory::createTile(const int layerIndex, const glm
 	auto positionComponent = PositionComponent{position};
 	positionComponent.position += offset;
 	positionComponent.position += levelPos;
+	positionComponent.previousPosition = positionComponent.position;
 	registry.registerComponent(entity, positionComponent);
 
 	if (tile.getAnimation().any()) {

@@ -20,6 +20,76 @@
             "width": 768,
             "x": 1696,
             "y": 576
+        },
+        {
+            "fileName": "maps/area1/level3.json",
+            "height": 384,
+            "width": 576,
+            "x": 1504,
+            "y": 1152
+        },
+        {
+            "fileName": "maps/area1/level4.json",
+            "height": 384,
+            "width": 576,
+            "x": 1120,
+            "y": 768
+        },
+        {
+            "fileName": "maps/area1/level5.json",
+            "height": 576,
+            "width": 576,
+            "x": 544,
+            "y": 768
+        },
+        {
+            "fileName": "maps/area1/level6.json",
+            "height": 384,
+            "width": 768,
+            "x": 2336,
+            "y": 1152
+        },
+        {
+            "fileName": "maps/area1/level7.json",
+            "height": 576,
+            "width": 768,
+            "x": 2464,
+            "y": 576
+        },
+        {
+            "fileName": "maps/area1/level8.json",
+            "height": 576,
+            "width": 384,
+            "x": 3232,
+            "y": 384
+        },
+        {
+            "fileName": "maps/area1/level9.json",
+            "height": 576,
+            "width": 576,
+            "x": 3616,
+            "y": 0
+        },
+        {
+            "fileName": "maps/area1/level10.json",
+            "height": 384,
+            "width": 384,
+            "x": 3232,
+            "y": -192
+        },
+        {
+            "fileName": "maps/area1/area1_boss.json",
+            "height": 576,
+            "width": 960,
+            "x": 2272,
+            "y": -192
+        },
+        {
+            "fileName": "maps/area1/level11.json",
+            "height": 576,
+            "width": 576,
+            "x": 1696,
+            "y": 0
         }
     ],
     "onlyShowAdjacentMaps": false,
