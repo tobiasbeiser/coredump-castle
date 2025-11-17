@@ -108,7 +108,7 @@ void Renderer::centerCameraOn(const glm::vec2 &position, const glm::vec2 &levelP
 void Renderer::renderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, const float scrollFactor) const
 {
 	const float repetitions = 5.0f;
-	dstRect.x -= viewport.x * scrollFactor - texture.w;
+	dstRect.x -= viewport.x * scrollFactor + texture.w;
 	dstRect.w = static_cast<float>(texture.w) * repetitions;
 	dstRect.y -= viewport.y;
 
