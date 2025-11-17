@@ -1,5 +1,4 @@
 #pragma once
-#include <iostream>
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/JumpComponent.hpp"
@@ -31,11 +30,11 @@ struct JumpSystem {
 			}
 
 			if (jumpsLeft && input.jumpPressed) {
-				velocity.y = -jumpStrength;
+				const float multiplier = !coyoteTimer.isTimeout() ? 1.0f : 0.7f;
+				velocity.y = -jumpStrength * multiplier;
 				jumpsLeft--;
 			}
 		}
-
 	}
 };
 
