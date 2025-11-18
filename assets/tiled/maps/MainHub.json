@@ -332,6 +332,18 @@
                  "width":32,
                  "x":974.5,
                  "y":911
+                }, 
+                {
+                 "gid":575,
+                 "height":34,
+                 "id":17,
+                 "name":"SavePoint",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":32,
+                 "x":800,
+                 "y":880
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -387,10 +399,10 @@
          "y":0
         }],
  "nextlayerid":12,
- "nextobjectid":17,
+ "nextobjectid":18,
  "orientation":"orthogonal",
  "renderorder":"right-down",
- "tiledversion":"1.11.2",
+ "tiledversion":"1.11.1-99-gec89c545",
  "tileheight":32,
  "tilesets":[
         {
