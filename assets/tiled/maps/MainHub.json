@@ -264,6 +264,29 @@
          "y":0
         }, 
         {
+         "draworder":"topdown",
+         "id":12,
+         "name":"Savepoints",
+         "objects":[
+                {
+                 "gid":575,
+                 "height":34,
+                 "id":18,
+                 "name":"SavePoint",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":32,
+                 "x":792,
+                 "y":880
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
          "data":[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -310,12 +333,6 @@
          "name":"Entities",
          "objects":[
                 {
-                 "id":13,
-                 "template":"..\/objects\/Player.tj",
-                 "x":116.75,
-                 "y":879
-                }, 
-                {
                  "gid":612,
                  "height":32,
                  "id":16,
@@ -334,16 +351,10 @@
                  "y":911
                 }, 
                 {
-                 "gid":575,
-                 "height":34,
-                 "id":17,
-                 "name":"SavePoint",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":32,
-                 "x":800,
-                 "y":880
+                 "id":19,
+                 "template":"..\/objects\/Player.tj",
+                 "x":116.75,
+                 "y":887
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -398,8 +409,8 @@
          "x":0,
          "y":0
         }],
- "nextlayerid":12,
- "nextobjectid":18,
+ "nextlayerid":13,
+ "nextobjectid":22,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.1-99-gec89c545",

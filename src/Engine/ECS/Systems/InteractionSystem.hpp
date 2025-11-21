@@ -11,7 +11,6 @@
 #include "Engine/GameEngine.hpp"
 #include "Engine/ECS/Components/Core/SavePointComponent.hpp"
 
-#include <iostream>
 
 namespace GameEngine::ECS::Systems {
 
