@@ -10,6 +10,7 @@
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/GameEngine.hpp"
 #include "Engine/ECS/Components/Core/SavePointComponent.hpp"
+#include "Engine/FileIO/FileSaveStorage.hpp"
 
 
 namespace GameEngine::ECS::Systems {
@@ -61,7 +62,8 @@ class InteractionSystem {
 						}
 					}
 					if (registry.has<SavePointComponent>(interactableObject)) {
-						SaveSystem::saveGame(registry);
+						FileSaveStorage fileStorage;
+						SaveSystem::saveGame(registry, fileStorage);
 					}
 				}
 			}
