@@ -1,7 +1,7 @@
 #pragma once
-#include "SaveSystem.hpp"
 #include "Engine/ECS/Components/Core/PortalComponent.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
+#include "Engine/ECS/Components/Core/SavePointComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InteractionComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InventoryComponent.hpp"
@@ -9,9 +9,7 @@
 #include "Engine/ECS/Components/Gameplay/LockComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/GameEngine.hpp"
-#include "Engine/ECS/Components/Core/SavePointComponent.hpp"
-#include "Engine/FileIO/FileSaveStorage.hpp"
-
+#include "SaveSystem.hpp"
 
 namespace GameEngine::ECS::Systems {
 
@@ -62,13 +60,12 @@ class InteractionSystem {
 						}
 					}
 					if (registry.has<SavePointComponent>(interactableObject)) {
-						FileSaveStorage fileStorage;
-						SaveSystem::saveGame(registry, fileStorage);
+						// hardcode save file name until MainMenu is implemented
+						game.getSaveSystem().saveGame(registry, "SaveGame.json");
 					}
 				}
 			}
 		}
 	}
-
 };
 } // namespace GameEngine::ECS::Systems

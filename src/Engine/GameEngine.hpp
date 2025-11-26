@@ -1,5 +1,6 @@
 #pragma once
 #include "ECS/Registry.hpp"
+#include "ECS/Systems/SaveSystem.hpp"
 #include "Graphics/Renderer.hpp"
 #include "Graphics/TextureManager.hpp"
 #include "Input/InputManager.hpp"
@@ -52,6 +53,7 @@ class GameEngine {
 	ECS::Registry &getRegistry() { return registry; }
 	InputManager &getInputManager() { return inputManager; }
 	TextureManager &getTextureManager() { return textureManager; }
+	ECS::Systems::SaveSystem &getSaveSystem() { return saveSystem; }
 
   private:
 	std::vector<std::unique_ptr<GameState>> states{};
@@ -61,5 +63,6 @@ class GameEngine {
 	Renderer renderer;
 	InputManager inputManager;
 	TextureManager textureManager;
+	ECS::Systems::SaveSystem saveSystem;
 };
 } // namespace GameEngine

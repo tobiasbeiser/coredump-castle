@@ -1,7 +1,6 @@
 #pragma once
 
-#include <nlohmann/json_fwd.hpp>
-using json = nlohmann::json;
+#include <nlohmann/json.hpp>
 
 namespace GameEngine::ECS {
 
@@ -13,8 +12,8 @@ class ISaveStorage {
 	ISaveStorage &operator=(ISaveStorage &&) = delete;
 	virtual ~ISaveStorage() = default;
 
-	virtual void write(const json &data) = 0;
-	[[nodiscard]] virtual json read() const = 0;
+	virtual void write(const nlohmann::json &data, const std::string &fileName) = 0;
+	[[nodiscard]] virtual nlohmann::json read(const std::string &fileName) const = 0;
 
   protected:
 	ISaveStorage() = default;

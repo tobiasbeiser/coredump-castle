@@ -1,12 +1,13 @@
 #include "GameEngine.hpp"
 #include "../Game/States/PlayState.hpp"
 #include "DebugSystem.hpp"
+#include "FileIO/FileSaveStorage.hpp"
 #include "GameState.hpp"
 
 namespace GameEngine {
 
 GameEngine::GameEngine(const std::string &title, Resolution resolution)
-    : renderer(title, resolution), textureManager(renderer){};
+    : renderer(title, resolution), textureManager(renderer), saveSystem(std::make_unique<ECS::FileSaveStorage>()){};
 
 GameEngine::~GameEngine()
 {
