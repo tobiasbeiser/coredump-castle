@@ -22,23 +22,19 @@ using json = nlohmann::json;
 
 class FakeSaveStorage final : public ISaveStorage {
   public:
-	void write(const json &data, const std::string &fileName) override
+	void write(const json &data) override
 	{
 		hasData = true;
-		store[fileName] = data;
+		store = data;
 	}
 
-	[[nodiscard]] json read(const std::string &fileName) const override
+	[[nodiscard]] json read() const override
 	{
-		const auto it = store.find(fileName);
-		if (it == store.end()) {
-			throw std::runtime_error("No data written for file " + fileName);
-		}
-		return it->second;
+		return store;
 	}
 
   private:
-	std::unordered_map<std::string, json> store{};
+	json store{};
 	bool hasData{false};
 };
 
@@ -72,10 +68,9 @@ TEST_F(SaveSystemTest, SaveGame_ProducesExpectedJson)
 	const auto *storagePtr = storage.get();
 	const SaveSystem saveSystem{std::move(storage)};
 
-	const std::string fileName{"SaveGame.json"};
-	saveSystem.saveGame(registry, fileName);
+	saveSystem.saveGame(registry);
 
-	const json data = storagePtr->read(fileName);
+	const json data = storagePtr->read();
 
 	EXPECT_EQ(2, data.at("maxJumps").get<int>());
 	EXPECT_FLOAT_EQ(1.0F, data.at("positionX").get<float>());
@@ -92,7 +87,6 @@ TEST_F(SaveSystemTest, LoadSavedGame_RestoresPlayerStateFromJson)
 	auto *storagePtr = storage.get();
 	const SaveSystem saveSystem{std::move(storage)};
 
-	const std::string fileName{"SaveGame.json"};
 
 	json saved;
 	saved["maxJumps"] = 7;
@@ -100,7 +94,7 @@ TEST_F(SaveSystemTest, LoadSavedGame_RestoresPlayerStateFromJson)
 	saved["positionY"] = -3.0F;
 	saved["keys"] = std::vector<int>{1, 2, 3};
 
-	storagePtr->write(saved, fileName);
+	storagePtr->write(saved);
 
 	auto playerView = registry.view<PlayerTag>();
 	const Entity entity = playerView.at(0U);
@@ -114,7 +108,7 @@ TEST_F(SaveSystemTest, LoadSavedGame_RestoresPlayerStateFromJson)
 	auto &inventoryComponent = playerView.get<InventoryComponent>(entity);
 	inventoryComponent.keys.clear();
 
-	saveSystem.loadSavedGame(registry, fileName);
+	saveSystem.loadSavedGame(registry);
 
 	const auto &jumpComponentAfter = playerView.get<JumpComponent>(entity);
 	EXPECT_EQ(7, jumpComponentAfter.maxJumps);
@@ -134,7 +128,6 @@ TEST_F(SaveSystemTest, LoadSavedGame_RemovesCollectedLocksAndKeys)
 	auto *storagePtr = storage.get();
 	const SaveSystem saveSystem{std::move(storage)};
 
-	const std::string fileName{"SaveGame.json"};
 
 	json saved;
 	saved["maxJumps"] = 2;
@@ -142,7 +135,7 @@ TEST_F(SaveSystemTest, LoadSavedGame_RemovesCollectedLocksAndKeys)
 	saved["positionY"] = 3.3F;
 	saved["keys"] = std::vector<int>{9, 4, 5, 2, 1, 8};
 
-	storagePtr->write(saved, fileName);
+	storagePtr->write(saved);
 
 	const Entity lock1 = registry.create();
 	registry.registerComponent<LockComponent>(lock1, LockComponent{.lockId = 4});
@@ -156,7 +149,7 @@ TEST_F(SaveSystemTest, LoadSavedGame_RemovesCollectedLocksAndKeys)
 	const Entity key2 = registry.create();
 	registry.registerComponent<KeyComponent>(key2, KeyComponent{.id = 42});
 
-	saveSystem.loadSavedGame(registry, fileName);
+	saveSystem.loadSavedGame(registry);
 
 	auto lockView = registry.view<LockComponent>();
 	std::vector<int> remainingLocks;
@@ -189,8 +182,7 @@ TEST_F(SaveSystemTest, SaveGame_ThrowsIfMultiplePlayerEntitiesExist)
 	auto storage = std::make_unique<FakeSaveStorage>();
 	const SaveSystem saveSystem{std::move(storage)};
 
-	const std::string fileName{"SaveGame.json"};
-	EXPECT_THROW(saveSystem.saveGame(registry, fileName), std::runtime_error);
+	EXPECT_THROW(saveSystem.saveGame(registry), std::runtime_error);
 }
 
 TEST_F(SaveSystemTest, LoadSavedGame_ThrowsIfMultiplePlayerEntitiesExist)
@@ -199,19 +191,18 @@ TEST_F(SaveSystemTest, LoadSavedGame_ThrowsIfMultiplePlayerEntitiesExist)
 	auto *storagePtr = storage.get();
 	const SaveSystem saveSystem{std::move(storage)};
 
-	const std::string fileName{"SaveGame.json"};
 
 	json saved;
 	saved["maxJumps"] = 2;
 	saved["positionX"] = 1.0F;
 	saved["positionY"] = 3.3F;
 	saved["keys"] = std::vector<int>{};
-	storagePtr->write(saved, fileName);
+	storagePtr->write(saved);
 
 	const Entity secondPlayer = registry.create();
 	registry.registerComponent<PlayerTag>(secondPlayer, PlayerTag{});
 
-	EXPECT_THROW(saveSystem.loadSavedGame(registry, fileName), std::runtime_error);
+	EXPECT_THROW(saveSystem.loadSavedGame(registry), std::runtime_error);
 }
 
 } // namespace

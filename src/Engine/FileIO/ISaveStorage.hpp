@@ -12,8 +12,8 @@ class ISaveStorage {
 	ISaveStorage &operator=(ISaveStorage &&) = delete;
 	virtual ~ISaveStorage() = default;
 
-	virtual void write(const nlohmann::json &data, const std::string &fileName) = 0;
-	[[nodiscard]] virtual nlohmann::json read(const std::string &fileName) const = 0;
+	virtual void write(const nlohmann::json &data) = 0;
+	[[nodiscard]] virtual nlohmann::json read() const = 0;
 
   protected:
 	ISaveStorage() = default;

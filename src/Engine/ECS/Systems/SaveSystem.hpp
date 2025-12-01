@@ -18,16 +18,16 @@ class SaveSystem {
   public:
 	explicit SaveSystem(std::unique_ptr<ISaveStorage> storage) : saveStorage{std::move(storage)} {}
 
-	void saveGame(Registry &registry, const std::string &fileName) const
+	void saveGame(Registry &registry) const
 	{
 		const json saveData = buildSaveData(registry);
 
-		saveStorage->write(saveData, fileName);
+		saveStorage->write(saveData);
 	}
 
-	void loadSavedGame(Registry &registry, const std::string &fileName) const
+	void loadSavedGame(Registry &registry) const
 	{
-		const json savedGameData = saveStorage->read(fileName);
+		const json savedGameData = saveStorage->read();
 		reinitializePlayerGameData(registry, savedGameData);
 	}
 

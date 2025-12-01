@@ -60,8 +60,7 @@ class InteractionSystem {
 						}
 					}
 					if (registry.has<SavePointComponent>(interactableObject)) {
-						// hardcode save file name until MainMenu is implemented
-						game.getSaveSystem().saveGame(registry, "SaveGame.json");
+						game.getSaveSystem().saveGame(registry);
 					}
 				}
 			}
