@@ -44,23 +44,20 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 		return;
 	}
 
-	accumulator += deltaTime;
-
 	mapActivationSystem.update(game.getRegistry());
 
 	inputSystem.update(game.getRegistry());
 
-	ECS::Systems::JumpSystem::update(game.getRegistry());
+	ECS::Systems::JumpSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::MovementSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::AttackSystem::update(game.getRegistry(), deltaTime);
 
+	accumulator += deltaTime;
 	while (accumulator >= stepSize) {
 		accumulator -= stepSize;
 
 		ECS::Systems::PatrolSystem::update(game.getRegistry(), stepSize);
 		ECS::Systems::PhysicsSystem::update(game.getRegistry(), stepSize);
-
-		ECS::Systems::CollisionSystem::update(game.getRegistry());
 	}
 
 	ECS::Systems::StateSystem::update(game.getRegistry());

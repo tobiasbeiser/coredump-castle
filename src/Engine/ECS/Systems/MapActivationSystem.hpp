@@ -1,7 +1,10 @@
 #pragma once
 #include "Engine/ECS/Components/Core/LevelComponent.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
+#include "Engine/ECS/Components/Core/VelocityComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/JumpComponent.hpp"
 #include "Engine/ECS/Components/Render/CenterCameraComponent.hpp"
+#include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
 #include "Engine/ECS/Components/Tags/InactiveTag.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
@@ -15,7 +18,13 @@ class MapActivationSystem {
 	void update(Registry &registry)
 	{
 		if (const auto referenceFrame = getReferenceFrame(registry); referenceFrame != previousReferenceFrame) {
+
+			const bool transitionFromBottomToTop =
+			    referenceFrame.y + referenceFrame.h < previousReferenceFrame.y + previousReferenceFrame.h;
+
 			previousReferenceFrame = referenceFrame;
+
+			// Activate/deactivate entities if they are inside/outside the current level
 			for (auto view = registry.view<PositionComponent>().exclude<PlayerTag>(); const auto entity : view) {
 				if (auto &[position, previousPosition] = registry.get<PositionComponent>(entity);
 				    position.x >= static_cast<float>(referenceFrame.x)
@@ -31,12 +40,25 @@ class MapActivationSystem {
 					registry.registerComponent(entity, InactiveTag{});
 				}
 			}
+
+			// Set player layer correctly
+			for (auto playerView = registry.view<PlayerTag, RenderComponent, VelocityComponent>();
+			     const auto playerEntity : playerView) {
+				auto &[layer, flipX] = playerView.get<RenderComponent>(playerEntity);
+				layer = referenceFrame.playerLayer;
+				if (transitionFromBottomToTop) {
+					if (auto &[velocity] = playerView.get<VelocityComponent>(playerEntity); velocity.y < 0) {
+						velocity.y = -400;
+					}
+				}
+			}
 		}
 	};
 
   private:
 	struct ReferenceFrame {
 		int x, y, w, h;
+		int playerLayer;
 		auto operator<=>(const ReferenceFrame &) const = default;
 	};
 
@@ -62,7 +84,8 @@ class MapActivationSystem {
 
 				if (cameraObjInLevelPos && cameraObjInLevelSizeX && cameraObjInLevelSizeY) {
 					return ReferenceFrame(static_cast<int>(posLvl.position.x), static_cast<int>(posLvl.position.y),
-					                      static_cast<int>(level.levelSize.x), static_cast<int>(level.levelSize.y));
+					                      static_cast<int>(level.levelSize.x), static_cast<int>(level.levelSize.y),
+					                      level.playerLayer);
 				}
 			}
 		}

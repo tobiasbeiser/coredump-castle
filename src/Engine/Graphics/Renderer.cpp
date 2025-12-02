@@ -61,6 +61,8 @@ void Renderer::endFrame() const
 {
 	for (auto &debug : DebugSystem::instance().debugRects) {
 		SDL_SetRenderDrawColor(renderer.get(), debug.color.r, debug.color.g, debug.color.b, debug.color.a);
+		debug.rect.x -= viewport.x;
+		debug.rect.y -= viewport.y;
 		SDL_RenderRect(renderer.get(), &debug.rect);
 	}
 
@@ -85,16 +87,16 @@ void Renderer::centerCameraOn(const glm::vec2 &position, const glm::vec2 &levelP
 	viewport.x = newViewportXCoordinate;
 	viewport.y = newViewportYCoordinate;
 
-	if (levelPos.x + levelSize.x <= viewport.w) {
+	if (levelSize.x <= viewport.w) {
 		// Level is smaller than viewport -> center level horizontally
-		viewport.x = (levelPos.x + levelSize.x - viewport.w) / 2.0f;
+		viewport.x = levelPos.x + (levelSize.x - viewport.w) / 2;
 	} else {
 		viewport.x = std::clamp(newViewportXCoordinate, levelPos.x, levelSize.x + levelPos.x - viewport.w);
 	}
 
-	if (levelPos.y + levelSize.y <= viewport.h) {
+	if (levelSize.y <= viewport.h) {
 		// Level is smaller than viewport -> center level vertically
-		viewport.y = (levelPos.y + levelSize.y - viewport.h) / 2.0f;
+		viewport.y = levelPos.y + (levelSize.y - viewport.h) / 2;
 	} else {
 		viewport.y = std::clamp(newViewportYCoordinate, levelPos.y, levelSize.y + levelPos.y - viewport.h);
 	}
@@ -106,7 +108,7 @@ void Renderer::centerCameraOn(const glm::vec2 &position, const glm::vec2 &levelP
 void Renderer::renderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, const float scrollFactor) const
 {
 	const float repetitions = 5.0f;
-	dstRect.x -= viewport.x * scrollFactor;
+	dstRect.x -= viewport.x * scrollFactor + texture.w;
 	dstRect.w = static_cast<float>(texture.w) * repetitions;
 	dstRect.y -= viewport.y;
 

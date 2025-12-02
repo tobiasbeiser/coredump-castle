@@ -48,17 +48,14 @@ class PlayerFactory {
 		registry.registerComponent(e, CombatCollisionComponent{.hitbox = {19, 25, 21, 32}});
 
 		if (const auto prop = player.getProp("animations"); prop != nullptr && prop->getType() == tson::Type::File) {
-
 			const std::filesystem::path basePath = "assets/tiled/tilesets/";
 			const auto tilesetPath = basePath / prop->getValue<std::filesystem::path>();
 			tson::Tileset tileset;
-
 			tson::Json11 json;
 			json.parse(tilesetPath);
 			tileset.parse(json, &map); // map is required to read project enums
 
 			const AnimationFactory animFactory(registry, texMgr);
-
 			for (auto tile : tileset.getTiles()) {
 				if (auto anim = tile.getAnimation(); anim.any()) {
 					animFactory.loadAnimation(&tile, e);
@@ -68,7 +65,7 @@ class PlayerFactory {
 
 		registry.registerComponent(e, InputComponent{});
 		registry.registerComponent(e, MovementComponent{});
-		registry.registerComponent(e, JumpComponent{});
+		registry.registerComponent(e, JumpComponent{.maxJumps = 2, .coyoteTimer = {0.08f}});
 
 		registry.registerComponent(e, InteractionComponent{19, 25, 21, 32});
 		return e;

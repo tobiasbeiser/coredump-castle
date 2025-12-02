@@ -1,86 +1,118 @@
 #pragma once
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
+#include "Engine/ECS/Components/Physics/AccelerationComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
+#include "Engine/ECS/Components/Tags/InactiveTag.hpp"
 #include "Engine/ECS/Registry.hpp"
+#include "Engine/ECS/View.hpp"
 #include <SDL3/SDL_rect.h>
 
 namespace GameEngine::ECS::Systems {
 struct CollisionSystem {
-	static void update(Registry &registry)
+
+	static void resolveHorizontalCollisions(const Entity entity, Registry &registry)
 	{
-		// Get all entities that move (dynamic)
-		auto dynamicView =
-		    registry.view<PositionComponent, VelocityComponent, CollisionComponent>().exclude<InactiveTag>();
-		// Get all static colliders (tiles)
-		auto staticView = registry.view<PositionComponent, CollisionComponent>().exclude<InactiveTag>();
-		for (const auto dynEntity : dynamicView) {
+		auto &[position, previousPosition] = registry.get<PositionComponent>(entity);
+		auto &[velocity] = registry.get<VelocityComponent>(entity);
+		auto &[acceleration] = registry.get<AccelerationComponent>(entity);
+		const auto &[collisionBox] = registry.get<CollisionComponent>(entity);
 
-			auto &[position, previousPosition] = dynamicView.get<PositionComponent>(dynEntity);
-			auto &[velocity] = dynamicView.get<VelocityComponent>(dynEntity);
-			const auto &[collisionBox] = dynamicView.get<CollisionComponent>(dynEntity);
+		for (auto staticView = registry.view<PositionComponent, CollisionComponent>().exclude<InactiveTag>();
+		     const auto staticEntity : staticView) {
+			if (staticEntity == entity)
+				continue;
 
-			SDL_FRect entityBox{position.x + collisionBox.x, position.y + collisionBox.y, collisionBox.w,
-			                    collisionBox.h};
+			const auto &[staticPosition, staticPreviousPosition] = staticView.get<PositionComponent>(staticEntity);
+			const auto &[staticCollisionBox] = staticView.get<CollisionComponent>(staticEntity);
 
-			bool grounded = false;
+			SDL_FRect tileBox{staticPosition.x + staticCollisionBox.x, staticPosition.y + staticCollisionBox.y,
+			                  staticCollisionBox.w, staticCollisionBox.h};
 
-			// --- Iterate over collidable tiles/entities ---
-			for (const auto staticEntity : staticView) {
-				if (staticEntity == dynEntity)
-					continue;
+			resolveHorizontalCollision(collisionBox, tileBox, position, velocity, acceleration);
+		}
+	}
 
-				const auto &[staticPosition, staticPreviousPosition] = staticView.get<PositionComponent>(staticEntity);
-				const auto &[staticCollisionBox] = staticView.get<CollisionComponent>(staticEntity);
+	static void resolveVerticalCollisions(const Entity entity, Registry &registry)
+	{
+		auto &[position, previousPosition] = registry.get<PositionComponent>(entity);
+		auto &[velocity] = registry.get<VelocityComponent>(entity);
+		auto &[acceleration] = registry.get<AccelerationComponent>(entity);
+		const auto &[collisionBox] = registry.get<CollisionComponent>(entity);
 
-				SDL_FRect tileBox{staticPosition.x + staticCollisionBox.x, staticPosition.y + staticCollisionBox.y,
-				                  staticCollisionBox.w, staticCollisionBox.h};
+		bool grounded = false;
 
-				resolveAabbCollision(entityBox, tileBox, position, velocity);
-				previousPosition = position;
+		for (auto staticView = registry.view<PositionComponent, CollisionComponent>().exclude<InactiveTag>();
+		     const auto staticEntity : staticView) {
+			if (staticEntity == entity)
+				continue;
 
-				if (registry.has<GroundedComponent>(dynEntity)) {
-					SDL_FRect sensorBox{position.x + collisionBox.x, position.y + collisionBox.y + collisionBox.h,
-					                    collisionBox.w, 1};
+			const auto &[staticPosition, staticPreviousPosition] = staticView.get<PositionComponent>(staticEntity);
+			const auto &[staticCollisionBox] = staticView.get<CollisionComponent>(staticEntity);
 
-					SDL_FRect sensorIntersection;
-					if (SDL_GetRectIntersectionFloat(&sensorBox, &tileBox, &sensorIntersection)) {
-						if (sensorIntersection.w > sensorIntersection.h)
-							grounded = true;
-					}
-					auto &[cGrounded] = registry.get<GroundedComponent>(dynEntity);
-					cGrounded = grounded;
+			SDL_FRect tileBox{staticPosition.x + staticCollisionBox.x, staticPosition.y + staticCollisionBox.y,
+			                  staticCollisionBox.w, staticCollisionBox.h};
+
+			resolveVerticalCollision(collisionBox, tileBox, position, velocity, acceleration);
+
+			if (registry.has<GroundedComponent>(entity)) {
+				SDL_FRect sensorBox{position.x + collisionBox.x, position.y + collisionBox.y + collisionBox.h,
+				                    collisionBox.w, 1};
+
+				SDL_FRect sensorIntersection;
+				if (SDL_GetRectIntersectionFloat(&sensorBox, &tileBox, &sensorIntersection)) {
+					if (sensorIntersection.w > sensorIntersection.h)
+						grounded = true;
 				}
+				auto &[cGrounded] = registry.get<GroundedComponent>(entity);
+				cGrounded = grounded;
 			}
 		}
 	}
 
   private:
-	static void resolveAabbCollision(const SDL_FRect &entityBox, const SDL_FRect &tileBox, glm::vec2 &pos,
-	                                 glm::vec2 &vel)
+	static void resolveHorizontalCollision(const SDL_FRect &collisionA, const SDL_FRect &tileBox, glm::vec2 &pos,
+	                                       glm::vec2 &vel, glm::vec2 &acc)
 	{
 		SDL_FRect intersection{};
-		if (SDL_GetRectIntersectionFloat(&entityBox, &tileBox, &intersection)) {
-			if (intersection.w < intersection.h) {
-				// Horizontal
-				if (vel.x > 0) {
-					pos.x -= intersection.w;
-					vel.x = 0;
-				} else if (vel.x < 0) {
-					pos.x += intersection.w;
-					vel.x = 0;
-				}
+		const SDL_FRect entityBox{pos.x + collisionA.x, pos.y + collisionA.y, collisionA.w, collisionA.h};
+
+		if (!SDL_GetRectIntersectionFloat(&entityBox, &tileBox, &intersection))
+			return;
+
+		if (intersection.w < intersection.h && intersection.w > 0) {
+			const float entityCenterX = entityBox.x + entityBox.w * 0.5f;
+			const float tileCenterX = tileBox.x + tileBox.w * 0.5f;
+			if (entityCenterX < tileCenterX) {
+				pos.x -= intersection.w;
 			} else {
-				// Vertical
-				if (vel.y > 0) {
-					pos.y -= intersection.h;
-					vel.y = 0;
-				} else if (vel.y < 0) {
-					pos.y += intersection.h;
-					vel.y = 0;
-				}
+				pos.x += intersection.w;
 			}
+			vel.x = 0;
+			acc.x = 0;
+		}
+	}
+
+	static void resolveVerticalCollision(const SDL_FRect &collisionA, const SDL_FRect &tileBox, glm::vec2 &pos,
+	                                     glm::vec2 &vel, glm::vec2 &acc)
+	{
+		SDL_FRect intersection{};
+		const SDL_FRect entityBox{pos.x + collisionA.x, pos.y + collisionA.y, collisionA.w, collisionA.h};
+
+		if (!SDL_GetRectIntersectionFloat(&entityBox, &tileBox, &intersection))
+			return;
+
+		if (intersection.w > intersection.h && intersection.h > 0) {
+			const float entityCenterY = entityBox.y + entityBox.h * 0.5f;
+			const float tileCenterY = tileBox.y + tileBox.h * 0.5f;
+			if (entityCenterY < tileCenterY) {
+				pos.y -= intersection.h;
+			} else {
+				pos.y += intersection.h;
+			}
+			vel.y = 0;
+			acc.y = 0;
 		}
 	}
 };
