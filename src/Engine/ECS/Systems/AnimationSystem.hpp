@@ -3,6 +3,8 @@
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Render/AnimationComponent.hpp"
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
+#include "Engine/ECS/Components/Tags/EnemyTag.hpp"
+#include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 
 namespace GameEngine::ECS::Systems {
@@ -51,6 +53,8 @@ class AnimationSystem {
 		case AnimationType::JumpStart:
 		case AnimationType::FlyingUp:
 		case AnimationType::Attacking:
+		case AnimationType::Hurting:
+		case AnimationType::Dead:
 		case AnimationType::Landing:
 			anim.setAnimation(AnimationType::JumpReload);
 			break;
@@ -84,31 +88,64 @@ class AnimationSystem {
 
 			// Determine current animation from state
 			if (registry.has<StateComponent>(entity)) {
-
-				switch (const auto &[state] = registry.get<StateComponent>(entity); state) {
-
-				case State::Idle:
-					handleLanding(anim, AnimationType::Idle);
-					break;
-				case State::Walking:
-					handleLanding(anim, AnimationType::Walking);
-					break;
-				case State::Jumping:
-					handleJumping(anim);
-					break;
-				case State::Falling:
-					handleFalling(anim);
-					break;
-				case State::Attacking:
-					anim.setAnimation(AnimationType::Attacking);
-					break;
-				case State::Hurting:
-					anim.setAnimation(AnimationType::Hurting);
-					break;
-				case State::Dead:
-					anim.setAnimation(AnimationType::Dead);
-					break;
-								}
+				const auto &[state] = registry.get<StateComponent>(entity);
+				if (registry.has<PlayerTag>(entity)) {
+					switch (state) {
+					case State::Idle:
+						handleLanding(anim, AnimationType::Idle);
+						break;
+					case State::Walking:
+						handleLanding(anim, AnimationType::Walking);
+						break;
+					case State::Jumping:
+						handleJumping(anim);
+						break;
+					case State::Falling:
+						handleFalling(anim);
+						break;
+					case State::Attacking:
+						anim.setAnimation(AnimationType::Attacking);
+						break;
+					case State::Hurting:
+						anim.setAnimation(AnimationType::Hurting);
+						break;
+					case State::Dead:
+						anim.setAnimation(AnimationType::Dead);
+						break;
+					}
+				} else if (registry.has<EnemyTag>(entity)) {
+					switch (state) {
+					case State::Idle:
+						if (anim.hasAnimation(AnimationType::Idle)) {
+							anim.setAnimation(AnimationType::Idle);
+						}
+						break;
+					case State::Walking:
+						if (anim.hasAnimation(AnimationType::Walking)) {
+							anim.setAnimation(AnimationType::Walking);
+						}
+						break;
+					case State::Attacking:
+						if (anim.hasAnimation(AnimationType::Attacking)) {
+							anim.setAnimation(AnimationType::Attacking);
+						}
+						break;
+					case State::Hurting:
+						if (anim.hasAnimation(AnimationType::Hurting)) {
+							anim.setAnimation(AnimationType::Hurting);
+						}
+						break;
+					case State::Dead:
+						if (anim.hasAnimation(AnimationType::Dead)) {
+							anim.setAnimation(AnimationType::Dead);
+						}
+						break;
+					case State::Jumping:
+					case State::Falling:
+						// Enemies don't have these states typically
+						break;
+					}
+				}
 			}
 
 			if (anim.hasAnimation(anim.getAnimation())) {

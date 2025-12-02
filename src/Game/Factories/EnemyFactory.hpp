@@ -13,7 +13,9 @@
 #include "AnimationFactory.hpp"
 #include "Engine/DebugSystem.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
+#include <Engine/ECS/Components/Gameplay/Combat/CombatCollisionComponent.hpp>
 
+#include <Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp>
 #include <Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp>
 #include <Engine/ECS/Components/Tags/EnemyTag.hpp>
 #include <tileson.hpp>
@@ -51,6 +53,7 @@ class EnemyFactory {
 		registry.registerComponent(entity, GroundedComponent{});
 		registry.registerComponent(entity, RenderComponent{.layer = 90, .flipX = false, .scale = scale});
 		registry.registerComponent(entity, StateComponent{});
+		registry.registerComponent(entity, AttackComponent{.attackTimer = {0.6f}, .attackCoolDownTimer = {0.2f}});
 
 		configureEnemyByType(registry, entity, enemyType, scale);
 
@@ -102,6 +105,8 @@ class EnemyFactory {
 		switch (type) {
 		case EnemyType::Base:
 			registry.registerComponent(entity, CollisionComponent{6 * scale, 10 * scale, 22 * scale, 14 * scale});
+			registry.registerComponent(
+			    entity, CombatCollisionComponent{.hitbox = {6 * scale, 10 * scale, 22 * scale, 14 * scale}});
 			break;
 		case EnemyType::Long:
 			break;

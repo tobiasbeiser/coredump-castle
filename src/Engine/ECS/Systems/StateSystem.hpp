@@ -5,6 +5,7 @@
 #include "Engine/ECS/Registry.hpp"
 #include <Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp>
 #include <Engine/ECS/Components/Render/AnimationComponent.hpp>
+#include <Engine/ECS/Systems/CombatSystem/AttackSystem.hpp>
 
 namespace GameEngine::ECS::Systems {
 class StateSystem {
