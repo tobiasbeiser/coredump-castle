@@ -6,8 +6,8 @@
 
 namespace GameEngine {
 
-GameEngine::GameEngine(const std::string &title, Resolution resolution)
-    : renderer(title, resolution), textureManager(renderer), saveSystem(std::make_unique<ECS::FileSaveStorage>("test.json")){};
+GameEngine::GameEngine(const std::string &title, const Resolution resolution)
+    : renderer(title, resolution), textureManager(renderer), saveSystem(std::make_unique<ECS::FileSaveStorage>()){};
 
 GameEngine::~GameEngine()
 {

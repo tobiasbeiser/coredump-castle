@@ -10,7 +10,7 @@
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Systems/SaveSystem.hpp"
 
-#include <SDL3/SDL_stdinc.h>
+
 
 namespace {
 
@@ -24,7 +24,6 @@ class FakeSaveStorage final : public ISaveStorage {
   public:
 	void write(const json &data) override
 	{
-		hasData = true;
 		store = data;
 	}
 
@@ -33,9 +32,31 @@ class FakeSaveStorage final : public ISaveStorage {
 		return store;
 	}
 
+	[[nodiscard]] std::vector<std::string> getSavesNames() const override
+	{
+		return existingSaveNames;
+	}
+
+	void setSaveName(std::string saveName) override
+	{
+		currentSaveName = std::move(saveName);
+	}
+
+	[[nodiscard]] const json& getStoredData() const { return store; }
+
+	// Helper to inspect the currently active save name
+	[[nodiscard]] const std::string& getCurrentSaveName() const { return currentSaveName; }
+
+	// Helper to inject fake file existence
+	void setExistingSaveNames(std::vector<std::string> names) {
+		existingSaveNames = std::move(names);
+	}
+
+
   private:
 	json store{};
-	bool hasData{false};
+	std::string currentSaveName;
+	std::vector<std::string> existingSaveNames;
 };
 
 class SaveSystemTest : public ::testing::Test {
@@ -205,4 +226,70 @@ TEST_F(SaveSystemTest, LoadSavedGame_ThrowsIfMultiplePlayerEntitiesExist)
 	EXPECT_THROW(saveSystem.loadSavedGame(registry), std::runtime_error);
 }
 
+TEST_F(SaveSystemTest, GetSaves_ReturnsStorageList)
+{
+    auto storage = std::make_unique<FakeSaveStorage>();
+    auto *storagePtr = storage.get();
+
+    const std::vector<std::string> expectedSaves = {"Save1", "Save2", "AutoSave"};
+    storagePtr->setExistingSaveNames(expectedSaves);
+
+    const SaveSystem saveSystem{std::move(storage)};
+
+    const auto result = saveSystem.getSaves();
+    EXPECT_EQ(expectedSaves, result);
+}
+
+TEST_F(SaveSystemTest, SetSaveName_PropagatesToStorage)
+{
+    auto storage = std::make_unique<FakeSaveStorage>();
+    const auto *storagePtr = storage.get();
+    const SaveSystem saveSystem{std::move(storage)};
+
+    const std::string newName = "MyCoolSave";
+    saveSystem.setSaveName(newName);
+
+    EXPECT_EQ(newName, storagePtr->getCurrentSaveName());
+}
+
+TEST_F(SaveSystemTest, CleanGameSave_SetsNameAndWritesEmptyJson)
+{
+    auto storage = std::make_unique<FakeSaveStorage>();
+    auto *storagePtr = storage.get();
+    const SaveSystem saveSystem{std::move(storage)};
+
+    // Pre-populate storage with something random to ensure it gets cleared
+    json junkData;
+    junkData["foo"] = "bar";
+    storagePtr->write(junkData);
+
+    const std::string targetSaveName = "Slot1";
+    saveSystem.cleanGameSave(targetSaveName);
+
+    EXPECT_EQ(targetSaveName, storagePtr->getCurrentSaveName());
+
+    const json stored = storagePtr->getStoredData();
+    EXPECT_TRUE(stored.empty());
+}
+
+TEST_F(SaveSystemTest, InitNewSave_GeneratesSequentialNameAndClearsData)
+{
+    auto storage = std::make_unique<FakeSaveStorage>();
+    auto *storagePtr = storage.get();
+
+    // Simulate existence of 3 files (0, 1, 2)
+    // The System logic is: getSavesNames().size().
+    storagePtr->setExistingSaveNames({"SaveA", "SaveB", "SaveC"});
+
+    const SaveSystem saveSystem{std::move(storage)};
+
+    saveSystem.initNewSave();
+
+    // Size was 3, so expected name is "SavedGame3"
+    EXPECT_EQ("SavedGame3", storagePtr->getCurrentSaveName());
+
+    // Should have written empty init data
+    const json stored = storagePtr->getStoredData();
+    EXPECT_TRUE(stored.empty());
+}
 } // namespace

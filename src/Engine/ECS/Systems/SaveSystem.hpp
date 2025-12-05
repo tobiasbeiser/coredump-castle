@@ -10,6 +10,7 @@
 #include "Engine/FileIO/ISaveStorage.hpp"
 
 #include <nlohmann/json.hpp>
+#include <utility>
 
 namespace GameEngine::ECS::Systems {
 using json = nlohmann::json;
@@ -28,8 +29,35 @@ class SaveSystem {
 	void loadSavedGame(Registry &registry) const
 	{
 		const json savedGameData = saveStorage->read();
+		if (savedGameData.empty()) {
+			return;
+		}
 		reinitializePlayerGameData(registry, savedGameData);
 	}
+
+	[[nodiscard]] std::vector<std::string> getSaves() const
+	{
+		return saveStorage->getSavesNames();
+	}
+
+	void setSaveName(const std::string &saveName) const
+	{
+		saveStorage->setSaveName(saveName);
+	}
+
+	void initNewSave() const
+	{
+		const auto saveFilesCount = saveStorage->getSavesNames().size();
+		cleanGameSave("SavedGame" + std::to_string(saveFilesCount));
+	}
+
+	void cleanGameSave(std::string saveName) const
+	{
+		saveStorage->setSaveName(std::move(saveName));
+		const json emptyInit {};
+		saveStorage->write(emptyInit);
+	}
+
 
   private:
 	std::unique_ptr<ISaveStorage> saveStorage;
