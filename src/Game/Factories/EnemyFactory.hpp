@@ -13,9 +13,9 @@
 #include "AnimationFactory.hpp"
 #include "Engine/DebugSystem.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
-#include <Engine/ECS/Components/Gameplay/Combat/CombatCollisionComponent.hpp>
-
 #include <Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp>
+#include <Engine/ECS/Components/Gameplay/Combat/CombatCollisionComponent.hpp>
+#include <Engine/ECS/Components/Gameplay/Combat/PushbackComponent.hpp>
 #include <Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp>
 #include <Engine/ECS/Components/Tags/EnemyTag.hpp>
 #include <tileson.hpp>
@@ -104,9 +104,10 @@ class EnemyFactory {
 	{
 		switch (type) {
 		case EnemyType::Base:
-			registry.registerComponent(entity, CollisionComponent{6 * scale, 10 * scale, 22 * scale, 14 * scale});
+			registry.registerComponent(entity, CollisionComponent{6 * scale, 10 * scale, 21 * scale, 13 * scale});
 			registry.registerComponent(
-			    entity, CombatCollisionComponent{.hitbox = {6 * scale, 10 * scale, 22 * scale, 14 * scale}});
+			    entity, CombatCollisionComponent{.hitbox = {6 * scale, 10 * scale, 21 * scale, 13 * scale}});
+			registry.registerComponent(entity, PushbackComponent{});
 			break;
 		case EnemyType::Long:
 			break;

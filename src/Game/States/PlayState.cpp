@@ -2,6 +2,8 @@
 #include "Engine/ECS/Systems/AnimationSystem.hpp"
 #include "Engine/ECS/Systems/CollisionSystem.hpp"
 #include "Engine/ECS/Systems/CombatSystem/AttackSystem.hpp"
+#include "Engine/ECS/Systems/CombatSystem/EnemyDetectionSystem.hpp"
+#include "Engine/ECS/Systems/CombatSystem/PushbackSystem.hpp"
 #include "Engine/ECS/Systems/Enemy/PatrolSystem.hpp"
 #include "Engine/ECS/Systems/InteractionSystem.hpp"
 #include "Engine/ECS/Systems/JumpSystem.hpp"
@@ -51,12 +53,14 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 	ECS::Systems::JumpSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::MovementSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::AttackSystem::update(game.getRegistry(), deltaTime);
+	ECS::Systems::EnemyDetectionSystem::update(game.getRegistry(), deltaTime);
+	ECS::Systems::PushbackSystem::update(game.getRegistry(), deltaTime);
+	ECS::Systems::PatrolSystem::update(game.getRegistry(), deltaTime);
 
 	accumulator += deltaTime;
 	while (accumulator >= stepSize) {
 		accumulator -= stepSize;
 
-		ECS::Systems::PatrolSystem::update(game.getRegistry(), stepSize);
 		ECS::Systems::PhysicsSystem::update(game.getRegistry(), stepSize);
 	}
 

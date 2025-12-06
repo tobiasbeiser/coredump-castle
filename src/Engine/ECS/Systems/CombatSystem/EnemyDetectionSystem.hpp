@@ -4,42 +4,34 @@
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/CombatCollisionComponent.hpp"
+#include "Engine/ECS/Components/Physics/AccelerationComponent.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Registry.hpp"
+#include "Engine/ECS/Systems/CombatSystem/AttackSystem.hpp"
+#include "Engine/ECS/View.hpp"
+
 #include <SDL3/SDL_rect.h>
 #include <vector>
 
 namespace GameEngine::ECS::Systems {
-class CombatCollisionSystem {
-  public:
-	static void update(Registry &registry)
+struct EnemyDetectionSystem {
+	static void update(Registry &registry, float deltaTime)
 	{
-		// Reset collision state
-		for (const auto entity : registry.view<CombatCollisionComponent>()) {
-			auto &combat = registry.get<CombatCollisionComponent>(entity);
-			combat.collidedWith = std::nullopt;
-			combat.isHit = false;
-		}
-
-		checkPlayerEnemyCollisions(registry);
-
-		checkEnemyPlayerCollisions(registry);
+		checkEnemyDetection(registry, deltaTime);
 	}
 
   private:
-	static void checkPlayerEnemyCollisions(Registry &registry) {}
-
-	static void checkEnemyPlayerCollisions(Registry &registry)
+	static void checkEnemyDetection(Registry &registry, const float deltaTime)
 	{
 		auto enemyView =
 		    registry.view<EnemyTag, CombatCollisionComponent, PositionComponent, StateComponent, AttackComponent>();
 
 		std::vector<Entity> idleEnemies;
 		for (const auto enemyEntity : enemyView) {
-			const auto &stateComp = registry.get<StateComponent>(enemyEntity);
+			const auto &[state] = registry.get<StateComponent>(enemyEntity);
 			const auto &attackComp = registry.get<AttackComponent>(enemyEntity);
-			if (stateComp.state != State::Attacking) {
+			if (state != State::Attacking) {
 				idleEnemies.push_back(enemyEntity);
 			}
 		}
@@ -48,20 +40,16 @@ class CombatCollisionSystem {
 
 		for (const auto enemyEntity : idleEnemies) {
 			const auto &[enemyPosition, _] = registry.get<PositionComponent>(enemyEntity);
-
-			auto &enemyState = registry.get<StateComponent>(enemyEntity);
-
-			const auto &[combatCollisionBox, collidedWith, isHit] =
+			const auto &[enemyCombatCollisionBox] =
 			    registry.get<CombatCollisionComponent>(enemyEntity);
 
-			// Enemy's combat hitbox
-			SDL_FRect enemyCombatBox{enemyPosition.x + combatCollisionBox.x, enemyPosition.y + combatCollisionBox.y,
-			                         combatCollisionBox.w, combatCollisionBox.h};
+			SDL_FRect enemyCombatBox{enemyPosition.x + enemyCombatCollisionBox.x,
+			                         enemyPosition.y + enemyCombatCollisionBox.y, enemyCombatCollisionBox.w,
+			                         enemyCombatCollisionBox.h};
 
-			// Check collision with player's hitbox
 			for (const auto playerEntity : playerView) {
-				const auto &[playerPosition, _] = registry.get<PositionComponent>(playerEntity);
-				const auto &[playerCombatCollisionBox, playerCollidedWith, playerIsHit] =
+				auto &[playerPosition, _] = registry.get<PositionComponent>(playerEntity);
+				const auto &[playerCombatCollisionBox] =
 				    registry.get<CombatCollisionComponent>(playerEntity);
 
 				SDL_FRect playerBox{playerPosition.x + playerCombatCollisionBox.x,
@@ -69,16 +57,16 @@ class CombatCollisionSystem {
 				                    playerCombatCollisionBox.h};
 
 				if (SDL_HasRectIntersectionFloat(&enemyCombatBox, &playerBox)) {
-					enemyState.state = State::Attacking;
-					// enemy should be not be movalbe if player pushes him
-					if (registry.has<VelocityComponent>(enemyEntity)) {
-						auto &enemyVelocity = registry.get<VelocityComponent>(enemyEntity);
-						enemyVelocity.velocity.x = 0.0f;
-						enemyVelocity.velocity.y = 0.0f;
+					auto &[state] = registry.get<StateComponent>(enemyEntity);
+					state = State::Attacking;
+
+					if (registry.has<AttackComponent>(enemyEntity)) {
+						auto &attack = registry.get<AttackComponent>(enemyEntity);
+						AttackSystem::triggerAttack(attack, deltaTime);
 					}
 				}
 			}
 		}
-	};
-
+	}
+};
 } // namespace GameEngine::ECS::Systems
