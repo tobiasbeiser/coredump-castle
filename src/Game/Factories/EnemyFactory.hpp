@@ -7,15 +7,15 @@
 #include "../../Engine/ECS/Components/Physics/GravityComponent.hpp"
 #include "../../Engine/ECS/Components/Physics/GroundedComponent.hpp"
 #include "../../Engine/ECS/Components/Render/RenderComponent.hpp"
-#include "../../Engine/ECS/Components/Render/SpriteComponent.hpp"
 #include "../../Engine/ECS/Registry.hpp"
 #include "../../Engine/Graphics/TextureManager.hpp"
 #include "AnimationFactory.hpp"
 #include "Engine/DebugSystem.hpp"
+#include "Engine/ECS/Components/Gameplay/Enemy/EnemyTypeComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
 #include "Engine/ECS/Components/Render/BlinkComponent.hpp"
 #include <Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp>
-#include <Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp>
+#include <Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp>
 #include <Engine/ECS/Components/Gameplay/Combat/PushbackComponent.hpp>
 #include <Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp>
 #include <Engine/ECS/Components/Tags/EnemyTag.hpp>
@@ -105,7 +105,7 @@ class EnemyFactory {
 			}
 			registry.registerComponent(entity, CollisionComponent{6 * scale, 10 * scale, 21 * scale, 13 * scale});
 			registry.registerComponent(
-			    entity, HurtBoxComponent{.hitbox = {6 * scale, 10 * scale, 21 * scale, 13 * scale}});
+			    entity, HitBoxComponent{.hitbox = {6 * scale, 10 * scale, 21 * scale, 13 * scale}});
 			registry.registerComponent(entity, PushbackComponent{});
 			break;
 		case EnemyType::Long:

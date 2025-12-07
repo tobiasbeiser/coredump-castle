@@ -41,6 +41,7 @@ class AnimationSystem {
 		case AnimationType::Falling:
 			anim.setAnimation(AnimationType::JumpReload);
 			break;
+		default:;
 		}
 	}
 	static void handleFalling(AnimationComponent &anim)
@@ -142,7 +143,6 @@ class AnimationSystem {
 						break;
 					case State::Jumping:
 					case State::Falling:
-						// Enemies don't have these states typically
 						break;
 					}
 				}

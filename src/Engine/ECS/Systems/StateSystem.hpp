@@ -4,8 +4,7 @@
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include <Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp>
-#include <Engine/ECS/Components/Render/AnimationComponent.hpp>
-#include <Engine/ECS/Systems/CombatSystem/AttackSystem.hpp>
+#include <Engine/ECS/Systems/Combat/AttackSystem.hpp>
 
 namespace GameEngine::ECS::Systems {
 class StateSystem {
@@ -13,14 +12,13 @@ class StateSystem {
 	static void update(Registry &registry)
 	{
 
-		auto movementView = registry.view<StateComponent, VelocityComponent, GroundedComponent, AttackComponent>();
-		for (const auto entity : movementView) {
+		for (auto movementView = registry.view<StateComponent, VelocityComponent, GroundedComponent, AttackComponent>();
+		     const auto entity : movementView) {
 			auto &state = movementView.get<StateComponent>(entity);
 			const auto &vel = movementView.get<VelocityComponent>(entity);
 			const auto &ground = movementView.get<GroundedComponent>(entity);
-			const auto &attack = movementView.get<AttackComponent>(entity);
 
-			if (AttackSystem::isAttacking(attack)) {
+			if (const auto &attack = movementView.get<AttackComponent>(entity); AttackSystem::isAttacking(attack)) {
 				state.state = State::Attacking;
 				continue;
 			}

@@ -124,7 +124,7 @@ GameEngine::ECS::Entity LevelFactory::createTile(const int layerIndex, const glm
 	}
 
 	if (tile.getProp("type") && tile.get<std::string>("type") == "spike") {
-		registry.registerComponent(entity, HurtBoxComponent{.hitbox = SDL_FRect{0, 0, static_cast<float>(tileSize.x),
+		registry.registerComponent(entity, HitBoxComponent{.hitbox = SDL_FRect{0, 0, static_cast<float>(tileSize.x),
 		                                                                        static_cast<float>(tileSize.y)}});
 		registry.registerComponent(entity, SpikeTag{});
 	}

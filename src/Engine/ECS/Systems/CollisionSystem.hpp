@@ -7,6 +7,8 @@
 #include "Engine/ECS/Components/Tags/InactiveTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
+#include "Engine/Utils/PhysicsUtils.hpp"
+
 #include <SDL3/SDL_rect.h>
 
 namespace GameEngine::ECS::Systems {
@@ -76,7 +78,7 @@ struct CollisionSystem {
 	                                       glm::vec2 &vel, glm::vec2 &acc)
 	{
 		SDL_FRect intersection{};
-		const SDL_FRect entityBox{pos.x + collisionA.x, pos.y + collisionA.y, collisionA.w, collisionA.h};
+		const SDL_FRect entityBox = Utils::getBoundingBox(pos, collisionA);
 
 		if (!SDL_GetRectIntersectionFloat(&entityBox, &tileBox, &intersection))
 			return;
@@ -98,7 +100,7 @@ struct CollisionSystem {
 	                                     glm::vec2 &vel, glm::vec2 &acc)
 	{
 		SDL_FRect intersection{};
-		const SDL_FRect entityBox{pos.x + collisionA.x, pos.y + collisionA.y, collisionA.w, collisionA.h};
+		const SDL_FRect entityBox = Utils::getBoundingBox(pos, collisionA);
 
 		if (!SDL_GetRectIntersectionFloat(&entityBox, &tileBox, &intersection))
 			return;
