@@ -262,7 +262,7 @@
          "width":36,
          "x":0,
          "y":0
-        },
+        }, 
         {
          "data":[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -303,7 +303,7 @@
          "width":36,
          "x":0,
          "y":0
-        },
+        }, 
         {
          "draworder":"topdown",
          "id":5,
@@ -332,13 +332,32 @@
                  "width":32,
                  "x":974.5,
                  "y":911
-                },
-               {
-                 "id":13,
+                }, 
+                {
+                 "id":17,
+                 "point":true,
+                 "properties":[
+                        {
+                         "name":"area",
+                         "type":"object",
+                         "value":23
+                        }],
+                 "rotation":0,
                  "template":"..\/objects\/Enemy.tj",
-                 "x":440.018908726379,
-                 "y":911.635480305637
-               }],
+                 "x":439.246303753112,
+                 "y":899.087080810254
+                }, 
+                {
+                 "height":23.9756554882734,
+                 "id":23,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":161.067224049427,
+                 "x":319.98278670888,
+                 "y":904.005163987336
+                }],
          "opacity":1,
          "type":"objectgroup",
          "visible":true,
@@ -391,42 +410,9 @@
          "width":36,
          "x":0,
          "y":0
-        },
-        {
-         "draworder":"topdown",
-         "id":12,
-         "name":"EnemyPath",
-         "objects":[
-                {
-                 "height":28.9772727272727,
-                 "id":17,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":157.081023814895,
-                 "x":320.870057361993,
-                 "y":898.948430601656
-                },
-                {
-                 "height":28.9772727272727,
-                 "id":19,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":157.081023814895,
-                 "x":320.870057361993,
-                 "y":898.948430601656
-                }],
-         "opacity":1,
-         "type":"objectgroup",
-         "visible":true,
-         "x":0,
-         "y":0
         }],
- "nextlayerid":12,
- "nextobjectid":17,
+ "nextlayerid":13,
+ "nextobjectid":24,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",
@@ -463,11 +449,11 @@
         {
          "firstgid":571,
          "source":"..\/tilesets\/decorations.tsj"
-        },
+        }, 
         {
          "firstgid":612,
          "source":"..\/tilesets\/key.tsj"
-        },
+        }, 
         {
          "firstgid":619,
          "source":"..\/tilesets\/void.tsj"

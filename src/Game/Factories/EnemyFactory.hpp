@@ -29,10 +29,9 @@ class EnemyFactory {
 		registry.registerComponent(entity, EnemyTag{});
 
 		const auto enemyTypeProp = enemyObj.getProp("enemyType");
-		EnemyType enemyType = EnemyType::Base;
+		auto enemyType = EnemyType::Base;
 		if (enemyTypeProp != nullptr && enemyTypeProp->getType() == tson::Type::String) {
-			const auto typeStr = enemyTypeProp->getValue<std::string>();
-			if (typeStr == "Long") {
+			if (const auto typeStr = enemyTypeProp->getValue<std::string>(); typeStr == "Long") {
 				enemyType = EnemyType::Long;
 			} else if (typeStr == "Advanced") {
 				enemyType = EnemyType::Advanced;
@@ -117,25 +116,26 @@ class EnemyFactory {
 			break;
 		}
 	}
-	static std::optional<PatrolRect> findPatrolRect(const tson::Object &enemyObj, const glm::vec2 &levelPos,
-	                                                tson::Map &map)
+	static std::optional<PatrolRect> findPatrolRect(tson::Object &enemyObj, const glm::vec2 &levelPos, tson::Map &map)
 	{
-		auto *pathLayer = map.getLayer("EnemyPath");
+		auto *pathLayer = map.getLayer("Entities");
 		if (!pathLayer) {
 			return std::nullopt;
 		}
 
-		const glm::vec2 enemyPos = glm::vec2(enemyObj.getPosition().x, enemyObj.getPosition().y) + levelPos;
-
-		const glm::vec2 enemySize = glm::vec2(enemyObj.getSize().x, enemyObj.getSize().y);
-
-		for (auto &obj : pathLayer->getObjects()) {
-			const glm::vec2 rectPos = glm::vec2(obj.getPosition().x, obj.getPosition().y) + levelPos;
-			const glm::vec2 rectSize = glm::vec2(obj.getSize().x, obj.getSize().y);
-
-			if ((enemyPos.x >= rectPos.x && enemyPos.x <= rectPos.x + rectSize.x)
-			    && (enemyPos.y >= rectPos.y && enemyPos.y <= rectPos.y + rectSize.y)) {
-				return PatrolRect{.min = rectPos, .max = rectPos + rectSize - enemySize};
+		const auto areaProp = enemyObj.getProp("area");
+		if (areaProp == nullptr || areaProp->getType() != tson::Type::Object) {
+			return std::nullopt;
+		}
+		const auto areaID = areaProp->getValue<uint32_t>();
+		for (const auto &obj : pathLayer->getObjects()) {
+			if (obj.getId() == areaID) {
+				const tson::Vector2 pos = obj.getPosition();
+				const tson::Vector2 size = obj.getSize();
+				return PatrolRect{
+				    .min = glm::vec2(pos.x, pos.y) + levelPos,
+				    .max = glm::vec2(pos.x + size.x, pos.y + size.y) + levelPos,
+				};
 			}
 		}
 
