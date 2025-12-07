@@ -3,7 +3,7 @@
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
-#include "Engine/ECS/Components/Gameplay/Combat/CombatCollisionComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
 #include "Engine/ECS/Components/Physics/AccelerationComponent.hpp"
 #include "Engine/ECS/Components/Render/BlinkComponent.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
@@ -16,7 +16,7 @@
 #include <vector>
 
 namespace GameEngine::ECS::Systems {
-struct CombatCollisionSystem {
+struct HurtBoxSystem {
 	static void update(Registry &registry, float deltaTime)
 	{
 		checkEnemyDetection(registry, deltaTime);
@@ -26,7 +26,7 @@ struct CombatCollisionSystem {
 	static void checkEnemyDetection(Registry &registry, const float deltaTime)
 	{
 		auto enemyView =
-		    registry.view<EnemyTag, CombatCollisionComponent, PositionComponent, StateComponent, AttackComponent>();
+		    registry.view<EnemyTag, HurtBoxComponent, PositionComponent, StateComponent, AttackComponent>();
 
 		std::vector<Entity> idleEnemies;
 		for (const auto enemyEntity : enemyView) {
@@ -37,12 +37,12 @@ struct CombatCollisionSystem {
 			}
 		}
 
-		auto playerView = registry.view<PlayerTag, CombatCollisionComponent, PositionComponent, BlinkComponent>();
+		auto playerView = registry.view<PlayerTag, HurtBoxComponent, PositionComponent, BlinkComponent>();
 
 		for (const auto enemyEntity : idleEnemies) {
 			const auto &[enemyPosition, _] = registry.get<PositionComponent>(enemyEntity);
 			const auto &[enemyCombatCollisionBox] =
-			    registry.get<CombatCollisionComponent>(enemyEntity);
+			    registry.get<HurtBoxComponent>(enemyEntity);
 
 			SDL_FRect enemyCombatBox{enemyPosition.x + enemyCombatCollisionBox.x,
 			                         enemyPosition.y + enemyCombatCollisionBox.y, enemyCombatCollisionBox.w,
@@ -51,7 +51,7 @@ struct CombatCollisionSystem {
 			for (const auto playerEntity : playerView) {
 				auto &[playerPosition, _] = registry.get<PositionComponent>(playerEntity);
 				const auto &[playerCombatCollisionBox] =
-				    registry.get<CombatCollisionComponent>(playerEntity);
+				    registry.get<HurtBoxComponent>(playerEntity);
 
 				SDL_FRect playerBox{playerPosition.x + playerCombatCollisionBox.x,
 				                    playerPosition.y + playerCombatCollisionBox.y, playerCombatCollisionBox.w,
@@ -63,9 +63,6 @@ struct CombatCollisionSystem {
 
 					auto &attack = registry.get<AttackComponent>(enemyEntity);
 					AttackSystem::triggerAttack(attack, deltaTime);
-
-					auto &blink = registry.get<BlinkComponent>(playerEntity);
-					blink.timer.reset();
 				}
 			}
 		}

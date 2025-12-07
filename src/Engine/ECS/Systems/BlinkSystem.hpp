@@ -1,18 +1,13 @@
 #pragma once
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
-#include "Engine/ECS/Components/Gameplay/Combat/CombatCollisionComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/PushbackComponent.hpp"
 #include "Engine/ECS/Components/Physics/AccelerationComponent.hpp"
 #include "Engine/ECS/Components/Render/BlinkComponent.hpp"
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
-#include "Engine/ECS/Components/Tags/EnemyTag.hpp"
-#include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
-
-#include <SDL3/SDL_rect.h>
-#include <cmath>
 
 namespace GameEngine::ECS::Systems {
 struct BlinkSystem {

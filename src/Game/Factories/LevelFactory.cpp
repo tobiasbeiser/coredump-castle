@@ -8,6 +8,7 @@
 #include "Engine/ECS/Components/Render/BackgroundComponent.hpp"
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
 #include "Engine/ECS/Components/Tags/InactiveTag.hpp"
+#include "Engine/ECS/Components/Tags/SpikeTag.hpp"
 #include "Game/Factories/PlayerFactory.hpp"
 
 #include <glm/vec2.hpp>
@@ -120,6 +121,12 @@ GameEngine::ECS::Entity LevelFactory::createTile(const int layerIndex, const glm
 			registry.registerComponent(
 			    entity, CollisionComponent{0, 0, static_cast<float>(tileSize.x), static_cast<float>(tileSize.y)});
 		}
+	}
+
+	if (tile.getProp("type") && tile.get<std::string>("type") == "spike") {
+		registry.registerComponent(entity, HurtBoxComponent{.hitbox = SDL_FRect{0, 0, static_cast<float>(tileSize.x),
+		                                                                        static_cast<float>(tileSize.y)}});
+		registry.registerComponent(entity, SpikeTag{});
 	}
 
 	return entity;

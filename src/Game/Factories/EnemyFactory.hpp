@@ -14,9 +14,8 @@
 #include "Engine/DebugSystem.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
 #include "Engine/ECS/Components/Render/BlinkComponent.hpp"
-
 #include <Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp>
-#include <Engine/ECS/Components/Gameplay/Combat/CombatCollisionComponent.hpp>
+#include <Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp>
 #include <Engine/ECS/Components/Gameplay/Combat/PushbackComponent.hpp>
 #include <Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp>
 #include <Engine/ECS/Components/Tags/EnemyTag.hpp>
@@ -60,7 +59,6 @@ class EnemyFactory {
 		configureEnemyByType(registry, entity, enemyType, scale, enemyObj, levelPos, map);
 
 		if (const auto prop = enemyObj.getProp("animations"); prop != nullptr && prop->getType() == tson::Type::File) {
-
 			const std::filesystem::path basePath = "assets/tiled/tilesets/";
 			const auto tilesetPath = basePath / prop->getValue<std::filesystem::path>();
 			tson::Tileset tileset;
@@ -76,7 +74,6 @@ class EnemyFactory {
 				}
 			}
 		}
-
 		return entity;
 	}
 
@@ -108,7 +105,7 @@ class EnemyFactory {
 			}
 			registry.registerComponent(entity, CollisionComponent{6 * scale, 10 * scale, 21 * scale, 13 * scale});
 			registry.registerComponent(
-			    entity, CombatCollisionComponent{.hitbox = {6 * scale, 10 * scale, 21 * scale, 13 * scale}});
+			    entity, HurtBoxComponent{.hitbox = {6 * scale, 10 * scale, 21 * scale, 13 * scale}});
 			registry.registerComponent(entity, PushbackComponent{});
 			break;
 		case EnemyType::Long:

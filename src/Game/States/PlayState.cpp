@@ -3,7 +3,7 @@
 #include "Engine/ECS/Systems/BlinkSystem.hpp"
 #include "Engine/ECS/Systems/CollisionSystem.hpp"
 #include "Engine/ECS/Systems/CombatSystem/AttackSystem.hpp"
-#include "Engine/ECS/Systems/CombatSystem/CombatCollisionSystem.hpp"
+#include "Engine/ECS/Systems/CombatSystem/HurtBoxSystem.hpp"
 #include "Engine/ECS/Systems/CombatSystem/PushbackSystem.hpp"
 #include "Engine/ECS/Systems/Enemy/PatrolSystem.hpp"
 #include "Engine/ECS/Systems/InteractionSystem.hpp"
@@ -54,7 +54,7 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 	ECS::Systems::JumpSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::MovementSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::AttackSystem::update(game.getRegistry(), deltaTime);
-	ECS::Systems::CombatCollisionSystem::update(game.getRegistry(), deltaTime);
+	ECS::Systems::HurtBoxSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::BlinkSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::PushbackSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::PatrolSystem::update(game.getRegistry(), deltaTime);
