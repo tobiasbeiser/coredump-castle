@@ -14,6 +14,7 @@
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Physics/GravityComponent.hpp"
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
+#include "Engine/ECS/Components/Render/BlinkComponent.hpp"
 #include "Engine/ECS/Components/Render/CenterCameraComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
@@ -46,6 +47,7 @@ class PlayerFactory {
 		registry.registerComponent(e, AttackComponent{.attackTimer = {0.6f}, .attackCoolDownTimer = {0.2f}});
 
 		registry.registerComponent(e, CombatCollisionComponent{.hitbox = {19, 25, 21, 32}});
+		registry.registerComponent(e, BlinkComponent{0.5f});
 
 		if (const auto prop = player.getProp("animations"); prop != nullptr && prop->getType() == tson::Type::File) {
 			const std::filesystem::path basePath = "assets/tiled/tilesets/";

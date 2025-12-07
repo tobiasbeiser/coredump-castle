@@ -13,6 +13,8 @@
 #include "AnimationFactory.hpp"
 #include "Engine/DebugSystem.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
+#include "Engine/ECS/Components/Render/BlinkComponent.hpp"
+
 #include <Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp>
 #include <Engine/ECS/Components/Gameplay/Combat/CombatCollisionComponent.hpp>
 #include <Engine/ECS/Components/Gameplay/Combat/PushbackComponent.hpp>
@@ -53,15 +55,9 @@ class EnemyFactory {
 		registry.registerComponent(entity, RenderComponent{.layer = 90, .flipX = false, .scale = scale});
 		registry.registerComponent(entity, StateComponent{});
 		registry.registerComponent(entity, AttackComponent{.attackTimer = {0.6f}, .attackCoolDownTimer = {0.2f}});
+		registry.registerComponent(entity, BlinkComponent{0.5f});
 
-		configureEnemyByType(registry, entity, enemyType, scale);
-
-		if (auto patrolRect = findPatrolRect(enemyObj, levelPos, map)) {
-			registry.registerComponent(entity, PatrolComponent{.minBounds = patrolRect->min,
-			                                                   .maxBounds = patrolRect->max,
-			                                                   .speed = 50.0f,
-			                                                   .direction = 1});
-		}
+		configureEnemyByType(registry, entity, enemyType, scale, enemyObj, levelPos, map);
 
 		if (const auto prop = enemyObj.getProp("animations"); prop != nullptr && prop->getType() == tson::Type::File) {
 
@@ -99,10 +95,17 @@ class EnemyFactory {
 		}
 	}
 	static void configureEnemyByType(GameEngine::ECS::Registry &registry, const GameEngine::ECS::Entity entity,
-	                                 const EnemyType type, const float scale)
+	                                 const EnemyType type, const float scale, tson::Object &enemyObj,
+	                                 const glm::vec2 &levelPos, tson::Map &map)
 	{
 		switch (type) {
 		case EnemyType::Base:
+			if (const auto patrolRect = findPatrolRect(enemyObj, levelPos, map)) {
+				registry.registerComponent(entity, PatrolComponent{.minBounds = patrolRect->min,
+				                                                   .maxBounds = patrolRect->max,
+				                                                   .speed = 50.0f,
+				                                                   .direction = 1});
+			}
 			registry.registerComponent(entity, CollisionComponent{6 * scale, 10 * scale, 21 * scale, 13 * scale});
 			registry.registerComponent(
 			    entity, CombatCollisionComponent{.hitbox = {6 * scale, 10 * scale, 21 * scale, 13 * scale}});

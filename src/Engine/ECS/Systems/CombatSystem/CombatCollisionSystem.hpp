@@ -5,6 +5,7 @@
 #include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/CombatCollisionComponent.hpp"
 #include "Engine/ECS/Components/Physics/AccelerationComponent.hpp"
+#include "Engine/ECS/Components/Render/BlinkComponent.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Registry.hpp"
@@ -15,7 +16,7 @@
 #include <vector>
 
 namespace GameEngine::ECS::Systems {
-struct EnemyDetectionSystem {
+struct CombatCollisionSystem {
 	static void update(Registry &registry, float deltaTime)
 	{
 		checkEnemyDetection(registry, deltaTime);
@@ -36,7 +37,7 @@ struct EnemyDetectionSystem {
 			}
 		}
 
-		auto playerView = registry.view<PlayerTag, CombatCollisionComponent, PositionComponent>();
+		auto playerView = registry.view<PlayerTag, CombatCollisionComponent, PositionComponent, BlinkComponent>();
 
 		for (const auto enemyEntity : idleEnemies) {
 			const auto &[enemyPosition, _] = registry.get<PositionComponent>(enemyEntity);
@@ -60,10 +61,11 @@ struct EnemyDetectionSystem {
 					auto &[state] = registry.get<StateComponent>(enemyEntity);
 					state = State::Attacking;
 
-					if (registry.has<AttackComponent>(enemyEntity)) {
-						auto &attack = registry.get<AttackComponent>(enemyEntity);
-						AttackSystem::triggerAttack(attack, deltaTime);
-					}
+					auto &attack = registry.get<AttackComponent>(enemyEntity);
+					AttackSystem::triggerAttack(attack, deltaTime);
+
+					auto &blink = registry.get<BlinkComponent>(playerEntity);
+					blink.timer.reset();
 				}
 			}
 		}

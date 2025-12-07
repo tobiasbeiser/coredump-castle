@@ -1,8 +1,9 @@
 #include "PlayState.hpp"
 #include "Engine/ECS/Systems/AnimationSystem.hpp"
+#include "Engine/ECS/Systems/BlinkSystem.hpp"
 #include "Engine/ECS/Systems/CollisionSystem.hpp"
 #include "Engine/ECS/Systems/CombatSystem/AttackSystem.hpp"
-#include "Engine/ECS/Systems/CombatSystem/EnemyDetectionSystem.hpp"
+#include "Engine/ECS/Systems/CombatSystem/CombatCollisionSystem.hpp"
 #include "Engine/ECS/Systems/CombatSystem/PushbackSystem.hpp"
 #include "Engine/ECS/Systems/Enemy/PatrolSystem.hpp"
 #include "Engine/ECS/Systems/InteractionSystem.hpp"
@@ -53,7 +54,8 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 	ECS::Systems::JumpSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::MovementSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::AttackSystem::update(game.getRegistry(), deltaTime);
-	ECS::Systems::EnemyDetectionSystem::update(game.getRegistry(), deltaTime);
+	ECS::Systems::CombatCollisionSystem::update(game.getRegistry(), deltaTime);
+	ECS::Systems::BlinkSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::PushbackSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::PatrolSystem::update(game.getRegistry(), deltaTime);
 
@@ -74,6 +76,7 @@ void PlayState::render(GameEngine &game, const float alpha)
 {
 	// std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now();
 	renderSystem.update(game.getRegistry(), alpha);
+	ECS::Systems::BlinkSystem::applyBlinkEffect(game.getRegistry());
 	// std::chrono::high_resolution_clock::time_point time1 = std::chrono::high_resolution_clock::now();
 	// DebugSystem::Debug("Render Time: " + std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(time1 -
 	// now).count()));

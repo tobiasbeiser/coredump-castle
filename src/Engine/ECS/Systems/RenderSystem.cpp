@@ -29,7 +29,7 @@ void RenderSystem::update(Registry &registry, float alpha)
 	for (auto bgView = registry.view<RenderComponent, BackgroundComponent, PositionComponent>().exclude<InactiveTag>();
 	     const auto entity : bgView) {
 		const auto &[layer, flipX, scale] = bgView.get<RenderComponent>(entity);
-		const auto &pos = bgView.get<PositionComponent>(entity);
+		const auto &[position, previousPosition] = bgView.get<PositionComponent>(entity);
 		const auto &bg = bgView.get<BackgroundComponent>(entity);
 
 		constexpr std::optional<SDL_FRect> srcOpt;
@@ -37,7 +37,7 @@ void RenderSystem::update(Registry &registry, float alpha)
 
 		if (bg.repeatX) {
 			dstOpt = SDL_FRect{
-			    .x = pos.position.x, .y = bg.yOffset + pos.position.y, .h = static_cast<float>(bg.texture->h)};
+			    .x = position.x, .y = bg.yOffset + position.y, .h = static_cast<float>(bg.texture->h)};
 		}
 
 		renderItems.push_back(RenderItem{.layer = layer,
