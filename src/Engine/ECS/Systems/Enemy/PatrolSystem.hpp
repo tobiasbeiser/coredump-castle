@@ -6,10 +6,11 @@
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Registry.hpp"
+#include "Engine/ECS/View.hpp"
 
 namespace GameEngine::ECS::Systems {
 struct PatrolSystem {
-	static void update(Registry &registry, float deltaTime)
+	static void update(Registry &registry)
 	{
 		auto view = registry.view<EnemyTag, PositionComponent, VelocityComponent, PatrolComponent, RenderComponent,
 		                          CollisionComponent>();

@@ -104,14 +104,12 @@ class EnemyFactory {
 				                                                   .direction = 1});
 			}
 			registry.registerComponent(entity, CollisionComponent{6 * scale, 10 * scale, 21 * scale, 13 * scale});
-			registry.registerComponent(
-			    entity, HitBoxComponent{.hitbox = {6 * scale, 10 * scale, 21 * scale, 13 * scale}});
+			registry.registerComponent(entity,
+			                           HitBoxComponent{.hitbox = {6 * scale, 10 * scale, 21 * scale, 13 * scale}});
 			registry.registerComponent(entity, PushbackComponent{});
 			break;
 		case EnemyType::Long:
-			break;
 		case EnemyType::Advanced:
-			break;
 		case EnemyType::Boss:
 			break;
 		}

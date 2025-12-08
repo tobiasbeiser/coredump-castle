@@ -7,6 +7,7 @@
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Components/Tags/SpikeTag.hpp"
 #include "Engine/ECS/Registry.hpp"
+#include "Engine/ECS/View.hpp"
 #include "Engine/Utils/PhysicsUtils.hpp"
 #include <Engine/ECS/Components/Render/BlinkComponent.hpp>
 #include <SDL3/SDL_rect.h>
@@ -19,10 +20,11 @@ struct PushbackSystem {
 		handleEnemyCollision(registry);
 	}
 
-	private:
+  private:
 	static void handleEnemyCollision(Registry &registry)
 	{
-		auto enemyView = registry.view<EnemyTag, PushbackComponent, HitBoxComponent, PositionComponent, VelocityComponent>();
+		auto enemyView =
+		    registry.view<EnemyTag, PushbackComponent, HitBoxComponent, PositionComponent, VelocityComponent>();
 		auto playerView = registry.view<PlayerTag, HitBoxComponent, PositionComponent, VelocityComponent>();
 
 		for (const auto enemyEntity : enemyView) {
@@ -49,7 +51,7 @@ struct PushbackSystem {
 		}
 	}
 
-	static void applyPushBackToEntity(Registry & registry, const unsigned entity, const float pushBackForceY)
+	static void applyPushBackToEntity(Registry &registry, const unsigned entity, const float pushBackForceY)
 	{
 		auto &[playerVelocity] = registry.get<VelocityComponent>(entity);
 		playerVelocity.y = pushBackForceY;
