@@ -19,7 +19,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install -y clang-tidy 
+          sudo apt install -y clang-tidy libltdl-dev
       # libltdl-dev
 
       - uses: lukka/get-cmake@latest
