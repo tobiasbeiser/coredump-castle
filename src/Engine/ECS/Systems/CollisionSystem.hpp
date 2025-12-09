@@ -5,6 +5,8 @@
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
 #include "Engine/ECS/Components/Tags/InactiveTag.hpp"
+#include "Engine/ECS/Components/Tags/PlayerTag.hpp"
+#include "Engine/ECS/Components/Gameplay/Enemy/EnemyTypeComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
 #include "Engine/Utils/PhysicsUtils.hpp"
@@ -24,6 +26,10 @@ struct CollisionSystem {
 		for (auto staticView = registry.view<PositionComponent, CollisionComponent>().exclude<InactiveTag>();
 		     const auto staticEntity : staticView) {
 			if (staticEntity == entity)
+				continue;
+
+			// Skip collision between base enemy and player
+			if (shouldSkipCollision(entity, staticEntity, registry))
 				continue;
 
 			const auto &[staticPosition, staticPreviousPosition] = staticView.get<PositionComponent>(staticEntity);
@@ -50,6 +56,10 @@ struct CollisionSystem {
 			if (staticEntity == entity)
 				continue;
 
+			// Skip collision between base enemy and player
+			if (shouldSkipCollision(entity, staticEntity, registry))
+				continue;
+
 			const auto &[staticPosition, staticPreviousPosition] = staticView.get<PositionComponent>(staticEntity);
 			const auto &[staticCollisionBox] = staticView.get<CollisionComponent>(staticEntity);
 
@@ -74,6 +84,21 @@ struct CollisionSystem {
 	}
 
   private:
+	// Check if collision should be skipped between two entities (e.g., base enemy and player)
+	static bool shouldSkipCollision(const Entity entityA, const Entity entityB, Registry &registry)
+	{
+		const bool aIsPlayer = registry.has<PlayerTag>(entityA);
+		const bool bIsPlayer = registry.has<PlayerTag>(entityB);
+		
+		const bool aIsBaseEnemy = registry.has<EnemyTypeComponent>(entityA) && 
+		                          registry.get<EnemyTypeComponent>(entityA).type == EnemyType::Base;
+		const bool bIsBaseEnemy = registry.has<EnemyTypeComponent>(entityB) && 
+		                          registry.get<EnemyTypeComponent>(entityB).type == EnemyType::Base;
+
+		// Skip collision if one is a base enemy and the other is a player
+		return (aIsBaseEnemy && bIsPlayer) || (bIsBaseEnemy && aIsPlayer);
+	}
+
 	static void resolveHorizontalCollision(const SDL_FRect &collisionA, const SDL_FRect &tileBox, glm::vec2 &pos,
 	                                       glm::vec2 &vel, glm::vec2 &acc)
 	{

@@ -3,7 +3,6 @@
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
-#include "Engine/ECS/Components/Render/BlinkComponent.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Registry.hpp"
@@ -21,7 +20,7 @@ struct EnemyAISystem {
 	static void checkAttackRange(Registry &registry, const float deltaTime)
 	{
 		auto enemyView = registry.view<EnemyTag, HitBoxComponent, PositionComponent, StateComponent, AttackComponent>();
-		auto playerView = registry.view<PlayerTag, HitBoxComponent, PositionComponent, BlinkComponent>();
+		auto playerView = registry.view<PlayerTag, HitBoxComponent, PositionComponent>();
 
 		for (const auto enemyEntity : enemyView) {
 			auto &[state] = registry.get<StateComponent>(enemyEntity);

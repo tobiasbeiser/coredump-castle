@@ -13,10 +13,8 @@
 #include "Engine/DebugSystem.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/EnemyTypeComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
-#include "Engine/ECS/Components/Render/BlinkComponent.hpp"
 #include <Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp>
 #include <Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp>
-#include <Engine/ECS/Components/Gameplay/Combat/PushbackComponent.hpp>
 #include <Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp>
 #include <Engine/ECS/Components/Tags/EnemyTag.hpp>
 #include <tileson.hpp>
@@ -45,6 +43,7 @@ class EnemyFactory {
 		const glm::vec2 spawn = glm::vec2(pos.x, pos.y) + levelPos;
 		const float scale = getScaleForEnemyType(enemyType);
 
+		registry.registerComponent(entity, EnemyTypeComponent{.type = enemyType});
 		registry.registerComponent(entity, PositionComponent{.position = spawn});
 		registry.registerComponent(entity, VelocityComponent{.velocity = {0.0f, 0.0f}});
 		registry.registerComponent(entity, AccelerationComponent{.acceleration = {0.0f, 0.0f}});
@@ -54,7 +53,6 @@ class EnemyFactory {
 		registry.registerComponent(entity, RenderComponent{.layer = 90, .flipX = false, .scale = scale});
 		registry.registerComponent(entity, StateComponent{});
 		registry.registerComponent(entity, AttackComponent{.attackTimer = {0.6f}, .attackCoolDownTimer = {0.2f}});
-		registry.registerComponent(entity, BlinkComponent{0.5f});
 
 		configureEnemyByType(registry, entity, enemyType, scale, enemyObj, levelPos, map);
 
@@ -104,9 +102,8 @@ class EnemyFactory {
 				                                                   .direction = 1});
 			}
 			registry.registerComponent(entity, CollisionComponent{6 * scale, 10 * scale, 21 * scale, 13 * scale});
-			registry.registerComponent(entity,
-			                           HitBoxComponent{.hitbox = {6 * scale, 10 * scale, 21 * scale, 13 * scale}});
-			registry.registerComponent(entity, PushbackComponent{});
+			// registry.registerComponent(entity,
+			//                            HitBoxComponent{.hitbox = {6 * scale, 10 * scale, 21 * scale, 13 * scale}});
 			break;
 		case EnemyType::Long:
 		case EnemyType::Advanced:
