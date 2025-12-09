@@ -29,7 +29,9 @@ GameEngine::ECS::Entity LevelFactory::createLevel(tson::Map &map, const glm::vec
 	                                      static_cast<float>(map.getSize().y * map.getTileSize().y));
 
 	int layerIndex = 0;
-	int playerLayer = 0;
+	constexpr int defaultPlayerLayer = 100;
+
+	int playerLayer = defaultPlayerLayer;
 	for (tson::Layer &layer : map.getLayers()) {
 		loadLayer(layer, layerIndex, pos, playerLayer);
 	}
@@ -42,7 +44,12 @@ GameEngine::ECS::Entity LevelFactory::createLevel(tson::Map &map, const glm::vec
 	const std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
 
 	const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - now).count();
+
 	SDL_Log("Level loaded in %ld ms\n", static_cast<long>(duration));
+	if (playerLayer==defaultPlayerLayer) {
+		const auto mapname = map.getProp("id")->getValue<std::string>();
+		SDL_Log("map (%s) does not define a player layer!", mapname.c_str());
+	}
 
 	return level;
 }
@@ -57,7 +64,9 @@ void LevelFactory::loadLayer(tson::Layer &layer, int &layerIndex, const glm::vec
 		loadTiles(layer, layerIndex, levelPos);
 		break;
 	case tson::LayerType::ObjectGroup:
-		playerLayer = layerIndex;
+		if (layer.getProperties().hasProperty("player") && layer.getProp("player")->getValue<bool>()){
+			playerLayer = layerIndex;
+		}
 		loadObjects(layer, layerIndex, levelPos);
 		break;
 	case tson::LayerType::Group:
