@@ -306,6 +306,43 @@
         }, 
         {
          "draworder":"topdown",
+         "id":13,
+         "name":"Enemies",
+         "objects":[
+                {
+                 "id":17,
+                 "point":true,
+                 "properties":[
+                        {
+                         "name":"area",
+                         "type":"object",
+                         "value":23
+                        }],
+                 "rotation":0,
+                 "template":"..\/objects\/Enemy.tj",
+                 "visible":true,
+                 "x":439.246303753112,
+                 "y":899.087080810254
+                }, 
+                {
+                 "height":23.9756554882734,
+                 "id":23,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":161.067224049427,
+                 "x":319.98278670888,
+                 "y":904.005163987336
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
          "id":5,
          "name":"Entities",
          "objects":[
@@ -332,31 +369,6 @@
                  "width":32,
                  "x":974.5,
                  "y":911
-                }, 
-                {
-                 "id":17,
-                 "point":true,
-                 "properties":[
-                        {
-                         "name":"area",
-                         "type":"object",
-                         "value":23
-                        }],
-                 "rotation":0,
-                 "template":"..\/objects\/Enemy.tj",
-                 "x":439.246303753112,
-                 "y":899.087080810254
-                }, 
-                {
-                 "height":23.9756554882734,
-                 "id":23,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":161.067224049427,
-                 "x":319.98278670888,
-                 "y":904.005163987336
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -411,7 +423,7 @@
          "x":0,
          "y":0
         }],
- "nextlayerid":13,
+ "nextlayerid":14,
  "nextobjectid":24,
  "orientation":"orthogonal",
  "renderorder":"right-down",

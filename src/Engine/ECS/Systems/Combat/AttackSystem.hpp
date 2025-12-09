@@ -1,8 +1,6 @@
 #pragma once
 #include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
-#include "Engine/ECS/Components/Tags/EnemyTag.hpp"
-#include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
 
@@ -26,32 +24,11 @@ struct AttackSystem {
 				}
 			}
 		}
-
-		for (auto view = registry.view<EnemyTag, AttackComponent>(); const auto entity : view) {
-			auto &attack = registry.get<AttackComponent>(entity);
-
-			updateCoolDown(attack, deltaTime);
-
-			if (isAttacking(attack)) {
-				processAttack(attack, deltaTime);
-
-				if (attack.attackTimer.isTimeout()) {
-					endAttack(attack);
-				}
-			}
-		}
 	}
 
 	static bool isAttacking(const AttackComponent &attack)
 	{
 		return attack.attackTimer.getTime() > 0.0f && !attack.attackTimer.isTimeout();
-	}
-
-	static void triggerAttack(AttackComponent &attack, const float deltaTime)
-	{
-		if (!isAttacking(attack) && isCoolDown(attack)) {
-			startAttack(attack, deltaTime);
-		}
 	}
 
   private:

@@ -1,9 +1,9 @@
+#include "Engine/ECS/Components/Tags/PlayerTag.hpp"
+#include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
 #include "Engine/GameEngine.hpp"
+
 #include <Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp>
 #include <Engine/ECS/Components/Gameplay/InputComponent.hpp>
-#include <Engine/ECS/Components/Tags/EnemyTag.hpp>
-#include <Engine/ECS/Components/Tags/PlayerTag.hpp>
-#include <Engine/ECS/Systems/Combat/AttackSystem.hpp>
 
 #include <gtest/gtest.h>
 
@@ -19,7 +19,7 @@ class AttackSystemTest : public ::testing::Test {
 
 		attackComp.attackCoolDownTimer.step(0.2f, false);
 
-		registry.registerComponent<PlayerTag>(entity, {});
+		registry.registerComponent(entity, PlayerTag{});
 		registry.registerComponent<AttackComponent>(entity, attackComp);
 		registry.registerComponent<InputComponent>(entity, InputComponent{});
 	}
@@ -116,91 +116,4 @@ TEST_F(AttackSystemTest, ZeroDeltaTimeDoesNotAffectState)
 
 	EXPECT_FALSE(GameEngine::ECS::Systems::AttackSystem::isAttacking(attack));
 	EXPECT_FLOAT_EQ(attack.attackTimer.getTime(), 0.0f);
-}
-
-TEST_F(AttackSystemTest, EnemyStartsAttackWhenTriggered)
-{
-	auto enemy = registry.create();
-	AttackComponent enemyAttack{.attackTimer = {0.5f}, .attackCoolDownTimer = {0.3f}};
-	enemyAttack.attackCoolDownTimer.step(0.3f, false);
-
-	registry.registerComponent<EnemyTag>(enemy, {});
-	registry.registerComponent<AttackComponent>(enemy, enemyAttack);
-
-	GameEngine::ECS::Systems::AttackSystem::triggerAttack(registry.get<AttackComponent>(enemy), 0.1f);
-	GameEngine::ECS::Systems::AttackSystem::update(registry, 0.0f);
-
-	const auto &attack = registry.get<AttackComponent>(enemy);
-	EXPECT_TRUE(GameEngine::ECS::Systems::AttackSystem::isAttacking(attack));
-	EXPECT_FLOAT_EQ(attack.attackTimer.getTime(), 0.1f);
-}
-
-TEST_F(AttackSystemTest, EnemyAttackProcessesOverTime)
-{
-	auto enemy = registry.create();
-	AttackComponent enemyAttack{.attackTimer = {0.5f}, .attackCoolDownTimer = {0.3f}};
-	enemyAttack.attackCoolDownTimer.step(0.3f, false);
-
-	registry.registerComponent<EnemyTag>(enemy, {});
-	registry.registerComponent<AttackComponent>(enemy, enemyAttack);
-
-	auto &attack = registry.get<AttackComponent>(enemy);
-	GameEngine::ECS::Systems::AttackSystem::triggerAttack(attack, 0.1f);
-
-	EXPECT_FLOAT_EQ(attack.attackTimer.getTime(), 0.1f);
-
-	GameEngine::ECS::Systems::AttackSystem::update(registry, 0.2f);
-	EXPECT_FLOAT_EQ(attack.attackTimer.getTime(), 0.3f);
-	EXPECT_TRUE(GameEngine::ECS::Systems::AttackSystem::isAttacking(attack));
-}
-
-TEST_F(AttackSystemTest, EnemyAttackEndsAfterDuration)
-{
-	auto enemy = registry.create();
-	AttackComponent enemyAttack{.attackTimer = {0.5f}, .attackCoolDownTimer = {0.3f}};
-	enemyAttack.attackCoolDownTimer.step(0.3f, false);
-
-	registry.registerComponent<EnemyTag>(enemy, {});
-	registry.registerComponent<AttackComponent>(enemy, enemyAttack);
-
-	auto &attack = registry.get<AttackComponent>(enemy);
-	GameEngine::ECS::Systems::AttackSystem::triggerAttack(attack, 0.1f);
-
-	EXPECT_TRUE(GameEngine::ECS::Systems::AttackSystem::isAttacking(attack));
-
-	GameEngine::ECS::Systems::AttackSystem::update(registry, 0.5f);
-
-	EXPECT_FALSE(GameEngine::ECS::Systems::AttackSystem::isAttacking(attack));
-	EXPECT_FLOAT_EQ(attack.attackTimer.getTime(), 0.0f);
-	EXPECT_FLOAT_EQ(attack.attackCoolDownTimer.getTime(), 0.0f);
-}
-
-TEST_F(AttackSystemTest, EnemyRespectsCooldown)
-{
-	auto enemy = registry.create();
-	AttackComponent enemyAttack{.attackTimer = {0.5f}, .attackCoolDownTimer = {0.3f}};
-
-	registry.registerComponent<EnemyTag>(enemy, {});
-	registry.registerComponent<AttackComponent>(enemy, enemyAttack);
-
-	auto &attack = registry.get<AttackComponent>(enemy);
-
-	GameEngine::ECS::Systems::AttackSystem::triggerAttack(attack, 0.1f);
-	EXPECT_FALSE(GameEngine::ECS::Systems::AttackSystem::isAttacking(attack));
-	EXPECT_FLOAT_EQ(attack.attackTimer.getTime(), 0.0f);
-}
-
-TEST_F(AttackSystemTest, EnemyCooldownUpdatesWhenNotAttacking)
-{
-	auto enemy = registry.create();
-	AttackComponent enemyAttack{.attackTimer = {0.5f}, .attackCoolDownTimer = {0.3f}};
-
-	registry.registerComponent<EnemyTag>(enemy, {});
-	registry.registerComponent<AttackComponent>(enemy, enemyAttack);
-
-	GameEngine::ECS::Systems::AttackSystem::update(registry, 0.15f);
-
-	const auto &attack = registry.get<AttackComponent>(enemy);
-	EXPECT_FLOAT_EQ(attack.attackCoolDownTimer.getTime(), 0.15f);
-	EXPECT_FALSE(GameEngine::ECS::Systems::AttackSystem::isAttacking(attack));
 }

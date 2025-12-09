@@ -14,7 +14,6 @@
 #include "Engine/ECS/Components/Gameplay/Enemy/EnemyTypeComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
 #include <Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp>
-#include <Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp>
 #include <Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp>
 #include <Engine/ECS/Components/Tags/EnemyTag.hpp>
 #include <tileson.hpp>
@@ -84,7 +83,7 @@ class EnemyFactory {
 	{
 		switch (type) {
 		case EnemyType::Base:
-			return 1.8f;
+			return 1.6f;
 		default:
 			return 1.0f;
 		}
@@ -102,8 +101,7 @@ class EnemyFactory {
 				                                                   .direction = 1});
 			}
 			registry.registerComponent(entity, CollisionComponent{6 * scale, 10 * scale, 21 * scale, 13 * scale});
-			// registry.registerComponent(entity,
-			//                            HitBoxComponent{.hitbox = {6 * scale, 10 * scale, 21 * scale, 13 * scale}});
+
 			break;
 		case EnemyType::Long:
 		case EnemyType::Advanced:
@@ -113,7 +111,7 @@ class EnemyFactory {
 	}
 	static std::optional<PatrolRect> findPatrolRect(tson::Object &enemyObj, const glm::vec2 &levelPos, tson::Map &map)
 	{
-		auto *pathLayer = map.getLayer("Entities");
+		auto *pathLayer = map.getLayer("Enemies");
 		if (!pathLayer) {
 			return std::nullopt;
 		}

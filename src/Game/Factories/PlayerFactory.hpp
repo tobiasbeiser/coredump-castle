@@ -4,7 +4,6 @@
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
-#include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InteractionComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InventoryComponent.hpp"
@@ -44,8 +43,6 @@ class PlayerFactory {
 		registry.registerComponent(e, StateComponent{});
 
 		registry.registerComponent(e, AttackComponent{.attackTimer = {0.6f}, .attackCoolDownTimer = {0.2f}});
-
-		registry.registerComponent(e, HitBoxComponent{.hitbox = {19, 25, 21, 32}});
 
 		if (const auto prop = player.getProp("animations"); prop != nullptr && prop->getType() == tson::Type::File) {
 			const std::filesystem::path basePath = "assets/tiled/tilesets/";
