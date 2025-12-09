@@ -371,6 +371,12 @@
                  "y":911
                 }],
          "opacity":1,
+         "properties":[
+                {
+                 "name":"player",
+                 "type":"bool",
+                 "value":true
+                }],
          "type":"objectgroup",
          "visible":true,
          "x":0,
