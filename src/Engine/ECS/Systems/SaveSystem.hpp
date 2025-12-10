@@ -26,8 +26,14 @@ class SaveSystem {
 		saveStorage->write(saveData);
 	}
 
-	void loadSavedGame(Registry &registry) const
+	void loadSavedGame(Registry &registry, const std::string &saveName) const
 	{
+		saveStorage->setSaveName(saveName);
+		if (const std::vector<std::string> saves = saveStorage->getSavesNames();
+		    std::ranges::find(saves, saveName) == saves.end()) {
+			writeEmptyGameSave();
+		}
+
 		const json savedGameData = saveStorage->read();
 		if (savedGameData.empty()) {
 			return;
@@ -35,32 +41,16 @@ class SaveSystem {
 		reinitializePlayerGameData(registry, savedGameData);
 	}
 
-	[[nodiscard]] std::vector<std::string> getSaves() const
-	{
-		return saveStorage->getSavesNames();
-	}
-
-	void setSaveName(const std::string &saveName) const
-	{
-		saveStorage->setSaveName(saveName);
-	}
-
-	void initNewSave() const
-	{
-		const auto saveFilesCount = saveStorage->getSavesNames().size();
-		cleanGameSave("SavedGame" + std::to_string(saveFilesCount));
-	}
-
-	void cleanGameSave(std::string saveName) const
-	{
-		saveStorage->setSaveName(std::move(saveName));
-		const json emptyInit {};
-		saveStorage->write(emptyInit);
-	}
-
+	[[nodiscard]] std::vector<std::string> getSaves() const { return saveStorage->getSavesNames(); }
 
   private:
 	std::unique_ptr<ISaveStorage> saveStorage;
+
+	void writeEmptyGameSave() const
+	{
+		const json emptyInit{};
+		saveStorage->write(emptyInit);
+	}
 
 	[[nodiscard]] static json buildSaveData(Registry &registry)
 	{
