@@ -53,7 +53,7 @@ class SaveSystemTest : public ::testing::Test {
 		playerEntity = registry.create();
 		registry.registerComponent<PlayerTag>(playerEntity, PlayerTag{});
 
-		JumpComponent jumpComponent{.maxJumps = 2, .coyoteTimer = 28};
+		JumpComponent jumpComponent{.maxJumps = 2, .coyoteTimer = Timer{0.25F}};
 		registry.registerComponent<JumpComponent>(playerEntity, jumpComponent);
 
 		PositionComponent positionComponent{};
