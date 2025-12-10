@@ -107,7 +107,7 @@ class AnimationSystem {
 
 			if (anim.hasAnimation(anim.getAnimation())) {
 
-				anim.stepAnimation(anim.getAnimation(), deltaTime);
+				anim.stepAnimation(anim.getAnimation(), std::chrono::duration<float>(deltaTime));
 
 				const auto [frameTexture, frameTileSize, frameTileMapPosition] = anim.currentFrame(anim.getAnimation());
 				texture = frameTexture;
