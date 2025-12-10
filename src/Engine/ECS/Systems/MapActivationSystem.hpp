@@ -2,7 +2,6 @@
 #include "Engine/ECS/Components/Core/LevelComponent.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
-#include "Engine/ECS/Components/Gameplay/JumpComponent.hpp"
 #include "Engine/ECS/Components/Render/CenterCameraComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"

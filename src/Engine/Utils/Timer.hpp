@@ -30,9 +30,4 @@ class Timer {
 		time = 0;
 		timeout = false;
 	}
-	void forceTimeout() noexcept
-	{
-		timeout = true;
-		time = length;
-	}
 };

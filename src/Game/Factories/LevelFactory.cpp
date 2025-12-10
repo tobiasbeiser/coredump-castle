@@ -1,4 +1,6 @@
 #include "LevelFactory.hpp"
+
+#include "EnemyFactory.hpp"
 #include "Engine/ECS/Components/Core/LevelComponent.hpp"
 #include "Engine/ECS/Components/Core/PortalComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InteractionComponent.hpp"
@@ -33,7 +35,7 @@ GameEngine::ECS::Entity LevelFactory::createLevel(tson::Map &map, const glm::vec
 
 	int playerLayer = defaultPlayerLayer;
 	for (tson::Layer &layer : map.getLayers()) {
-		loadLayer(layer, layerIndex, pos, playerLayer);
+		loadLayer(layer, layerIndex, pos, playerLayer, map);
 	}
 
 	registry.registerComponent<LevelComponent>(level,
@@ -46,7 +48,7 @@ GameEngine::ECS::Entity LevelFactory::createLevel(tson::Map &map, const glm::vec
 	const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - now).count();
 
 	SDL_Log("Level loaded in %ld ms\n", static_cast<long>(duration));
-	if (playerLayer==defaultPlayerLayer) {
+	if (playerLayer == defaultPlayerLayer) {
 		const auto mapname = map.getProp("id")->getValue<std::string>();
 		SDL_Log("map (%s) does not define a player layer!", mapname.c_str());
 	}
@@ -54,7 +56,8 @@ GameEngine::ECS::Entity LevelFactory::createLevel(tson::Map &map, const glm::vec
 	return level;
 }
 
-void LevelFactory::loadLayer(tson::Layer &layer, int &layerIndex, const glm::vec2 &levelPos, int &playerLayer)
+void LevelFactory::loadLayer(tson::Layer &layer, int &layerIndex, const glm::vec2 &levelPos, int &playerLayer,
+                             tson::Map &map)
 {
 	switch (layer.getType()) {
 	case tson::LayerType::ImageLayer:
@@ -64,14 +67,14 @@ void LevelFactory::loadLayer(tson::Layer &layer, int &layerIndex, const glm::vec
 		loadTiles(layer, layerIndex, levelPos);
 		break;
 	case tson::LayerType::ObjectGroup:
-		if (layer.getProperties().hasProperty("player") && layer.getProp("player")->getValue<bool>()){
+		if (layer.getProperties().hasProperty("player") && layer.getProp("player")->getValue<bool>()) {
 			playerLayer = layerIndex;
 		}
-		loadObjects(layer, layerIndex, levelPos);
+		loadObjects(layer, layerIndex, levelPos, map);
 		break;
 	case tson::LayerType::Group:
 		for (auto &subLayer : layer.getLayers()) {
-			loadLayer(subLayer, layerIndex, levelPos, playerLayer);
+			loadLayer(subLayer, layerIndex, levelPos, playerLayer, map);
 		}
 		break;
 	default:
@@ -177,7 +180,8 @@ void LevelFactory::createBackground(const glm::vec2 &levelPos, const fs::path &f
 	registry.registerComponent(entity, PositionComponent{.position = levelPos});
 }
 
-void LevelFactory::loadObjects(tson::Layer &layer, int layerIndex, const glm::vec2 &levelPos) const
+void LevelFactory::loadObjects(tson::Layer &layer, const int layerIndex, const glm::vec2 &levelPos,
+                               tson::Map &map) const
 {
 
 	for (auto &obj : layer.getObjectsByType(tson::ObjectType::Rectangle)) {
@@ -186,6 +190,14 @@ void LevelFactory::loadObjects(tson::Layer &layer, int layerIndex, const glm::ve
 		}
 	}
 	for (auto &obj : layer.getObjects()) {
+		if (obj.getName() == "Player") {
+			PlayerFactory::createPlayer(registry, textureManager, layer.getObjectsByName("Player").front(), levelPos,
+			                            map);
+		}
+		if (obj.getName() == "Enemy") {
+			EnemyFactory::createEnemy(registry, textureManager, obj, levelPos, map, layerIndex);
+			continue;
+		}
 		if (const auto tileset = layer.getMap()->getTilesetByGid(obj.getGid()); tileset != nullptr) {
 			const int tilesetGid = tileset->getFirstgid();
 			if (const auto tile = tileset->getTile(obj.getGid() - tilesetGid + 1); tile != nullptr) {
