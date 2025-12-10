@@ -15,14 +15,16 @@ enum class AnimationType { None, Idle, Walking, JumpStart, FlyingUp, JumpReload,
 
 class AnimationComponent {
   public:
-	void addAnimation(const AnimationType &type, const std::vector<AnimationFrame> &animationFrames, float duration)
+	void addAnimation(const AnimationType &type, const std::vector<AnimationFrame> &animationFrames,
+	                  const std::chrono::duration<float> duration)
 	{
 		animations[type] = Animation(static_cast<int>(animationFrames.size()), duration);
 		frames[type] = animationFrames;
 	}
 
-	void addAnimationFromSpritesheet(const AnimationType &type, int frameCount, float length, SDL_Texture *texture,
-	                                 glm::ivec2 tileSize, glm::ivec2 tileMapPos)
+	void addAnimationFromSpritesheet(const AnimationType &type, const int frameCount,
+	                                 const std::chrono::duration<float> length, SDL_Texture *texture,
+	                                 const glm::ivec2 tileSize, const glm::ivec2 tileMapPos)
 	{
 		animations[type] = Animation(frameCount, length);
 
@@ -50,7 +52,7 @@ class AnimationComponent {
 		return animations.at(type).completed();
 	}
 
-	void stepAnimation(const AnimationType &type, const float deltaTime) { animations.at(type).step(deltaTime); }
+	void stepAnimation(const AnimationType &type, const std::chrono::duration<float> deltaTime) { animations.at(type).step(deltaTime); }
 
 	AnimationType getAnimation() const { return currentAnimation; }
 	void setAnimation(const AnimationType &type)

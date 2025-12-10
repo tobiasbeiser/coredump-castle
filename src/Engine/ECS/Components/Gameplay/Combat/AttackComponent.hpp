@@ -2,6 +2,6 @@
 #include "Engine/Utils/Timer.hpp"
 
 struct AttackComponent {
-	Timer attackTimer{0.0f};
-	Timer attackCoolDownTimer{0.0f};
+	Timer attackTimer{std::chrono::duration<float>::zero()};
+	Timer attackCoolDownTimer{std::chrono::duration<float>::zero()};
 };
