@@ -1,15 +1,16 @@
 #pragma once
+#include <chrono>
 
 class Timer {
-	float length, time{0};
+	std::chrono::duration<float> length, time{0};
 	bool timeout = false;
 
   public:
-	explicit Timer(float length) : length(length) {}
+	explicit Timer(const std::chrono::duration<float> length) : length(length) {}
 
-	void step(float deltaTime, bool loop) noexcept
+	void step(const std::chrono::duration<float> deltaTime, const bool loop) noexcept
 	{
-		time += deltaTime;
+		time +=  deltaTime;
 		if (loop) {
 			if (time >= length) {
 				time -= length;
@@ -22,12 +23,12 @@ class Timer {
 			}
 		}
 	};
-	bool isTimeout() const noexcept { return timeout; }
-	float getTime() const noexcept { return time; }
-	float getLength() const noexcept { return length; }
+	[[nodiscard]] bool isTimeout() const noexcept { return timeout; }
+	[[nodiscard]] std::chrono::duration<float> getTime() const noexcept { return time; }
+	[[nodiscard]] std::chrono::duration<float> getLength() const noexcept { return length; }
 	void reset() noexcept
 	{
-		time = 0;
+		time = std::chrono::duration<float>::zero();
 		timeout = false;
 	}
 };

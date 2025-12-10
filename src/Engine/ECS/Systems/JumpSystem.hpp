@@ -19,7 +19,7 @@ struct JumpSystem {
 			auto &[velocity] = registry.get<VelocityComponent>(entity);
 			const auto &input = registry.get<InputComponent>(entity);
 
-			coyoteTimer.step(deltaTime, false);
+			coyoteTimer.step(std::chrono::duration<float>(deltaTime), false);
 			if (grounded) {
 				coyoteTimer.reset();
 			}

@@ -42,7 +42,8 @@ class PlayerFactory {
 
 		registry.registerComponent(e, StateComponent{});
 
-		registry.registerComponent(e, AttackComponent{.attackTimer = {0.6f}, .attackCoolDownTimer = {0.2f}});
+		using namespace std::chrono_literals;
+		registry.registerComponent(e, AttackComponent{.attackTimer = Timer{0.6s}, .attackCoolDownTimer = Timer{0.2s}});
 
 		if (const auto prop = player.getProp("animations"); prop != nullptr && prop->getType() == tson::Type::File) {
 			const std::filesystem::path basePath = "assets/tiled/tilesets/";
@@ -62,7 +63,7 @@ class PlayerFactory {
 
 		registry.registerComponent(e, InputComponent{});
 		registry.registerComponent(e, MovementComponent{});
-		registry.registerComponent(e, JumpComponent{.maxJumps = 2, .coyoteTimer = {0.08f}});
+		registry.registerComponent(e, JumpComponent{.maxJumps = 2, .coyoteTimer = Timer{0.08s}});
 
 		registry.registerComponent(e, InteractionComponent{19, 25, 21, 32});
 		return e;
