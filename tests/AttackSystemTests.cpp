@@ -13,7 +13,7 @@ class AttackSystemTest : public ::testing::Test {
 	void SetUp() override
 	{
 		entity = registry.create();
-		AttackComponent attackComp{.attackTimer = {0.6f}, .attackCoolDownTimer = {0.2f}};
+		AttackComponent attackComp{.attackTimer = Timer{0.6f}, .attackCoolDownTimer = Timer{0.2f}};
 
 		attackComp.attackCoolDownTimer.step(0.2f, false);
 

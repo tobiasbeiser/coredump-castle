@@ -22,7 +22,7 @@ class JumpSystemTest : public ::testing::Test {
 	{
 		entity = registry.create();
 
-		registry.registerComponent<JumpComponent>(entity, JumpComponent {.maxJumps = 2, .coyoteTimer = coyoteThreshold});
+		registry.registerComponent<JumpComponent>(entity, JumpComponent {.maxJumps = 2, .coyoteTimer = Timer{coyoteThreshold}});
 		registry.registerComponent<GroundedComponent>(entity, GroundedComponent{.grounded = true});
 		registry.registerComponent<VelocityComponent>(entity, VelocityComponent{});
 		registry.registerComponent<InputComponent>(entity, InputComponent{});

@@ -5,7 +5,7 @@ class Timer {
 	bool timeout = false;
 
   public:
-	Timer(float length) : length(length) {}
+	explicit Timer(float length) : length(length) {}
 
 	void step(float deltaTime, bool loop) noexcept
 	{
