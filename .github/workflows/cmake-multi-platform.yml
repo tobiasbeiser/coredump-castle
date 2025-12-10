@@ -1,5 +1,3 @@
-# This starter workflow is for a CMake project running on multiple platforms. There is a different starter workflow if you just want a single platform.
-# See: https://github.com/actions/starter-workflows/blob/main/ci/cmake-single-platform.yml
 name: CMake on multiple platforms
 
 on:
@@ -13,66 +11,65 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     strategy:
-      # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.
       fail-fast: false
       matrix:
-         # os: [ubuntu-latest, macos-latest, windows-latest]
          os: [windows-latest, macos-latest, ubuntu-latest]
 
-      
+    env:
+      # 1. OPTIMIZATION: Enable native GitHub Actions Binary Caching for vcpkg
+      # 'clear' removes default backends. 'x-gha,readwrite' uses the Actions Cache API.
+      VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: true
 
-          
-      - name: Install dependencies (Linux only)
+      # 2. OPTIMIZATION: Install system dependencies + ccache for Linux
+      # We install xorg/wayland deps to prevent SDL3 from building them from source
+      - name: Install dependencies (Linux)
         if: runner.os == 'Linux'
         shell: bash
         run: |
-          sudo apt update
-          sudo apt install libltdl-dev
-          
+          sudo apt-get update
+          sudo apt-get install -y libltdl-dev ccache libx11-dev libxft-dev libxext-dev libwayland-dev libxkbcommon-dev libegl1-mesa-dev
+
+      # 3. OPTIMIZATION: Install ccache for macOS
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ccache
+
+      # 4. OPTIMIZATION: Install sccache for Windows (optional, but good)
+      - name: Install sccache (Windows)
+        if: runner.os == 'Windows'
+        run: choco install sccache
+
       - uses: lukka/get-cmake@latest
 
-      - name: Set up vcpkg
-        uses: lukka/run-vcpkg@5e0cab206a5ea620130caf672fce3e4a6b5666a1 # v11.5
+      # 5. OPTIMIZATION: Expose GITHUB_TOKEN so vcpkg can access the cache API
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
         env:
-          VCPKG_BINARY_SOURCES: default,rw
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
 
-      - name: Set up binary cache
-        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
-        with:
-          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
-          key: ${{ runner.os }}-vcpkg-binary-cache-${{ hashFiles('vcpkg*.json') }}
-          restore-keys: |
-            ${{ runner.os }}-vcpkg-binary-cache-
-
-      - name: Cache vcpkg downloads
-        uses: actions/cache@v4
-        with:
-          path: ./vcpkg/downloads
-          key: ${{ runner.os }}-vcpkg-downloads
-
-
-      - name: Run CMake consuming CMakePreset.json and run vcpkg to build packages
+      - name: Run CMake
         uses: lukka/run-cmake@v10
         with:
           configurePreset: 'release'
           buildPreset: 'release'
           testPreset: 'release'
+          # 6. OPTIMIZATION: Tell CMake to launch ccache
+          configurePresetAdditionalArgs: "['-DCMAKE_CXX_COMPILER_LAUNCHER=ccache', '-DCMAKE_C_COMPILER_LAUNCHER=ccache']"
 
-    # On failure, zip the out directory
       - name: Zip out directory on failure
-        if: failure()  # only runs if a previous step failed
+        if: failure()
         run: |
-          zip -r out.zip out
+          # Ensure 'out' exists before zipping to prevent zip errors
+          if [ -d "out" ]; then zip -r out.zip out; fi
           
       - name: Upload out.zip artifact
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: out-directory
+          name: out-directory-${{ matrix.os }}
           path: out.zip
-
-
