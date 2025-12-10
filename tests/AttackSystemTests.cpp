@@ -41,8 +41,8 @@ TEST_F(AttackSystemTest, StartsAttackOnMeleeInput)
 	GameEngine::ECS::Systems::AttackSystem::update(registry, 0.1f);
 
 	EXPECT_TRUE(GameEngine::ECS::Systems::AttackSystem::isAttacking(attack));
-	EXPECT_EQ(attack.attackTimer.getTime(), 0.1s);
-	EXPECT_EQ(attack.attackCoolDownTimer.getTime(), 0.2s);
+	EXPECT_FLOAT_EQ(attack.attackTimer.getTime().count(), 0.1s .count());
+	EXPECT_FLOAT_EQ(attack.attackCoolDownTimer.getTime().count(), 0.2s .count());
 	EXPECT_TRUE(input.attackPressed);
 }
 
@@ -56,7 +56,7 @@ TEST_F(AttackSystemTest, RespectsCooldown)
 	GameEngine::ECS::Systems::AttackSystem::update(registry, 0.1f);
 
 	EXPECT_FALSE(GameEngine::ECS::Systems::AttackSystem::isAttacking(attack));
-	EXPECT_EQ(attack.attackCoolDownTimer.getTime(), 0.1s);
+	EXPECT_FLOAT_EQ(attack.attackCoolDownTimer.getTime().count(), 0.1s .count());
 }
 
 TEST_F(AttackSystemTest, EndsAttackAfterDuration)
