@@ -68,9 +68,9 @@ class AnimationFactory {
 		}
 
 		std::vector<AnimationFrame> frames;
-		float duration = 0.0f;
+		std::chrono::duration<float> duration = std::chrono::duration<float>::zero();
 		for (const auto frame : animation.getFrames()) {
-			duration += frame.getDuration() / 1000.0f;
+			duration += std::chrono::duration<float, std::milli>(frame.getDuration());
 			glm::ivec2 tileMapPosition{0, 0};
 			std::filesystem::path frameImagePath = basePath;
 			if (tileset->getTile(frame.getTileId())->getImage().empty()) {

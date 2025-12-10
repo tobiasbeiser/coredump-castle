@@ -28,7 +28,7 @@ struct AttackSystem {
 
 	static bool isAttacking(const AttackComponent &attack)
 	{
-		return attack.attackTimer.getTime() > 0.0f && !attack.attackTimer.isTimeout();
+		return attack.attackTimer.getTime() > std::chrono::duration<float>::zero() && !attack.attackTimer.isTimeout();
 	}
 
   private:
@@ -40,19 +40,19 @@ struct AttackSystem {
 	static void updateCoolDown(AttackComponent &attack, const float deltaTime)
 	{
 		if (!attack.attackCoolDownTimer.isTimeout() && !isAttacking(attack)) {
-			attack.attackCoolDownTimer.step(deltaTime, false);
+			attack.attackCoolDownTimer.step(std::chrono::duration<float>(deltaTime), false);
 		}
 	}
 
 	static void startAttack(AttackComponent &attack, const float deltaTime)
 	{
 		attack.attackTimer.reset();
-		attack.attackTimer.step(deltaTime, false);
+		attack.attackTimer.step(std::chrono::duration<float>(deltaTime), false);
 	}
 
 	static void processAttack(AttackComponent &attack, const float deltaTime)
 	{
-		attack.attackTimer.step(deltaTime, false);
+		attack.attackTimer.step(std::chrono::duration<float>(deltaTime), false);
 	}
 
 	static void endAttack(AttackComponent &attack)
