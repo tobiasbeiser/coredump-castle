@@ -21,7 +21,8 @@
 class EnemyFactory {
   public:
 	static GameEngine::ECS::Entity createEnemy(GameEngine::ECS::Registry &registry, TextureManager &texMgr,
-	                                           tson::Object &enemyObj, const glm::vec2 &levelPos, tson::Map &map, const int layer)
+	                                           tson::Object &enemyObj, const glm::vec2 &levelPos, tson::Map &map,
+	                                           const int layer)
 	{
 		const auto entity = registry.create();
 		registry.registerComponent(entity, EnemyTag{});
@@ -51,7 +52,9 @@ class EnemyFactory {
 		registry.registerComponent(entity, GroundedComponent{});
 		registry.registerComponent(entity, RenderComponent{.layer = layer, .flipX = false, .scale = scale});
 		registry.registerComponent(entity, StateComponent{});
-		registry.registerComponent(entity, AttackComponent{.attackTimer = {0.6f}, .attackCoolDownTimer = {0.2f}});
+		using namespace std::chrono_literals;
+		registry.registerComponent(entity,
+		                           AttackComponent{.attackTimer = Timer{0.6s}, .attackCoolDownTimer = Timer{0.2s}});
 
 		configureEnemyByType(registry, entity, enemyType, scale, enemyObj, levelPos, map);
 
