@@ -9,48 +9,54 @@ on:
 jobs:
   build:
     runs-on: ${{ matrix.os }}
-
+    
     strategy:
       fail-fast: false
       matrix:
          os: [windows-latest, macos-latest, ubuntu-latest]
 
     env:
-      # 1. OPTIMIZATION: Enable native GitHub Actions Binary Caching for vcpkg
-      # 'clear' removes default backends. 'x-gha,readwrite' uses the Actions Cache API.
-      VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+      # 1. FORCE vcpkg to use a local folder for caching (Reliable)
+      # 'clear' wipes defaults. 'files,...' tells it to read/write to our specific folder.
+      # We use ${{ github.workspace }} to ensure the path is valid on all OSes.
+      VCPKG_BINARY_SOURCES: "clear;files,${{ github.workspace }}/vcpkg_cache,readwrite"
 
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: true
 
-      # 2. OPTIMIZATION: Install system dependencies + ccache for Linux
-      # We install xorg/wayland deps to prevent SDL3 from building them from source
       - name: Install dependencies (Linux)
         if: runner.os == 'Linux'
         shell: bash
+        # Installing X11/Wayland prevents vcpkg from building them from source
         run: |
           sudo apt-get update
-          sudo apt-get install -y libltdl-dev ccache libx11-dev libxft-dev libxext-dev libwayland-dev libxkbcommon-dev libegl1-mesa-dev
-
-      # 3. OPTIMIZATION: Install ccache for macOS
-      - name: Install dependencies (macOS)
-        if: runner.os == 'macOS'
-        run: brew install ccache
-
-      # 4. OPTIMIZATION: Install sccache for Windows (optional, but good)
-      - name: Install sccache (Windows)
-        if: runner.os == 'Windows'
-        run: choco install sccache
+          sudo apt-get install -y libltdl-dev libx11-dev libxft-dev libxext-dev libwayland-dev libxkbcommon-dev libegl1-mesa-dev
 
       - uses: lukka/get-cmake@latest
 
-      # 5. OPTIMIZATION: Expose GITHUB_TOKEN so vcpkg can access the cache API
+      # 2. CREATE the cache directory manually
+      # This ensures the folder exists before the cache action tries to use it
+      - name: Create vcpkg cache directory
+        shell: bash
+        run: mkdir -p ${{ github.workspace }}/vcpkg_cache
+
+      # 3. SETUP GitHub Cache
+      # We cache the explicit folder we defined in VCPKG_BINARY_SOURCES.
+      - name: Restore vcpkg binary cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/vcpkg_cache
+          # The key includes the OS and the hash of vcpkg.json.
+          # If vcpkg.json changes, the cache resets.
+          key: ${{ runner.os }}-vcpkg-binaries-${{ hashFiles('vcpkg.json') }}
+          restore-keys: |
+            ${{ runner.os }}-vcpkg-binaries-
+
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+        # We do NOT need GITHUB_TOKEN here because we are using local files
 
       - name: Run CMake
         uses: lukka/run-cmake@v10
@@ -58,13 +64,11 @@ jobs:
           configurePreset: 'release'
           buildPreset: 'release'
           testPreset: 'release'
-          # 6. OPTIMIZATION: Tell CMake to launch ccache
-          configurePresetAdditionalArgs: "['-DCMAKE_CXX_COMPILER_LAUNCHER=ccache', '-DCMAKE_C_COMPILER_LAUNCHER=ccache']"
 
       - name: Zip out directory on failure
         if: failure()
+        shell: bash
         run: |
-          # Ensure 'out' exists before zipping to prevent zip errors
           if [ -d "out" ]; then zip -r out.zip out; fi
           
       - name: Upload out.zip artifact
