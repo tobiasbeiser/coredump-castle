@@ -17,6 +17,7 @@ using GameEngine::ECS::ISaveStorage;
 using GameEngine::ECS::Registry;
 using GameEngine::ECS::Systems::SaveSystem;
 using json = nlohmann::json;
+using namespace std::chrono_literals;
 
 class FakeSaveStorage final : public ISaveStorage {
   public:
@@ -53,7 +54,7 @@ class SaveSystemTest : public ::testing::Test {
 		playerEntity = registry.create();
 		registry.registerComponent<PlayerTag>(playerEntity, PlayerTag{});
 
-		JumpComponent jumpComponent{.maxJumps = 2, .coyoteTimer = Timer{0.25F}};
+		JumpComponent jumpComponent{.maxJumps = 2, .coyoteTimer = Timer{0.25s}};
 		registry.registerComponent<JumpComponent>(playerEntity, jumpComponent);
 
 		PositionComponent positionComponent{};
