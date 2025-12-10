@@ -16,7 +16,7 @@ class AttackSystemTest : public ::testing::Test {
 	{
 
 		entity = registry.create();
-		AttackComponent attackComp{.attackTimer{0.6s}, .attackCoolDownTimer{0.2s}};
+		AttackComponent attackComp{.attackTimer{0.6s}, .attackCoolDownTimer=Timer{0.2s}};
 
 		attackComp.attackCoolDownTimer.step(0.2s, false);
 
