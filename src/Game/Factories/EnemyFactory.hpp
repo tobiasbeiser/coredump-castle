@@ -50,7 +50,7 @@ class EnemyFactory {
 		registry.registerComponent(entity,
 		                           AttackComponent{.attackTimer = Timer{0.6s}, .attackCoolDownTimer = Timer{0.2s}});
 		registry.registerComponent(entity, InputComponent{});
-		registry.registerComponent(entity, MovementComponent{.accelerationRate = 400.0f, .maxSpeedX = 50.0f});
+		registry.registerComponent(entity, MovementComponent{.accelerationRate = 400.0f, .maxSpeedX = maxSpeedX});
 
 		if (isPassive) {
 			registry.registerComponent(entity, PassiveEnemyTag{});
@@ -61,7 +61,6 @@ class EnemyFactory {
 
 		if (canPatrol) {
 			if (const auto patrolRect = findPatrolRect(enemyObj, levelPos, map)) {
-				const float patrolSpeed = getFloatProp(enemyObj, "patrolSpeed", 50.0f);
 				registry.registerComponent(entity,
 				                           PatrolComponent{.minBounds = patrolRect->min, .maxBounds = patrolRect->max});
 			}
@@ -109,13 +108,12 @@ class EnemyFactory {
 
 	static CollisionComponent parseCollisionBox(const std::string &value)
 	{
-		float x, y, w, h;
-
-		if (std::sscanf(value.c_str(), "%f,%f,%f,%f", &x, &y, &w, &h) == 4) {
+		float x = NAN, y = NAN, w = NAN, h = NAN;
+		std::istringstream iss(value);
+		if (char sep = ','; iss >> x >> sep >> y >> sep >> w >> sep >> h && iss.eof()) {
 			return {x, y, w, h};
 		}
-
-		return {0.0f, 0.0f, 0.0f, 0.0f};
+		return CollisionComponent{x, y, w, h};
 	}
 
 	static std::optional<PatrolRect> findPatrolRect(tson::Object &enemyObj, const glm::vec2 &levelPos, tson::Map &map)

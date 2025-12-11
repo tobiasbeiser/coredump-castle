@@ -21,7 +21,6 @@ struct PatrolSystem {
 			const auto &[minBounds, maxBounds] = registry.get<PatrolComponent>(entity);
 			auto &input = registry.get<InputComponent>(entity);
 			const auto &[collisionBox] = registry.get<CollisionComponent>(entity);
-			auto &render = registry.get<RenderComponent>(entity);
 
 			auto scale = glm::vec2(1.0f, 1.0f);
 			if (registry.has<TransformComponent>(entity)) {
@@ -29,7 +28,8 @@ struct PatrolSystem {
 			}
 
 			const float enemyRight = position.x + (collisionBox.x + collisionBox.w) * scale.x;
-			const float enemyLeft = position.x + collisionBox.x * scale.x;			if (input.horizontalDirection == 0.0f) {
+			const float enemyLeft = position.x + collisionBox.x * scale.x;
+			if (input.horizontalDirection == 0.0f) {
 				input.horizontalDirection = 1.0f;
 			}
 
