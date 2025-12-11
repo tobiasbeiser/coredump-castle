@@ -8,7 +8,7 @@ namespace GameEngine::ECS::Systems {
 struct AttackSystem {
 	static void update(Registry &registry, const float deltaTime)
 	{
-		for (auto view = registry.view<PlayerTag, AttackComponent, InputComponent>(); const auto entity : view) {
+		for (auto view = registry.view<AttackComponent, InputComponent>(); const auto entity : view) {
 			auto &attack = registry.get<AttackComponent>(entity);
 			const auto &input = registry.get<InputComponent>(entity);
 

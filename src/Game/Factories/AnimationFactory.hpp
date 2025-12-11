@@ -118,6 +118,30 @@ class AnimationFactory {
 		}
 	}
 
+	static void loadAnimationsFromTileset(GameEngine::ECS::Registry &registry, TextureManager &texMgr, tson::Map &map,
+	                                      tson::Object &object, const GameEngine::ECS::Entity entity)
+	{
+		const auto prop = object.getProp("animations");
+		if (prop == nullptr || prop->getType() != tson::Type::File) {
+			return;
+		}
+
+		const std::filesystem::path basePath = "assets/tiled/tilesets/";
+		const auto tilesetPath = basePath / prop->getValue<std::filesystem::path>();
+
+		tson::Tileset tileset;
+		tson::Json11 json;
+		json.parse(tilesetPath);
+		tileset.parse(json, &map);
+
+		const AnimationFactory animFactory(registry, texMgr);
+		for (auto tile : tileset.getTiles()) {
+			if (auto anim = tile.getAnimation(); anim.any()) {
+				animFactory.loadAnimation(&tile, entity);
+			}
+		}
+	}
+
   private:
 	GameEngine::ECS::Registry &registry;
 	TextureManager &textureManager;

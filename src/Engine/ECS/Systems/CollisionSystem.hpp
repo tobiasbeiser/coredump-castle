@@ -1,5 +1,6 @@
 #pragma once
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
+#include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/EnemyTypeComponent.hpp"
 #include "Engine/ECS/Components/Physics/AccelerationComponent.hpp"
@@ -9,7 +10,6 @@
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
-#include "Engine/Utils/PhysicsUtils.hpp"
 
 #include <SDL3/SDL_rect.h>
 
@@ -23,6 +23,11 @@ struct CollisionSystem {
 		auto &[acceleration] = registry.get<AccelerationComponent>(entity);
 		const auto &[collisionBox] = registry.get<CollisionComponent>(entity);
 
+		auto entityScale = glm::vec2(1.0f, 1.0f);
+		if (registry.has<TransformComponent>(entity)) {
+			entityScale = registry.get<TransformComponent>(entity).scale;
+		}
+
 		for (auto staticView = registry.view<PositionComponent, CollisionComponent>().exclude<InactiveTag>();
 		     const auto staticEntity : staticView) {
 			if (staticEntity == entity)
@@ -34,10 +39,16 @@ struct CollisionSystem {
 			const auto &[staticPosition, staticPreviousPosition] = staticView.get<PositionComponent>(staticEntity);
 			const auto &[staticCollisionBox] = staticView.get<CollisionComponent>(staticEntity);
 
-			SDL_FRect tileBox{staticPosition.x + staticCollisionBox.x, staticPosition.y + staticCollisionBox.y,
-			                  staticCollisionBox.w, staticCollisionBox.h};
+			auto staticScale = glm::vec2(1.0f, 1.0f);
+			if (registry.has<TransformComponent>(staticEntity)) {
+				staticScale = registry.get<TransformComponent>(staticEntity).scale;
+			}
 
-			resolveHorizontalCollision(collisionBox, tileBox, position, velocity, acceleration);
+			SDL_FRect tileBox{staticPosition.x + staticCollisionBox.x * staticScale.x,
+			                  staticPosition.y + staticCollisionBox.y * staticScale.y,
+			                  staticCollisionBox.w * staticScale.x, staticCollisionBox.h * staticScale.y};
+
+			resolveHorizontalCollision(collisionBox, tileBox, position, velocity, acceleration, entityScale);
 		}
 	}
 
@@ -47,6 +58,11 @@ struct CollisionSystem {
 		auto &[velocity] = registry.get<VelocityComponent>(entity);
 		auto &[acceleration] = registry.get<AccelerationComponent>(entity);
 		const auto &[collisionBox] = registry.get<CollisionComponent>(entity);
+
+		auto entityScale = glm::vec2(1.0f, 1.0f);
+		if (registry.has<TransformComponent>(entity)) {
+			entityScale = registry.get<TransformComponent>(entity).scale;
+		}
 
 		bool grounded = false;
 
@@ -61,14 +77,21 @@ struct CollisionSystem {
 			const auto &[staticPosition, staticPreviousPosition] = staticView.get<PositionComponent>(staticEntity);
 			const auto &[staticCollisionBox] = staticView.get<CollisionComponent>(staticEntity);
 
-			SDL_FRect tileBox{staticPosition.x + staticCollisionBox.x, staticPosition.y + staticCollisionBox.y,
-			                  staticCollisionBox.w, staticCollisionBox.h};
+			auto staticScale = glm::vec2(1.0f, 1.0f);
+			if (registry.has<TransformComponent>(staticEntity)) {
+				staticScale = registry.get<TransformComponent>(staticEntity).scale;
+			}
 
-			resolveVerticalCollision(collisionBox, tileBox, position, velocity, acceleration);
+			SDL_FRect tileBox{staticPosition.x + staticCollisionBox.x * staticScale.x,
+			                  staticPosition.y + staticCollisionBox.y * staticScale.y,
+			                  staticCollisionBox.w * staticScale.x, staticCollisionBox.h * staticScale.y};
+
+			resolveVerticalCollision(collisionBox, tileBox, position, velocity, acceleration, entityScale);
 
 			if (registry.has<GroundedComponent>(entity)) {
-				SDL_FRect sensorBox{position.x + collisionBox.x, position.y + collisionBox.y + collisionBox.h,
-				                    collisionBox.w, 1};
+				SDL_FRect sensorBox{position.x + collisionBox.x * entityScale.x,
+				                    position.y + collisionBox.y * entityScale.y + collisionBox.h * entityScale.y,
+				                    collisionBox.w * entityScale.x, 1};
 
 				SDL_FRect sensorIntersection;
 				if (SDL_GetRectIntersectionFloat(&sensorBox, &tileBox, &sensorIntersection)) {
@@ -96,10 +119,11 @@ struct CollisionSystem {
 	}
 
 	static void resolveHorizontalCollision(const SDL_FRect &collisionA, const SDL_FRect &tileBox, glm::vec2 &pos,
-	                                       glm::vec2 &vel, glm::vec2 &acc)
+	                                       glm::vec2 &vel, glm::vec2 &acc, const glm::vec2 &scale)
 	{
 		SDL_FRect intersection{};
-		const SDL_FRect entityBox = Utils::getBoundingBox(pos, collisionA);
+		const SDL_FRect entityBox{pos.x + collisionA.x * scale.x, pos.y + collisionA.y * scale.y,
+		                          collisionA.w * scale.x, collisionA.h * scale.y};
 
 		if (!SDL_GetRectIntersectionFloat(&entityBox, &tileBox, &intersection))
 			return;
@@ -118,10 +142,11 @@ struct CollisionSystem {
 	}
 
 	static void resolveVerticalCollision(const SDL_FRect &collisionA, const SDL_FRect &tileBox, glm::vec2 &pos,
-	                                     glm::vec2 &vel, glm::vec2 &acc)
+	                                     glm::vec2 &vel, glm::vec2 &acc, const glm::vec2 &scale)
 	{
 		SDL_FRect intersection{};
-		const SDL_FRect entityBox = Utils::getBoundingBox(pos, collisionA);
+		const SDL_FRect entityBox{pos.x + collisionA.x * scale.x, pos.y + collisionA.y * scale.y,
+		                          collisionA.w * scale.x, collisionA.h * scale.y};
 
 		if (!SDL_GetRectIntersectionFloat(&entityBox, &tileBox, &intersection))
 			return;

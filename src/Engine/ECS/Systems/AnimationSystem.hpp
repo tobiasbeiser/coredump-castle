@@ -13,6 +13,9 @@ class AnimationSystem {
   public:
 	static void handleJumping(AnimationComponent &anim)
 	{
+		if (!anim.hasAnimation(AnimationType::JumpStart)) {
+			return;
+		}
 		switch (anim.getAnimation()) {
 		case AnimationType::None:
 		case AnimationType::Idle:
@@ -46,8 +49,10 @@ class AnimationSystem {
 	}
 	static void handleFalling(AnimationComponent &anim)
 	{
+		if (!anim.hasAnimation(AnimationType::Falling)) {
+			return;
+		}
 		switch (anim.getAnimation()) {
-
 		case AnimationType::None:
 		case AnimationType::Idle:
 		case AnimationType::Walking:
@@ -74,8 +79,9 @@ class AnimationSystem {
 	}
 	static void handleLanding(AnimationComponent &anim, const AnimationType fallback)
 	{
-		if (anim.getAnimation() == AnimationType::Falling
-		    || (anim.getAnimation() == AnimationType::Landing && !anim.hasFinished(anim.getAnimation()))) {
+		if (anim.hasAnimation(AnimationType::Landing)
+		    && (anim.getAnimation() == AnimationType::Falling
+		        || (anim.getAnimation() == AnimationType::Landing && !anim.hasFinished(anim.getAnimation())))) {
 			anim.setAnimation(AnimationType::Landing);
 		} else {
 			anim.setAnimation(fallback);
@@ -90,61 +96,34 @@ class AnimationSystem {
 			// Determine current animation from state
 			if (registry.has<StateComponent>(entity)) {
 				const auto &[state] = registry.get<StateComponent>(entity);
-				if (registry.has<PlayerTag>(entity)) {
-					switch (state) {
-					case State::Idle:
-						handleLanding(anim, AnimationType::Idle);
-						break;
-					case State::Walking:
-						handleLanding(anim, AnimationType::Walking);
-						break;
-					case State::Jumping:
-						handleJumping(anim);
-						break;
-					case State::Falling:
-						handleFalling(anim);
-						break;
-					case State::Attacking:
+				switch (state) {
+				case State::Idle:
+					handleLanding(anim, AnimationType::Idle);
+					break;
+				case State::Walking:
+					handleLanding(anim, AnimationType::Walking);
+					break;
+				case State::Jumping:
+					handleJumping(anim);
+					break;
+				case State::Falling:
+					handleFalling(anim);
+					break;
+				case State::Attacking:
+					if (anim.hasAnimation(AnimationType::Attacking)) {
 						anim.setAnimation(AnimationType::Attacking);
-						break;
-					case State::Hurting:
+					}
+					break;
+				case State::Hurting:
+					if (anim.hasAnimation(AnimationType::Hurting)) {
 						anim.setAnimation(AnimationType::Hurting);
-						break;
-					case State::Dead:
+					}
+					break;
+				case State::Dead:
+					if (anim.hasAnimation(AnimationType::Dead)) {
 						anim.setAnimation(AnimationType::Dead);
-						break;
 					}
-				} else if (registry.has<EnemyTag>(entity)) {
-					switch (state) {
-					case State::Idle:
-						if (anim.hasAnimation(AnimationType::Idle)) {
-							anim.setAnimation(AnimationType::Idle);
-						}
-						break;
-					case State::Walking:
-						if (anim.hasAnimation(AnimationType::Walking)) {
-							anim.setAnimation(AnimationType::Walking);
-						}
-						break;
-					case State::Attacking:
-						if (anim.hasAnimation(AnimationType::Attacking)) {
-							anim.setAnimation(AnimationType::Attacking);
-						}
-						break;
-					case State::Hurting:
-						if (anim.hasAnimation(AnimationType::Hurting)) {
-							anim.setAnimation(AnimationType::Hurting);
-						}
-						break;
-					case State::Dead:
-						if (anim.hasAnimation(AnimationType::Dead)) {
-							anim.setAnimation(AnimationType::Dead);
-						}
-						break;
-					case State::Jumping:
-					case State::Falling:
-						break;
-					}
+					break;
 				}
 			}
 

@@ -1,7 +1,8 @@
 #pragma once
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
-#include "Engine/ECS/Components/Core/VelocityComponent.hpp"
+#include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
@@ -12,30 +13,30 @@ namespace GameEngine::ECS::Systems {
 struct PatrolSystem {
 	static void update(Registry &registry)
 	{
-		auto view = registry.view<EnemyTag, PositionComponent, VelocityComponent, PatrolComponent, RenderComponent,
-		                          CollisionComponent>();
+		auto view = registry.view<EnemyTag, PositionComponent, PatrolComponent, InputComponent, CollisionComponent,
+		                          RenderComponent>();
 
 		for (const auto entity : view) {
-			auto &[position, previousPosition] = registry.get<PositionComponent>(entity);
-			auto &[velocity] = registry.get<VelocityComponent>(entity);
-			auto &[minBounds, maxBounds, speed, direction] = registry.get<PatrolComponent>(entity);
-			auto &render = registry.get<RenderComponent>(entity);
+			const auto &[position, previousPosition] = registry.get<PositionComponent>(entity);
+			const auto &[minBounds, maxBounds] = registry.get<PatrolComponent>(entity);
+			auto &input = registry.get<InputComponent>(entity);
 			const auto &[collisionBox] = registry.get<CollisionComponent>(entity);
+			auto &render = registry.get<RenderComponent>(entity);
 
-			const float enemyRight = position.x + collisionBox.x + collisionBox.w;
-			const float enemyLeft = position.x + collisionBox.x;
+			auto scale = glm::vec2(1.0f, 1.0f);
+			if (registry.has<TransformComponent>(entity)) {
+				scale = registry.get<TransformComponent>(entity).scale;
+			}
 
-			velocity.x = speed * direction;
+			const float enemyRight = position.x + (collisionBox.x + collisionBox.w) * scale.x;
+			const float enemyLeft = position.x + collisionBox.x * scale.x;			if (input.horizontalDirection == 0.0f) {
+				input.horizontalDirection = 1.0f;
+			}
 
-			if (direction > 0 && enemyRight >= maxBounds.x) {
-				direction = -1;
-				render.flipX = false;
-				position.x = maxBounds.x - (enemyRight - position.x);
-
-			} else if (direction < 0 && enemyLeft <= minBounds.x) {
-				direction = 1;
-				render.flipX = true;
-				position.x = minBounds.x - (enemyLeft - position.x);
+			if (input.horizontalDirection > 0 && enemyRight >= maxBounds.x) {
+				input.horizontalDirection = -1.0f;
+			} else if (input.horizontalDirection < 0 && enemyLeft <= minBounds.x) {
+				input.horizontalDirection = 1.0f;
 			}
 		}
 	}
