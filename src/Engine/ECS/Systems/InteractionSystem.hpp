@@ -1,6 +1,7 @@
 #pragma once
 #include "Engine/ECS/Components/Core/PortalComponent.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
+#include "Engine/ECS/Components/Core/SavePointComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InteractionComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InventoryComponent.hpp"
@@ -8,6 +9,7 @@
 #include "Engine/ECS/Components/Gameplay/LockComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/GameEngine.hpp"
+#include "SaveSystem.hpp"
 
 namespace GameEngine::ECS::Systems {
 
@@ -57,28 +59,12 @@ class InteractionSystem {
 							}
 						}
 					}
+					if (registry.has<SavePointComponent>(interactableObject)) {
+						game.getSaveSystem().saveGame(registry);
+					}
 				}
 			}
 		}
 	}
-
-  private:
-	// static void TransitionLevel(Registry &registry, Entity &interactableObject,
-	//                             Systems::LevelTransitionData &transitionData, GameEngine &game)
-	// {
-	// 	auto &portal = registry.get<PortalComponent>(interactableObject);
-	//
-	// 	const LevelHistory oldHistory = transitionData.history;
-	//
-	// 	transitionData.history.levelName = transitionData.currentLevel;
-	// 	transitionData.history.spawnPoint = portal.portalId;
-	// 	if (portal.targetLevel == "previous") {
-	// 		game.PushState(
-	// 		    std::make_unique<::GameEngine::TransitionLevelState>(oldHistory.levelName, oldHistory.spawnPoint));
-	// 	} else {
-	// 		game.PushState(
-	// 		    std::make_unique<::GameEngine::TransitionLevelState>(portal.targetLevel, portal.targetPortalId));
-	// 	}
-	// }
 };
 } // namespace GameEngine::ECS::Systems

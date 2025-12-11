@@ -3,6 +3,7 @@
 #include "EnemyFactory.hpp"
 #include "Engine/ECS/Components/Core/LevelComponent.hpp"
 #include "Engine/ECS/Components/Core/PortalComponent.hpp"
+#include "Engine/ECS/Components/Core/SavePointComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InteractionComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/KeyComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/LockComponent.hpp"
@@ -209,6 +210,11 @@ void LevelFactory::loadObjects(tson::Layer &layer, const int layerIndex, const g
 					registry.registerComponent(entity, KeyComponent{key});
 					registry.registerComponent(entity, InteractionComponent{0, 0, static_cast<float>(obj.getSize().x),
 					                                                        static_cast<float>(obj.getSize().y)});
+				}
+				if (obj.getName() == "SavePoint") {
+					registry.registerComponent(entity, SavePointComponent{});
+					registry.registerComponent(entity, InteractionComponent{0, 0, static_cast<float>(obj.getSize().x),
+																			static_cast<float>(obj.getSize().y)});
 				}
 			}
 		}
