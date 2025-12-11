@@ -12,12 +12,12 @@
 #include "../../Engine/Graphics/TextureManager.hpp"
 #include "AnimationFactory.hpp"
 #include "Engine/DebugSystem.hpp"
-#include "Engine/ECS/Components/Gameplay/Enemy/EnemyTypeComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
 #include <Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp>
 #include <Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp>
 #include <Engine/ECS/Components/Tags/EnemyTag.hpp>
+#include <Engine/ECS/Components/Tags/PassiveEnemyTag.hpp>
 #include <tileson.hpp>
 
 class EnemyFactory {
@@ -29,23 +29,15 @@ class EnemyFactory {
 		const auto entity = registry.create();
 		registry.registerComponent(entity, EnemyTag{});
 
-		const auto enemyTypeProp = enemyObj.getProp("enemyType");
-		auto enemyType = EnemyType::Base;
-		if (enemyTypeProp != nullptr && enemyTypeProp->getType() == tson::Type::String) {
-			if (const auto typeStr = enemyTypeProp->getValue<std::string>(); typeStr == "Long") {
-				enemyType = EnemyType::Long;
-			} else if (typeStr == "Advanced") {
-				enemyType = EnemyType::Advanced;
-			} else if (typeStr == "Boss") {
-				enemyType = EnemyType::Boss;
-			}
-		}
+		const auto scale = getFloatProp(enemyObj, "scale", 1.0f);
+		const auto maxSpeedX = getFloatProp(enemyObj, "maxSpeedX", 50.0f);
+		const auto canPatrol = getBoolProp(enemyObj, "canPatrol", false);
+		const auto isPassive = getBoolProp(enemyObj, "isPassive", false);
+		const auto collisionStr = getStringProp(enemyObj, "collisionBox", "0,0,0,0");
 
 		const tson::Vector2 pos = enemyObj.getPosition();
 		const glm::vec2 spawn = glm::vec2(pos.x, pos.y) + levelPos;
-		const float scale = getScaleForEnemyType(enemyType);
 
-		registry.registerComponent(entity, EnemyTypeComponent{.type = enemyType});
 		registry.registerComponent(entity, PositionComponent{.position = spawn});
 		registry.registerComponent(entity, VelocityComponent{.velocity = {0.0f, 0.0f}});
 		registry.registerComponent(entity, AccelerationComponent{.acceleration = {0.0f, 0.0f}});
@@ -60,7 +52,20 @@ class EnemyFactory {
 		registry.registerComponent(entity, InputComponent{});
 		registry.registerComponent(entity, MovementComponent{.accelerationRate = 400.0f, .maxSpeedX = 50.0f});
 
-		configureEnemyByType(registry, entity, enemyType, scale, enemyObj, levelPos, map);
+		if (isPassive) {
+			registry.registerComponent(entity, PassiveEnemyTag{});
+		}
+		if (collisionStr) {
+			registry.registerComponent(entity, parseCollisionBox(collisionStr.value()));
+		}
+
+		if (canPatrol) {
+			if (const auto patrolRect = findPatrolRect(enemyObj, levelPos, map)) {
+				const float patrolSpeed = getFloatProp(enemyObj, "patrolSpeed", 50.0f);
+				registry.registerComponent(entity,
+				                           PatrolComponent{.minBounds = patrolRect->min, .maxBounds = patrolRect->max});
+			}
+		}
 
 		AnimationFactory::loadAnimationsFromTileset(registry, texMgr, map, enemyObj, entity);
 		return entity;
@@ -71,35 +76,48 @@ class EnemyFactory {
 		glm::vec2 min;
 		glm::vec2 max;
 	};
-	static float getScaleForEnemyType(EnemyType type)
+	static float getFloatProp(tson::Object &obj, const std::string &name, float defaultValue)
 	{
-		switch (type) {
-		case EnemyType::Base:
-			return 1.6f;
-		default:
-			return 1.0f;
+		auto prop = obj.getProp(name);
+		if (prop && prop->getType() == tson::Type::Float) {
+			return prop->getValue<float>();
 		}
+		return defaultValue;
 	}
 
-	static void configureEnemyByType(GameEngine::ECS::Registry &registry, const GameEngine::ECS::Entity entity,
-	                                 const EnemyType type, const float scale, tson::Object &enemyObj,
-	                                 const glm::vec2 &levelPos, tson::Map &map)
+	static bool getBoolProp(tson::Object &obj, const std::string &name, bool defaultValue)
 	{
-		switch (type) {
-		case EnemyType::Base:
-			if (const auto patrolRect = findPatrolRect(enemyObj, levelPos, map)) {
-				registry.registerComponent(entity,
-				                           PatrolComponent{.minBounds = patrolRect->min, .maxBounds = patrolRect->max});
-			}
-			registry.registerComponent(entity, CollisionComponent{6, 10, 21, 13});
-
-			break;
-		case EnemyType::Long:
-		case EnemyType::Advanced:
-		case EnemyType::Boss:
-			break;
+		auto prop = obj.getProp(name);
+		if (prop && prop->getType() == tson::Type::Boolean) {
+			return prop->getValue<bool>();
 		}
+		return defaultValue;
 	}
+
+	static std::optional<std::string> getStringProp(tson::Object &obj, const std::string &name,
+	                                                const std::string defaultValue)
+	{
+		auto prop = obj.getProp(name);
+		if (prop && prop->getType() == tson::Type::String) {
+			return prop->getValue<std::string>();
+		}
+		if (!defaultValue.empty()) {
+			return defaultValue;
+		}
+		return std::nullopt;
+	}
+
+	static CollisionComponent parseCollisionBox(const std::string &value)
+	{
+		float x, y, w, h;
+
+		if (std::sscanf(value.c_str(), "%f,%f,%f,%f", &x, &y, &w, &h) == 4) {
+			return {x, y, w, h};
+		}
+
+		return {0.0f, 0.0f, 0.0f, 0.0f};
+	}
+
 	static std::optional<PatrolRect> findPatrolRect(tson::Object &enemyObj, const glm::vec2 &levelPos, tson::Map &map)
 	{
 		auto *pathLayer = map.getLayer("Enemies");

@@ -319,7 +319,7 @@
                          "value":23
                         }],
                  "rotation":0,
-                 "template":"..\/objects\/Enemy.tj",
+                 "template":"..\/objects\/baseEnemy.tj",
                  "visible":true,
                  "x":439.246303753112,
                  "y":899.087080810254

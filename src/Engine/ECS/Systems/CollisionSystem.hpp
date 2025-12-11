@@ -2,7 +2,6 @@
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
-#include "Engine/ECS/Components/Gameplay/Enemy/EnemyTypeComponent.hpp"
 #include "Engine/ECS/Components/Physics/AccelerationComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
@@ -11,6 +10,7 @@
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
 
+#include <Engine/ECS/Components/Tags/PassiveEnemyTag.hpp>
 #include <SDL3/SDL_rect.h>
 
 namespace GameEngine::ECS::Systems {
@@ -110,10 +110,8 @@ struct CollisionSystem {
 		const bool aIsPlayer = registry.has<PlayerTag>(entityA);
 		const bool bIsPlayer = registry.has<PlayerTag>(entityB);
 
-		const bool aIsBaseEnemy = registry.has<EnemyTypeComponent>(entityA)
-		                          && registry.get<EnemyTypeComponent>(entityA).type == EnemyType::Base;
-		const bool bIsBaseEnemy = registry.has<EnemyTypeComponent>(entityB)
-		                          && registry.get<EnemyTypeComponent>(entityB).type == EnemyType::Base;
+		const bool aIsBaseEnemy = registry.has<PassiveEnemyTag>(entityA);
+		const bool bIsBaseEnemy = registry.has<PassiveEnemyTag>(entityB);
 
 		return (aIsBaseEnemy && bIsPlayer) || (bIsBaseEnemy && aIsPlayer);
 	}
