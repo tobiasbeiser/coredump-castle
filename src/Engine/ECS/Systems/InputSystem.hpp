@@ -1,5 +1,6 @@
 #pragma once
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
+#include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
 #include "Engine/Input/InputManager.hpp"
@@ -26,7 +27,7 @@ class InputSystem {
 			horizontalDirection += 1;
 		}
 
-		for (auto view = registry.view<InputComponent>(); const auto entity : view) {
+		for (auto view = registry.view<InputComponent>().exclude<EnemyTag>(); const auto entity : view) {
 			auto &[horizontalDirectionTarget, jumpPressed, attackPressed, interactPressed, interactConsumed] =
 			    view.get<InputComponent>(entity);
 			horizontalDirectionTarget = horizontalDirection;

@@ -20,4 +20,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE SDL3_ttf::SDL3_ttf)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE vendor)
 
+target_link_libraries(${PROJECT_NAME} PRIVATE nlohmann_json::nlohmann_json)
+
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_EXCEPTIONS ON)

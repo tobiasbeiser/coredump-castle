@@ -10,8 +10,9 @@
 
 using namespace GameEngine::ECS;
 using namespace GameEngine::ECS::Systems;
+using namespace std::chrono_literals;
 
-constexpr float coyoteThreshold = 0.08f;
+constexpr std::chrono::duration<float> coyoteThreshold = 0.08s;
 
 class JumpSystemTest : public ::testing::Test {
   protected:
@@ -22,7 +23,7 @@ class JumpSystemTest : public ::testing::Test {
 	{
 		entity = registry.create();
 
-		registry.registerComponent<JumpComponent>(entity, JumpComponent {.maxJumps = 2, .coyoteTimer = coyoteThreshold});
+		registry.registerComponent<JumpComponent>(entity, JumpComponent {.maxJumps = 2, .coyoteTimer=Timer{coyoteThreshold}});
 		registry.registerComponent<GroundedComponent>(entity, GroundedComponent{.grounded = true});
 		registry.registerComponent<VelocityComponent>(entity, VelocityComponent{});
 		registry.registerComponent<InputComponent>(entity, InputComponent{});
@@ -96,7 +97,7 @@ TEST_F(JumpSystemTest, StepOffTileBelowCoyoteThresholdSingleJump)
 	setUpSingleJump();
 	setGrounded(false);
 
-	JumpSystem::update(registry, coyoteThreshold - 0.01f);
+	JumpSystem::update(registry, (coyoteThreshold - 0.01s).count());
 
 	EXPECT_EQ(getJump().jumpsLeft, 1);
 	EXPECT_FLOAT_EQ(getVelocity().velocity.y, 0.0f);
@@ -107,7 +108,7 @@ TEST_F(JumpSystemTest, StepOffTileAboveCoyoteThresholSingleJump)
 	setUpSingleJump();
 	setGrounded(false);
 
-	JumpSystem::update(registry, coyoteThreshold + 0.01f);
+	JumpSystem::update(registry, (coyoteThreshold + 0.01s).count());
 
 	EXPECT_EQ(getJump().jumpsLeft, 0);
 	EXPECT_FLOAT_EQ(getVelocity().velocity.y, 0.0f);
@@ -118,7 +119,7 @@ TEST_F(JumpSystemTest, StepOffTileBelowCoyoteThresholdDoubleJump)
 	setUpDoubleJump();
 	setGrounded(false);
 
-	JumpSystem::update(registry, coyoteThreshold - 0.01f);
+	JumpSystem::update(registry, (coyoteThreshold - 0.01s).count());
 
 	EXPECT_EQ(getJump().jumpsLeft, 2);
 	EXPECT_FLOAT_EQ(getVelocity().velocity.y, 0.0f);
@@ -129,7 +130,7 @@ TEST_F(JumpSystemTest, StepOffTileAboveCoyoteThresholDoubleJump)
 	setUpDoubleJump();
 	setGrounded(false);
 
-	JumpSystem::update(registry, coyoteThreshold + 0.01f);
+	JumpSystem::update(registry, (coyoteThreshold + 0.01s).count());
 
 	EXPECT_EQ(getJump().jumpsLeft, 1);
 	EXPECT_FLOAT_EQ(getVelocity().velocity.y, 0.0f);

@@ -1,9 +1,13 @@
+#include "Engine/ECS/Components/Tags/PlayerTag.hpp"
+#include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
 #include "Engine/GameEngine.hpp"
+
 #include <Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp>
 #include <Engine/ECS/Components/Gameplay/InputComponent.hpp>
-#include <Engine/ECS/Systems/CombatSystem/AttackSystem.hpp>
 
 #include <gtest/gtest.h>
+
+using namespace std::chrono_literals;
 
 class AttackSystemTest : public ::testing::Test {
   protected:
@@ -12,11 +16,13 @@ class AttackSystemTest : public ::testing::Test {
 
 	void SetUp() override
 	{
+
 		entity = registry.create();
-		AttackComponent attackComp{.attackTimer = {0.6f}, .attackCoolDownTimer = {0.2f}};
+		AttackComponent attackComp{.attackTimer=Timer{0.6s}, .attackCoolDownTimer=Timer{0.2s}};
 
-		attackComp.attackCoolDownTimer.step(0.2f, false);
+		attackComp.attackCoolDownTimer.step(0.2s, false);
 
+		registry.registerComponent(entity, PlayerTag{});
 		registry.registerComponent<AttackComponent>(entity, attackComp);
 		registry.registerComponent<InputComponent>(entity, InputComponent{});
 	}
@@ -38,8 +44,8 @@ TEST_F(AttackSystemTest, StartsAttackOnMeleeInput)
 	GameEngine::ECS::Systems::AttackSystem::update(registry, 0.1f);
 
 	EXPECT_TRUE(GameEngine::ECS::Systems::AttackSystem::isAttacking(attack));
-	EXPECT_FLOAT_EQ(attack.attackTimer.getTime(), 0.1f);
-	ASSERT_FLOAT_EQ(attack.attackCoolDownTimer.getTime(), 0.2f);
+	EXPECT_FLOAT_EQ(attack.attackTimer.getTime().count(), 0.1s .count());
+	EXPECT_FLOAT_EQ(attack.attackCoolDownTimer.getTime().count(), 0.2s .count());
 	EXPECT_TRUE(input.attackPressed);
 }
 
@@ -53,7 +59,7 @@ TEST_F(AttackSystemTest, RespectsCooldown)
 	GameEngine::ECS::Systems::AttackSystem::update(registry, 0.1f);
 
 	EXPECT_FALSE(GameEngine::ECS::Systems::AttackSystem::isAttacking(attack));
-	EXPECT_FLOAT_EQ(attack.attackCoolDownTimer.getTime(), 0.1f);
+	EXPECT_FLOAT_EQ(attack.attackCoolDownTimer.getTime().count(), 0.1s .count());
 }
 
 TEST_F(AttackSystemTest, EndsAttackAfterDuration)
@@ -98,10 +104,10 @@ TEST_F(AttackSystemTest, CoolDownDoesNotDecreaseWhileAttacking)
 	triggerAttackInput();
 	GameEngine::ECS::Systems::AttackSystem::update(registry, 0.1f);
 
-	const float initialCooldown = attack.attackCoolDownTimer.getTime();
+	const std::chrono::duration<float> initialCooldown = attack.attackCoolDownTimer.getTime();
 
 	GameEngine::ECS::Systems::AttackSystem::update(registry, 0.2f);
-	EXPECT_FLOAT_EQ(attack.attackCoolDownTimer.getTime(), initialCooldown);
+	EXPECT_EQ(attack.attackCoolDownTimer.getTime(), initialCooldown);
 }
 
 TEST_F(AttackSystemTest, ZeroDeltaTimeDoesNotAffectState)
@@ -112,5 +118,5 @@ TEST_F(AttackSystemTest, ZeroDeltaTimeDoesNotAffectState)
 	GameEngine::ECS::Systems::AttackSystem::update(registry, 0.0f);
 
 	EXPECT_FALSE(GameEngine::ECS::Systems::AttackSystem::isAttacking(attack));
-	EXPECT_FLOAT_EQ(attack.attackTimer.getTime(), 0.0f);
+	EXPECT_EQ(attack.attackTimer.getTime(), std::chrono::duration<float>::zero());
 }

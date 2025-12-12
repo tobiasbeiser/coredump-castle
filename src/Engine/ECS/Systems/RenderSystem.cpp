@@ -2,6 +2,7 @@
 #include "Engine/DebugSystem.hpp"
 #include "Engine/ECS/Components/Core/LevelComponent.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
+#include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Render/BackgroundComponent.hpp"
@@ -29,15 +30,14 @@ void RenderSystem::update(Registry &registry, float alpha)
 	for (auto bgView = registry.view<RenderComponent, BackgroundComponent, PositionComponent>().exclude<InactiveTag>();
 	     const auto entity : bgView) {
 		const auto &[layer, flipX] = bgView.get<RenderComponent>(entity);
-		const auto &pos = bgView.get<PositionComponent>(entity);
+		const auto &[position, previousPosition] = bgView.get<PositionComponent>(entity);
 		const auto &bg = bgView.get<BackgroundComponent>(entity);
 
 		constexpr std::optional<SDL_FRect> srcOpt;
 		std::optional<SDL_FRect> dstOpt;
 
 		if (bg.repeatX) {
-			dstOpt = SDL_FRect{
-			    .x = pos.position.x, .y = bg.yOffset + pos.position.y, .h = static_cast<float>(bg.texture->h)};
+			dstOpt = SDL_FRect{.x = position.x, .y = bg.yOffset + position.y, .h = static_cast<float>(bg.texture->h)};
 		}
 
 		renderItems.push_back(RenderItem{.layer = layer,
@@ -56,14 +56,21 @@ void RenderSystem::update(Registry &registry, float alpha)
 		const auto &[texture, TileSize, TileMapPosition] = view.get<SpriteComponent>(entity);
 		const auto &[layer, flipX] = view.get<RenderComponent>(entity);
 
+		glm::vec2 scale = glm::vec2(1.0f, 1.0f);
+		if (registry.has<TransformComponent>(entity)) {
+			scale = registry.get<TransformComponent>(entity).scale;
+		}
+
 		const SDL_FRect src{.x = static_cast<float>(TileMapPosition.x),
 		                    .y = static_cast<float>(TileMapPosition.y),
 		                    .w = static_cast<float>(TileSize.x),
 		                    .h = static_cast<float>(TileSize.y)};
 
 		// non interpolation
-		SDL_FRect dst{
-		    .x = position.x, .y = position.y, .w = static_cast<float>(TileSize.x), .h = static_cast<float>(TileSize.y)};
+		SDL_FRect dst{.x = position.x,
+		              .y = position.y,
+		              .w = static_cast<float>(TileSize.x) * scale.x,
+		              .h = static_cast<float>(TileSize.y) * scale.y};
 
 		// interpolation
 		/*SDL_FRect dst{.x = pos.previousPosition.x * (1 - alpha) + pos.position.x * alpha,

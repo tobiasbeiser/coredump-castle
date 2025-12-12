@@ -43,8 +43,14 @@ class AnimationFactory {
 		if (string == "Falling") {
 			return AnimationType::Falling;
 		}
-		if (string =="Landing") {
+		if (string == "Landing") {
 			return AnimationType::Landing;
+		}
+		if (string == "Hurting") {
+			return AnimationType::Hurting;
+		}
+		if (string == "Dead") {
+			return AnimationType::Dead;
 		}
 
 		throw std::runtime_error("Unknown state: " + string);
@@ -62,9 +68,9 @@ class AnimationFactory {
 		}
 
 		std::vector<AnimationFrame> frames;
-		float duration = 0.0f;
+		std::chrono::duration<float> duration = std::chrono::duration<float>::zero();
 		for (const auto frame : animation.getFrames()) {
-			duration += frame.getDuration() / 1000.0f;
+			duration += std::chrono::duration<float, std::milli>(frame.getDuration());
 			glm::ivec2 tileMapPosition{0, 0};
 			std::filesystem::path frameImagePath = basePath;
 			if (tileset->getTile(frame.getTileId())->getImage().empty()) {
@@ -109,6 +115,30 @@ class AnimationFactory {
 			registry.registerComponent(entity, SpriteComponent{.texture = nullptr, // to be set by AnimationSystem
 			                                                   .tileSize = imageSize,
 			                                                   .tileMapPosition = {0, 0}});
+		}
+	}
+
+	static void loadAnimationsFromTileset(GameEngine::ECS::Registry &registry, TextureManager &texMgr, tson::Map &map,
+	                                      tson::Object &object, const GameEngine::ECS::Entity entity)
+	{
+		const auto prop = object.getProp("animations");
+		if (prop == nullptr || prop->getType() != tson::Type::File) {
+			return;
+		}
+
+		const std::filesystem::path basePath = "assets/tiled/tilesets/";
+		const auto tilesetPath = basePath / prop->getValue<std::filesystem::path>();
+
+		tson::Tileset tileset;
+		tson::Json11 json;
+		json.parse(tilesetPath);
+		tileset.parse(json, &map);
+
+		const AnimationFactory animFactory(registry, texMgr);
+		for (auto tile : tileset.getTiles()) {
+			if (auto anim = tile.getAnimation(); anim.any()) {
+				animFactory.loadAnimation(&tile, entity);
+			}
 		}
 	}
 

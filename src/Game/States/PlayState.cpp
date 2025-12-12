@@ -1,7 +1,7 @@
 #include "PlayState.hpp"
 #include "Engine/ECS/Systems/AnimationSystem.hpp"
-#include "Engine/ECS/Systems/CollisionSystem.hpp"
-#include "Engine/ECS/Systems/CombatSystem/AttackSystem.hpp"
+#include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
+#include "Engine/ECS/Systems/Enemy/PatrolSystem.hpp"
 #include "Engine/ECS/Systems/InteractionSystem.hpp"
 #include "Engine/ECS/Systems/JumpSystem.hpp"
 #include "Engine/ECS/Systems/MovementSystem.hpp"
@@ -47,6 +47,7 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 
 	inputSystem.update(game.getRegistry());
 
+	ECS::Systems::PatrolSystem::update(game.getRegistry());
 	ECS::Systems::JumpSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::MovementSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::AttackSystem::update(game.getRegistry(), deltaTime);

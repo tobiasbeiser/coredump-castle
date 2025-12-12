@@ -9,6 +9,7 @@
     },
     "sdl3-ttf",
     "glm",
+    "nlohmann-json",
     "gtest"
   ]
 }
