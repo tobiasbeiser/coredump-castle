@@ -17,7 +17,6 @@
 #include <Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp>
 #include <Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp>
 #include <Engine/ECS/Components/Tags/EnemyTag.hpp>
-#include <Engine/ECS/Components/Tags/PassiveEnemyTag.hpp>
 #include <tileson.hpp>
 
 class EnemyFactory {
@@ -32,7 +31,6 @@ class EnemyFactory {
 		const auto scale = getFloatProp(enemyObj, "scale", 1.0f);
 		const auto maxSpeedX = getFloatProp(enemyObj, "maxSpeedX", 50.0f);
 		const auto canPatrol = getBoolProp(enemyObj, "canPatrol", false);
-		const auto isPassive = getBoolProp(enemyObj, "isPassive", false);
 		const auto collisionStr = getStringProp(enemyObj, "collisionBox", "0,0,0,0");
 
 		const tson::Vector2 pos = enemyObj.getPosition();
@@ -52,9 +50,6 @@ class EnemyFactory {
 		registry.registerComponent(entity, InputComponent{});
 		registry.registerComponent(entity, MovementComponent{.accelerationRate = 400.0f, .maxSpeedX = maxSpeedX});
 
-		if (isPassive) {
-			registry.registerComponent(entity, PassiveEnemyTag{});
-		}
 		if (collisionStr) {
 			registry.registerComponent(entity, parseCollisionBox(collisionStr.value()));
 		}
@@ -78,32 +73,29 @@ class EnemyFactory {
 	static float getFloatProp(tson::Object &obj, const std::string &name, float defaultValue)
 	{
 		auto prop = obj.getProp(name);
-		if (prop && prop->getType() == tson::Type::Float) {
-			return prop->getValue<float>();
+		if (prop && prop->getType() != tson::Type::Float) {
+			return defaultValue;
 		}
-		return defaultValue;
+		return prop->getValue<float>();
 	}
 
 	static bool getBoolProp(tson::Object &obj, const std::string &name, bool defaultValue)
 	{
 		auto prop = obj.getProp(name);
-		if (prop && prop->getType() == tson::Type::Boolean) {
-			return prop->getValue<bool>();
+		if (prop && prop->getType() != tson::Type::Boolean) {
+			return defaultValue;
 		}
-		return defaultValue;
+		return prop->getValue<bool>();
 	}
 
 	static std::optional<std::string> getStringProp(tson::Object &obj, const std::string &name,
-	                                                const std::string defaultValue)
+	                                                const std::string &defaultValue)
 	{
 		auto prop = obj.getProp(name);
-		if (prop && prop->getType() == tson::Type::String) {
-			return prop->getValue<std::string>();
+		if (prop && prop->getType() != tson::Type::String) {
+			return defaultValue.empty() ? std::nullopt : std::optional<std::string>{defaultValue};
 		}
-		if (!defaultValue.empty()) {
-			return defaultValue;
-		}
-		return std::nullopt;
+		return prop->getValue<std::string>();
 	}
 
 	static CollisionComponent parseCollisionBox(const std::string &value)

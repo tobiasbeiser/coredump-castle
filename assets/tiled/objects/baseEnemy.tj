@@ -21,11 +21,6 @@
              "value":"6,10,21,13"
             }, 
             {
-             "name":"isPassive",
-             "type":"bool",
-             "value":true
-            }, 
-            {
              "name":"maxSpeedX",
              "type":"float",
              "value":50

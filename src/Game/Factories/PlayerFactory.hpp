@@ -38,7 +38,7 @@ class PlayerFactory {
 		registry.registerComponent(e, GroundedComponent{});
 		registry.registerComponent(e, CollisionComponent{19, 25, 21, 32});
 		registry.registerComponent(e, RenderComponent{.layer = 100, .flipX = false});
-		registry.registerComponent(e, TransformComponent{}); // Default scale of 1.0
+		registry.registerComponent(e, TransformComponent{});
 		registry.registerComponent(e, CenterCameraComponent{});
 		registry.registerComponent(e, InventoryComponent{});
 

@@ -13,10 +13,9 @@ namespace GameEngine::ECS::Systems {
 struct PatrolSystem {
 	static void update(Registry &registry)
 	{
-		auto view = registry.view<EnemyTag, PositionComponent, PatrolComponent, InputComponent, CollisionComponent,
-		                          RenderComponent>();
 
-		for (const auto entity : view) {
+		for (auto view = registry.view<PositionComponent, PatrolComponent, InputComponent, CollisionComponent>();
+		     const auto entity : view) {
 			const auto &[position, previousPosition] = registry.get<PositionComponent>(entity);
 			const auto &[minBounds, maxBounds] = registry.get<PatrolComponent>(entity);
 			auto &input = registry.get<InputComponent>(entity);
