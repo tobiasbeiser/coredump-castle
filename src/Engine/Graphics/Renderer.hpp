@@ -1,5 +1,6 @@
 #pragma once
 #include <SDL3/SDL.h>
+#include <SDL3_ttf/SDL_ttf.h>
 #include <filesystem>
 #include <glm/vec2.hpp>
 #include <memory>
@@ -12,6 +13,22 @@ struct SDLTextureDeleter {
 	{
 		if (t)
 			SDL_DestroyTexture(t);
+	}
+};
+
+struct TTFFontCloser {
+	void operator()(TTF_Font *f) const
+	{
+		if (f)
+			TTF_CloseFont(f);
+	}
+};
+
+struct TTFTextDestroyer {
+	void operator()(TTF_Text *t) const
+	{
+		if (t)
+			TTF_DestroyText(t);
 	}
 };
 
@@ -39,12 +56,17 @@ class Renderer {
 	void centerCameraOn(const glm::vec2 &position, const glm::vec2 &levelPos, const glm::vec2 &levelSize);
 
 	void resize(Resolution newResolution);
+	Resolution getLogicalResolution() const { return logicalResolution; }
+	glm::vec2 windowToLogical(float windowX, float windowY) const;
 
-	std::unique_ptr<SDL_Texture, SDLTextureDeleter> loadTexture(const std::filesystem::path &filePath);
-	void renderTexture(SDL_Texture &texture, const std::optional<SDL_FRect> srcRect, std::optional<SDL_FRect> dstRect,
-	                   const bool flip) const;
-	void renderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, const float scrollFactor) const;
-
+	[[nodiscard]] std::unique_ptr<SDL_Texture, SDLTextureDeleter> loadTexture(const std::filesystem::path &filePath) const;
+	static std::unique_ptr<TTF_Font, TTFFontCloser> loadFont(const std::filesystem::path &filePath, int fontSize);
+	std::unique_ptr<TTF_Text, TTFTextDestroyer> createText(TTF_Font *font, const std::string &text) const;
+	void renderTexture(SDL_Texture &texture, std::optional<SDL_FRect> srcRect, std::optional<SDL_FRect> dstRect,
+	                   bool flip) const;
+	void drawRectShape(SDL_FRect buttonRect, SDL_Color fillColor, SDL_Color outlineColor) const;
+	static void drawTextCentered(TTF_Text* textObject, float x, float y, float w, float h, SDL_Color color);
+	void renderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, float scrollFactor) const;
 	void renderCircularFade(float progress, SDL_FColor color = {0, 0, 0, 255});
 
   private:
@@ -71,7 +93,15 @@ class Renderer {
 				SDL_DestroyWindow(w);
 		}
 	};
+	struct TTFTextEngineDeleter {
+		void operator()(TTF_TextEngine *e) const noexcept
+		{
+			if (e)
+				TTF_DestroyRendererTextEngine(e);
+		}
+	};
 
+	std::unique_ptr<TTF_TextEngine, TTFTextEngineDeleter> textEngine{};
 	std::unique_ptr<SDL_Renderer, SDLRendererDeleter> renderer{};
 	std::unique_ptr<SDL_Window, SDLWindowDeleter> window{};
 };

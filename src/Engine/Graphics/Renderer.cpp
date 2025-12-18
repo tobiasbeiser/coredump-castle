@@ -3,12 +3,13 @@
 #include "math.h"
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
+#include <SDL3_ttf/SDL_ttf.h>
 #include <algorithm>
 #include <cmath>
 #include <numbers>
 #include <stdexcept>
 
-Renderer::Renderer(const std::string &title, Resolution resolution) : currentResolution(resolution)
+Renderer::Renderer(const std::string &title, const Resolution resolution) : currentResolution(resolution)
 {
 	if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) {
 		throw std::runtime_error(SDL_GetError());
@@ -27,20 +28,28 @@ Renderer::Renderer(const std::string &title, Resolution resolution) : currentRes
 	                                 SDL_LOGICAL_PRESENTATION_LETTERBOX);
 
 	SDL_SetRenderVSync(renderer.get(), 1);
+
+	if (!TTF_Init()) {
+		throw std::runtime_error(SDL_GetError());
+	}
+
+	textEngine.reset(TTF_CreateRendererTextEngine(renderer.get()));
 }
 
 Renderer::~Renderer()
 {
+	TTF_DestroyRendererTextEngine(textEngine.get());
 	SDL_Quit();
+	TTF_Quit();
 }
 
-void Renderer::resize(Resolution newResolution)
+void Renderer::resize(const Resolution newResolution)
 {
 	currentResolution = newResolution;
 	SDL_SetWindowSize(window.get(), currentResolution.width, currentResolution.height);
 }
 
-std::unique_ptr<SDL_Texture, SDLTextureDeleter> Renderer::loadTexture(const std::filesystem::path &filePath)
+std::unique_ptr<SDL_Texture, SDLTextureDeleter> Renderer::loadTexture(const std::filesystem::path &filePath) const
 {
 	SDL_Texture *tex = IMG_LoadTexture(renderer.get(), filePath.string().c_str());
 	if (!tex) {
@@ -49,6 +58,22 @@ std::unique_ptr<SDL_Texture, SDLTextureDeleter> Renderer::loadTexture(const std:
 	SDL_SetTextureScaleMode(tex, SDL_ScaleMode::SDL_SCALEMODE_NEAREST);
 
 	return std::unique_ptr<SDL_Texture, SDLTextureDeleter>(tex);
+}
+
+std::unique_ptr<TTF_Font, TTFFontCloser> Renderer::loadFont(const std::filesystem::path &filePath, const int fontSize)
+{
+	TTF_Font *font = TTF_OpenFont(filePath.string().c_str(), fontSize);
+	if (!font) {
+		throw std::runtime_error(SDL_GetError());
+	}
+
+	return std::unique_ptr<TTF_Font, TTFFontCloser>(font);
+}
+
+std::unique_ptr<TTF_Text, TTFTextDestroyer> Renderer::createText(TTF_Font *font, const std::string &text) const
+{
+	TTF_Text *ttfText = TTF_CreateText(textEngine.get(), font, text.c_str(), 0);
+	return std::unique_ptr<TTF_Text, TTFTextDestroyer>(ttfText);
 }
 
 void Renderer::startFrame(const int red, const int green, const int blue, const int alpha) const
@@ -167,4 +192,41 @@ void Renderer::renderTexture(SDL_Texture &texture, const std::optional<SDL_FRect
 
 	const SDL_FlipMode flipMode = flip ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
 	SDL_RenderTextureRotated(renderer.get(), &texture, srcPtr, dstPtr, 0, nullptr, flipMode);
+}
+
+void Renderer::drawRectShape(const SDL_FRect buttonRect, const SDL_Color fillColor, const SDL_Color outlineColor) const
+{
+
+	SDL_SetRenderDrawColor(renderer.get(), fillColor.r, fillColor.g, fillColor.b, fillColor.a);
+
+    SDL_RenderFillRect(renderer.get(), &buttonRect);
+
+	SDL_SetRenderDrawColor(renderer.get(), outlineColor.r, outlineColor.g, outlineColor.b, outlineColor.a);
+    SDL_RenderRect(renderer.get(), &buttonRect);
+}
+
+void Renderer::drawTextCentered(TTF_Text* textObject, const float x, const float y, const float w, const float h, const SDL_Color color)
+{
+	TTF_SetTextColor(textObject, color.r, color.g, color.b, color.a);
+
+	int textW = 0, textH = 0;
+	TTF_GetTextSize(textObject, &textW, &textH);
+
+	// Calculate center offset
+	const float textX = x + (w - textW) / 2.0f;
+	const float textY = y + (h - textH) / 2.0f;
+
+	TTF_DrawRendererText(textObject, textX, textY);
+
+}
+
+glm::vec2 Renderer::windowToLogical(float windowX, float windowY) const
+{
+	float logicalX = 0.0f;
+	float logicalY = 0.0f;
+
+	// SDL3 Helper: Converts window (mouse) coordinates to logical space
+	SDL_RenderCoordinatesFromWindow(renderer.get(), windowX, windowY, &logicalX, &logicalY);
+
+	return glm::vec2{logicalX, logicalY};
 }
