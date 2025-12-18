@@ -80,6 +80,8 @@ void GameEngine::handleEvents()
 		if (event.type == SDL_EVENT_WINDOW_RESIZED)
 		{
 			renderer.resize({.width = event.window.data1, .height = event.window.data2});
+			// Force immediate rerendering
+			this->render(1.0f);
 			continue;
 		}
 

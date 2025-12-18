@@ -46,7 +46,6 @@ Renderer::~Renderer()
 void Renderer::resize(const Resolution newResolution)
 {
 	currentResolution = newResolution;
-	SDL_SetWindowSize(window.get(), currentResolution.width, currentResolution.height);
 }
 
 std::unique_ptr<SDL_Texture, SDLTextureDeleter> Renderer::loadTexture(const std::filesystem::path &filePath) const
