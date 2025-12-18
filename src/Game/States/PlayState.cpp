@@ -35,7 +35,12 @@ void PlayState::resume()
 	paused = false;
 }
 
-void PlayState::handleEvents(GameEngine &game) {}
+void PlayState::handleEvents(GameEngine &game, const SDL_Event& event)
+{
+	if (event.type == SDL_EVENT_KEY_DOWN || event.type == SDL_EVENT_KEY_UP) {
+		inputManager.processEvent(&event.key);
+	}
+}
 
 void PlayState::update(GameEngine &game, const float deltaTime)
 {

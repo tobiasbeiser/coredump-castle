@@ -2,12 +2,14 @@
 #include "../Game/States/PlayState.hpp"
 #include "DebugSystem.hpp"
 #include "FileIO/FileSaveStorage.hpp"
+#include "Game/States/MainMenuState.hpp"
 #include "GameState.hpp"
 
 namespace GameEngine {
 
 GameEngine::GameEngine(const std::string &title, const Resolution resolution)
-    : renderer(title, resolution), textureManager(renderer), saveSystem(std::make_unique<ECS::FileSaveStorage>()){};
+    : renderer(title, resolution), textureManager(renderer), fontManager(renderer),
+      saveSystem(std::make_unique<ECS::FileSaveStorage>()){};
 
 GameEngine::~GameEngine()
 {
@@ -17,7 +19,7 @@ GameEngine::~GameEngine()
 bool GameEngine::init()
 {
 	// game data
-	states.emplace_back(std::make_unique<PlayState>(inputManager, textureManager, renderer));
+	states.emplace_back(std::make_unique<MainMenuState>(inputManager, textureManager, fontManager, renderer));
 	running = true;
 
 	states.back()->init(*this);
@@ -68,28 +70,24 @@ void GameEngine::popState()
 
 void GameEngine::handleEvents()
 {
-	SDL_Event event{0};
+	SDL_Event event;
 	while (SDL_PollEvent(&event)) {
-		switch (event.type) {
-		case SDL_EVENT_QUIT:
+		if (event.type == SDL_EVENT_QUIT)
+		{
 			running = false;
-			break;
-
-		case SDL_EVENT_WINDOW_RESIZED:
+			return;
+		}
+		if (event.type == SDL_EVENT_WINDOW_RESIZED)
+		{
 			renderer.resize({.width = event.window.data1, .height = event.window.data2});
-			break;
+			continue;
+		}
 
-		case SDL_EVENT_KEY_DOWN:
-		case SDL_EVENT_KEY_UP:
-			inputManager.processEvent(&event.key);
-			break;
-		default:
-			break;
-		};
+		if (!states.empty())
+		{
+			states.back()->handleEvents(*this, event);
+		}
 	}
-
-	if (!states.empty())
-		states.back()->handleEvents(*this);
 }
 
 void GameEngine::update(const float deltaTime)

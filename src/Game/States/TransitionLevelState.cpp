@@ -14,7 +14,7 @@ void GameEngine::TransitionLevelState::pause() {}
 
 void GameEngine::TransitionLevelState::resume() {}
 
-void GameEngine::TransitionLevelState::handleEvents(GameEngine &game) {}
+void GameEngine::TransitionLevelState::handleEvents(GameEngine& game, const SDL_Event& event) {}
 
 void GameEngine::TransitionLevelState::update(GameEngine &game, const float deltaTime)
 {
