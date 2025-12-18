@@ -9,10 +9,12 @@ namespace GameEngine {
 
 void MainMenuState::init(GameEngine &game)
 {
+	//Font is designed for size 20, use only multiples for crips fonts
 	guiManager = std::make_unique<GuiManager>(renderer,
-		fontManager.getFont("assets/fonts/upheaval/upheavtt.ttf", 32));
+		fontManager.getFont("assets/fonts/upheaval/upheavtt.ttf", 20));
 
-	titleFont = fontManager.getFont("assets/fonts/upheaval/upheavtt.ttf", 64);
+	titleFont = fontManager.getFont("assets/fonts/upheaval/upheavtt.ttf", 60);
+
 
 	titleText = renderer.createText(titleFont, "Coredump Castle");
 
@@ -20,7 +22,7 @@ void MainMenuState::init(GameEngine &game)
 
 	titleRect = {
 		0.0f,
-		res.height * 0.1f,
+		floorf(res.height * 0.1f),
 		static_cast<float>(res.width),
 		res.height * 0.2f
 	};
