@@ -4,12 +4,11 @@
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
 #include "Engine/ECS/Components/Render/AnimationComponent.hpp"
-#include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 
 #include <Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp>
+#include <Engine/ECS/Components/Gameplay/Combat/HealthComponent.hpp>
 #include <Engine/ECS/Systems/Combat/AttackSystem.hpp>
-#include <iostream>
 
 namespace GameEngine::ECS::Systems {
 class StateSystem {

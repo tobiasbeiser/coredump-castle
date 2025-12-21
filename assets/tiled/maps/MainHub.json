@@ -362,29 +362,6 @@
                  "width":161.067224049427,
                  "x":319.98278670888,
                  "y":904.005163987336
-                }, 
-                {
-                 "height":35.5735025478319,
-                 "id":22,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":278.715089256121,
-                 "x":834.535140851841,
-                 "y":894.14479376983
-                }, 
-                {
-                 "id":25,
-                 "properties":[
-                        {
-                         "name":"area",
-                         "type":"object",
-                         "value":22
-                        }],
-                 "template":"..\/objects\/baseEnemy.tj",
-                 "x":1011.21195942338,
-                 "y":869.727709556861
                 }],
          "opacity":1,
          "type":"objectgroup",
