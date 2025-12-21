@@ -285,7 +285,7 @@
          "visible":true,
          "x":0,
          "y":0
-        },
+        }, 
         {
          "data":[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -346,7 +346,7 @@
                  "visible":true,
                  "x":439.246303753112,
                  "y":899.087080810254
-                },
+                }, 
                 {
                  "height":23.9756554882734,
                  "id":23,
@@ -357,13 +357,39 @@
                  "width":161.067224049427,
                  "x":319.98278670888,
                  "y":904.005163987336
+                }, 
+                {
+                 "id":22,
+                 "point":true,
+                 "properties":[
+                        {
+                         "name":"area",
+                         "type":"object",
+                         "value":24
+                        }],
+                 "rotation":0,
+                 "template":"..\/objects\/baseEnemy.tj",
+                 "visible":true,
+                 "x":1036.63054691289,
+                 "y":894.501118188528
+                }, 
+                {
+                 "height":22.9578216764548,
+                 "id":24,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":282.434596903364,
+                 "x":837.159636946076,
+                 "y":904.431393486386
                 }],
          "opacity":1,
          "type":"objectgroup",
          "visible":true,
          "x":0,
          "y":0
-        },
+        }, 
         {
          "draworder":"topdown",
          "id":5,
@@ -386,7 +412,7 @@
                  "width":32,
                  "x":974.5,
                  "y":911
-                },
+                }, 
                 {
                  "id":19,
                  "template":"..\/objects\/Player.tj",
@@ -453,7 +479,7 @@
          "y":0
         }],
  "nextlayerid":13,
- "nextobjectid":22,
+ "nextobjectid":25,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",
