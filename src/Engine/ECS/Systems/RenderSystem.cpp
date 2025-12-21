@@ -3,13 +3,18 @@
 #include "Engine/ECS/Components/Core/LevelComponent.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/HealthComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Render/BackgroundComponent.hpp"
+#include "Engine/ECS/Components/Render/BlinkComponent.hpp"
 #include "Engine/ECS/Components/Render/CenterCameraComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
 #include "Engine/ECS/Components/Tags/InactiveTag.hpp"
+#include "Engine/ECS/Systems/BlinkSystem.hpp"
 #include "Engine/ECS/View.hpp"
 
 #include <algorithm>
@@ -78,8 +83,18 @@ void RenderSystem::update(Registry &registry, float alpha)
 		              .w = tile.TileSize,
 		              .h = tile.TileSize};*/
 
-		renderItems.push_back(
-		    RenderItem{.layer = layer, .texture = texture, .src = src, .dst = dst, .parallax = false, .flipX = flipX});
+		SDL_Color colorMod = {255, 255, 255, 255};
+		if (registry.has<BlinkComponent>(entity) && registry.has<HealthComponent>(entity)) {
+			colorMod = BlinkSystem::getBlinkColor(registry, entity);
+		}
+
+		renderItems.push_back(RenderItem{.layer = layer,
+		                                 .texture = texture,
+		                                 .src = src,
+		                                 .dst = dst,
+		                                 .parallax = false,
+		                                 .flipX = flipX,
+		                                 .colorMod = colorMod});
 
 		if (DebugSystem::instance().render.showBoundingBoxes && registry.has<CollisionComponent>(entity)) {
 			auto col = registry.get<CollisionComponent>(entity).collisionBox;
@@ -90,16 +105,48 @@ void RenderSystem::update(Registry &registry, float alpha)
 			    registry.has<MovementComponent>(entity) ? SDL_Color{0, 0, 255, 255} : SDL_Color{255, 0, 0, 255};
 			DebugSystem::instance().debugRects.push_back({col, color});
 		}
+
+		if (DebugSystem::instance().render.showHitBoxes && registry.has<HitBoxComponent>(entity)
+		    && registry.has<HurtBoxComponent>(entity)) {
+			const auto &[hitbox, isBodyHitBox] = registry.get<HitBoxComponent>(entity);
+			const auto &[hurtBox] = registry.get<HurtBoxComponent>(entity);
+			const bool facingLeft = flipX;
+
+			SDL_FRect hitBoxRect;
+			if (isBodyHitBox) {
+				hitBoxRect = {position.x + hurtBox.x * scale.x, position.y + hurtBox.y * scale.y, hurtBox.w * scale.x,
+				              hurtBox.h * scale.y};
+			} else {
+				hitBoxRect = {0, 0, hitbox.w * scale.x, hitbox.h * scale.y};
+				if (facingLeft) {
+					hitBoxRect.x = position.x + hurtBox.x * scale.x - hitbox.w * scale.x;
+				} else {
+					hitBoxRect.x = position.x + hurtBox.x * scale.x + hurtBox.w * scale.x;
+				}
+				hitBoxRect.y = position.y + hurtBox.y * scale.y;
+			}
+			constexpr SDL_Color hitboxColor = {0, 255, 0, 255};
+			DebugSystem::instance().debugRects.push_back({hitBoxRect, hitboxColor});
+
+			SDL_FRect hurtBoxRect = {position.x + hurtBox.x * scale.x, position.y + hurtBox.y * scale.y,
+			                         hurtBox.w * scale.x, hurtBox.h * scale.y};
+			constexpr SDL_Color hurtBoxColor = {255, 0, 255, 255};
+			DebugSystem::instance().debugRects.push_back({hurtBoxRect, hurtBoxColor});
+		}
 	}
 
 	std::ranges::sort(renderItems, [](const RenderItem &a, const RenderItem &b) { return a.layer < b.layer; });
 
 	for (auto &renderItem : renderItems) {
+		SDL_SetTextureColorMod(renderItem.texture, renderItem.colorMod.r, renderItem.colorMod.g, renderItem.colorMod.b);
+
 		if (!renderItem.parallax) {
 			renderer.renderTexture(*renderItem.texture, renderItem.src, renderItem.dst, renderItem.flipX);
 		} else if (renderItem.dst.has_value()) {
 			renderer.renderTextureTiled(*renderItem.texture, renderItem.dst.value(), renderItem.scrollFactor);
 		}
+
+		SDL_SetTextureColorMod(renderItem.texture, 255, 255, 255);
 	}
 	renderItems.clear();
 }

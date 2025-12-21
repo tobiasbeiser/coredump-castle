@@ -66,19 +66,19 @@
         {
          "animation":[
                 {
-                 "duration":100,
+                 "duration":150,
                  "tileid":8
                 }, 
                 {
-                 "duration":100,
+                 "duration":150,
                  "tileid":9
                 }, 
                 {
-                 "duration":100,
+                 "duration":150,
                  "tileid":10
                 }, 
                 {
-                 "duration":100,
+                 "duration":150,
                  "tileid":11
                 }],
          "id":8,

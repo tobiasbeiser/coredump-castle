@@ -10,7 +10,7 @@ class Timer {
 
 	void step(const std::chrono::duration<float> deltaTime, const bool loop) noexcept
 	{
-		time +=  deltaTime;
+		time += deltaTime;
 		if (loop) {
 			if (time >= length) {
 				time -= length;
