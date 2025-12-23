@@ -4,45 +4,210 @@
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include <vector>
-#include <string>
 #include <functional>
 #include <memory>
 
-class UiElement {
-public:
-    virtual ~UiElement() = default;
-    virtual void handleEvent(float logicalX, float logicalY, const SDL_Event& event) = 0;
-    virtual void render(const Renderer& renderer) = 0;
+
+enum class WidgetState : uint8_t { Normal, Hovered, Pressed, Disabled };
+
+// How a widget wants to be sized
+enum class SizeMode {
+    Fixed,          // Use explicit width/height
+    WrapContent,    // Shrink to fit content (e.g., text size)
+    MatchParent     // Expand to fill available parent space
+};
+struct Paint {
+    SDL_Color fillCol{};
+    SDL_Color outlineCol{};
+    SDL_Color textCol{};
 };
 
-class Button : public UiElement {
-public:
-    Button(const Renderer& renderer, TTF_Font* font, const std::string& label,
-           float y, const std::function<void()>& onClick);
+struct ButtonStyle {
+    float padding = 5.0f;
+    Paint normal;
+    Paint hovered;
+    Paint pressed;
+    Paint disabled;
 
-    void handleEvent(float logicalX, float logicalY, const SDL_Event& event) override;
-    void render(const Renderer &renderer) override;
+    [[nodiscard]] const Paint& paintFor(const WidgetState s) const noexcept {
+        switch (s) {
+        case WidgetState::Hovered:  return hovered;
+        case WidgetState::Pressed:  return pressed;
+        case WidgetState::Disabled: return disabled;
+        case WidgetState::Normal:
+        default:                    return normal;
+        }
+    }
+};
+
+struct FrameStyle {
+    //TODO: rework frame default to allow for individual colors
+    SDL_Color fill{0,0,0,0};
+    SDL_Color outline{0,0,0,0};
+    float padding = 0.0f; // could be used by layout later
+};
+
+struct UiTheme {
+    ButtonStyle button;
+    FrameStyle frame;
+};
+
+
+struct UIContext {
+    Renderer& renderer;
+    TTF_Font* titleFont;
+    TTF_Font* bigFont;
+    TTF_Font* textFont;
+    const UiTheme theme;
+};
+
+class Widget
+{
+public:
+    virtual ~Widget() = default;
+
+    virtual glm::vec2 getPreferredSize(const UIContext& ctx, glm::vec2 availableSize) = 0;
+    virtual void layout(const UIContext& ctx, const SDL_FRect allocatedRect)
+    {
+        //TODO: add alignment
+        bounds = allocatedRect;
+    }
+
+    virtual bool handleEvent(glm::vec2 mousePos, glm::vec2 parentPos, const SDL_Event& event) = 0;
+    virtual void draw(const UIContext& ctx, glm::vec2 parentPos) = 0;
+
+    void setSizeMode(const SizeMode w, const SizeMode h) { widthMode = w; heightMode = h; }
+    void setFixedSize(const glm::vec2 size) { fixedSize = size; }
+
+    [[nodiscard]] SizeMode getWidthMode() const { return widthMode; }
+    [[nodiscard]] SizeMode getHeightMode() const { return heightMode; }
+    [[nodiscard]] SDL_FRect getBounds() const { return bounds; }
+    [[nodiscard]] glm::vec2 getRelativePosition() const { return {bounds.x, bounds.y}; }
+    [[nodiscard]] glm::vec2 absolutePosition(const glm::vec2 parentAbsPos) const {
+        return {parentAbsPos.x + bounds.x,parentAbsPos.y + bounds.y};
+    }
+    [[nodiscard]] SDL_FRect absoluteRect(const glm::vec2 parentAbsPos) const noexcept {
+        return SDL_FRect{ parentAbsPos.x + bounds.x, parentAbsPos.y + bounds.y, bounds.w, bounds.h };
+    }
+
+
+protected:
+    SDL_FRect bounds = {0.0f, 0.0f, 0.0f, 0.0f}; // Position is relative to Parent
+
+    SizeMode widthMode = SizeMode::Fixed;
+    SizeMode heightMode = SizeMode::Fixed;
+    glm::vec2 fixedSize = {100.0f, 50.0f};
+
+    // Helper: Resolve final size based on modes
+    glm::vec2 resolveSize(const glm::vec2 contentSize, const glm::vec2 availableSpace) const {
+        float w = (widthMode == SizeMode::Fixed) ? fixedSize.x
+                : (widthMode == SizeMode::MatchParent) ? availableSpace.x
+                : contentSize.x; // WrapContent
+
+        float h = (heightMode == SizeMode::Fixed) ? fixedSize.y
+                : (heightMode == SizeMode::MatchParent) ? availableSpace.y
+                : contentSize.y; // WrapContent
+        return {w, h};
+    }
+};
+
+// A simple widget that just consumes space (pushes things apart)
+class Spacer : public Widget {
+public:
+    explicit Spacer(const float height) : height(height) {}
+
+    glm::vec2 getPreferredSize(const UIContext&, glm::vec2) override {
+        return { 0.0f, height }; // Takes up vertical space
+    }
+    bool handleEvent(glm::vec2, glm::vec2, const SDL_Event&) override { return false; }
+    void draw(const UIContext&, glm::vec2) override {} // Invisible
 
 private:
-    SDL_FRect rect;
+    float height;
+};
+
+// A simple text label
+class Label : public Widget {
+public:
+    Label(std::string labelText, TTF_Font* font) : labelText(std::move(labelText)), font(font) {}
+
+    glm::vec2 getPreferredSize(const UIContext& ctx, glm::vec2 availableSize) override;
+    void layout(const UIContext& ctx, SDL_FRect allocatedRect) override;
+    bool handleEvent(glm::vec2, glm::vec2, const SDL_Event&) override { return false; }
+    void draw(const UIContext& ctx, glm::vec2 parentPos) override;
+
+    void setColor(const SDL_Color newColor) { color = newColor; }
+
+private:
+    std::string labelText;
     std::unique_ptr<TTF_Text, TTFTextDestroyer> textObject;
+    TTF_Font* font;
+    SDL_Color color{255, 255, 255, 255}; // white default
+};
+
+class Button final : public Widget {
+public:
+    Button(std::string label, TTF_Font* font, const std::function<void()>& onClick);
+    Button(std::unique_ptr<Widget> customContent, std::function<void()> onClick);
+    void setEnabled(const bool enabled) { isEnabled = enabled; }
+    glm::vec2 getPreferredSize(const UIContext& ctx, glm::vec2 availableSize) override;
+    void layout(const UIContext& ctx, SDL_FRect allocatedRect) override;
+    bool handleEvent(glm::vec2 mousePos,glm::vec2  parentAbsPos, const SDL_Event& event) override;
+    void draw(const UIContext& ctx, glm::vec2 parentAbsPos) override;
+
+private:
+    std::unique_ptr<Widget> content;
     std::function<void()> callback;
-    
-    // State
+
+    bool isEnabled = true;
     bool isHovered = false;
     bool isPressed = false;
 };
 
+class Frame : public Widget {
+public:
+
+    void addWidget(std::unique_ptr<Widget> widget);
+    bool handleEvent(glm::vec2 mousePos,glm::vec2  parentPos, const SDL_Event& event) override;
+    void draw(const UIContext& ctx, glm::vec2 parentAbsPos) override;
+
+private:
+    std::vector<std::unique_ptr<Widget>> widgets;
+
+};
+
+// Automatically stacks children vertically
+class VBox : public Widget {
+public:
+    explicit VBox(const float spacing = 5.0f, const float padding = 5.0f)
+        : spacing(spacing), padding(padding) {
+        // Default VBox behavior: Wrap around children, but width matches parent if needed
+        setSizeMode(SizeMode::WrapContent, SizeMode::WrapContent);
+    }
+
+    void addWidget(std::unique_ptr<Widget> widget) { children.push_back(std::move(widget)); }
+    glm::vec2 getPreferredSize(const UIContext& ctx, glm::vec2 availableSize) override;
+    void layout(const UIContext& ctx, SDL_FRect allocatedRect) override;
+    bool handleEvent(glm::vec2 mousePos, glm::vec2 parentAbsPos, const SDL_Event& event) override;
+    void draw(const UIContext& context, glm::vec2 parentAbsPos) override;
+
+private:
+    std::vector<std::unique_ptr<Widget>> children;
+    float spacing;
+    float padding;
+};
+
 class GuiManager {
 public:
-    explicit GuiManager(Renderer& renderer, TTF_Font* font);
+    void setRoot(std::unique_ptr<Widget> root) {
+        rootWidget = std::move(root);
+    }
 
-    void createButton(const std::string& label, float y, std::function<void()> onClick);
-    void handleEvents(const SDL_Event& event) const;
-    void render() const;
+    void updateLayout(const UIContext& context, float screenWidth, float screenHeight) const;
+
+    void handleEvent(const UIContext& ctx, const SDL_Event& event) const;
+    void render(const UIContext& ctx) const;
+
 private:
-    Renderer &renderer;
-    TTF_Font* font;
-
-    std::vector<std::unique_ptr<UiElement>> guiElements;
-};
+    std::unique_ptr<Widget> rootWidget;
+};;
