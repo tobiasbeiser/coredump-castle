@@ -83,23 +83,6 @@ void Renderer::startFrame(const int red, const int green, const int blue, const 
 
 void Renderer::endFrame() const
 {
-	for (auto &debug : DebugSystem::instance().debugRects) {
-		SDL_SetRenderDrawColor(renderer.get(), debug.color.r, debug.color.g, debug.color.b, debug.color.a);
-		debug.rect.x -= viewport.x;
-		debug.rect.y -= viewport.y;
-		SDL_RenderRect(renderer.get(), &debug.rect);
-	}
-
-	std::string debugMessage;
-	for (std::string message : DebugSystem::instance().debugMessages) {
-		debugMessage.append(message + "\n");
-	}
-	const std::uint8_t red = 255, green = 255, blue = 255, alpha = 255;
-	SDL_SetRenderDrawColor(renderer.get(), red, green, blue, alpha);
-
-	const float debugTextX = 5, debugTextY = 5;
-	SDL_RenderDebugText(renderer.get(), debugTextX, debugTextY, debugMessage.c_str());
-
 	SDL_RenderPresent(renderer.get());
 }
 
@@ -193,29 +176,21 @@ void Renderer::renderTexture(SDL_Texture &texture, const std::optional<SDL_FRect
 	SDL_RenderTextureRotated(renderer.get(), &texture, srcPtr, dstPtr, 0, nullptr, flipMode);
 }
 
-void Renderer::drawRectShape(const SDL_FRect buttonRect, const SDL_Color fillColor, const SDL_Color outlineColor) const
+void Renderer::drawRectShape(const SDL_FRect rect, const SDL_Color fillColor, const SDL_Color outlineColor) const
 {
 
 	SDL_SetRenderDrawColor(renderer.get(), fillColor.r, fillColor.g, fillColor.b, fillColor.a);
 
-    SDL_RenderFillRect(renderer.get(), &buttonRect);
+    SDL_RenderFillRect(renderer.get(), &rect);
 
 	SDL_SetRenderDrawColor(renderer.get(), outlineColor.r, outlineColor.g, outlineColor.b, outlineColor.a);
-    SDL_RenderRect(renderer.get(), &buttonRect);
+    SDL_RenderRect(renderer.get(), &rect);
 }
 
-void Renderer::drawTextCentered(TTF_Text* textObject, const float x, const float y, const float w, const float h, const SDL_Color color)
+void Renderer::drawTextAt(TTF_Text* textObject, const float x, const float y, const SDL_Color color) const
 {
 	TTF_SetTextColor(textObject, color.r, color.g, color.b, color.a);
-
-	int textW = 0, textH = 0;
-	TTF_GetTextSize(textObject, &textW, &textH);
-
-	// Calculate center offset
-	const float textX = x + (w - textW) / 2.0f;
-	const float textY = y + (h - textH) / 2.0f;
-
-	TTF_DrawRendererText(textObject, textX, textY);
+	TTF_DrawRendererText(textObject, x, y);
 
 }
 

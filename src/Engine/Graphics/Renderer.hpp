@@ -56,16 +56,22 @@ class Renderer {
 	void centerCameraOn(const glm::vec2 &position, const glm::vec2 &levelPos, const glm::vec2 &levelSize);
 
 	void resize(Resolution newResolution);
-	Resolution getLogicalResolution() const { return logicalResolution; }
-	glm::vec2 windowToLogical(float windowX, float windowY) const;
+	[[nodiscard]] Resolution getLogicalResolution() const { return logicalResolution; }
+	[[nodiscard]] glm::vec2 windowToLogical(float windowX, float windowY) const;
+	void setClipRect(const SDL_Rect& rect) const;
+	void clearClipRect() const;
+
+	[[nodiscard]] SDL_Renderer* getNativeRenderer() const { return renderer.get(); }
+	[[nodiscard]] TTF_TextEngine* getTextEngine() const { return textEngine.get(); }
 
 	[[nodiscard]] std::unique_ptr<SDL_Texture, SDLTextureDeleter> loadTexture(const std::filesystem::path &filePath) const;
 	static std::unique_ptr<TTF_Font, TTFFontCloser> loadFont(const std::filesystem::path &filePath, int fontSize);
 	std::unique_ptr<TTF_Text, TTFTextDestroyer> createText(TTF_Font *font, const std::string &text) const;
 	void renderTexture(SDL_Texture &texture, std::optional<SDL_FRect> srcRect, std::optional<SDL_FRect> dstRect,
 	                   bool flip) const;
-	void drawRectShape(SDL_FRect buttonRect, SDL_Color fillColor, SDL_Color outlineColor) const;
-	static void drawTextCentered(TTF_Text* textObject, float x, float y, float w, float h, SDL_Color color);
+	void drawRectShape(SDL_FRect rect, SDL_Color fillColor, SDL_Color outlineColor) const;
+	void drawTextAt(TTF_Text* textObject, float x, float y, SDL_Color color) const;
+	// void drawTextCentered(TTF_Text* textObject, float x, float y, float w, float h, SDL_Color color) const;
 	void renderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, float scrollFactor) const;
 	void renderCircularFade(float progress, SDL_FColor color = {0, 0, 0, 255});
 
