@@ -24,18 +24,14 @@ class MainMenuState final : public GameState {
 	void render(GameEngine &game, float alpha) override;
 
 private:
-	std::unique_ptr<GuiManager> guiManager; // The Manager owns the UI:
-	TTF_Font* titleFont = nullptr;
-	std::unique_ptr<TTF_Text, TTFTextDestroyer> titleText;
-	SDL_FRect titleRect{};
+	void setupUI(GameEngine& game);
+	std::unique_ptr<GuiManager> guiManager;
+	std::unique_ptr<UIContext> context;
 	InputManager &inputManager;
 	TextureManager &textureManager;
 	FontManager &fontManager;
 	Renderer &renderer;
 	ECS::Systems::RenderSystem renderSystem{renderer};
 	bool paused = false;
-	float accumulator = 0.0f;
-	int counter = 0;
-	static constexpr float stepSize = 1.0f / 120.0f;
 };
 } // namespace GameEngine
