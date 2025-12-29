@@ -71,9 +71,9 @@ class SpatialHash {
 	template <typename Callback>
 	void queryExcluding(const SDL_FRect &queryBox, const ECS::Entity excludeEntity, const Callback &callback) const
 	{
-		query(queryBox, [&](ECS::Entity entity, const SDL_FRect &box) {
+		query(queryBox, [&](const ECS::Entity entity, const SDL_FRect &box) {
 			if (entity != excludeEntity) {
-				callback(entity, box);
+				callback(box);
 			}
 		});
 	}

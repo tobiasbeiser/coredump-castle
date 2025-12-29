@@ -112,11 +112,12 @@ void resolveHorizontalCollisions(const Entity entity, Registry &registry, const 
 	auto &[velocity] = registry.get<VelocityComponent>(entity);
 	auto &[acceleration] = registry.get<AccelerationComponent>(entity);
 
-	auto scaledEntityBox = buildEntityCollisionBox(entity, registry);
+	auto currentEntityCollisionBox = buildEntityCollisionBox(entity, registry);
 
-	grid.queryExcluding(scaledEntityBox, entity, [&](Entity, const SDL_FRect &tileBox) {
-		if (resolveHorizontalCollision(tileBox, position, velocity, acceleration, scaledEntityBox)) {
-			scaledEntityBox = buildEntityCollisionBox(entity, registry);
+	grid.queryExcluding(currentEntityCollisionBox, entity, [&](const SDL_FRect &tileBox) {
+		if (resolveHorizontalCollision(tileBox, position, velocity, acceleration, currentEntityCollisionBox)) {
+			// We must update the collision box so subsequent checks use the new position
+			currentEntityCollisionBox = buildEntityCollisionBox(entity, registry);
 		}
 	});
 }
@@ -128,19 +129,22 @@ void resolveVerticalCollisions(const Entity entity, Registry &registry, const Ut
 	auto &[acceleration] = registry.get<AccelerationComponent>(entity);
 
 	bool grounded = false;
-	auto scaledEntityBox = buildEntityCollisionBox(entity, registry);
+	auto currentEntityCollisionBox = buildEntityCollisionBox(entity, registry);
 
-	SDL_FRect queryBox = scaledEntityBox;
+	SDL_FRect queryBox = currentEntityCollisionBox;
+	// Check for ground tile in the next bucket
 	queryBox.h += 1.0f;
 
-	grid.queryExcluding(queryBox, entity, [&](Entity, const SDL_FRect &tileBox) {
-		if (resolveVerticalCollision(tileBox, position, velocity, acceleration, scaledEntityBox)) {
-			scaledEntityBox = buildEntityCollisionBox(entity, registry);
+	grid.queryExcluding(queryBox, entity, [&](const SDL_FRect &tileBox) {
+		if (resolveVerticalCollision(tileBox, position, velocity, acceleration, currentEntityCollisionBox)) {
+			// We must update the collision box so subsequent checks use the new position
+			currentEntityCollisionBox = buildEntityCollisionBox(entity, registry);
 		}
 
 		if (registry.has<GroundedComponent>(entity)) {
-			scaledEntityBox = buildEntityCollisionBox(entity, registry);
-			const SDL_FRect sensorBox{scaledEntityBox.x, scaledEntityBox.y + scaledEntityBox.h, scaledEntityBox.w, 1};
+			const SDL_FRect sensorBox{currentEntityCollisionBox.x,
+			                          currentEntityCollisionBox.y + currentEntityCollisionBox.h,
+			                          currentEntityCollisionBox.w, 1};
 
 			SDL_FRect sensorIntersection;
 			if (SDL_GetRectIntersectionFloat(&sensorBox, &tileBox, &sensorIntersection)) {

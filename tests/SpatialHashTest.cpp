@@ -12,7 +12,7 @@ class SpatialHashTest : public ::testing::Test {
 TEST_F(SpatialHashTest, QueryEmptyGridReturnsNothing)
 {
 	int count = 0;
-	hash.query({0, 0, 32, 32}, [&](Entity, const SDL_FRect &) { ++count; });
+	hash.query({0, 0, 32, 32}, [&](const Entity, const SDL_FRect &) { ++count; });
 	EXPECT_EQ(count, 0);
 }
 
@@ -21,10 +21,10 @@ TEST_F(SpatialHashTest, InsertAndQuerySingleEntity)
 	constexpr Entity e{1};
 	hash.insert(e, {10, 10, 20, 20});
 
-	Entity found{0};
-	hash.query({0, 0, 50, 50}, [&](const Entity entity, const SDL_FRect &) { found = entity; });
+	SDL_FRect found{0, 0, 0, 0};
+	hash.query({0, 0, 50, 50}, [&](const Entity, const SDL_FRect &box) { found = box; });
 
-	EXPECT_EQ(found, 1);
+	EXPECT_FLOAT_EQ(found.x, 10.0f);
 }
 
 TEST_F(SpatialHashTest, QueryExcludingSelf)
@@ -34,11 +34,11 @@ TEST_F(SpatialHashTest, QueryExcludingSelf)
 	hash.insert(e1, {10, 10, 20, 20});
 	hash.insert(e2, {15, 15, 20, 20});
 
-	std::vector<uint32_t> results;
-	hash.queryExcluding({0, 0, 50, 50}, e1, [&](const Entity entity, const SDL_FRect &) { results.push_back(entity); });
+	std::vector<SDL_FRect> results;
+	hash.queryExcluding({0, 0, 50, 50}, e1, [&](const SDL_FRect &box) { results.push_back(box); });
 
 	EXPECT_EQ(results.size(), 1);
-	EXPECT_EQ(results[0], 2);
+	EXPECT_FLOAT_EQ(results[0].x, 15.0f);
 }
 
 TEST_F(SpatialHashTest, EntitySpanningMultipleCells)
@@ -47,7 +47,7 @@ TEST_F(SpatialHashTest, EntitySpanningMultipleCells)
 	hash.insert(e, {0, 0, 200, 200});
 
 	int count = 0;
-	hash.query({150, 150, 10, 10}, [&](Entity, const SDL_FRect &) { ++count; });
+	hash.query({150, 150, 10, 10}, [&](const Entity, const SDL_FRect &) { ++count; });
 
 	EXPECT_GT(count, 0);
 }
@@ -58,7 +58,7 @@ TEST_F(SpatialHashTest, ClearRemovesAllEntries)
 	hash.clear();
 
 	int count = 0;
-	hash.query({0, 0, 100, 100}, [&](Entity, const SDL_FRect &) { ++count; });
+	hash.query({0, 0, 100, 100}, [&](const Entity, const SDL_FRect &) { ++count; });
 
 	EXPECT_EQ(count, 0);
 }
