@@ -30,6 +30,10 @@ class FileSaveStorage final : public ISaveStorage {
 
 	[[nodiscard]] nlohmann::json read() const override
 	{
+		if (getSaveFileName().empty()) {
+			return nlohmann::json::object(); // return empty json to skip reinitialization
+		}
+
 		const auto path = getSavePath() / getSaveFileName();
 		if (!std::filesystem::exists(path)) {
 			throw std::runtime_error("Save file path " + path.string() + " does not exist");
@@ -59,7 +63,13 @@ class FileSaveStorage final : public ISaveStorage {
 		return saveFileNames;
 	}
 
-	void setSaveName(std::string newSaveName) override { saveName = std::move(saveName); }
+	std::string getSaveName() override {
+		return saveName;
+	}
+
+	void setSaveName(const std::string newSaveName) override {
+		saveName = newSaveName;
+	}
 
   private:
 	std::string saveName{};
