@@ -29,7 +29,7 @@ void Label::layout(const UIContext &ctx, const SDL_FRect allocatedRect)
 
 void Label::draw(const UIContext &ctx, const glm::vec2 parentPos)
 {
-	const auto [x, y, w, h] = absoluteRect(parentPos);
+	const auto [x, y, w, h] = getAbsoluteRect(parentPos);
 
 
 	// TODO: solve subpixel rendering prevention
@@ -82,7 +82,7 @@ void Button::layout(const UIContext &ctx, SDL_FRect allocatedRect)
 
 bool Button::handleEvent(const glm::vec2 mousePos, const glm::vec2 parentAbsPos, const SDL_Event &event)
 {
-	const SDL_FRect absRect = absoluteRect(parentAbsPos);
+	const SDL_FRect absRect = getAbsoluteRect(parentAbsPos);
 	const SDL_FPoint mousePt = {mousePos.x, mousePos.y};
 	const bool isInside = SDL_PointInRectFloat(&mousePt, &absRect);
 
@@ -117,7 +117,7 @@ void Button::draw(const UIContext &ctx, const glm::vec2 parentAbsPos)
 	const WidgetState s = isPressed ? WidgetState::Pressed : isHovered ? WidgetState::Hovered : WidgetState::Normal;
 
 	const auto &[fillCol, outlineCol, textCol] = ctx.theme.button.paintFor(s);
-	const SDL_FRect r = absoluteRect(parentAbsPos);
+	const SDL_FRect r = getAbsoluteRect(parentAbsPos);
 
 	ctx.renderer.drawRectShape(r, fillCol, outlineCol);
 
@@ -136,7 +136,7 @@ void Frame::addWidget(std::unique_ptr<Widget> widget)
 bool Frame::handleEvent(const glm::vec2 mousePos, const glm::vec2 parentAbsPos, const SDL_Event &event)
 {
 	const SDL_FPoint mousePt = {mousePos.x, mousePos.y};
-	const SDL_FRect absRect = absoluteRect(parentAbsPos);
+	const SDL_FRect absRect = getAbsoluteRect(parentAbsPos);
 
 	if (SDL_PointInRectFloat(&mousePt, &absRect)) {
 	}
@@ -152,7 +152,7 @@ bool Frame::handleEvent(const glm::vec2 mousePos, const glm::vec2 parentAbsPos, 
 void Frame::draw(const UIContext &ctx, const glm::vec2 parentAbsPos)
 {
 
-	const SDL_FRect drawRect = absoluteRect(parentAbsPos);
+	const SDL_FRect drawRect = getAbsoluteRect(parentAbsPos);
 
 	// TODO: make frame be drawable with individual colors
 	const auto &fs = ctx.theme.frame;

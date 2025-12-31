@@ -14,6 +14,7 @@ enum class SizeMode {
 	WrapContent, // Shrink to fit content (e.g., text size)
 	MatchParent  // Expand to fill available parent space
 };
+
 struct Paint {
 	SDL_Color fillCol{};
 	SDL_Color outlineCol{};
@@ -28,7 +29,7 @@ struct ButtonStyle {
 
 	[[nodiscard]] const Paint &paintFor(const WidgetState s) const noexcept
 	{
-		switch (s) {
+		switch (s) { //TODO: add disabled state, e.g. if we don't have previous saves for the "Continue" view
 		case WidgetState::Hovered:
 			return hovered;
 		case WidgetState::Pressed:
@@ -55,9 +56,9 @@ struct UiTheme {
 
 struct UIContext {
 	Renderer &renderer;
-	TTF_Font *titleFont;
-	TTF_Font *bigFont;
-	TTF_Font *textFont;
+	TTF_Font *titleFont=nullptr;
+	TTF_Font *bigFont=nullptr;
+	TTF_Font *textFont=nullptr;
 	UiTheme theme;
 	Resolution resolution;
 };
@@ -91,31 +92,32 @@ class Widget {
 	{
 		return {parentAbsPos.x + bounds.x, parentAbsPos.y + bounds.y};
 	}
-	[[nodiscard]] SDL_FRect absoluteRect(const glm::vec2 parentAbsPos) const noexcept
+
+protected:
+	[[nodiscard]] SDL_FRect getAbsoluteRect(const glm::vec2 parentAbsPos) const noexcept
 	{
 		return SDL_FRect{parentAbsPos.x + bounds.x, parentAbsPos.y + bounds.y, bounds.w, bounds.h};
 	}
+	// Helper: Resolve final size based on modes
+	[[nodiscard]] glm::vec2 resolveSize(const glm::vec2 contentSize, const glm::vec2 availableSpace) const
+	{
+		float w = (widthMode == SizeMode::Fixed)         ? fixedSize.x
+				  : (widthMode == SizeMode::MatchParent) ? availableSpace.x
+														 : contentSize.x; // WrapContent
 
-	// TODO: figure out how to use private instead of protected here
-  protected:
+		float h = (heightMode == SizeMode::Fixed)         ? fixedSize.y
+				  : (heightMode == SizeMode::MatchParent) ? availableSpace.y
+														  : contentSize.y; // WrapContent
+		return {w, h};
+	}
+
+  private:
 	SDL_FRect bounds = {0.0f, 0.0f, 0.0f, 0.0f}; // Position is relative to Parent
 
 	SizeMode widthMode = SizeMode::Fixed;
 	SizeMode heightMode = SizeMode::Fixed;
 	glm::vec2 fixedSize = {100.0f, 50.0f};
 
-	// Helper: Resolve final size based on modes
-	[[nodiscard]] glm::vec2 resolveSize(const glm::vec2 contentSize, const glm::vec2 availableSpace) const
-	{
-		float w = (widthMode == SizeMode::Fixed)         ? fixedSize.x
-		          : (widthMode == SizeMode::MatchParent) ? availableSpace.x
-		                                                 : contentSize.x; // WrapContent
-
-		float h = (heightMode == SizeMode::Fixed)         ? fixedSize.y
-		          : (heightMode == SizeMode::MatchParent) ? availableSpace.y
-		                                                  : contentSize.y; // WrapContent
-		return {w, h};
-	}
 };
 
 // A simple widget that just consumes space (pushes things apart)
