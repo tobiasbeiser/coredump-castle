@@ -14,8 +14,8 @@
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
 #include "Engine/ECS/Components/Tags/InactiveTag.hpp"
-#include "Engine/Utils/BlinkUtils.hpp"
 #include "Engine/ECS/View.hpp"
+#include "Engine/Utils/BlinkUtils.hpp"
 
 #include <algorithm>
 #include <stdexcept>
@@ -85,7 +85,7 @@ void RenderSystem::update(Registry &registry, float alpha)
 
 		SDL_Color colorMod = {255, 255, 255, 255};
 		if (registry.has<BlinkComponent>(entity) && registry.has<HealthComponent>(entity)) {
-			colorMod = GameEngine::Utils::Blink::getBlinkColor(registry, entity);
+			colorMod = Utils::Blink::getBlinkColor(registry, entity);
 		}
 
 		renderItems.push_back(RenderItem{.layer = layer,

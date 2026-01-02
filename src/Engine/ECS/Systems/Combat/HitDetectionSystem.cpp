@@ -1,7 +1,6 @@
 #include "HitDetectionSystem.hpp"
 
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
-#include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
@@ -12,6 +11,7 @@
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
+#include "Engine/ECS/Systems/Combat/HealthSystem.hpp"
 #include "Engine/ECS/View.hpp"
 
 #include <glm/vec2.hpp>
@@ -100,7 +100,7 @@ SDL_FRect getHurtBoxRect(Registry &registry, const Entity entity)
 void resolveAttacks(Registry &registry)
 {
 	auto attackerView = registry.view<AttackComponent, HitBoxComponent, PositionComponent>();
-	auto victimView = registry.view<HurtBoxComponent, PositionComponent, StateComponent>();
+	auto victimView = registry.view<HurtBoxComponent, PositionComponent, HealthComponent>();
 
 	for (const auto attacker : attackerView) {
 		const auto &attackComponent = registry.get<AttackComponent>(attacker);
@@ -121,19 +121,19 @@ void resolveAttacks(Registry &registry)
 				continue;
 			}
 
-			auto &[victimState] = registry.get<StateComponent>(victim);
-			if (victimState == State::Dead) {
+			const auto &victimHealth = registry.get<HealthComponent>(victim);
+			if (HealthSystem::isDead(victimHealth)) {
 				continue;
 			}
 
 			SDL_FRect victimHurtBoxRect = getHurtBoxRect(registry, victim);
+
 
 			if (SDL_HasRectIntersectionFloat(&attackerHitBoxRect, &victimHurtBoxRect)) {
 				if (!registry.has<PendingDamageComponent>(victim)) {
 					registry.registerComponent(victim, PendingDamageComponent{10});
 				}
 
-				victimState = State::Hurting;
 				break;
 			}
 		}

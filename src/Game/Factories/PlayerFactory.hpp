@@ -6,6 +6,8 @@
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HealthComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InteractionComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InventoryComponent.hpp"
@@ -21,8 +23,6 @@
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/Graphics/TextureManager.hpp"
-#include <Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp>
-#include <Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp>
 
 class PlayerFactory {
   public:
@@ -63,7 +63,7 @@ class PlayerFactory {
 		registry.registerComponent(e, InteractionComponent{19, 25, 21, 32});
 		registry.registerComponent(e, HurtBoxComponent{19, 25, 21, 32});
 		registry.registerComponent(e, HitBoxComponent{.hitbox = {0, 0, 21, 32}, .isBodyHitBox = false});
-		registry.registerComponent(e, HealthComponent{100, 100, 1.5s});
+		registry.registerComponent(e, HealthComponent{100, 100, 0.6s});
 
 		return e;
 	}

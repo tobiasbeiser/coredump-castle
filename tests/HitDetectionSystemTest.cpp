@@ -36,13 +36,22 @@ class HitDetectionTest : public ::testing::Test {
 		registry.registerComponent<HurtBoxComponent>(attacker, {.hurtBox = {0.f, 0.f, 20.f, 20.f}});
 		registry.registerComponent<AttackComponent>(attacker, {Timer{1s}, Timer{1s}});
 		registry.registerComponent<StateComponent>(attacker, {});
+		registry.registerComponent<HealthComponent>(attacker, {100, 100});
 		registry.registerComponent<RenderComponent>(attacker, {.layer = 0, .flipX = false});
+		AnimationComponent attackerAnim;
+		attackerAnim.addAnimation(AnimationType::Hurting, {}, std::chrono::duration<float>(1.0f));
+		registry.registerComponent(attacker, attackerAnim);
 
 		registry.registerComponent<EnemyTag>(enemy, {});
 		registry.registerComponent<PositionComponent>(enemy, {{500.f, 500.f}});
 		registry.registerComponent<AttackComponent>(enemy, {Timer{1s}, Timer{1s}});
+		registry.registerComponent<HealthComponent>(enemy, {100, 100});
 		registry.registerComponent<HurtBoxComponent>(enemy, {.hurtBox = {0.f, 0.f, 20.f, 20.f}});
 		registry.registerComponent<StateComponent>(enemy, {});
+
+		AnimationComponent enemyAnim;
+		enemyAnim.addAnimation(AnimationType::Hurting, {}, std::chrono::duration<float>(1.0f));
+		registry.registerComponent(enemy, enemyAnim);
 	}
 };
 
@@ -191,6 +200,8 @@ TEST_F(HitDetectionTest, HitShouldSetVictimStateToHurting)
 	const auto &attackerState = registry.get<StateComponent>(attacker);
 
 	GameEngine::ECS::Systems::HitDetectionSystem::update(registry);
+	GameEngine::ECS::Systems::HealthSystem::update(registry, 0.1f);
+	GameEngine::ECS::Systems::StateSystem::update(registry);
 
 	EXPECT_EQ(attackerState.state, State::Hurting);
 }

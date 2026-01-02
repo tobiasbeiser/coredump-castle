@@ -10,8 +10,7 @@ struct HealthComponent {
 
 	HealthComponent(const int health, const int maxHealth,
 	                const std::chrono::duration<float> invulnerabilityDuration = std::chrono::duration<float>(1.0f))
-	    : health(health), maxHealth(maxHealth), invulnerabilityTimer(invulnerabilityDuration)
+	    : health(health), maxHealth(maxHealth), invulnerabilityTimer(invulnerabilityDuration, true)
 	{
-		invulnerabilityTimer.step(invulnerabilityDuration, false);
 	}
 };
