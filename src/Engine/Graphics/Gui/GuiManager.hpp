@@ -15,6 +15,11 @@ enum class SizeMode {
 	MatchParent  // Expand to fill available parent space
 };
 
+enum class Orientation {
+	Vertical,
+	Horizontal,
+};
+
 struct Paint {
 	SDL_Color fillCol{};
 	SDL_Color outlineCol{};
@@ -65,14 +70,14 @@ struct UIContext {
 
 class Widget {
   public:
+	Widget(const Widget &) = delete;
+	Widget &operator=(const Widget &) = delete;
+	Widget(Widget&&) = delete;
+	Widget &operator=(Widget &&) = delete;
 	virtual ~Widget() = default;
 
 	virtual glm::vec2 getPreferredSize(const UIContext &ctx, glm::vec2 availableSize) = 0;
-	virtual void layout(const UIContext &ctx, const SDL_FRect allocatedRect)
-	{
-		// TODO: add alignment
-		bounds = allocatedRect;
-	}
+	virtual void layout(const UIContext &ctx, const SDL_FRect allocatedRect) { bounds = allocatedRect; }
 
 	virtual bool handleEvent(glm::vec2 mousePos, glm::vec2 parentPos, const SDL_Event &event) = 0;
 	virtual void draw(const UIContext &ctx, glm::vec2 parentPos) = 0;
@@ -86,7 +91,6 @@ class Widget {
 
 	[[nodiscard]] SizeMode getWidthMode() const { return widthMode; }
 	[[nodiscard]] SizeMode getHeightMode() const { return heightMode; }
-	[[nodiscard]] SDL_FRect getBounds() const { return bounds; }
 	[[nodiscard]] glm::vec2 getRelativePosition() const { return {bounds.x, bounds.y}; }
 	[[nodiscard]] glm::vec2 absolutePosition(const glm::vec2 parentAbsPos) const
 	{
@@ -94,6 +98,7 @@ class Widget {
 	}
 
 protected:
+	Widget() = default;
 	[[nodiscard]] SDL_FRect getAbsoluteRect(const glm::vec2 parentAbsPos) const noexcept
 	{
 		return SDL_FRect{parentAbsPos.x + bounds.x, parentAbsPos.y + bounds.y, bounds.w, bounds.h};
@@ -116,27 +121,30 @@ protected:
 
 	SizeMode widthMode = SizeMode::Fixed;
 	SizeMode heightMode = SizeMode::Fixed;
-	glm::vec2 fixedSize = {100.0f, 50.0f};
+	glm::vec2 fixedSize = {100.0f, 50.0f}; // Necessary for resolving fixed size, gets transferred to bounds in layout()
 
 };
 
-// A simple widget that just consumes space (pushes things apart)
 class Spacer : public Widget {
   public:
-	explicit Spacer(const float height) : height(height) {}
+	explicit Spacer(const float width = 0.f, const float height = 0.f) : width(width), height(height) {}
 
-	glm::vec2 getPreferredSize(const UIContext &, glm::vec2) override { return {0.0f, height}; }
+	glm::vec2 getPreferredSize(const UIContext &, glm::vec2) override { return {width, height}; }
 	bool handleEvent(glm::vec2, glm::vec2, const SDL_Event &) override { return false; }
 	void draw(const UIContext &, glm::vec2) override {} // Invisible
 
   private:
+	float width;
 	float height;
 };
 
 // A simple text label
 class Label : public Widget {
   public:
-	Label(const std::string_view labelText, TTF_Font *font) : labelText(labelText), font(font) {}
+	Label(const std::string_view labelText, TTF_Font *font) : labelText(labelText), font(font)
+	{
+		setSizeMode(SizeMode::WrapContent, SizeMode::WrapContent);
+	}
 
 	glm::vec2 getPreferredSize(const UIContext &ctx, glm::vec2 availableSize) override;
 	void layout(const UIContext &ctx, SDL_FRect allocatedRect) override;
@@ -169,35 +177,32 @@ class Button final : public Widget {
 	bool isPressed = false;
 };
 
-class Frame : public Widget {
+
+class Container : public Widget {
   public:
-	void addWidget(std::unique_ptr<Widget> widget);
-	bool handleEvent(glm::vec2 mousePos, glm::vec2 parentPos, const SDL_Event &event) override;
-	void draw(const UIContext &ctx, glm::vec2 parentAbsPos) override;
-
-  private:
-	std::vector<std::unique_ptr<Widget>> widgets;
-};
-
-// Automatically stacks children vertically
-class VBox : public Widget {
-  public:
-	explicit VBox(const float spacing = 5.0f, const float padding = 5.0f) : spacing(spacing), padding(padding)
-	{
-		// Default VBox behavior: Wrap around children, but width matches parent if needed
-		setSizeMode(SizeMode::WrapContent, SizeMode::WrapContent);
-	}
-
 	void addWidget(std::unique_ptr<Widget> widget) { children.push_back(std::move(widget)); }
-	glm::vec2 getPreferredSize(const UIContext &ctx, glm::vec2 availableSize) override;
-	void layout(const UIContext &ctx, SDL_FRect allocatedRect) override;
 	bool handleEvent(glm::vec2 mousePos, glm::vec2 parentAbsPos, const SDL_Event &event) override;
 	void draw(const UIContext &context, glm::vec2 parentAbsPos) override;
 
-  private:
+  protected:
 	std::vector<std::unique_ptr<Widget>> children;
+};
+
+class LinearLayout : public Container {
+public:
+	explicit LinearLayout(const float spacing = 5.0f, const float padding = 5.0f) : spacing(spacing), padding(padding)
+	{
+		setSizeMode(SizeMode::MatchParent, SizeMode::MatchParent);
+	}
+
+	glm::vec2 getPreferredSize(const UIContext &ctx, glm::vec2 availableSize) override;
+	void layout(const UIContext &ctx, SDL_FRect allocatedRect) override;
+	void setOrientation(const Orientation newOrientation) {orientation = newOrientation;}
+
+private:
 	float spacing;
 	float padding;
+	Orientation orientation = Orientation::Vertical;
 };
 
 class GuiManager {
@@ -212,4 +217,3 @@ class GuiManager {
   private:
 	std::unique_ptr<Widget> rootWidget;
 };
-;

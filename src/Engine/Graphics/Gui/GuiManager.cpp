@@ -52,8 +52,10 @@ glm::vec2 Button::getPreferredSize(const UIContext &ctx, const glm::vec2 availab
 {
 	const auto buttonPadding = ctx.theme.button.padding * 2;
 
-	const glm::vec2 innerAvailable = {availableSize.x - buttonPadding,
-	                                  availableSize.y - buttonPadding};
+	const glm::vec2 innerAvailable = {
+		std::max(0.0f, availableSize.x - buttonPadding),
+		std::max(0.0f, availableSize.y - buttonPadding)
+	};
 
 	const glm::vec2 contentSize = content->getPreferredSize(ctx, innerAvailable);
 
@@ -128,89 +130,7 @@ void Button::draw(const UIContext &ctx, const glm::vec2 parentAbsPos)
 	content->draw(ctx, {r.x, r.y});
 }
 
-void Frame::addWidget(std::unique_ptr<Widget> widget)
-{
-	widgets.push_back(std::move(widget));
-}
-
-bool Frame::handleEvent(const glm::vec2 mousePos, const glm::vec2 parentAbsPos, const SDL_Event &event)
-{
-	const SDL_FPoint mousePt = {mousePos.x, mousePos.y};
-	const SDL_FRect absRect = getAbsoluteRect(parentAbsPos);
-
-	if (SDL_PointInRectFloat(&mousePt, &absRect)) {
-	}
-
-	for (const auto &child : std::ranges::reverse_view(widgets)) {
-		if (child->handleEvent(mousePos, absolutePosition(parentAbsPos), event)) {
-			return true;
-		}
-	}
-	return false;
-}
-
-void Frame::draw(const UIContext &ctx, const glm::vec2 parentAbsPos)
-{
-
-	const SDL_FRect drawRect = getAbsoluteRect(parentAbsPos);
-
-	// TODO: make frame be drawable with individual colors
-	const auto &fs = ctx.theme.frame;
-	ctx.renderer.drawRectShape(drawRect, fs.fill, fs.outline);
-
-	for (const auto &widget : widgets)
-		widget->draw(ctx, absolutePosition(parentAbsPos));
-}
-
-glm::vec2 VBox::getPreferredSize(const UIContext &ctx, const glm::vec2 availableSize)
-{
-
-	float maxChildWidth = 0.0f;
-	float totalHeight = padding * 2.0f;
-
-	// Subtract padding from available space for children
-	const glm::vec2 innerAvailable = {availableSize.x - (padding * 2), availableSize.y - (padding * 2)};
-
-	for (const auto &child : children) {
-		glm::vec2 childSize = child->getPreferredSize(ctx, innerAvailable);
-		maxChildWidth = std::max(maxChildWidth, childSize.x);
-		totalHeight += childSize.y;
-	}
-
-	if (!children.empty()) {
-		totalHeight += (children.size() - 1) * spacing;
-	}
-
-	const glm::vec2 contentSize = {maxChildWidth + (padding * 2), totalHeight};
-	return resolveSize(contentSize, availableSize);
-}
-
-void VBox::layout(const UIContext &ctx, SDL_FRect allocatedRect)
-{
-	Widget::layout(ctx, allocatedRect);
-
-	// 2. Layout children
-	float currentY = padding;
-	float innerWidth = allocatedRect.w - (padding * 2);
-
-	for (auto &child : children) {
-		// Ask child for height again, now that we know our exact width
-		glm::vec2 childPref = child->getPreferredSize(ctx, {innerWidth, allocatedRect.h});
-
-		// Calculate child rect
-		SDL_FRect childRect;
-		childRect.y = currentY;
-		childRect.w = child->getWidthMode() == SizeMode::MatchParent ? innerWidth : childPref.x;
-		childRect.h = childPref.y;
-		childRect.x = padding + (innerWidth - childRect.w) / 2.0f;
-
-		child->layout(ctx, childRect);
-
-		currentY += childRect.h + spacing;
-	}
-}
-
-bool VBox::handleEvent(const glm::vec2 mousePos, const glm::vec2 parentAbsPos, const SDL_Event &event)
+bool Container::handleEvent(const glm::vec2 mousePos, const glm::vec2 parentAbsPos, const SDL_Event &event)
 {
 	// Reverse iteration for event bubbling (top-most child first)
 	for (const auto &child : std::ranges::reverse_view(children)) {
@@ -220,7 +140,7 @@ bool VBox::handleEvent(const glm::vec2 mousePos, const glm::vec2 parentAbsPos, c
 	return false;
 }
 
-void VBox::draw(const UIContext &context, const glm::vec2 parentAbsPos)
+void Container::draw(const UIContext &context, const glm::vec2 parentAbsPos)
 {
 
 	for (const auto &child : children) {
@@ -228,18 +148,114 @@ void VBox::draw(const UIContext &context, const glm::vec2 parentAbsPos)
 	}
 }
 
+
+glm::vec2 LinearLayout::getPreferredSize(const UIContext &ctx, const glm::vec2 availableSize)
+{
+	float primaryDim = 0.0f; // Height for Vertical, Width for Horizontal
+	float secondaryDim = 0.0f; // Width for Vertical, Height for Horizontal
+
+	const bool isVert = orientation == Orientation::Vertical;
+	float availableX = 0.0f;
+	float availableY = 0.0f;
+
+	// calculate theoretically available space to single child
+	if (isVert) {
+		availableX = availableSize.x - padding * 2.f;
+		availableY = (availableSize.y - padding * 2.f - (children.size() - 1) * spacing) / children.size();
+	} else {
+		availableX = (availableSize.x - padding * 2.f - (children.size() - 1) * spacing) / children.size();
+		availableY = availableSize.y - padding * 2.f;
+	}
+
+	const bool isWrapSecondary = isVert ? (getWidthMode() == SizeMode::WrapContent)
+										: (getHeightMode() == SizeMode::WrapContent);
+	if (isWrapSecondary) {
+		if (isVert) availableX = 0.0f;
+		else        availableY = 0.0f;
+	}
+
+	const glm::vec2 innerAvail = {std::max(0.0f, availableX), std::max(0.0f, availableY)};
+
+	for (const auto &child : children) {
+
+		glm::vec2 childSize = child->getPreferredSize(ctx, innerAvail);
+
+		if (isVert) {
+			primaryDim += childSize.y;
+			secondaryDim = std::max(secondaryDim, childSize.x);
+		} else {
+			primaryDim += childSize.x;
+			secondaryDim = std::max(secondaryDim, childSize.y);
+		}
+	}
+
+	if (!children.empty()) {
+		primaryDim += (children.size() - 1) * spacing;
+	}
+
+	float finalW = (isVert ? secondaryDim : primaryDim) + padding * 2;
+	float finalH = (isVert ? primaryDim : secondaryDim) + padding * 2;
+
+	return resolveSize({finalW, finalH}, availableSize);
+}
+
+void LinearLayout::layout(const UIContext &ctx, SDL_FRect allocatedRect)
+{
+	Widget::layout(ctx, allocatedRect);
+
+	const bool isVert = (orientation == Orientation::Vertical);
+	float cursor = padding;
+
+	// Available space for children (absolute terms relative to this container)
+	const float innerW = allocatedRect.w - padding * 2;
+	const float innerH = allocatedRect.h - padding * 2;
+
+	for (const auto &child : children) { // Ask child for height again, now that we know our exact width
+
+		const glm::vec2 childPref = child->getPreferredSize(ctx, {innerW, innerH});
+
+		// Calculate child rect
+		SDL_FRect childRect;
+		if (isVert) {
+			childRect.x = padding;
+			childRect.y = cursor;
+			childRect.w = child->getWidthMode() == SizeMode::MatchParent ? innerW : childPref.x;
+			childRect.h = childPref.y;
+
+			if (child->getWidthMode() != SizeMode::MatchParent) {
+				childRect.x += (innerW - childRect.w) / 2.0f;
+			}
+
+			cursor += childRect.h + spacing;
+		} else
+		{
+			childRect.x = cursor;
+			childRect.y = padding;
+			childRect.w = childPref.x;
+			childRect.h = child->getHeightMode() == SizeMode::MatchParent ? innerH : childPref.y;
+
+			if (child->getHeightMode() != SizeMode::MatchParent) {
+				childRect.y += (innerH - childRect.h) / 2.0f;
+			}
+
+			cursor += childRect.w + spacing;
+		}
+		child->layout(ctx, childRect);
+	}
+}
+
 void GuiManager::updateLayout(const UIContext &context, const float screenWidth, const float screenHeight) const
 {
 	if (!rootWidget)
 		return;
-	// TODO: check if this is even necessary
-
-	// 1. Measure Pass: Ask root how big it wants to be with full screensize available
-	glm::vec2 available = {screenWidth, screenHeight};
-	glm::vec2 pref = rootWidget->getPreferredSize(context, available);
+	// // TODO: check if this is even necessary
+	//
+	// // 1. Measure Pass: Ask root how big it wants to be with full screensize available
+	// glm::vec2 available = {screenWidth, screenHeight};
+	// glm::vec2 pref = rootWidget->getPreferredSize(context, available);
 
 	// 2. Layout Pass: Set the root to its preferred size (or fullscreen)
-	SDL_FRect finalRect = {0.0f, 0.0f, pref.x, pref.y};
+	SDL_FRect finalRect = {0.0f, 0.0f, screenWidth, screenHeight};
 
 	rootWidget->layout(context, finalRect);
 }
