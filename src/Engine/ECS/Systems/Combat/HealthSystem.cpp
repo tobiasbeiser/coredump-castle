@@ -1,7 +1,4 @@
 #include "HealthSystem.hpp"
-
-#include "HealthSystem.hpp"
-
 #include "Engine/ECS/Components/Gameplay/Combat/PendingDamageComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"

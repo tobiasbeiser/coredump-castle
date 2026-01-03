@@ -133,8 +133,6 @@ void resolveAttacks(Registry &registry)
 				if (!registry.has<PendingDamageComponent>(victim)) {
 					registry.registerComponent(victim, PendingDamageComponent{10});
 				}
-
-				break;
 			}
 		}
 	}

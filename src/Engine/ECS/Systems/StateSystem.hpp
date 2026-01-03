@@ -6,10 +6,10 @@
 #include "Engine/ECS/Components/Render/AnimationComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 
+#include "Engine/ECS/Components/Gameplay/Combat/HealthComponent.hpp"
+#include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
+#include "Engine/ECS/Systems/Combat/HealthSystem.hpp"
 #include <Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp>
-#include <Engine/ECS/Components/Gameplay/Combat/HealthComponent.hpp>
-#include <Engine/ECS/Systems/Combat/AttackSystem.hpp>
-#include <Engine/ECS/Systems/Combat/HealthSystem.hpp>
 
 namespace GameEngine::ECS::Systems {
 class StateSystem {
@@ -46,8 +46,7 @@ class StateSystem {
 			}
 
 			if (registry.has<AttackComponent>(entity)) {
-				if (const auto &attack = registry.get<AttackComponent>(entity);
-				    AttackSystem::isAttacking(attack)) {
+				if (const auto &attack = registry.get<AttackComponent>(entity); AttackSystem::isAttacking(attack)) {
 					state.state = State::Attacking;
 					continue;
 				}
