@@ -12,6 +12,7 @@
 #include "../../Engine/Graphics/TextureManager.hpp"
 #include "AnimationFactory.hpp"
 #include "Engine/DebugSystem.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/ChaseComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HealthComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
@@ -35,6 +36,8 @@ class EnemyFactory {
 
 		const auto scale = getFloatProp(enemyObj, "scale", 1.0f);
 		const auto maxSpeedX = getFloatProp(enemyObj, "maxSpeedX", 50.0f);
+		const auto chaseSpeed = getFloatProp(enemyObj, "chaseSpeed", 120.0f);
+		const auto verticalDetectionHeight = getFloatProp(enemyObj, "verticalDetectionHeight", 80.0f);
 		const auto canPatrol = getBoolProp(enemyObj, "canPatrol");
 		const auto collisionStr = getStringProp(enemyObj, "collisionBox", "0,0,0,0");
 		const auto hitBoxStr = getStringProp(enemyObj, "hitBox", "");
@@ -70,10 +73,13 @@ class EnemyFactory {
 				registry.registerComponent(entity,
 				                           PatrolComponent{.minBounds = patrolRect->min, .maxBounds = patrolRect->max});
 			}
+			if (!isBodyHitBox) {
+				registry.registerComponent(entity,
+				                           ChaseComponent{.verticalDetectionHeight = verticalDetectionHeight,
+				                                          .chaseSpeed = chaseSpeed,
+				                                          .originalPatrolSpeed = maxSpeedX});
+			}
 		}
-
-		registry.registerComponent(entity,
-		                           AttackComponent{.attackTimer = Timer{1s}, .attackCoolDownTimer = Timer{0.2s}});
 
 		if (hitBoxStr) {
 			const auto hitBox = parseCollisionBox(hitBoxStr.value());
@@ -81,6 +87,20 @@ class EnemyFactory {
 		}
 
 		AnimationFactory::loadAnimationsFromTileset(registry, texMgr, map, enemyObj, entity);
+
+		// Set attack timer duration based on the attack animation length
+		using namespace std::chrono_literals;
+		std::chrono::duration<float> attackDuration = 1s; // default fallback
+		if (registry.has<AnimationComponent>(entity)) {
+			auto &animComp = registry.get<AnimationComponent>(entity);
+			if (animComp.hasAnimation(AnimationType::Attacking)) {
+				attackDuration = animComp.getAnimationDuration(AnimationType::Attacking);
+			}
+		}
+
+		registry.registerComponent(entity,
+		                           AttackComponent{.attackTimer = Timer{attackDuration}, .attackCoolDownTimer = Timer{0.2s}});
+
 		return entity;
 	}
 

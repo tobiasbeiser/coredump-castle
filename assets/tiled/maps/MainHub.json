@@ -364,21 +364,6 @@
                  "y":904.005163987336
                 }, 
                 {
-                 "id":22,
-                 "point":true,
-                 "properties":[
-                        {
-                         "name":"area",
-                         "type":"object",
-                         "value":24
-                        }],
-                 "rotation":0,
-                 "template":"..\/objects\/baseEnemy.tj",
-                 "visible":true,
-                 "x":1036.63054691289,
-                 "y":894.501118188528
-                }, 
-                {
                  "height":22.9578216764548,
                  "id":24,
                  "name":"",
@@ -388,6 +373,71 @@
                  "width":282.434596903364,
                  "x":837.159636946076,
                  "y":904.431393486386
+                }, 
+                {
+                 "id":25,
+                 "name":"Enemy",
+                 "properties":[
+                        {
+                         "name":"area",
+                         "type":"object",
+                         "value":24
+                        }, 
+                        {
+                         "name":"canPatrol",
+                         "type":"bool",
+                         "value":true
+                        }],
+                 "template":"..\/objects\/meleeEnemy.tj",
+                 "x":1037.37319807795,
+                 "y":884.143085958356
+                }, 
+                {
+                 "height":22.9578,
+                 "id":26,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":282.435,
+                 "x":610.517684196476,
+                 "y":711.628473838761
+                }, 
+                {
+                 "id":27,
+                 "name":"Enemy",
+                 "properties":[
+                        {
+                         "name":"area",
+                         "type":"object",
+                         "value":26
+                        }, 
+                        {
+                         "name":"canPatrol",
+                         "type":"bool",
+                         "value":true
+                        }],
+                 "template":"..\/objects\/meleeEnemy.tj",
+                 "x":810.727684196476,
+                 "y":689.204862520021
+                }, 
+                {
+                 "gid":612,
+                 "height":32,
+                 "id":28,
+                 "name":"",
+                 "properties":[
+                        {
+                         "name":"key",
+                         "type":"int",
+                         "value":1
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":32,
+                 "x":747.857684196476,
+                 "y":716.061862520021
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -490,7 +540,7 @@
          "y":0
         }],
  "nextlayerid":13,
- "nextobjectid":25,
+ "nextobjectid":29,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",

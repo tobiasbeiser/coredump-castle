@@ -51,9 +51,20 @@ class PlayerFactory {
 		registry.registerComponent(e, StateComponent{});
 
 		using namespace std::chrono_literals;
-		registry.registerComponent(e, AttackComponent{.attackTimer = Timer{0.3s}, .attackCoolDownTimer = Timer{0.2s}});
-
+	
 		AnimationFactory::loadAnimationsFromTileset(registry, texMgr, map, player, e);
+		using namespace std::chrono_literals;
+		std::chrono::duration<float> attackDuration = 1s; // default fallback
+		if (registry.has<AnimationComponent>(e)) {
+			auto &animComp = registry.get<AnimationComponent>(e);
+			if (animComp.hasAnimation(AnimationType::Attacking)) {
+				attackDuration = animComp.getAnimationDuration(AnimationType::Attacking);
+				SDL_Log("Attack duration: %f", attackDuration.count());
+			}
+		}
+
+		registry.registerComponent(e,
+		                           AttackComponent{.attackTimer = Timer{attackDuration}, .attackCoolDownTimer = Timer{0.2s}});
 
 		registry.registerComponent(e, InputComponent{});
 		registry.registerComponent(e, MovementComponent{});
