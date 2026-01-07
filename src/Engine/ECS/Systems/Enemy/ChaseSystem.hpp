@@ -6,6 +6,6 @@ class Registry;
 
 namespace GameEngine::ECS::Systems::ChaseSystem {
 
-void update(Registry &registry);
+void update(Registry &registry, float deltaTime);
 
 } // namespace GameEngine::ECS::Systems::ChaseSystem
