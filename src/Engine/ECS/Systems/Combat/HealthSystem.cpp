@@ -1,4 +1,5 @@
 #include "HealthSystem.hpp"
+#include "../../Components/Gameplay/Enemy/ChaseComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/PendingDamageComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
@@ -27,6 +28,10 @@ void update(Registry &registry, const float deltaTime)
 
 		if (health.health <= 0) {
 			health.health = 0;
+		}
+		if (registry.has<ChaseComponent>(entity)) {
+			auto &chase = registry.get<ChaseComponent>(entity);
+			chase.reactionDelay.reset();
 		}
 		registry.remove<PendingDamageComponent>(entity);
 	}

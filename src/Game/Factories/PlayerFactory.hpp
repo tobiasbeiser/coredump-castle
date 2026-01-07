@@ -51,7 +51,7 @@ class PlayerFactory {
 		registry.registerComponent(e, StateComponent{});
 
 		using namespace std::chrono_literals;
-	
+
 		AnimationFactory::loadAnimationsFromTileset(registry, texMgr, map, player, e);
 		using namespace std::chrono_literals;
 		std::chrono::duration<float> attackDuration = 1s; // default fallback
@@ -63,8 +63,8 @@ class PlayerFactory {
 			}
 		}
 
-		registry.registerComponent(e,
-		                           AttackComponent{.attackTimer = Timer{attackDuration}, .attackCoolDownTimer = Timer{0.2s}});
+		registry.registerComponent(
+		    e, AttackComponent{.attackTimer = Timer{attackDuration}, .attackCoolDownTimer = Timer{0.2s}});
 
 		registry.registerComponent(e, InputComponent{});
 		registry.registerComponent(e, MovementComponent{});
@@ -73,7 +73,7 @@ class PlayerFactory {
 
 		registry.registerComponent(e, InteractionComponent{19, 25, 21, 32});
 		registry.registerComponent(e, HurtBoxComponent{19, 25, 21, 32});
-		registry.registerComponent(e, HitBoxComponent{.hitbox = {0, 0, 21, 32}, .isBodyHitBox = false});
+		registry.registerComponent(e, HitBoxComponent{.weaponHitBox = {0, 0, 21, 32}});
 		registry.registerComponent(e, HealthComponent{100, 100, 0.6s});
 
 		return e;

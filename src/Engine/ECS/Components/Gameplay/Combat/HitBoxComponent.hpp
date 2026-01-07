@@ -2,6 +2,6 @@
 #include <SDL3/SDL_rect.h>
 
 struct HitBoxComponent {
-	SDL_FRect hitbox{0, 0, 0, 0};
-	bool isBodyHitBox{false};
+	SDL_FRect bodyHitBox{0, 0, 0, 0};
+	SDL_FRect weaponHitBox{0, 0, 0, 0};
 };

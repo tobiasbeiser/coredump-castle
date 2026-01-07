@@ -1,5 +1,3 @@
-#include "Engine/ECS/Systems/Combat/HitDetectionSystem.hpp"
-#include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HealthComponent.hpp"
@@ -8,7 +6,9 @@
 #include "Engine/ECS/Components/Gameplay/Combat/PendingDamageComponent.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
+#include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/Systems/Combat/HealthSystem.hpp"
+#include "Engine/ECS/Systems/Combat/HitDetectionSystem.hpp"
 #include <gtest/gtest.h>
 
 using namespace std::chrono_literals;
@@ -28,8 +28,8 @@ class HitDetectionMultiTargetTest : public ::testing::Test {
 
 		registry.registerComponent<PlayerTag>(attacker, {});
 		registry.registerComponent<PositionComponent>(attacker, {{0.f, 0.f}});
-		registry.registerComponent<HitBoxComponent>(attacker,
-		                                            {.hitbox = {0.f, 0.f, 100.f, 100.f}, .isBodyHitBox = false});
+		registry.registerComponent<HitBoxComponent>(
+		    attacker, {.bodyHitBox = {0.f, 0.f, 20.f, 20.f}, .weaponHitBox = {0.f, 0.f, 100.f, 100.f}});
 		// Wide attack to hit both
 		registry.registerComponent<HurtBoxComponent>(attacker, {.hurtBox = {0.f, 0.f, 20.f, 20.f}});
 		registry.registerComponent<AttackComponent>(attacker, {Timer{1s}, Timer{1s}});
@@ -62,7 +62,7 @@ TEST_F(HitDetectionMultiTargetTest, AttackerShouldHitMultipleEnemies)
 	// Both should have PendingDamage
 	bool e1Hit = registry.has<PendingDamageComponent>(enemy1);
 	bool e2Hit = registry.has<PendingDamageComponent>(enemy2);
-	
+
 	EXPECT_TRUE(e1Hit) << "Enemy 1 should be hit";
 	EXPECT_TRUE(e2Hit) << "Enemy 2 should be hit";
 }

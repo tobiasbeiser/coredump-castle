@@ -37,13 +37,15 @@ bool isHostile(Registry &registry, Entity attacker, Entity victim)
 	return false;
 }
 
-SDL_FRect getHitBoxRect(Registry &registry, Entity entity)
+
+
+SDL_FRect getWeaponHitBoxRect(Registry &registry, Entity entity)
 {
 	if (!registry.has<HitBoxComponent>(entity) || !registry.has<PositionComponent>(entity)) {
 		return {0, 0, 0, 0};
 	}
 
-	const auto &[hitbox, isBodyHitBox] = registry.get<HitBoxComponent>(entity);
+	const auto &[bodyHitBox, weaponHitBox] = registry.get<HitBoxComponent>(entity);
 	const auto &[position, previousPosition] = registry.get<PositionComponent>(entity);
 
 	bool facingLeft = false;
@@ -61,20 +63,13 @@ SDL_FRect getHitBoxRect(Registry &registry, Entity entity)
 	}
 	const auto &[hurtBox] = registry.get<HurtBoxComponent>(entity);
 
-	SDL_FRect result;
-
-	if (isBodyHitBox) {
-		result = {position.x + hurtBox.x * scale.x, position.y + hurtBox.y * scale.y, hurtBox.w * scale.x,
-		          hurtBox.h * scale.y};
+	SDL_FRect result = {0, 0, weaponHitBox.w * scale.x, weaponHitBox.h * scale.y};
+	if (facingLeft) {
+		result.x = position.x + hurtBox.x * scale.x - weaponHitBox.w * scale.x;
 	} else {
-		result = {0, 0, hitbox.w * scale.x, hitbox.h * scale.y};
-		if (facingLeft) {
-			result.x = position.x + hurtBox.x * scale.x - hitbox.w * scale.x;
-		} else {
-			result.x = position.x + hurtBox.x * scale.x + hurtBox.w * scale.x;
-		}
-		result.y = position.y + hurtBox.y * scale.y;
+		result.x = position.x + hurtBox.x * scale.x + hurtBox.w * scale.x;
 	}
+	result.y = position.y + hurtBox.y * scale.y;
 
 	return result;
 }
@@ -104,13 +99,22 @@ void resolveAttacks(Registry &registry)
 
 	for (const auto attacker : attackerView) {
 		const auto &attackComponent = registry.get<AttackComponent>(attacker);
+		const auto &[attackerBodyHitBox, attackerWeaponHitBox] = registry.get<HitBoxComponent>(attacker);
 
-		if (const auto &[attackerHitBox, attackerIsBodyHitBox] = registry.get<HitBoxComponent>(attacker);
-		    !attackerIsBodyHitBox && !AttackSystem::isAttacking(attackComponent)) {
-			continue;
+		const bool isAttacking = AttackSystem::isAttacking(attackComponent);
+		
+		// If not attacking, and body damage is considered 'always on' for hitboxes, we process.
+		// However, we should be careful. Usually only enemies deal body damage.
+		// But per user request "drop isBodyHitBox since it is now always on" + "all enemies deal damage".
+		
+		// We calculate hitboxes
+		SDL_FRect attackerWeaponRect = {0,0,0,0};
+		if (isAttacking) {
+			attackerWeaponRect = getWeaponHitBoxRect(registry, attacker);
 		}
-
-		SDL_FRect attackerHitBoxRect = getHitBoxRect(registry, attacker);
+		
+		// Body hitbox is essentially the hurtbox for contact damage
+		SDL_FRect attackerBodyRect = getHurtBoxRect(registry, attacker);
 
 		for (const auto victim : victimView) {
 			if (victim == attacker) {
@@ -127,9 +131,24 @@ void resolveAttacks(Registry &registry)
 			}
 
 			SDL_FRect victimHurtBoxRect = getHurtBoxRect(registry, victim);
+			bool hit = false;
+			
+			// Check Weapon Hit
+			if (isAttacking) {
+				if (SDL_HasRectIntersectionFloat(&attackerWeaponRect, &victimHurtBoxRect)) {
+					hit = true;
+				}
+			}
 
+			// Check Body Hit
+			// Only enemies deal contact damage (implicit rule to avoid player walking into enemies and hurting them)
+			if (!hit && registry.has<EnemyTag>(attacker)) {
+				if (SDL_HasRectIntersectionFloat(&attackerBodyRect, &victimHurtBoxRect)) {
+					hit = true;
+				}
+			}
 
-			if (SDL_HasRectIntersectionFloat(&attackerHitBoxRect, &victimHurtBoxRect)) {
+			if (hit) {
 				if (!registry.has<PendingDamageComponent>(victim)) {
 					registry.registerComponent(victim, PendingDamageComponent{10});
 				}

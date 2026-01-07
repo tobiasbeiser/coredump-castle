@@ -31,8 +31,8 @@ class HitDetectionTest : public ::testing::Test {
 
 		registry.registerComponent<PlayerTag>(attacker, {});
 		registry.registerComponent<PositionComponent>(attacker, {{0.f, 0.f}});
-		registry.registerComponent<HitBoxComponent>(attacker,
-		                                            {.hitbox = {0.f, 0.f, 20.f, 20.f}, .isBodyHitBox = false});
+		registry.registerComponent<HitBoxComponent>(
+		    attacker, {.bodyHitBox = {0.f, 0.f, 20.f, 20.f}, .weaponHitBox = {0.f, 0.f, 20.f, 20.f}});
 		registry.registerComponent<HurtBoxComponent>(attacker, {.hurtBox = {0.f, 0.f, 20.f, 20.f}});
 		registry.registerComponent<AttackComponent>(attacker, {Timer{1s}, Timer{1s}});
 		registry.registerComponent<StateComponent>(attacker, {});
@@ -93,7 +93,8 @@ TEST_F(HitDetectionTest, AttackerShouldNotDamageItself)
 TEST_F(HitDetectionTest, BodyHitBoxShouldAlwaysDealDamage)
 {
 	auto &passivePos = registry.get<PositionComponent>(enemy);
-	registry.registerComponent<HitBoxComponent>(enemy, {.hitbox = {0.f, 0.f, 20.f, 20.f}, .isBodyHitBox = true});
+	registry.registerComponent<HitBoxComponent>(
+	    enemy, {.bodyHitBox = {0.f, 0.f, 20.f, 20.f}, .weaponHitBox = {0.f, 0.f, 0.f, 0.f}});
 	passivePos.position = {0.f, 0.f};
 
 	GameEngine::ECS::Systems::HitDetectionSystem::update(registry);
@@ -105,7 +106,8 @@ TEST_F(HitDetectionTest, BodyHitBoxShouldAlwaysDealDamage)
 TEST_F(HitDetectionTest, VictimIsDeadShouldNotApplyDamage)
 {
 	auto &passivePos = registry.get<PositionComponent>(enemy);
-	registry.registerComponent<HitBoxComponent>(enemy, {.hitbox = {0.f, 0.f, 20.f, 20.f}, .isBodyHitBox = true});
+	registry.registerComponent<HitBoxComponent>(
+	    enemy, {.bodyHitBox = {0.f, 0.f, 20.f, 20.f}, .weaponHitBox = {0.f, 0.f, 0.f, 0.f}});
 	passivePos.position = {0.f, 0.f};
 	auto &[victimState] = registry.get<StateComponent>(enemy);
 	victimState = State::Dead;
@@ -140,7 +142,8 @@ TEST_F(HitDetectionTest, EnemyShouldNotDamageEnemy)
 	registry.registerComponent<HurtBoxComponent>(enemy2, {.hurtBox = {0.f, 0.f, 20.f, 20.f}});
 	registry.registerComponent<StateComponent>(enemy2, {});
 
-	registry.registerComponent<HitBoxComponent>(enemy, {.hitbox = {0.f, 0.f, 20.f, 20.f}, .isBodyHitBox = true});
+	registry.registerComponent<HitBoxComponent>(
+	    enemy, {.bodyHitBox = {0.f, 0.f, 20.f, 20.f}, .weaponHitBox = {0.f, 0.f, 0.f, 0.f}});
 	auto &enemyPos = registry.get<PositionComponent>(enemy);
 	enemyPos.position = {0.f, 0.f};
 
@@ -193,7 +196,8 @@ TEST_F(HitDetectionTest, FacingLeftShouldOffsetHitboxCorrectly)
 
 TEST_F(HitDetectionTest, HitShouldSetVictimStateToHurting)
 {
-	registry.registerComponent<HitBoxComponent>(enemy, {.hitbox = {0.f, 0.f, 20.f, 20.f}, .isBodyHitBox = true});
+	registry.registerComponent<HitBoxComponent>(
+	    enemy, {.bodyHitBox = {0.f, 0.f, 20.f, 20.f}, .weaponHitBox = {0.f, 0.f, 0.f, 0.f}});
 	auto &enemyPos = registry.get<PositionComponent>(enemy);
 	enemyPos.position = {0.f, 0.f};
 
@@ -208,7 +212,8 @@ TEST_F(HitDetectionTest, HitShouldSetVictimStateToHurting)
 
 TEST_F(HitDetectionTest, PendingDamageIsRemovedAfterProcessing)
 {
-	registry.registerComponent<HitBoxComponent>(enemy, {.hitbox = {0.f, 0.f, 20.f, 20.f}, .isBodyHitBox = true});
+	registry.registerComponent<HitBoxComponent>(
+	    enemy, {.bodyHitBox = {0.f, 0.f, 20.f, 20.f}, .weaponHitBox = {0.f, 0.f, 0.f, 0.f}});
 	auto &enemyPos = registry.get<PositionComponent>(enemy);
 	enemyPos.position = {0.f, 0.f};
 

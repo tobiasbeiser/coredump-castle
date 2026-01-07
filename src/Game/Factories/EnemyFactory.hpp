@@ -3,6 +3,7 @@
 #include "../../Engine/ECS/Components/Core/StateComponent.hpp"
 #include "../../Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "../../Engine/ECS/Components/Core/VelocityComponent.hpp"
+#include "../../Engine/ECS/Components/Gameplay/Enemy/ChaseComponent.hpp"
 #include "../../Engine/ECS/Components/Physics/AccelerationComponent.hpp"
 #include "../../Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "../../Engine/ECS/Components/Physics/GravityComponent.hpp"
@@ -12,7 +13,6 @@
 #include "../../Engine/Graphics/TextureManager.hpp"
 #include "AnimationFactory.hpp"
 #include "Engine/DebugSystem.hpp"
-#include "Engine/ECS/Components/Gameplay/Combat/ChaseComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HealthComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
@@ -37,12 +37,13 @@ class EnemyFactory {
 		const auto scale = getFloatProp(enemyObj, "scale", 1.0f);
 		const auto maxSpeedX = getFloatProp(enemyObj, "maxSpeedX", 50.0f);
 		const auto chaseSpeed = getFloatProp(enemyObj, "chaseSpeed", 120.0f);
-		const auto verticalDetectionHeight = getFloatProp(enemyObj, "verticalDetectionHeight", 80.0f);
+		const auto verticalDetectionHeight = getFloatProp(enemyObj, "verticalDetectionHeight", 50.0f);
 		const auto canPatrol = getBoolProp(enemyObj, "canPatrol");
 		const auto collisionStr = getStringProp(enemyObj, "collisionBox", "0,0,0,0");
 		const auto hitBoxStr = getStringProp(enemyObj, "hitBox", "");
-		const auto isBodyHitBox = getBoolProp(enemyObj, "isBodyHitBox");
 		const auto maxHealth = getIntProp(enemyObj, "maxHealth", 100);
+		const auto attackCooldown = getFloatProp(enemyObj, "attackCooldown", 0.5);
+		const auto reactionDelay = getFloatProp(enemyObj, "reactionDelay", 0.5);
 
 		const tson::Vector2 pos = enemyObj.getPosition();
 		const glm::vec2 spawn = glm::vec2(pos.x, pos.y) + levelPos;
@@ -73,24 +74,22 @@ class EnemyFactory {
 				registry.registerComponent(entity,
 				                           PatrolComponent{.minBounds = patrolRect->min, .maxBounds = patrolRect->max});
 			}
-			if (!isBodyHitBox) {
-				registry.registerComponent(entity,
-				                           ChaseComponent{.verticalDetectionHeight = verticalDetectionHeight,
-				                                          .chaseSpeed = chaseSpeed,
-				                                          .originalPatrolSpeed = maxSpeedX});
-			}
+			registry.registerComponent(
+			    entity, ChaseComponent{.verticalDetectionHeight = verticalDetectionHeight,
+			                           .chaseSpeed = chaseSpeed,
+			                           .originalPatrolSpeed = maxSpeedX,
+			                           .reactionDelay = Timer{std::chrono::duration<float>(reactionDelay)}});
 		}
 
 		if (hitBoxStr) {
 			const auto hitBox = parseCollisionBox(hitBoxStr.value());
-			registry.registerComponent(entity, HitBoxComponent{.hitbox = hitBox, .isBodyHitBox = isBodyHitBox});
+			registry.registerComponent(entity, HitBoxComponent{.weaponHitBox = hitBox});
 		}
 
 		AnimationFactory::loadAnimationsFromTileset(registry, texMgr, map, enemyObj, entity);
 
-		// Set attack timer duration based on the attack animation length
 		using namespace std::chrono_literals;
-		std::chrono::duration<float> attackDuration = 1s; // default fallback
+		std::chrono::duration<float> attackDuration = 1s;
 		if (registry.has<AnimationComponent>(entity)) {
 			auto &animComp = registry.get<AnimationComponent>(entity);
 			if (animComp.hasAnimation(AnimationType::Attacking)) {
@@ -98,8 +97,9 @@ class EnemyFactory {
 			}
 		}
 
-		registry.registerComponent(entity,
-		                           AttackComponent{.attackTimer = Timer{attackDuration}, .attackCoolDownTimer = Timer{0.2s}});
+		registry.registerComponent(
+		    entity, AttackComponent{.attackTimer = Timer{attackDuration},
+		                            .attackCoolDownTimer = Timer{std::chrono::duration<float>(attackCooldown)}});
 
 		return entity;
 	}
