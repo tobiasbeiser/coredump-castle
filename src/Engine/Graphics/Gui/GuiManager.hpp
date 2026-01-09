@@ -3,10 +3,47 @@
 #include "Engine/Graphics/Renderer.hpp"
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
+#include <algorithm>
+#include <chrono>
 #include <functional>
+#include <glm/glm.hpp>
+#include <limits>
 #include <memory>
 #include <vector>
 
+// Use float limits for "Infinite" space
+constexpr float kInfinity = std::numeric_limits<float>::infinity();
+
+// Defines the constraints passed from Parent to Child during layout.
+struct BoxConstraints {
+	float minWidth = 0.0f;
+	float maxWidth = kInfinity;
+	float minHeight = 0.0f;
+	float maxHeight = kInfinity;
+
+	// Helper: Create tight constraints (force specific size)
+	static BoxConstraints tight(const float width, const float height) { return {width, width, height, height}; }
+
+	// Helper: Loosen constraints (0 to max)
+	static BoxConstraints loose(const glm::vec2 size) { return {0.0f, size.x, 0.0f, size.y}; }
+
+	[[nodiscard]] glm::vec2 constrain(const glm::vec2 size) const
+	{
+		return {std::clamp(size.x, minWidth, maxWidth), std::clamp(size.y, minHeight, maxHeight)};
+	}
+
+	[[nodiscard]] bool isTight() const { return minWidth == maxWidth && minHeight == maxHeight; }
+	[[nodiscard]] bool hasBoundedWith() const { return maxWidth < kInfinity; }
+	[[nodiscard]] bool hasBoundedHeight() const { return maxHeight < kInfinity; }
+};
+
+// Controls how a child aligns within the parent's cross-axis
+enum class CrossAxisAlignment {
+	Start,
+	Center,
+	End,
+	Stretch // Force child to fill cross-axis
+};
 enum class WidgetState : uint8_t { Normal, Hovered, Pressed, Disabled };
 
 enum class SizeMode {
@@ -27,14 +64,15 @@ struct Paint {
 };
 
 struct ButtonStyle {
-	float padding = 5.0f;
+	float widthPadding = 5.0f;
+	float heightPadding = 5.0f;
 	Paint normal;
 	Paint hovered;
 	Paint pressed;
 
 	[[nodiscard]] const Paint &paintFor(const WidgetState s) const noexcept
 	{
-		switch (s) { //TODO: add disabled state, e.g. if we don't have previous saves for the "Continue" view
+		switch (s) { // TODO: add disabled state, e.g. if we don't have previous saves for the "Continue" view
 		case WidgetState::Hovered:
 			return hovered;
 		case WidgetState::Pressed:
@@ -61,9 +99,9 @@ struct UiTheme {
 
 struct UIContext {
 	Renderer &renderer;
-	TTF_Font *titleFont=nullptr;
-	TTF_Font *bigFont=nullptr;
-	TTF_Font *textFont=nullptr;
+	TTF_Font *titleFont = nullptr;
+	TTF_Font *bigFont = nullptr;
+	TTF_Font *textFont = nullptr;
 	UiTheme theme;
 	Resolution resolution;
 };
@@ -72,66 +110,94 @@ class Widget {
   public:
 	Widget(const Widget &) = delete;
 	Widget &operator=(const Widget &) = delete;
-	Widget(Widget&&) = delete;
+	Widget(Widget &&) = delete;
 	Widget &operator=(Widget &&) = delete;
 	virtual ~Widget() = default;
 
-	virtual glm::vec2 getPreferredSize(const UIContext &ctx, glm::vec2 availableSize) = 0;
+	glm::vec2 measure(const UIContext &ctx, BoxConstraints constraints)
+	{
+		if (widthMode == SizeMode::Fixed) {
+			constraints.minWidth = fixedSize.x;
+			constraints.maxWidth = fixedSize.x;
+		}
+
+		if (heightMode == SizeMode::Fixed) {
+			constraints.minHeight = fixedSize.y;
+			constraints.maxHeight = fixedSize.y;
+		}
+
+		if (cachedSize.has_value() && lastConstraints.has_value() && constraints.minWidth == lastConstraints->minWidth
+		    && constraints.maxWidth == lastConstraints->maxWidth && constraints.minHeight == lastConstraints->minHeight
+		    && constraints.maxHeight == lastConstraints->maxHeight && !isDirty) {
+			return cachedSize.value();
+		}
+
+		glm::vec2 size = performMeasure(ctx, constraints);
+		size = constraints.constrain(size);
+
+		cachedSize = size;
+		lastConstraints = constraints;
+		isDirty = false;
+		return size;
+	}
+
+	[[nodiscard]] glm::vec2 getMeasuredSize() const { return cachedSize.value_or(glm::vec2{0.0f, 0.0f}); }
+
 	virtual void layout(const UIContext &ctx, const SDL_FRect allocatedRect) { bounds = allocatedRect; }
 
-	virtual bool handleEvent(glm::vec2 mousePos, glm::vec2 parentPos, const SDL_Event &event) = 0;
-	virtual void draw(const UIContext &ctx, glm::vec2 parentPos) = 0;
+	virtual bool handleEvent(glm::vec2 mousePos, const SDL_Event &event) = 0;
+	virtual void draw(const UIContext &ctx) = 0;
+
+	void invalidate() { isDirty = true; }
+
+	void setLayoutWeight(const float weight) { layoutWeight = weight; }
+	[[nodiscard]] float getLayoutWeight() const { return layoutWeight; }
 
 	void setSizeMode(const SizeMode w, const SizeMode h)
 	{
 		widthMode = w;
 		heightMode = h;
+		invalidate();
 	}
-	void setFixedSize(const glm::vec2 size) { fixedSize = size; }
+	void setFixedSize(const glm::vec2 size)
+	{
+		fixedSize = size;
+		widthMode = SizeMode::Fixed;
+		heightMode = SizeMode::Fixed;
+	}
 
+	[[nodiscard]] SDL_FRect getBounds() const { return bounds; }
 	[[nodiscard]] SizeMode getWidthMode() const { return widthMode; }
 	[[nodiscard]] SizeMode getHeightMode() const { return heightMode; }
-	[[nodiscard]] glm::vec2 getRelativePosition() const { return {bounds.x, bounds.y}; }
-	[[nodiscard]] glm::vec2 absolutePosition(const glm::vec2 parentAbsPos) const
-	{
-		return {parentAbsPos.x + bounds.x, parentAbsPos.y + bounds.y};
-	}
+	[[nodiscard]] glm::vec2 getAbsolutePosition() const { return {bounds.x, bounds.y}; }
 
-protected:
+  protected:
 	Widget() = default;
-	[[nodiscard]] SDL_FRect getAbsoluteRect(const glm::vec2 parentAbsPos) const noexcept
-	{
-		return SDL_FRect{parentAbsPos.x + bounds.x, parentAbsPos.y + bounds.y, bounds.w, bounds.h};
-	}
-	// Helper: Resolve final size based on modes
-	[[nodiscard]] glm::vec2 resolveSize(const glm::vec2 contentSize, const glm::vec2 availableSpace) const
-	{
-		float w = (widthMode == SizeMode::Fixed)         ? fixedSize.x
-				  : (widthMode == SizeMode::MatchParent) ? availableSpace.x
-														 : contentSize.x; // WrapContent
+	[[nodiscard]] SDL_FRect getAbsoluteRect() const noexcept { return bounds; }
 
-		float h = (heightMode == SizeMode::Fixed)         ? fixedSize.y
-				  : (heightMode == SizeMode::MatchParent) ? availableSpace.y
-														  : contentSize.y; // WrapContent
-		return {w, h};
-	}
+	virtual glm::vec2 performMeasure(const UIContext &ctx, BoxConstraints constraints) = 0;
 
   private:
 	SDL_FRect bounds = {0.0f, 0.0f, 0.0f, 0.0f}; // Position is relative to Parent
 
-	SizeMode widthMode = SizeMode::Fixed;
-	SizeMode heightMode = SizeMode::Fixed;
-	glm::vec2 fixedSize = {100.0f, 50.0f}; // Necessary for resolving fixed size, gets transferred to bounds in layout()
-
+	float layoutWeight = 0.0f;
+	SizeMode widthMode = SizeMode::WrapContent;
+	SizeMode heightMode = SizeMode::WrapContent;
+	glm::vec2 fixedSize = {0.0f, 0.0f};
+	std::optional<glm::vec2> cachedSize;
+	std::optional<BoxConstraints> lastConstraints;
+	bool isDirty = true;
 };
 
 class Spacer : public Widget {
   public:
 	explicit Spacer(const float width = 0.f, const float height = 0.f) : width(width), height(height) {}
 
-	glm::vec2 getPreferredSize(const UIContext &, glm::vec2) override { return {width, height}; }
-	bool handleEvent(glm::vec2, glm::vec2, const SDL_Event &) override { return false; }
-	void draw(const UIContext &, glm::vec2) override {} // Invisible
+	bool handleEvent(glm::vec2 mousePos, const SDL_Event &) override { return false; }
+	void draw(const UIContext &) override {} // Invisible
+
+  protected:
+	glm::vec2 performMeasure(const UIContext &ctx, BoxConstraints constraints) override { return {width, height}; }
 
   private:
 	float width;
@@ -146,14 +212,14 @@ class Label : public Widget {
 		setSizeMode(SizeMode::WrapContent, SizeMode::WrapContent);
 	}
 
-	glm::vec2 getPreferredSize(const UIContext &ctx, glm::vec2 availableSize) override;
 	void layout(const UIContext &ctx, SDL_FRect allocatedRect) override;
-	bool handleEvent(glm::vec2, glm::vec2, const SDL_Event &) override { return false; }
-	void draw(const UIContext &ctx, glm::vec2 parentPos) override;
+	bool handleEvent(glm::vec2 mousePos, const SDL_Event &) override { return false; }
+	void draw(const UIContext &ctx) override;
 
 	void setColor(const SDL_Color newColor) { color = newColor; }
 
   private:
+	glm::vec2 performMeasure(const UIContext &ctx, BoxConstraints constraints) override;
 	std::string labelText;
 	std::unique_ptr<TTF_Text, TTFTextDestroyer> textObject;
 	TTF_Font *font;
@@ -164,12 +230,12 @@ class Button final : public Widget {
   public:
 	Button(std::string_view label, TTF_Font *font, const std::function<void()> &onClick);
 	Button(std::unique_ptr<Widget> customContent, std::function<void()> onClick);
-	glm::vec2 getPreferredSize(const UIContext &ctx, glm::vec2 availableSize) override;
 	void layout(const UIContext &ctx, SDL_FRect allocatedRect) override;
-	bool handleEvent(glm::vec2 mousePos, glm::vec2 parentAbsPos, const SDL_Event &event) override;
-	void draw(const UIContext &ctx, glm::vec2 parentAbsPos) override;
+	bool handleEvent(glm::vec2 mousePos, const SDL_Event &event) override;
+	void draw(const UIContext &ctx) override;
 
   private:
+	glm::vec2 performMeasure(const UIContext &ctx, BoxConstraints constraints) override;
 	std::unique_ptr<Widget> content;
 	std::function<void()> callback;
 
@@ -177,32 +243,39 @@ class Button final : public Widget {
 	bool isPressed = false;
 };
 
-
 class Container : public Widget {
   public:
 	void addWidget(std::unique_ptr<Widget> widget) { children.push_back(std::move(widget)); }
-	bool handleEvent(glm::vec2 mousePos, glm::vec2 parentAbsPos, const SDL_Event &event) override;
-	void draw(const UIContext &context, glm::vec2 parentAbsPos) override;
+	bool handleEvent(glm::vec2 mousePos, const SDL_Event &event) override;
+	void draw(const UIContext &context) override;
 
   protected:
 	std::vector<std::unique_ptr<Widget>> children;
 };
 
 class LinearLayout : public Container {
-public:
-	explicit LinearLayout(const float spacing = 5.0f, const float padding = 5.0f) : spacing(spacing), padding(padding)
+  public:
+	explicit LinearLayout(const Orientation orient = Orientation::Vertical, const float gap = 5.0f)
+	    : orientation(orient), spacing(gap)
 	{
 		setSizeMode(SizeMode::MatchParent, SizeMode::MatchParent);
 	}
 
-	glm::vec2 getPreferredSize(const UIContext &ctx, glm::vec2 availableSize) override;
 	void layout(const UIContext &ctx, SDL_FRect allocatedRect) override;
-	void setOrientation(const Orientation newOrientation) {orientation = newOrientation;}
+	void setOrientation(const Orientation newOrientation) { orientation = newOrientation; }
+	void setCrossAxisAlignment(CrossAxisAlignment align);
+	void setSpacing(const float gap)
+	{ // TODO: change return type to LinearLayout& (return *this;) after CRTP implementation
+		spacing = gap;
+	}
 
-private:
+  protected:
+	glm::vec2 performMeasure(const UIContext &ctx, BoxConstraints constraints) override;
+
+  private:
+	Orientation orientation;
 	float spacing;
-	float padding;
-	Orientation orientation = Orientation::Vertical;
+	CrossAxisAlignment crossAxisAlignment = CrossAxisAlignment::Center;
 };
 
 class GuiManager {

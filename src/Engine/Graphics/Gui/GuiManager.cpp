@@ -4,20 +4,23 @@
 
 #include "Engine/Graphics/Renderer.hpp"
 
-glm::vec2 Label::getPreferredSize(const UIContext &ctx, const glm::vec2 availableSize)
+glm::vec2 Label::performMeasure(const UIContext &ctx, const BoxConstraints constraints)
 {
-
 	if (labelText.empty())
-		return resolveSize({0, 0}, availableSize);
+		return {0, 0};
 
-	if (!textObject)
+	if (!textObject) {
 		textObject = ctx.renderer.createText(font, labelText);
-	// TODO: Figure out how to handle text formatting. Can't format text before creating it, i.e. first getPreferredSize
-	//  Idea: cache format calls as templates/lambdas and trigger them after creating text? see:
-	//  TTF_SetTextWrapWidth(textObject.get(), wrapWidth); TTF_SetTextWrapWhitespaceVisible(textObject.get(), visible);
+	}
 
 	int w = 0, h = 0;
 	TTF_GetTextSize(textObject.get(), &w, &h);
+
+	// check if we need to wrap text
+	if (w > constraints.maxWidth) {
+		TTF_SetTextWrapWidth(textObject.get(), static_cast<int>(constraints.maxWidth));
+		TTF_GetTextSize(textObject.get(), &w, &h);
+	}
 
 	return {static_cast<float>(w), static_cast<float>(h)};
 }
@@ -27,13 +30,16 @@ void Label::layout(const UIContext &ctx, const SDL_FRect allocatedRect)
 	Widget::layout(ctx, allocatedRect);
 }
 
-void Label::draw(const UIContext &ctx, const glm::vec2 parentPos)
+void Label::draw(const UIContext &ctx)
 {
-	const auto [x, y, w, h] = getAbsoluteRect(parentPos);
+	const auto absPos = getAbsolutePosition();
 
+	auto rect = getAbsoluteRect();
+	SDL_SetRenderDrawColor(ctx.renderer.getNativeRenderer(), 255, 0, 0, 0);
+	SDL_RenderRect(ctx.renderer.getNativeRenderer(), &rect);
 
 	// TODO: solve subpixel rendering prevention
-	ctx.renderer.drawTextAt(textObject.get(), x, y, color);
+	ctx.renderer.drawTextAt(textObject.get(), absPos.x, absPos.y, color);
 }
 
 Button::Button(std::string_view label, TTF_Font *font, const std::function<void()> &onClick) : callback(onClick)
@@ -48,43 +54,55 @@ Button::Button(std::unique_ptr<Widget> customContent, std::function<void()> onCl
 	setSizeMode(SizeMode::WrapContent, SizeMode::WrapContent);
 }
 
-glm::vec2 Button::getPreferredSize(const UIContext &ctx, const glm::vec2 availableSize)
+glm::vec2 Button::performMeasure(const UIContext &ctx, const BoxConstraints constraints)
 {
-	const auto buttonPadding = ctx.theme.button.padding * 2;
+	const float xPad = ctx.theme.button.widthPadding * 2.0f;
+	const float yPad = ctx.theme.button.heightPadding * 2.0f;
 
-	const glm::vec2 innerAvailable = {
-		std::max(0.0f, availableSize.x - buttonPadding),
-		std::max(0.0f, availableSize.y - buttonPadding)
-	};
+	BoxConstraints childConstraints = constraints;
+	childConstraints.maxWidth = std::max(0.0f, constraints.maxWidth - xPad);
+	childConstraints.maxHeight = std::max(0.0f, constraints.maxHeight - yPad);
+	childConstraints.minWidth = std::min(0.0f, constraints.minWidth - xPad);
+	childConstraints.minHeight = std::min(0.0f, constraints.minHeight - yPad);
 
-	const glm::vec2 contentSize = content->getPreferredSize(ctx, innerAvailable);
-
-	const glm::vec2 totalSize = {contentSize.x + buttonPadding,
-	                             contentSize.y + buttonPadding};
-
-	return resolveSize(totalSize, availableSize);
+	const glm::vec2 contentSize = content->measure(ctx, childConstraints);
+	return {contentSize.x + xPad, contentSize.y + yPad};
 }
 
 void Button::layout(const UIContext &ctx, SDL_FRect allocatedRect)
 {
 	Widget::layout(ctx, allocatedRect);
 
-	const glm::vec2 contentSize = content->getPreferredSize(ctx, {allocatedRect.w, allocatedRect.h});
+	const auto constraints = BoxConstraints::loose({allocatedRect.w, allocatedRect.h});
+	const glm::vec2 contentSize = content->measure(ctx, constraints);
+
+	float offsetX = 0.0f;
+	float offsetY = 0.0f;
+
+	if (getWidthMode() == SizeMode::WrapContent) {
+		offsetX = ctx.theme.button.widthPadding;
+	} else {
+		offsetX = (allocatedRect.w - contentSize.x) / 2.0f;
+	}
+
+	if (getHeightMode() == SizeMode::WrapContent) {
+		offsetY = ctx.theme.button.heightPadding;
+	} else {
+		offsetY = (allocatedRect.h - contentSize.y) / 2.0f;
+	}
 
 	SDL_FRect contentRect;
+	contentRect.x = allocatedRect.x + offsetX;
+	contentRect.y = allocatedRect.y + offsetY;
 	contentRect.w = contentSize.x;
 	contentRect.h = contentSize.y;
-
-	// Center content
-	contentRect.x = (allocatedRect.w - contentSize.x) / 2.0f;
-	contentRect.y = (allocatedRect.h - contentSize.y) / 2.0f;
 
 	content->layout(ctx, contentRect);
 }
 
-bool Button::handleEvent(const glm::vec2 mousePos, const glm::vec2 parentAbsPos, const SDL_Event &event)
+bool Button::handleEvent(const glm::vec2 mousePos, const SDL_Event &event)
 {
-	const SDL_FRect absRect = getAbsoluteRect(parentAbsPos);
+	const SDL_FRect absRect = getAbsoluteRect();
 	const SDL_FPoint mousePt = {mousePos.x, mousePos.y};
 	const bool isInside = SDL_PointInRectFloat(&mousePt, &absRect);
 
@@ -113,13 +131,13 @@ bool Button::handleEvent(const glm::vec2 mousePos, const glm::vec2 parentAbsPos,
 	return false;
 }
 
-void Button::draw(const UIContext &ctx, const glm::vec2 parentAbsPos)
+void Button::draw(const UIContext &ctx)
 {
 
 	const WidgetState s = isPressed ? WidgetState::Pressed : isHovered ? WidgetState::Hovered : WidgetState::Normal;
 
 	const auto &[fillCol, outlineCol, textCol] = ctx.theme.button.paintFor(s);
-	const SDL_FRect r = getAbsoluteRect(parentAbsPos);
+	const SDL_FRect r = getAbsoluteRect();
 
 	ctx.renderer.drawRectShape(r, fillCol, outlineCol);
 
@@ -127,119 +145,175 @@ void Button::draw(const UIContext &ctx, const glm::vec2 parentAbsPos)
 		label->setColor(textCol);
 	}
 
-	content->draw(ctx, {r.x, r.y});
+	content->draw(ctx);
 }
 
-bool Container::handleEvent(const glm::vec2 mousePos, const glm::vec2 parentAbsPos, const SDL_Event &event)
+bool Container::handleEvent(const glm::vec2 mousePos, const SDL_Event &event)
 {
 	// Reverse iteration for event bubbling (top-most child first)
 	for (const auto &child : std::ranges::reverse_view(children)) {
-		if (child->handleEvent(mousePos, absolutePosition(parentAbsPos), event))
+		if (child->handleEvent(mousePos, event))
 			return true;
 	}
 	return false;
 }
 
-void Container::draw(const UIContext &context, const glm::vec2 parentAbsPos)
+void Container::draw(const UIContext &context)
 {
+	auto rect = getAbsoluteRect();
+
+	SDL_SetRenderDrawColor(context.renderer.getNativeRenderer(), 255, 0, 0, 0);
+	SDL_RenderRect(context.renderer.getNativeRenderer(), &rect);
 
 	for (const auto &child : children) {
-		child->draw(context, absolutePosition(parentAbsPos));
+		child->draw(context);
 	}
 }
 
-
-glm::vec2 LinearLayout::getPreferredSize(const UIContext &ctx, const glm::vec2 availableSize)
+void LinearLayout::setCrossAxisAlignment(const CrossAxisAlignment align)
 {
-	float primaryDim = 0.0f; // Height for Vertical, Width for Horizontal
-	float secondaryDim = 0.0f; // Width for Vertical, Height for Horizontal
+	crossAxisAlignment = align;
+	invalidate();
+}
 
-	const bool isVert = orientation == Orientation::Vertical;
-	float availableX = 0.0f;
-	float availableY = 0.0f;
+glm::vec2 LinearLayout::performMeasure(const UIContext &ctx, BoxConstraints constraints)
+{
+	float totalFlex = 0.0f;
+	float fixedSpace = 0.0f;
+	float maxCrossAxis = 0.0f;
 
-	// calculate theoretically available space to single child
-	if (isVert) {
-		availableX = availableSize.x - padding * 2.f;
-		availableY = (availableSize.y - padding * 2.f - (children.size() - 1) * spacing) / children.size();
-	} else {
-		availableX = (availableSize.x - padding * 2.f - (children.size() - 1) * spacing) / children.size();
-		availableY = availableSize.y - padding * 2.f;
-	}
+	const bool isVert = (orientation == Orientation::Vertical);
 
-	const bool isWrapSecondary = isVert ? (getWidthMode() == SizeMode::WrapContent)
-										: (getHeightMode() == SizeMode::WrapContent);
-	if (isWrapSecondary) {
-		if (isVert) availableX = 0.0f;
-		else        availableY = 0.0f;
-	}
-
-	const glm::vec2 innerAvail = {std::max(0.0f, availableX), std::max(0.0f, availableY)};
-
+	// first pass, measure non-flexible children
 	for (const auto &child : children) {
-
-		glm::vec2 childSize = child->getPreferredSize(ctx, innerAvail);
-
-		if (isVert) {
-			primaryDim += childSize.y;
-			secondaryDim = std::max(secondaryDim, childSize.x);
+		if (const float weight = child->getLayoutWeight(); weight > 0.0f) {
+			totalFlex += weight; // add up weights of flexible items
 		} else {
-			primaryDim += childSize.x;
-			secondaryDim = std::max(secondaryDim, childSize.y);
+
+			const bool isMatchParentCross = isVert ? (child->getWidthMode() == SizeMode::MatchParent)
+			                                       : (child->getHeightMode() == SizeMode::MatchParent);
+
+			float crossMin = 0.0f;
+			const float crossMax = isVert ? constraints.maxWidth : constraints.maxHeight;
+			if (crossAxisAlignment == CrossAxisAlignment::Stretch || isMatchParentCross) {
+				if (isVert && constraints.hasBoundedHeight())
+					crossMin = crossMax;
+				else if (!isVert && constraints.hasBoundedWith())
+					crossMin = crossMax;
+			}
+
+			const BoxConstraints childConstraints = isVert ? BoxConstraints(crossMin, crossMax, 0.0f, kInfinity)
+			                                               : BoxConstraints(0.0f, kInfinity, crossMin, crossMax);
+
+			glm::vec2 childSize = child->measure(ctx, childConstraints);
+
+			fixedSpace += (isVert ? childSize.y : childSize.x);
+
+			maxCrossAxis = std::max(maxCrossAxis, isVert ? childSize.x : childSize.y);
 		}
 	}
 
 	if (!children.empty()) {
-		primaryDim += (children.size() - 1) * spacing;
+		fixedSpace += spacing * static_cast<float>(children.size() - 1);
 	}
 
-	float finalW = (isVert ? secondaryDim : primaryDim) + padding * 2;
-	float finalH = (isVert ? primaryDim : secondaryDim) + padding * 2;
+	// resolve flexible space
+	const float maxAvailable = isVert ? constraints.maxHeight : constraints.maxWidth;
+	const float remainingSpace = std::max(0.0f, maxAvailable - fixedSpace);
 
-	return resolveSize({finalW, finalH}, availableSize);
+	// second pass, measure only flexible children
+	for (const auto &child : children) {
+		if (child->getLayoutWeight() <= 0.0f)
+			continue; // skip fixed items
+
+		const float share =
+		    (child->getLayoutWeight() / totalFlex) * remainingSpace; // calculate portion of remaining space
+
+		float crossMin = 0.0f;
+		const float crossMax = isVert ? constraints.maxWidth : constraints.maxHeight;
+		if (crossAxisAlignment == CrossAxisAlignment::Stretch) {
+			if (isVert && constraints.hasBoundedHeight())
+				crossMin = crossMax;
+			else if (!isVert && constraints.hasBoundedWith())
+				crossMin = crossMax;
+		}
+
+		// create flex constraints
+		BoxConstraints flexConstraints;
+		if (isVert) {
+			flexConstraints = {crossMin, crossMax, share, share};
+		} else {
+			flexConstraints = {share, share, crossMin, crossMax};
+		}
+
+		glm::vec2 childSize = child->measure(ctx, flexConstraints);
+		maxCrossAxis = std::max(maxCrossAxis, isVert ? childSize.x : childSize.y);
+	}
+
+	// final dimension: flex children? all available space, otherwise only fixed space
+	const float totalMain = fixedSpace + (totalFlex > 0 ? remainingSpace : 0);
+
+	return isVert ? glm::vec2{maxCrossAxis, totalMain} : glm::vec2{totalMain, maxCrossAxis};
 }
 
-void LinearLayout::layout(const UIContext &ctx, SDL_FRect allocatedRect)
+void LinearLayout::layout(const UIContext &ctx, const SDL_FRect allocatedRect)
 {
 	Widget::layout(ctx, allocatedRect);
 
 	const bool isVert = (orientation == Orientation::Vertical);
-	float cursor = padding;
+	float cursor = isVert ? allocatedRect.y : allocatedRect.x;
 
-	// Available space for children (absolute terms relative to this container)
-	const float innerW = allocatedRect.w - padding * 2;
-	const float innerH = allocatedRect.h - padding * 2;
-
-	for (const auto &child : children) { // Ask child for height again, now that we know our exact width
-
-		const glm::vec2 childPref = child->getPreferredSize(ctx, {innerW, innerH});
-
-		// Calculate child rect
-		SDL_FRect childRect;
-		if (isVert) {
-			childRect.x = padding;
-			childRect.y = cursor;
-			childRect.w = child->getWidthMode() == SizeMode::MatchParent ? innerW : childPref.x;
-			childRect.h = childPref.y;
-
-			if (child->getWidthMode() != SizeMode::MatchParent) {
-				childRect.x += (innerW - childRect.w) / 2.0f;
-			}
-
-			cursor += childRect.h + spacing;
-		} else
-		{
-			childRect.x = cursor;
-			childRect.y = padding;
-			childRect.w = childPref.x;
-			childRect.h = child->getHeightMode() == SizeMode::MatchParent ? innerH : childPref.y;
-
-			if (child->getHeightMode() != SizeMode::MatchParent) {
-				childRect.y += (innerH - childRect.h) / 2.0f;
-			}
-
-			cursor += childRect.w + spacing;
+	// recalculate size based on actual size
+	float totalFlex = 0.0f;
+	float usedFixed = 0.0f;
+	for (const auto &child : children) {
+		if (child->getLayoutWeight() > 0)
+			totalFlex += child->getLayoutWeight();
+		else {
+			// use cached size
+			glm::vec2 size = child->getMeasuredSize();
+			usedFixed += (isVert ? size.y : size.x);
 		}
+	}
+
+	if (!children.empty())
+		usedFixed += spacing * (children.size() - 1);
+
+	const float availableLen = isVert ? allocatedRect.h : allocatedRect.w;
+	const float remaining = std::max(0.0f, availableLen - usedFixed);
+
+	for (const auto &child : children) {
+		glm::vec2 childSize = child->getMeasuredSize();
+		float mainAxisLen = 0.0f;
+		if (const float weight = child->getLayoutWeight(); weight > 0.0f) {
+			mainAxisLen = (weight / totalFlex) * remaining;
+		} else {
+			mainAxisLen = isVert ? childSize.y : childSize.x;
+		}
+
+		float crossAxisLen = isVert ? childSize.x : childSize.y;
+		float crossAxisPos = isVert ? allocatedRect.x : allocatedRect.y;
+		const float crossAxisAvail = isVert ? allocatedRect.w : allocatedRect.h;
+
+		const bool isMatchParentCross = isVert ? (child->getWidthMode() == SizeMode::MatchParent)
+		                                       : (child->getHeightMode() == SizeMode::MatchParent);
+
+		if (crossAxisAlignment == CrossAxisAlignment::Stretch || isMatchParentCross) {
+			crossAxisLen = crossAxisAvail;
+		} else if (crossAxisAlignment == CrossAxisAlignment::Center) {
+			crossAxisPos += (crossAxisAvail - crossAxisLen) / 2.0f;
+		} else if (crossAxisAlignment == CrossAxisAlignment::End) {
+			crossAxisPos += crossAxisAvail - crossAxisLen;
+		}
+		SDL_FRect childRect;
+
+		if (isVert) {
+			childRect = {crossAxisPos, cursor, crossAxisLen, mainAxisLen};
+		} else {
+			childRect = {cursor, crossAxisPos, mainAxisLen, crossAxisLen};
+		}
+		cursor += mainAxisLen + spacing;
+
 		child->layout(ctx, childRect);
 	}
 }
@@ -249,10 +323,9 @@ void GuiManager::updateLayout(const UIContext &context, const float screenWidth,
 	if (!rootWidget)
 		return;
 	// // TODO: check if this is even necessary
-	//
-	// // 1. Measure Pass: Ask root how big it wants to be with full screensize available
-	// glm::vec2 available = {screenWidth, screenHeight};
-	// glm::vec2 pref = rootWidget->getPreferredSize(context, available);
+	BoxConstraints screenConstraints = BoxConstraints::tight(screenWidth, screenHeight);
+
+	rootWidget->measure(context, screenConstraints);
 
 	// 2. Layout Pass: Set the root to its preferred size (or fullscreen)
 	SDL_FRect finalRect = {0.0f, 0.0f, screenWidth, screenHeight};
@@ -282,11 +355,11 @@ void GuiManager::handleEvent(const UIContext &ctx, const SDL_Event &event) const
 	const glm::vec2 mouseLogicalPos = ctx.renderer.windowToLogical(mx, my);
 
 	if (rootWidget)
-		rootWidget->handleEvent(mouseLogicalPos, {0, 0}, event);
+		rootWidget->handleEvent(mouseLogicalPos, event);
 }
 
 void GuiManager::render(const UIContext &ctx) const
 {
 	if (rootWidget)
-		rootWidget->draw(ctx, {0, 0});
+		rootWidget->draw(ctx);
 }
