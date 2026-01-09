@@ -120,8 +120,10 @@ void RenderSystem::update(Registry &registry, float alpha)
 			}
 			hitBoxRect.y = position.y + hurtBox.y * scale.y;
 			
-			constexpr SDL_Color hitboxColor = {0, 255, 0, 255};
-			DebugSystem::instance().debugRects.push_back({hitBoxRect, hitboxColor});
+			if (hitBoxRect.w > 0.0f && hitBoxRect.h > 0.0f) {
+				constexpr SDL_Color hitboxColor = {0, 255, 0, 255};
+				DebugSystem::instance().debugRects.push_back({hitBoxRect, hitboxColor});
+			}
 
 			SDL_FRect hurtBoxRect = {position.x + hurtBox.x * scale.x, position.y + hurtBox.y * scale.y,
 			                         hurtBox.w * scale.x, hurtBox.h * scale.y};

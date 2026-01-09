@@ -13,6 +13,8 @@
 #include "Engine/ECS/Components/Tags/InactiveTag.hpp"
 #include "Game/Factories/PlayerFactory.hpp"
 
+#include <algorithm>
+#include <cctype>
 #include <glm/vec2.hpp>
 
 LevelFactory::LevelFactory(GameEngine::ECS::Registry &registry, TextureManager &textureManager)
@@ -195,7 +197,9 @@ void LevelFactory::loadObjects(tson::Layer &layer, const int layerIndex, const g
 			PlayerFactory::createPlayer(registry, textureManager, layer.getObjectsByName("Player").front(), levelPos,
 			                            map);
 		}
-		if (obj.getName() == "Enemy") {
+		std::string name = obj.getName();
+		std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c) { return std::tolower(c); });
+		if (name.find("enemy") != std::string::npos) {
 			EnemyFactory::createEnemy(registry, textureManager, obj, levelPos, map, layerIndex);
 			continue;
 		}
@@ -214,7 +218,7 @@ void LevelFactory::loadObjects(tson::Layer &layer, const int layerIndex, const g
 				if (obj.getName() == "SavePoint") {
 					registry.registerComponent(entity, SavePointComponent{});
 					registry.registerComponent(entity, InteractionComponent{0, 0, static_cast<float>(obj.getSize().x),
-																			static_cast<float>(obj.getSize().y)});
+					                                                        static_cast<float>(obj.getSize().y)});
 				}
 			}
 		}

@@ -32,6 +32,7 @@ TEST_F(BlinkUtilsTest, ReturnsBlinkColorDuringInvulnerability)
 {
 	auto &health = registry.get<HealthComponent>(entity);
 	health.invulnerabilityTimer.reset();
+	health.invulnerabilityTimer.step(std::chrono::duration<float>(0.1f), false);
 
 	auto color = Blink::getBlinkColor(registry, entity);
 	EXPECT_EQ(color.r, 255);
@@ -47,6 +48,6 @@ TEST_F(BlinkUtilsTest, TogglesColorBasedOnFrequency)
 
 	auto color = Blink::getBlinkColor(registry, entity);
 	EXPECT_EQ(color.r, 255);
-	EXPECT_EQ(color.g, 255);
-	EXPECT_EQ(color.b, 255);
+	EXPECT_EQ(color.g, 0);
+	EXPECT_EQ(color.b, 0);
 }

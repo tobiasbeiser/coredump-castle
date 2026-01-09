@@ -76,6 +76,33 @@
                 }]
         }, 
         {
+         "animation":[
+                {
+                 "duration":150,
+                 "tileid":12
+                }, 
+                {
+                 "duration":150,
+                 "tileid":13
+                }, 
+                {
+                 "duration":150,
+                 "tileid":14
+                }, 
+                {
+                 "duration":150,
+                 "tileid":15
+                }],
+         "id":15,
+         "properties":[
+                {
+                 "name":"state",
+                 "propertytype":"State",
+                 "type":"int",
+                 "value":8
+                }]
+        }, 
+        {
          "id":18,
          "properties":[
                 {

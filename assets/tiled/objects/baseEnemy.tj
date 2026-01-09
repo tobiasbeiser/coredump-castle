@@ -2,7 +2,7 @@
     {
      "height":0,
      "id":1,
-     "name":"Enemy",
+     "name":"BaseEnemy",
      "point":true,
      "properties":[
             {
@@ -21,16 +21,6 @@
              "value":"2,10,26,13"
             }, 
             {
-             "name":"hitBox",
-             "type":"string",
-             "value":"2,10,26,13"
-            }, 
-            {
-             "name":"isBodyHitBox",
-             "type":"bool",
-             "value":true
-            }, 
-            {
              "name":"maxHealth",
              "type":"int",
              "value":100
@@ -39,11 +29,6 @@
              "name":"maxSpeedX",
              "type":"float",
              "value":50
-            }, 
-            {
-             "name":"offset",
-             "type":"string",
-             "value":"0,0"
             }, 
             {
              "name":"scale",

@@ -20,7 +20,7 @@ namespace GameEngine::ECS::Systems::HitDetectionSystem {
 
 namespace {
 
-bool isHostile(Registry &registry, Entity attacker, Entity victim)
+bool isHostile(Registry &registry, const Entity attacker, const Entity victim)
 {
 	const auto attackerIsPlayer = registry.has<PlayerTag>(attacker);
 	const auto attackerIsEnemy = registry.has<EnemyTag>(attacker);
@@ -37,9 +37,7 @@ bool isHostile(Registry &registry, Entity attacker, Entity victim)
 	return false;
 }
 
-
-
-SDL_FRect getWeaponHitBoxRect(Registry &registry, Entity entity)
+SDL_FRect getWeaponHitBoxRect(Registry &registry, const Entity entity)
 {
 	if (!registry.has<HitBoxComponent>(entity) || !registry.has<PositionComponent>(entity)) {
 		return {0, 0, 0, 0};
@@ -102,18 +100,12 @@ void resolveAttacks(Registry &registry)
 		const auto &[attackerBodyHitBox, attackerWeaponHitBox] = registry.get<HitBoxComponent>(attacker);
 
 		const bool isAttacking = AttackSystem::isAttacking(attackComponent);
-		
-		// If not attacking, and body damage is considered 'always on' for hitboxes, we process.
-		// However, we should be careful. Usually only enemies deal body damage.
-		// But per user request "drop isBodyHitBox since it is now always on" + "all enemies deal damage".
-		
-		// We calculate hitboxes
-		SDL_FRect attackerWeaponRect = {0,0,0,0};
+
+		SDL_FRect attackerWeaponRect = {0, 0, 0, 0};
 		if (isAttacking) {
 			attackerWeaponRect = getWeaponHitBoxRect(registry, attacker);
 		}
-		
-		// Body hitbox is essentially the hurtbox for contact damage
+
 		SDL_FRect attackerBodyRect = getHurtBoxRect(registry, attacker);
 
 		for (const auto victim : victimView) {
@@ -132,16 +124,14 @@ void resolveAttacks(Registry &registry)
 
 			SDL_FRect victimHurtBoxRect = getHurtBoxRect(registry, victim);
 			bool hit = false;
-			
-			// Check Weapon Hit
+
 			if (isAttacking) {
 				if (SDL_HasRectIntersectionFloat(&attackerWeaponRect, &victimHurtBoxRect)) {
 					hit = true;
 				}
 			}
 
-			// Check Body Hit
-			// Only enemies deal contact damage (implicit rule to avoid player walking into enemies and hurting them)
+			// always body damage on for enemies, but not for the player
 			if (!hit && registry.has<EnemyTag>(attacker)) {
 				if (SDL_HasRectIntersectionFloat(&attackerBodyRect, &victimHurtBoxRect)) {
 					hit = true;
@@ -159,6 +149,9 @@ void resolveAttacks(Registry &registry)
 
 } // anonymous namespace
 
-void update(Registry &registry) { resolveAttacks(registry); }
+void update(Registry &registry)
+{
+	resolveAttacks(registry);
+}
 
 } // namespace GameEngine::ECS::Systems::HitDetectionSystem
