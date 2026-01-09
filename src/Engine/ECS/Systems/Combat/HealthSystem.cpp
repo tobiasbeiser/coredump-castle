@@ -1,6 +1,6 @@
 #include "HealthSystem.hpp"
-#include "../../Components/Gameplay/Enemy/ChaseComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/PendingDamageComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Enemy/ChaseComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
 

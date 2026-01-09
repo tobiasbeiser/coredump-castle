@@ -53,7 +53,6 @@ class PlayerFactory {
 		using namespace std::chrono_literals;
 
 		AnimationFactory::loadAnimationsFromTileset(registry, texMgr, map, player, e);
-		using namespace std::chrono_literals;
 		std::chrono::duration<float> attackDuration = 1s;
 		if (registry.has<AnimationComponent>(e)) {
 			auto &animComp = registry.get<AnimationComponent>(e);

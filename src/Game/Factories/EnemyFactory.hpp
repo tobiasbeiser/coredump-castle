@@ -1,28 +1,27 @@
 #pragma once
-#include "../../Engine/ECS/Components/Core/PositionComponent.hpp"
-#include "../../Engine/ECS/Components/Core/StateComponent.hpp"
-#include "../../Engine/ECS/Components/Core/TransformComponent.hpp"
-#include "../../Engine/ECS/Components/Core/VelocityComponent.hpp"
-#include "../../Engine/ECS/Components/Gameplay/Enemy/ChaseComponent.hpp"
-#include "../../Engine/ECS/Components/Physics/AccelerationComponent.hpp"
-#include "../../Engine/ECS/Components/Physics/CollisionComponent.hpp"
-#include "../../Engine/ECS/Components/Physics/GravityComponent.hpp"
-#include "../../Engine/ECS/Components/Physics/GroundedComponent.hpp"
-#include "../../Engine/ECS/Components/Render/RenderComponent.hpp"
-#include "../../Engine/ECS/Registry.hpp"
-#include "../../Engine/Graphics/TextureManager.hpp"
+
 #include "AnimationFactory.hpp"
 #include "Engine/DebugSystem.hpp"
+#include "Engine/ECS/Components/Core/PositionComponent.hpp"
+#include "Engine/ECS/Components/Core/StateComponent.hpp"
+#include "Engine/ECS/Components/Core/TransformComponent.hpp"
+#include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HealthComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
 #include "Engine/ECS/Components/Render/BlinkComponent.hpp"
 
-#include <Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp>
-#include <Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp>
-#include <Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp>
-#include <Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp>
-#include <Engine/ECS/Components/Tags/EnemyTag.hpp>
+#include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Enemy/ChaseComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp"
+#include "Engine/ECS/Components/Physics/AccelerationComponent.hpp"
+#include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
+#include "Engine/ECS/Components/Physics/GravityComponent.hpp"
+#include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
+#include "Engine/ECS/Components/Render/RenderComponent.hpp"
+#include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include <tileson.hpp>
 
 class EnemyFactory {
