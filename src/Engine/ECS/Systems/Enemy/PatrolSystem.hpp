@@ -1,11 +1,11 @@
 #pragma once
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Enemy/ChaseComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
-#include "Engine/ECS/Components/Render/RenderComponent.hpp"
-#include "Engine/ECS/Components/Tags/EnemyTag.hpp"
+
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
 
@@ -29,7 +29,16 @@ struct PatrolSystem {
 			const float enemyRight = position.x + (collisionBox.x + collisionBox.w) * scale.x;
 			const float enemyLeft = position.x + collisionBox.x * scale.x;
 			if (input.horizontalDirection == 0.0f) {
-				input.horizontalDirection = 1.0f;
+				if (registry.has<ChaseComponent>(entity)) {
+					if (const auto &chase = registry.get<ChaseComponent>(entity); chase.lastKnownPlayerX) {
+						const float enemyCenterX = (enemyLeft + enemyRight) * 0.5f;
+						input.horizontalDirection = chase.lastKnownPlayerX > enemyCenterX ? 1.0f : -1.0f;
+					} else {
+						input.horizontalDirection = 1.0f;
+					}
+				} else {
+					input.horizontalDirection = 1.0f;
+				}
 			}
 
 			if (input.horizontalDirection > 0 && enemyRight >= maxBounds.x) {

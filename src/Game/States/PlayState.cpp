@@ -5,6 +5,7 @@
 #include "Engine/ECS/Systems/Combat/HitDetectionSystem.hpp"
 #include "Engine/ECS/Systems/Enemy/ChaseSystem.hpp"
 #include "Engine/ECS/Systems/Enemy/PatrolSystem.hpp"
+#include "Engine/ECS/Systems/Enemy/ProjectileSystem.hpp"
 #include "Engine/ECS/Systems/InteractionSystem.hpp"
 #include "Engine/ECS/Systems/JumpSystem.hpp"
 #include "Engine/ECS/Systems/MovementSystem.hpp"
@@ -52,6 +53,7 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 
 	ECS::Systems::PatrolSystem::update(game.getRegistry());
 	ECS::Systems::ChaseSystem::update(game.getRegistry(), deltaTime);
+	ECS::Systems::ProjectileSystem::update(game.getRegistry(), deltaTime, game.getTextureManager());
 	ECS::Systems::HitDetectionSystem::update(game.getRegistry());
 
 	ECS::Systems::JumpSystem::update(game.getRegistry(), deltaTime);

@@ -6,6 +6,8 @@
 #include "Engine/ECS/Components/Gameplay/Combat/HealthComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/RangedAttackComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Enemy/ChaseComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Render/BackgroundComponent.hpp"
@@ -119,7 +121,7 @@ void RenderSystem::update(Registry &registry, float alpha)
 				hitBoxRect.x = position.x + hurtBox.x * scale.x + hurtBox.w * scale.x;
 			}
 			hitBoxRect.y = position.y + hurtBox.y * scale.y;
-			
+
 			if (hitBoxRect.w > 0.0f && hitBoxRect.h > 0.0f) {
 				constexpr SDL_Color hitboxColor = {0, 255, 0, 255};
 				DebugSystem::instance().debugRects.push_back({hitBoxRect, hitboxColor});
@@ -129,6 +131,23 @@ void RenderSystem::update(Registry &registry, float alpha)
 			                         hurtBox.w * scale.x, hurtBox.h * scale.y};
 			constexpr SDL_Color hurtBoxColor = {255, 0, 255, 255};
 			DebugSystem::instance().debugRects.push_back({hurtBoxRect, hurtBoxColor});
+
+			if (registry.has<RangedAttackComponent>(entity) && registry.has<ChaseComponent>(entity)) {
+				const auto &ranged = registry.get<RangedAttackComponent>(entity);
+				const auto &chase = registry.get<ChaseComponent>(entity);
+
+				const float centerX = position.x + hurtBox.x * scale.x + hurtBox.w * scale.x * 0.5f;
+				const float centerY = position.y + hurtBox.y * scale.y + hurtBox.h * scale.y * 0.5f;
+
+				SDL_FRect rangeRect;
+				rangeRect.w = ranged.detectionRange * 2.0f;
+				rangeRect.h = ranged.detectionRange * 2.0f;
+				rangeRect.x = centerX - ranged.detectionRange;
+				rangeRect.y = centerY - ranged.detectionRange;
+
+				constexpr SDL_Color rangeColor = {255, 165, 0, 255}; // Orange
+				DebugSystem::instance().debugRects.push_back({rangeRect, rangeColor});
+			}
 		}
 	}
 

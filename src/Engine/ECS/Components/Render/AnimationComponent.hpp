@@ -21,6 +21,8 @@ enum class AnimationType {
 	Falling,
 	Landing,
 	Attacking,
+	Charge,
+	Fire,
 	Hurting,
 	Dead
 };

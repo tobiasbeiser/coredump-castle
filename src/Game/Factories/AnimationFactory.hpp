@@ -31,6 +31,12 @@ class AnimationFactory {
 		if (string == "Attacking") {
 			return AnimationType::Attacking;
 		}
+		if (string == "Charge") {
+			return AnimationType::Charge;
+		}
+		if (string == "Fire") {
+			return AnimationType::Fire;
+		}
 		if (string == "JumpStart") {
 			return AnimationType::JumpStart;
 		}

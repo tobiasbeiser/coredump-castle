@@ -3,6 +3,7 @@
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/RangedAttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/ChaseComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
@@ -26,14 +27,36 @@ void resetChaseState(InputComponent &input, MovementComponent &movement, ChaseCo
 	chase.reactionDelay.reset();
 }
 
+void handleRangeAttack(glm::vec2 enemyCenter, glm::vec2 playerCenter, ChaseComponent &chase,
+                       const RangedAttackComponent &rangedAttack, InputComponent &input, RenderComponent &render,
+                       const AttackComponent &attack)
+{
+	float distX = std::abs(playerCenter.x - enemyCenter.x);
+	float distY = std::abs(playerCenter.y - enemyCenter.y);
+	const float directionToPlayer = playerCenter.x > enemyCenter.x ? 1.0f : -1.0f;
+
+	if (!AttackSystem::isAttacking(attack)
+	    && (distX > rangedAttack.detectionRange || distY > rangedAttack.detectionRange)) {
+		input.attackPressed = false;
+		chase.reactionDelay.reset();
+		return;
+	}
+
+	// player is close enough
+	chase.lastKnownPlayerX = playerCenter.x;
+	input.horizontalDirection = 0.0f;
+	render.flipX = directionToPlayer < 0;
+	input.attackPressed = chase.reactionDelay.isTimeout();
+}
+
 } // namespace
 
-void update(Registry &registry, float deltaTime)
+void update(Registry &registry, const float deltaTime)
 {
 	auto playerView =
 	    registry.view<PlayerTag, PositionComponent, HurtBoxComponent, TransformComponent, GroundedComponent>();
 
-	glm::vec2 playerCenterPos = {0, 0};
+	glm::vec2 playerCenter = {0, 0};
 	SDL_FRect playerHurtBox = {0, 0, 0, 0};
 	glm::vec2 playerScale = {1.0f, 1.0f};
 	bool playerGrounded = false;
@@ -44,9 +67,8 @@ void update(Registry &registry, float deltaTime)
 		playerScale = registry.get<TransformComponent>(entity).scale;
 		playerGrounded = registry.get<GroundedComponent>(entity).grounded;
 
-		playerCenterPos =
-		    glm::vec2(pos.x + (playerHurtBox.x * playerScale.x) + (playerHurtBox.w * playerScale.x) * 0.5f,
-		              pos.y + (playerHurtBox.y * playerScale.y) + (playerHurtBox.h * playerScale.y) * 0.5f);
+		playerCenter = glm::vec2(pos.x + (playerHurtBox.x * playerScale.x) + (playerHurtBox.w * playerScale.x) * 0.5f,
+		                         pos.y + (playerHurtBox.y * playerScale.y) + (playerHurtBox.h * playerScale.y) * 0.5f);
 		break;
 	}
 
@@ -56,7 +78,7 @@ void update(Registry &registry, float deltaTime)
 
 	for (const auto entity : enemyView) {
 		const auto &pos = registry.get<PositionComponent>(entity);
-		const auto &hurtBox = registry.get<HurtBoxComponent>(entity).hurtBox;
+		const auto &enemyHurtBox = registry.get<HurtBoxComponent>(entity).hurtBox;
 		const auto &patrol = registry.get<PatrolComponent>(entity);
 		const auto &attack = registry.get<AttackComponent>(entity);
 
@@ -65,25 +87,33 @@ void update(Registry &registry, float deltaTime)
 		auto &movement = registry.get<MovementComponent>(entity);
 		auto &render = registry.get<RenderComponent>(entity);
 
-		glm::vec2 scale = {1.0f, 1.0f};
+		glm::vec2 enemyScale = {1.0f, 1.0f};
 		if (registry.has<TransformComponent>(entity)) {
-			scale = registry.get<TransformComponent>(entity).scale;
+			enemyScale = registry.get<TransformComponent>(entity).scale;
 		}
 
 		chase.reactionDelay.step(std::chrono::duration<float>(deltaTime), false);
 
-		if (playerCenterPos.x < patrol.minBounds.x || playerCenterPos.x > patrol.maxBounds.x) {
+		const glm::vec2 enemyCenter = {
+		    pos.position.x + (enemyHurtBox.x * enemyScale.x) + (enemyHurtBox.w * enemyScale.x) * 0.5f,
+		    pos.position.y + (enemyHurtBox.y * enemyScale.y) + (enemyHurtBox.h * enemyScale.y) * 0.5f};
+
+		if (registry.has<RangedAttackComponent>(entity)) {
+
+			handleRangeAttack(enemyCenter, playerCenter, chase, registry.get<RangedAttackComponent>(entity), input,
+			                  render, attack);
+			continue;
+		}
+
+		if (playerCenter.x < patrol.minBounds.x || playerCenter.x > patrol.maxBounds.x) {
 			resetChaseState(input, movement, chase);
 			continue;
 		}
 
-		const glm::vec2 enemyCenter = {pos.position.x + (hurtBox.x * scale.x) + (hurtBox.w * scale.x) * 0.5f,
-		                               pos.position.y + (hurtBox.y * scale.y) + (hurtBox.h * scale.y) * 0.5f};
-
 		const float verticalThreshold =
 		    playerGrounded ? chase.verticalDetectionHeight : chase.verticalDetectionHeight * 2.0f;
 
-		if (std::abs(playerCenterPos.y - enemyCenter.y) > verticalThreshold) {
+		if (std::abs(playerCenter.y - enemyCenter.y) > verticalThreshold) {
 			resetChaseState(input, movement, chase);
 			continue;
 		}
@@ -94,10 +124,11 @@ void update(Registry &registry, float deltaTime)
 			continue;
 		}
 
-		const float xDistance = std::abs(playerCenterPos.x - enemyCenter.x);
-		const float directionToPlayer = playerCenterPos.x > enemyCenter.x ? 1.0f : -1.0f;
+		const float xDistance = std::abs(playerCenter.x - enemyCenter.x);
+		const float directionToPlayer = playerCenter.x > enemyCenter.x ? 1.0f : -1.0f;
 
-		if (const float stopDistance = (playerHurtBox.w * playerScale.x * 0.5f) + (hurtBox.w * scale.x * 0.5f);
+		if (const float stopDistance =
+		        (playerHurtBox.w * playerScale.x * 0.5f) + (enemyHurtBox.w * enemyScale.x * 0.5f);
 		    xDistance <= stopDistance) {
 			input.horizontalDirection = 0.0f;
 			render.flipX = directionToPlayer < 0;

@@ -13,7 +13,7 @@
             {
              "name":"attackCooldown",
              "type":"float",
-             "value":0.6
+             "value":0.1
             }, 
             {
              "name":"canPatrol",
@@ -26,9 +26,14 @@
              "value":"22,24,18,23"
             }, 
             {
-             "name":"hitBox",
-             "type":"string",
-             "value":"0,0,12,22"
+             "name":"detectionRange",
+             "type":"float",
+             "value":150
+            }, 
+            {
+             "name":"isRangedEnemy",
+             "type":"bool",
+             "value":true
             }, 
             {
              "name":"maxHealth",
@@ -39,6 +44,16 @@
              "name":"maxSpeedX",
              "type":"float",
              "value":50
+            }, 
+            {
+             "name":"projectileOffset",
+             "type":"string",
+             "value":"8,48,0,0"
+            }, 
+            {
+             "name":"projectileSpeed",
+             "type":"float",
+             "value":1
             }, 
             {
              "name":"reactionDelay",

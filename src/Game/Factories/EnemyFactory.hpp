@@ -14,6 +14,8 @@
 #include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/RangedAttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/ChaseComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp"
 #include "Engine/ECS/Components/Physics/AccelerationComponent.hpp"
@@ -43,6 +45,14 @@ class EnemyFactory {
 		const auto maxHealth = getIntProp(enemyObj, "maxHealth", 100);
 		const auto attackCooldown = getFloatProp(enemyObj, "attackCooldown", 0.5);
 		const auto reactionDelay = getFloatProp(enemyObj, "reactionDelay", 0.5);
+		const auto isRangedEnemy = getBoolProp(enemyObj, "isRangedEnemy");
+		const auto projectileSpeed = getFloatProp(enemyObj, "projectileSpeed", 1.0f);
+		const auto detectionRange = getFloatProp(enemyObj, "detectionRange", 1.0f);
+		glm::vec2 projectileOffset = {0.0f, 0.0f};
+		if (const auto offsetStr = getStringProp(enemyObj, "projectileOffset", "")) {
+			const auto parsed = parseCollisionBox(offsetStr.value());
+			projectileOffset = {parsed.x, parsed.y};
+		}
 
 		const tson::Vector2 pos = enemyObj.getPosition();
 		const glm::vec2 spawn = glm::vec2(pos.x, pos.y) + levelPos;
@@ -87,6 +97,19 @@ class EnemyFactory {
 				                           .reactionDelay = Timer{std::chrono::duration<float>(reactionDelay)}});
 			}
 		}
+		if (isRangedEnemy) {
+			registry.registerComponent(
+			    entity, ChaseComponent{.verticalDetectionHeight = verticalDetectionHeight,
+			                           .chaseSpeed = chaseSpeed,
+			                           .originalPatrolSpeed = maxSpeedX,
+			                           .reactionDelay = Timer{std::chrono::duration<float>(reactionDelay)}});
+			registry.registerComponent(entity, RangedAttackComponent{
+			                                       .detectionRange = detectionRange,
+			                                       .projectileSpeed = projectileSpeed,
+			                                       .projectileOffset = projectileOffset,
+			                                   });
+			registry.registerComponent(entity, ProjectileComponent{500, 100});
+		}
 
 		AnimationFactory::loadAnimationsFromTileset(registry, texMgr, map, enemyObj, entity);
 
@@ -98,6 +121,15 @@ class EnemyFactory {
 			auto &animComp = registry.get<AnimationComponent>(entity);
 			if (animComp.hasAnimation(AnimationType::Attacking)) {
 				attackDuration = animComp.getAnimationDuration(AnimationType::Attacking);
+			}
+
+			if (animComp.hasAnimation(AnimationType::Charge)) {
+				attackDuration = animComp.getAnimationDuration(AnimationType::Charge);
+				if (animComp.hasAnimation(AnimationType::Fire)) {
+					attackDuration += animComp.getAnimationDuration(AnimationType::Fire);
+				}
+			} else if (animComp.hasAnimation(AnimationType::Fire)) {
+				attackDuration = animComp.getAnimationDuration(AnimationType::Fire);
 			}
 			if (animComp.hasAnimation(AnimationType::Hurting)) {
 				invulnerabilityTime = animComp.getAnimationDuration(AnimationType::Hurting);

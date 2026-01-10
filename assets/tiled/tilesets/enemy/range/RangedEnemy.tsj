@@ -135,7 +135,18 @@
                 {
                  "duration":150,
                  "tileid":22
-                }, 
+                }],
+         "id":16,
+         "properties":[
+                {
+                 "name":"state",
+                 "propertytype":"State",
+                 "type":"int",
+                 "value":10
+                }]
+        }, 
+        {
+         "animation":[
                 {
                  "duration":150,
                  "tileid":23
@@ -152,13 +163,13 @@
                  "duration":150,
                  "tileid":26
                 }],
-         "id":16,
+         "id":23,
          "properties":[
                 {
                  "name":"state",
                  "propertytype":"State",
                  "type":"int",
-                 "value":2
+                 "value":11
                 }]
         }],
  "tilewidth":64,

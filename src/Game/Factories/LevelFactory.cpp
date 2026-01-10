@@ -198,7 +198,7 @@ void LevelFactory::loadObjects(tson::Layer &layer, const int layerIndex, const g
 			                            map);
 		}
 		std::string name = obj.getName();
-		std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c) { return std::tolower(c); });
+		std::ranges::transform(name, name.begin(), [](unsigned char c) { return std::tolower(c); });
 		if (name.find("enemy") != std::string::npos) {
 			EnemyFactory::createEnemy(registry, textureManager, obj, levelPos, map, layerIndex);
 			continue;
