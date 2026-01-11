@@ -24,6 +24,8 @@
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
+#include "Engine/ECS/Components/Tags/PlayerTag.hpp"
+#include "Engine/ECS/View.hpp"
 #include <tileson.hpp>
 
 class EnemyFactory {
@@ -108,8 +110,7 @@ class EnemyFactory {
 			                                       .projectileSpeed = projectileSpeed,
 			                                       .projectileOffset = projectileOffset,
 			                                   });
-			registry.registerComponent(
-			    entity, ProjectileComponent{.maxRange = 2000.0f, .speed = projectileSpeed});
+			registry.registerComponent(entity, ProjectileComponent{.maxRange = 2000.0f, .speed = projectileSpeed});
 		}
 
 		AnimationFactory::loadAnimationsFromTileset(registry, texMgr, map, enemyObj, entity);
@@ -142,6 +143,8 @@ class EnemyFactory {
 		registry.registerComponent(
 		    entity, AttackComponent{.attackTimer = Timer{attackDuration},
 		                            .attackCoolDownTimer = Timer{std::chrono::duration<float>(attackCooldown)}});
+
+		ensureSafeSpawn(registry, entity);
 
 		return entity;
 	}
@@ -235,5 +238,60 @@ class EnemyFactory {
 		}
 
 		return std::nullopt;
+	}
+	static void ensureSafeSpawn(GameEngine::ECS::Registry &registry, const GameEngine::ECS::Entity entity)
+	{
+		if (!registry.has<PositionComponent>(entity) || !registry.has<CollisionComponent>(entity)) {
+			return;
+		}
+
+		auto &entityPos = registry.get<PositionComponent>(entity);
+		const auto &entityCollision = registry.get<CollisionComponent>(entity).collisionBox;
+		glm::vec2 scale = {1.0f, 1.0f};
+		if (registry.has<TransformComponent>(entity)) {
+			scale = registry.get<TransformComponent>(entity).scale;
+		}
+
+		int maxAttempts = 100;
+		bool collision = true;
+
+		while (collision && maxAttempts > 0) {
+			collision = false;
+			SDL_FRect enemyRect = {entityPos.position.x + entityCollision.x * scale.x,
+			                       entityPos.position.y + entityCollision.y * scale.y, entityCollision.w * scale.x,
+			                       entityCollision.h * scale.y};
+
+			for (auto staticColliders = registry.view<PositionComponent, CollisionComponent>()
+			                                .exclude<EnemyTag>()
+			                                .exclude<PlayerTag>()
+			                                .exclude<ProjectileComponent>();
+			     const auto staticCollider : staticColliders) {
+
+				const auto &staticColliderPos = staticColliders.get<PositionComponent>(staticCollider);
+				const auto &staticColliderCollisionBox =
+				    staticColliders.get<CollisionComponent>(staticCollider).collisionBox;
+				glm::vec2 staticColliderScale = {1.0f, 1.0f};
+				if (registry.has<TransformComponent>(staticCollider)) {
+					staticColliderScale = registry.get<TransformComponent>(staticCollider).scale;
+				}
+
+				SDL_FRect staticColliderRect = {
+				    staticColliderPos.position.x + staticColliderCollisionBox.x * staticColliderScale.x,
+				    staticColliderPos.position.y + staticColliderCollisionBox.y * staticColliderScale.y,
+				    staticColliderCollisionBox.w * staticColliderScale.x,
+				    staticColliderCollisionBox.h * staticColliderScale.y};
+
+				if (SDL_HasRectIntersectionFloat(&enemyRect, &staticColliderRect)) {
+					collision = true;
+					entityPos.position.y -= 2.0f;
+					break;
+				}
+			}
+			maxAttempts--;
+		}
+
+		if (maxAttempts == 0) {
+			SDL_Log("Warning: Could not safe-spawn enemy entity %u", static_cast<unsigned int>(entity));
+		}
 	}
 };
