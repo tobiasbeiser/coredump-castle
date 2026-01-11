@@ -26,7 +26,7 @@ struct PlayerContext {
 	glm::vec2 scale = glm::vec2(1.0f, 1.0f);
 	bool isGrounded = false;
 };
-// this struct will never be stored or copied,
+// this struct will never be stored or copied, therefore the ignores
 struct EnemyContext {
 	// NOLINTBEGIN(cppcoreguidelines-avoid-const-or-ref-data-members)
 	InputComponent &input;
@@ -81,7 +81,6 @@ void handleMeleeAttack(const EnemyContext &enemy, const PlayerContext &player)
 	if (std::abs(player.center.y - enemy.center.y) > verticalThreshold) {
 		resetChaseState(enemy);
 		return;
-		;
 	}
 
 	if (AttackSystem::isAttacking(enemy.attack)) {

@@ -19,30 +19,103 @@
 
 namespace GameEngine::ECS::Systems::ProjectileSystem {
 
+namespace {
+// Constants
+constexpr float VERTICAL_SNAP_THRESHOLD = 20.0f;
+
+// Helper struct to hold player targeting data
+struct PlayerTargetData {
+	glm::vec2 centerPosition{0.0f, 0.0f};
+	glm::vec2 cornerPosition{0.0f, 0.0f};
+	bool isGrounded = false;
+};
+
+// Extract player position and collision data for targeting
+PlayerTargetData getPlayerTargetData(Registry &registry, bool facingLeft)
+{
+	PlayerTargetData playerData;
+
+	for (auto playerView = registry.view<PlayerTag, CollisionComponent, PositionComponent, GroundedComponent>();
+	     const auto player : playerView) {
+		const auto &pos = playerView.get<PositionComponent>(player).position;
+		const auto &collision = playerView.get<CollisionComponent>(player).collisionBox;
+		playerData.isGrounded = playerView.get<GroundedComponent>(player).grounded;
+
+		glm::vec2 playerScale{1.0f, 1.0f};
+		if (registry.has<TransformComponent>(player)) {
+			playerScale = registry.get<TransformComponent>(player).scale;
+		}
+
+		playerData.centerPosition.x = pos.x + (collision.x * playerScale.x) + (collision.w * playerScale.x * 0.5f);
+		playerData.centerPosition.y = pos.y + (collision.y * playerScale.y) + (collision.h * playerScale.y * 0.5f);
+
+		if (facingLeft) {
+			playerData.cornerPosition.x = pos.x + (collision.x * playerScale.x) + (collision.w * playerScale.x);
+			playerData.cornerPosition.y = pos.y + (collision.y * playerScale.y);
+		} else {
+			playerData.cornerPosition.x = pos.x + (collision.x * playerScale.x);
+			playerData.cornerPosition.y = pos.y + (collision.y * playerScale.y);
+		}
+	}
+
+	return playerData;
+}
+
+glm::vec2 calculateSpawnPosition(const glm::vec2 &enemyPosition, const SDL_FRect &enemyHurtBox,
+                                 const glm::vec2 &enemyScale, const glm::vec2 &projectileOffset, bool facingLeft)
+{
+	glm::vec2 spawnPosition = enemyPosition;
+
+	if (facingLeft) {
+		spawnPosition.x += (enemyHurtBox.x * enemyScale.x) - projectileOffset.x;
+	} else {
+		spawnPosition.x += (enemyHurtBox.x * enemyScale.x) + (enemyHurtBox.w * enemyScale.x) + projectileOffset.x;
+	}
+	spawnPosition.y += projectileOffset.y;
+
+	return spawnPosition;
+}
+
+glm::vec2 calculateProjectileDirection(const glm::vec2 &spawnPosition, const PlayerTargetData &playerData,
+                                       const bool facingLeft)
+{
+	if (playerData.isGrounded && std::abs(playerData.centerPosition.y - spawnPosition.y) < VERTICAL_SNAP_THRESHOLD) {
+		return {facingLeft ? -1.0f : 1.0f, 0.0f}; // Shoot horizontally in one straight line
+	}
+
+	return glm::normalize(playerData.cornerPosition - spawnPosition);
+}
+
+bool shouldSpawnProjectile(Registry &registry, Entity entity, const AttackComponent &attack, float deltaTime)
+{
+	if (registry.has<AnimationComponent>(entity)) {
+		const auto &anim = registry.get<AnimationComponent>(entity);
+		return anim.hasAnimation(AnimationType::Fire) && anim.getAnimation() == AnimationType::Fire;
+	}
+
+	return attack.attackTimer.getTime() <= std::chrono::duration<float>(deltaTime * 2.0f);
+}
+
+} // anonymous namespace
+
 void update(Registry &registry, const float deltaTime, TextureManager &textureManager)
 {
-
 	for (auto projectileView =
 	         registry.view<ProjectileComponent, VelocityComponent, PositionComponent>().exclude<AttackComponent>();
 	     const auto entity : projectileView) {
 		const auto &velocity = projectileView.get<VelocityComponent>(entity);
 		auto &position = projectileView.get<PositionComponent>(entity);
-
 		position.position += velocity.velocity * deltaTime;
 	}
 
-	bool onGround = false;
-	auto playerView = registry.view<PlayerTag, CollisionComponent, PositionComponent, GroundedComponent>();
+	const ProjectileFactory factory(registry, textureManager);
 
-	// Spawn new projectiles
+	// Spawn new projectiles from attacking enemies
 	for (auto view =
 	         registry.view<EnemyTag, AttackComponent, RangedAttackComponent, PositionComponent, HurtBoxComponent>();
 	     const auto entity : view) {
 		auto &attack = registry.get<AttackComponent>(entity);
 		auto &rangedAttack = registry.get<RangedAttackComponent>(entity);
-		const auto &projectileSettings = registry.get<ProjectileComponent>(entity);
-		const auto &position = registry.get<PositionComponent>(entity);
-		const auto &enemyHurtBox = registry.get<HurtBoxComponent>(entity);
 
 		if (!AttackSystem::isAttacking(attack)) {
 			rangedAttack.projectileSpawned = false;
@@ -53,82 +126,38 @@ void update(Registry &registry, const float deltaTime, TextureManager &textureMa
 			continue;
 		}
 
-		bool shouldSpawn = false;
-		if (registry.has<AnimationComponent>(entity)) {
-			if (const auto &anim = registry.get<AnimationComponent>(entity); anim.hasAnimation(AnimationType::Fire)) {
-				if (anim.getAnimation() == AnimationType::Fire) {
-					shouldSpawn = true;
-				}
-			}
-		} else {
-			if (attack.attackTimer.getTime() <= std::chrono::duration<float>(deltaTime * 2.0f)) {
-				shouldSpawn = true;
-			}
-		}
-
-		if (!shouldSpawn) {
+		if (!shouldSpawnProjectile(registry, entity, attack, deltaTime)) {
 			continue;
 		}
 
-		glm::vec2 spawnPosition = position.position;
-		glm::vec2 direction = {0.0f, 0.0f};
+		const auto &projectileSettings = registry.get<ProjectileComponent>(entity);
+		const auto &position = registry.get<PositionComponent>(entity);
+		const auto &enemyHurtBox = registry.get<HurtBoxComponent>(entity);
 
-		glm::vec2 scale = {1.0f, 1.0f};
+		glm::vec2 enemyScale{1.0f, 1.0f};
 		if (registry.has<TransformComponent>(entity)) {
-			scale = registry.get<TransformComponent>(entity).scale;
+			enemyScale = registry.get<TransformComponent>(entity).scale;
 		}
+
 		if (registry.has<RenderComponent>(entity)) {
-			const auto dir = registry.get<RenderComponent>(entity).flipX;
+			const bool facingLeft = registry.get<RenderComponent>(entity).flipX;
 
-			glm::vec2 playerCenterPosition{0.0f, 0.0f};
-			glm::vec2 playerCorner{0.0f, 0.0f};
-			glm::vec2 playerScale = {1.0f, 1.0f};
+			const PlayerTargetData playerData = getPlayerTargetData(registry, facingLeft);
 
-			for (auto player : playerView) {
-				const auto &pos = playerView.get<PositionComponent>(player).position;
-				const auto &collision = playerView.get<CollisionComponent>(player).collisionBox;
-				if (registry.has<TransformComponent>(player)) {
-					playerScale = registry.get<TransformComponent>(player).scale;
-				}
-				onGround = registry.get<GroundedComponent>(player).grounded;
+			const glm::vec2 spawnPosition = calculateSpawnPosition(position.position, enemyHurtBox.hurtBox, enemyScale,
+			                                                       rangedAttack.projectileOffset, facingLeft);
+			const glm::vec2 direction = calculateProjectileDirection(spawnPosition, playerData, facingLeft);
 
-				playerCenterPosition.x = pos.x + (collision.x * playerScale.x) + (collision.w * playerScale.x * 0.5f);
-				playerCenterPosition.y = pos.y + (collision.y * playerScale.y) + (collision.h * playerScale.y * 0.5f);
+			// Calculate rotation based on direction
+			const double rotation = std::atan2(direction.y, direction.x) * (180.0 / std::numbers::pi);
 
-				if (dir) { // left: aim at players top-right corner
-					playerCorner.x = pos.x + (collision.x * playerScale.x) + (collision.w * playerScale.x);
-					playerCorner.y = pos.y + (collision.y * playerScale.y);
-				} else {
-					playerCorner.x = pos.x + (collision.x * playerScale.x);
-					playerCorner.y = pos.y + (collision.y * playerScale.y);
-				}
-			}
-
-			if (dir) {
-				spawnPosition.x += (enemyHurtBox.hurtBox.x * scale.x) - rangedAttack.projectileOffset.x;
-			} else {
-				spawnPosition.x += (enemyHurtBox.hurtBox.x * scale.x) + (enemyHurtBox.hurtBox.w * scale.x)
-				                   + rangedAttack.projectileOffset.x;
-			}
-			spawnPosition.y += rangedAttack.projectileOffset.y;
-
-			if (constexpr float verticalSnapThreshold = 20.0f;
-			    onGround && std::abs(playerCenterPosition.y - spawnPosition.y) < verticalSnapThreshold) {
-				direction = {dir ? -1.0f : 1.0f, 0.0f};
-			} else {
-				direction = glm::normalize(playerCorner - spawnPosition);
-			}
+			factory.createProjectile(spawnPosition, direction, projectileSettings.speed, projectileSettings.maxRange,
+			                         rotation);
+			rangedAttack.projectileSpawned = true;
 		}
-
-		const ProjectileFactory factory(registry, textureManager);
-
-		double rotation = std::atan2(direction.y, direction.x) * (180.0 / std::numbers::pi);
-
-		factory.createProjectile(spawnPosition, direction, projectileSettings.speed, projectileSettings.maxRange,
-		                         rotation);
-		rangedAttack.projectileSpawned = true;
 	}
 
+	// Clean up projectiles that have exceeded their max range
 	auto projectileView =
 	    registry.view<EnemyTag, PositionComponent, ProjectileComponent>().exclude<RangedAttackComponent>();
 	for (auto entity : projectileView) {

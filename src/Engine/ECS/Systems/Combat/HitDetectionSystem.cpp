@@ -21,6 +21,8 @@ namespace GameEngine::ECS::Systems::HitDetectionSystem {
 
 namespace {
 
+constexpr int DEFAULT_DAMAGE = 10;
+
 bool isHostile(Registry &registry, const Entity attacker, const Entity victim)
 {
 	const auto attackerIsPlayer = registry.has<PlayerTag>(attacker);
@@ -36,6 +38,27 @@ bool isHostile(Registry &registry, const Entity attacker, const Entity victim)
 		return true;
 
 	return false;
+}
+
+bool isValidVictim(Registry &registry, const Entity attacker, const Entity victim)
+{
+	if (victim == attacker) {
+		return false;
+	}
+
+	if (!isHostile(registry, attacker, victim)) {
+		return false;
+	}
+
+	const auto &victimHealth = registry.get<HealthComponent>(victim);
+	return !HealthSystem::isDead(victimHealth);
+}
+
+void applyDamage(Registry &registry, const Entity victim, const int damage = DEFAULT_DAMAGE)
+{
+	if (!registry.has<PendingDamageComponent>(victim)) {
+		registry.registerComponent(victim, PendingDamageComponent{damage});
+	}
 }
 
 SDL_FRect getWeaponHitBoxRect(Registry &registry, const Entity entity)
@@ -91,6 +114,11 @@ SDL_FRect getHurtBoxRect(Registry &registry, const Entity entity)
 	        hurtBox.h * scale.y};
 }
 
+bool checkCollision(const SDL_FRect &rect1, const SDL_FRect &rect2)
+{
+	return SDL_HasRectIntersectionFloat(&rect1, &rect2);
+}
+
 void resolveAttacks(Registry &registry)
 {
 	auto attackerView = registry.view<AttackComponent, HitBoxComponent, PositionComponent>();
@@ -98,7 +126,6 @@ void resolveAttacks(Registry &registry)
 
 	for (const auto attacker : attackerView) {
 		const auto &attackComponent = registry.get<AttackComponent>(attacker);
-
 		const bool isAttacking = AttackSystem::isAttacking(attackComponent);
 
 		SDL_FRect attackerWeaponRect = {0, 0, 0, 0};
@@ -109,39 +136,23 @@ void resolveAttacks(Registry &registry)
 		SDL_FRect attackerHurtBox = getHurtBoxRect(registry, attacker);
 
 		for (const auto victim : victimView) {
-			if (victim == attacker) {
-				continue;
-			}
-
-			if (!isHostile(registry, attacker, victim)) {
-				continue;
-			}
-
-			const auto &victimHealth = registry.get<HealthComponent>(victim);
-			if (HealthSystem::isDead(victimHealth)) {
+			if (!isValidVictim(registry, attacker, victim)) {
 				continue;
 			}
 
 			SDL_FRect victimHurtBoxRect = getHurtBoxRect(registry, victim);
 			bool hit = false;
 
-			if (isAttacking) {
-				if (SDL_HasRectIntersectionFloat(&attackerWeaponRect, &victimHurtBoxRect)) {
-					hit = true;
-				}
+			if (isAttacking && checkCollision(attackerWeaponRect, victimHurtBoxRect)) {
+				hit = true;
 			}
 
-			// always body damage on for enemies, but not for the player
-			if (!hit && registry.has<EnemyTag>(attacker)) {
-				if (SDL_HasRectIntersectionFloat(&attackerHurtBox, &victimHurtBoxRect)) {
-					hit = true;
-				}
+			if (!hit && registry.has<EnemyTag>(attacker) && checkCollision(attackerHurtBox, victimHurtBoxRect)) {
+				hit = true;
 			}
 
 			if (hit) {
-				if (!registry.has<PendingDamageComponent>(victim)) {
-					registry.registerComponent(victim, PendingDamageComponent{10});
-				}
+				applyDamage(registry, victim);
 			}
 		}
 	}
@@ -153,34 +164,17 @@ void resolveProjectileHits(Registry &registry)
 	auto victimView = registry.view<HurtBoxComponent, PositionComponent, HealthComponent>();
 
 	for (const auto attacker : projectileView) {
+		SDL_FRect projectileHurtBox = getHurtBoxRect(registry, attacker);
+
 		for (const auto victim : victimView) {
-			if (victim == attacker) {
+			if (!isValidVictim(registry, attacker, victim)) {
 				continue;
 			}
-
-			if (!isHostile(registry, attacker, victim)) {
-				continue;
-			}
-
-			if (const auto &victimHealth = registry.get<HealthComponent>(victim); HealthSystem::isDead(victimHealth)) {
-				continue;
-			}
-			SDL_FRect projectileHurtBox = getHurtBoxRect(registry, attacker);
 
 			SDL_FRect victimHurtBoxRect = getHurtBoxRect(registry, victim);
-			bool hit = false;
 
-			// always body damage on for enemies, but not for the player
-			if (registry.has<EnemyTag>(attacker)) {
-				if (SDL_HasRectIntersectionFloat(&projectileHurtBox, &victimHurtBoxRect)) {
-					hit = true;
-				}
-			}
-
-			if (hit) {
-				if (!registry.has<PendingDamageComponent>(victim)) {
-					registry.registerComponent(victim, PendingDamageComponent{10});
-				}
+			if (registry.has<EnemyTag>(attacker) && checkCollision(projectileHurtBox, victimHurtBoxRect)) {
+				applyDamage(registry, victim);
 			}
 		}
 	}
