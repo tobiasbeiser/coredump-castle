@@ -103,6 +103,12 @@ class EnemyFactory {
 			}
 		}
 		if (isRangedEnemy) {
+			std::string projectileTilesetPath;
+			if (const auto tilesetPathOpt = getStringProp(enemyObj, "projectileTileset", "")) {
+				const std::filesystem::path basePath = "assets/tiled/tilesets/";
+				projectileTilesetPath = (basePath / tilesetPathOpt.value()).string();
+			}
+
 			registry.registerComponent(entity, ChaseComponent{
 			                                       .chaseSpeed = chaseSpeed,
 			                                       .originalPatrolSpeed = maxSpeedX,
@@ -114,7 +120,11 @@ class EnemyFactory {
 			                                       .projectileSpeed = projectileSpeed,
 			                                       .projectileOffset = projectileOffset,
 			                                   });
-			registry.registerComponent(entity, ProjectileComponent{.maxRange = 2000.0f, .speed = projectileSpeed});
+			registry.registerComponent(entity, ProjectileComponent{
+			                                       .maxRange = 2000.0f,
+			                                       .speed = projectileSpeed,
+			                                       .projectileTilesetPath = projectileTilesetPath,
+			                                   });
 		}
 
 		AnimationFactory::loadAnimationsFromTileset(registry, texMgr, map, enemyObj, entity);
@@ -201,9 +211,16 @@ class EnemyFactory {
 		if (!prop) {
 			return defaultValue.empty() ? std::nullopt : std::optional{defaultValue};
 		}
-		if (prop->getType() != tson::Type::String) {
+		// Accept both String and File types
+		if (prop->getType() != tson::Type::String && prop->getType() != tson::Type::File) {
 			return defaultValue.empty() ? std::nullopt : std::optional{defaultValue};
 		}
+
+		// For File type, get the filesystem path and convert to string
+		if (prop->getType() == tson::Type::File) {
+			return prop->getValue<std::filesystem::path>().string();
+		}
+
 		return prop->getValue<std::string>();
 	}
 

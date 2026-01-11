@@ -23,14 +23,12 @@ namespace {
 // Constants
 constexpr float VERTICAL_SNAP_THRESHOLD = 20.0f;
 
-// Helper struct to hold player targeting data
 struct PlayerTargetData {
 	glm::vec2 centerPosition{0.0f, 0.0f};
 	glm::vec2 cornerPosition{0.0f, 0.0f};
 	bool isGrounded = false;
 };
 
-// Extract player position and collision data for targeting
 PlayerTargetData getPlayerTargetData(Registry &registry, bool facingLeft)
 {
 	PlayerTargetData playerData;
@@ -148,11 +146,10 @@ void update(Registry &registry, const float deltaTime, TextureManager &textureMa
 			                                                       rangedAttack.projectileOffset, facingLeft);
 			const glm::vec2 direction = calculateProjectileDirection(spawnPosition, playerData, facingLeft);
 
-			// Calculate rotation based on direction
 			const double rotation = std::atan2(direction.y, direction.x) * (180.0 / std::numbers::pi);
 
 			factory.createProjectile(spawnPosition, direction, projectileSettings.speed, projectileSettings.maxRange,
-			                         rotation);
+			                         projectileSettings.projectileTilesetPath, rotation);
 			rangedAttack.projectileSpawned = true;
 		}
 	}
