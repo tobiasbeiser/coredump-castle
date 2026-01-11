@@ -40,7 +40,6 @@ class EnemyFactory {
 		const auto scale = getFloatProp(enemyObj, "scale", 1.0f);
 		const auto maxSpeedX = getFloatProp(enemyObj, "maxSpeedX", 50.0f);
 		const auto chaseSpeed = getFloatProp(enemyObj, "chaseSpeed", 0.0f);
-		const auto verticalDetectionHeight = getFloatProp(enemyObj, "verticalDetectionHeight", 50.0f);
 		const auto canPatrol = getBoolProp(enemyObj, "canPatrol");
 		const auto collisionStr = getStringProp(enemyObj, "collisionBox", "0,0,0,0");
 		const auto hitBoxStr = getStringProp(enemyObj, "hitBox", "");
@@ -49,7 +48,9 @@ class EnemyFactory {
 		const auto reactionDelay = getFloatProp(enemyObj, "reactionDelay", 0.5);
 		const auto isRangedEnemy = getBoolProp(enemyObj, "isRangedEnemy");
 		const auto projectileSpeed = getFloatProp(enemyObj, "projectileSpeed", 300.0f);
-		const auto detectionRange = getFloatProp(enemyObj, "detectionRange", 300.0f);
+		const auto detectionWidthRange = getFloatProp(enemyObj, "detectionWidthRange", 300.0f);
+		const auto detectionHeightRange = getFloatProp(enemyObj, "detectionHeightRange", 50.0f);
+
 		glm::vec2 projectileOffset = {0.0f, 0.0f};
 		if (const auto offsetStr = getStringProp(enemyObj, "projectileOffset", "")) {
 			const auto parsed = parseCollisionBox(offsetStr.value());
@@ -92,21 +93,24 @@ class EnemyFactory {
 				                           PatrolComponent{.minBounds = patrolRect->min, .maxBounds = patrolRect->max});
 			}
 			if (chaseSpeed > 0.0f) {
-				registry.registerComponent(
-				    entity, ChaseComponent{.verticalDetectionHeight = verticalDetectionHeight,
-				                           .chaseSpeed = chaseSpeed,
-				                           .originalPatrolSpeed = maxSpeedX,
-				                           .reactionDelay = Timer{std::chrono::duration<float>(reactionDelay)}});
+				registry.registerComponent(entity,
+				                           ChaseComponent{
+				                               .chaseSpeed = chaseSpeed,
+				                               .originalPatrolSpeed = maxSpeedX,
+				                               .reactionDelay = Timer{std::chrono::duration<float>(reactionDelay)},
+				                               .detectionHeightRange = detectionHeightRange,
+				                           });
 			}
 		}
 		if (isRangedEnemy) {
-			registry.registerComponent(
-			    entity, ChaseComponent{.verticalDetectionHeight = verticalDetectionHeight,
-			                           .chaseSpeed = chaseSpeed,
-			                           .originalPatrolSpeed = maxSpeedX,
-			                           .reactionDelay = Timer{std::chrono::duration<float>(reactionDelay)}});
+			registry.registerComponent(entity, ChaseComponent{
+			                                       .chaseSpeed = chaseSpeed,
+			                                       .originalPatrolSpeed = maxSpeedX,
+			                                       .reactionDelay = Timer{std::chrono::duration<float>(reactionDelay)},
+			                                       .detectionHeightRange = detectionHeightRange,
+			                                       .detectionWidthRange = detectionWidthRange,
+			                                   });
 			registry.registerComponent(entity, RangedAttackComponent{
-			                                       .detectionRange = detectionRange,
 			                                       .projectileSpeed = projectileSpeed,
 			                                       .projectileOffset = projectileOffset,
 			                                   });
@@ -251,6 +255,9 @@ class EnemyFactory {
 		if (registry.has<TransformComponent>(entity)) {
 			scale = registry.get<TransformComponent>(entity).scale;
 		}
+
+		entityPos.position.x -= (entityCollision.x + (entityCollision.w / 2.0f)) * scale.x;
+		entityPos.position.y -= (entityCollision.y + (entityCollision.h / 2.0f)) * scale.y;
 
 		int maxAttempts = 100;
 		bool collision = true;

@@ -33,20 +33,6 @@ void update(Registry &registry, const float deltaTime, TextureManager &textureMa
 
 	bool onGround = false;
 	auto playerView = registry.view<PlayerTag, CollisionComponent, PositionComponent, GroundedComponent>();
-	glm::vec2 playerCenterPosition{0.0f, 0.0f};
-	glm::vec2 playerScale = {1.0f, 1.0f};
-
-	for (auto player : playerView) {
-		const auto &pos = playerView.get<PositionComponent>(player).position;
-		const auto &collision = playerView.get<CollisionComponent>(player).collisionBox;
-		if (registry.has<TransformComponent>(player)) {
-			playerScale = registry.get<TransformComponent>(player).scale;
-		}
-		onGround = registry.get<GroundedComponent>(player).grounded;
-
-		playerCenterPosition.x = pos.x + (collision.x * playerScale.x) + (collision.w * playerScale.x * 0.5f);
-		playerCenterPosition.y = pos.y + (collision.y * playerScale.y) + (collision.h * playerScale.y * 0.5f);
-	}
 
 	// Spawn new projectiles
 	for (auto view =
@@ -91,9 +77,32 @@ void update(Registry &registry, const float deltaTime, TextureManager &textureMa
 		if (registry.has<TransformComponent>(entity)) {
 			scale = registry.get<TransformComponent>(entity).scale;
 		}
-
 		if (registry.has<RenderComponent>(entity)) {
 			const auto dir = registry.get<RenderComponent>(entity).flipX;
+
+			glm::vec2 playerCenterPosition{0.0f, 0.0f};
+			glm::vec2 playerCorner{0.0f, 0.0f};
+			glm::vec2 playerScale = {1.0f, 1.0f};
+
+			for (auto player : playerView) {
+				const auto &pos = playerView.get<PositionComponent>(player).position;
+				const auto &collision = playerView.get<CollisionComponent>(player).collisionBox;
+				if (registry.has<TransformComponent>(player)) {
+					playerScale = registry.get<TransformComponent>(player).scale;
+				}
+				onGround = registry.get<GroundedComponent>(player).grounded;
+
+				playerCenterPosition.x = pos.x + (collision.x * playerScale.x) + (collision.w * playerScale.x * 0.5f);
+				playerCenterPosition.y = pos.y + (collision.y * playerScale.y) + (collision.h * playerScale.y * 0.5f);
+
+				if (dir) { // left: aim at players top-right corner
+					playerCorner.x = pos.x + (collision.x * playerScale.x) + (collision.w * playerScale.x);
+					playerCorner.y = pos.y + (collision.y * playerScale.y);
+				} else {
+					playerCorner.x = pos.x + (collision.x * playerScale.x);
+					playerCorner.y = pos.y + (collision.y * playerScale.y);
+				}
+			}
 
 			if (dir) {
 				spawnPosition.x += (enemyHurtBox.hurtBox.x * scale.x) - rangedAttack.projectileOffset.x;
@@ -103,11 +112,11 @@ void update(Registry &registry, const float deltaTime, TextureManager &textureMa
 			}
 			spawnPosition.y += rangedAttack.projectileOffset.y;
 
-			if (constexpr float VERTICAL_SNAP_THRESHOLD = 20.0f;
-			    onGround && std::abs(playerCenterPosition.y - spawnPosition.y) < VERTICAL_SNAP_THRESHOLD) {
+			if (constexpr float verticalSnapThreshold = 20.0f;
+			    onGround && std::abs(playerCenterPosition.y - spawnPosition.y) < verticalSnapThreshold) {
 				direction = {dir ? -1.0f : 1.0f, 0.0f};
 			} else {
-				direction = glm::normalize(playerCenterPosition - spawnPosition);
+				direction = glm::normalize(playerCorner - spawnPosition);
 			}
 		}
 

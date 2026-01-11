@@ -368,8 +368,8 @@
                          "value":80
                         }],
                  "template":"..\/objects\/meleeEnemy.tj",
-                 "x":878.66832602663,
-                 "y":898.126076265387
+                 "x":890.074899064343,
+                 "y":919.513400711099
                 }, 
                 {
                  "id":34,
@@ -379,10 +379,15 @@
                          "name":"area",
                          "type":"object",
                          "value":23
+                        }, 
+                        {
+                         "name":"canPatrol",
+                         "type":"bool",
+                         "value":true
                         }],
                  "template":"..\/objects\/rangedEnemy.tj",
-                 "x":423.239436619718,
-                 "y":850
+                 "x":411.907991860511,
+                 "y":914.211520302172
                 }, 
                 {
                  "height":20.1158645732762,
@@ -396,17 +401,54 @@
                  "y":714.350342977665
                 }, 
                 {
-                 "id":36,
-                 "name":"RangedEnemy",
+                 "id":37,
                  "properties":[
                         {
                          "name":"area",
                          "type":"object",
                          "value":35
+                        }, 
+                        {
+                         "name":"chaseSpeed",
+                         "type":"float",
+                         "value":80
                         }],
-                 "template":"..\/objects\/rangedEnemy.tj",
-                 "x":765.569632274591,
-                 "y":719.475581444213
+                 "template":"..\/objects\/meleeEnemy.tj",
+                 "x":768.517858415912,
+                 "y":703.64297426392
+                }, 
+                {
+                 "id":39,
+                 "properties":[
+                        {
+                         "name":"area",
+                         "type":"object",
+                         "value":40
+                        }, 
+                        {
+                         "name":"canPatrol",
+                         "type":"bool",
+                         "value":true
+                        }, 
+                        {
+                         "name":"chaseSpeed",
+                         "type":"float",
+                         "value":80
+                        }],
+                 "template":"..\/objects\/meleeEnemy.tj",
+                 "x":640.393575945685,
+                 "y":855.791683632046
+                }, 
+                {
+                 "height":20.1159,
+                 "id":40,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":56.9949197355996,
+                 "x":611.493097261568,
+                 "y":861.99115292729
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -509,7 +551,7 @@
          "y":0
         }],
  "nextlayerid":13,
- "nextobjectid":37,
+ "nextobjectid":41,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",

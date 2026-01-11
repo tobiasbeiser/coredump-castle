@@ -28,7 +28,7 @@
             {
              "name":"collisionBox",
              "type":"string",
-             "value":"25,10,15,22"
+             "value":"23,12,16,22"
             }, 
             {
              "name":"hitBox",

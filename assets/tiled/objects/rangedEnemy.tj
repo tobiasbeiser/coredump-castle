@@ -18,17 +18,22 @@
             {
              "name":"canPatrol",
              "type":"bool",
-             "value":true
+             "value":false
             }, 
             {
              "name":"collisionBox",
              "type":"string",
-             "value":"22,24,18,23"
+             "value":"24,27,17,23"
             }, 
             {
-             "name":"detectionRange",
+             "name":"detectionHeightRange",
              "type":"float",
-             "value":150
+             "value":100
+            }, 
+            {
+             "name":"detectionWidthRange",
+             "type":"float",
+             "value":200
             }, 
             {
              "name":"isRangedEnemy",
@@ -58,17 +63,12 @@
             {
              "name":"reactionDelay",
              "type":"float",
-             "value":0.25
+             "value":0
             }, 
             {
              "name":"scale",
              "type":"float",
              "value":1.6
-            }, 
-            {
-             "name":"verticalDetectionHeight",
-             "type":"float",
-             "value":50
             }],
      "rotation":0,
      "type":"",

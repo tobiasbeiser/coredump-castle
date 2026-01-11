@@ -57,6 +57,8 @@ class AnimationSystem {
 		case AnimationType::JumpStart:
 		case AnimationType::FlyingUp:
 		case AnimationType::Attacking:
+		case AnimationType::Charge:
+		case AnimationType::Fire:
 		case AnimationType::Hurting:
 		case AnimationType::Dead:
 		case AnimationType::Landing:

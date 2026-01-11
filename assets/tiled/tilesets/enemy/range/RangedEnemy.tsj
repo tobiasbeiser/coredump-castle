@@ -44,6 +44,62 @@
                  "tileid":7
                 }],
          "id":0,
+         "objectgroup":
+            {
+             "draworder":"index",
+             "id":2,
+             "name":"",
+             "objects":[
+                    {
+                     "height":21,
+                     "id":1,
+                     "name":"",
+                     "rotation":0,
+                     "type":"",
+                     "visible":true,
+                     "width":17,
+                     "x":24,
+                     "y":27
+                    }, 
+                    {
+                     "height":21,
+                     "id":2,
+                     "name":"",
+                     "rotation":0,
+                     "type":"",
+                     "visible":true,
+                     "width":17,
+                     "x":24,
+                     "y":27
+                    }, 
+                    {
+                     "height":21,
+                     "id":3,
+                     "name":"",
+                     "rotation":0,
+                     "type":"",
+                     "visible":true,
+                     "width":17,
+                     "x":24,
+                     "y":27
+                    }, 
+                    {
+                     "height":21,
+                     "id":4,
+                     "name":"",
+                     "rotation":0,
+                     "type":"",
+                     "visible":true,
+                     "width":17,
+                     "x":24,
+                     "y":27
+                    }],
+             "opacity":1,
+             "type":"objectgroup",
+             "visible":true,
+             "x":0,
+             "y":0
+            },
          "properties":[
                 {
                  "name":"state",
@@ -109,31 +165,31 @@
         {
          "animation":[
                 {
-                 "duration":150,
+                 "duration":100,
                  "tileid":16
                 }, 
                 {
-                 "duration":150,
+                 "duration":100,
                  "tileid":17
                 }, 
                 {
-                 "duration":150,
+                 "duration":100,
                  "tileid":18
                 }, 
                 {
-                 "duration":150,
+                 "duration":100,
                  "tileid":19
                 }, 
                 {
-                 "duration":150,
+                 "duration":100,
                  "tileid":20
                 }, 
                 {
-                 "duration":150,
+                 "duration":100,
                  "tileid":21
                 }, 
                 {
-                 "duration":150,
+                 "duration":100,
                  "tileid":22
                 }],
          "id":16,
@@ -148,22 +204,45 @@
         {
          "animation":[
                 {
-                 "duration":150,
+                 "duration":100,
                  "tileid":23
                 }, 
                 {
-                 "duration":150,
+                 "duration":100,
                  "tileid":24
                 }, 
                 {
-                 "duration":150,
+                 "duration":100,
                  "tileid":25
                 }, 
                 {
-                 "duration":150,
+                 "duration":100,
                  "tileid":26
                 }],
          "id":23,
+         "objectgroup":
+            {
+             "draworder":"index",
+             "id":2,
+             "name":"",
+             "objects":[
+                    {
+                     "height":24,
+                     "id":1,
+                     "name":"",
+                     "rotation":0,
+                     "type":"",
+                     "visible":true,
+                     "width":31,
+                     "x":25,
+                     "y":24
+                    }],
+             "opacity":1,
+             "type":"objectgroup",
+             "visible":true,
+             "x":0,
+             "y":0
+            },
          "properties":[
                 {
                  "name":"state",

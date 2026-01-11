@@ -44,7 +44,7 @@ class ProjectileFactory {
 
 		auto &texture = textureManager.getTexture(config.texturePath);
 
-		const bool flipX = false;
+		bool flipX = false;
 		registry.registerComponent(entity,
 		                           RenderComponent{.layer = 15, .flipX = flipX}); // Layer 15 (above enemies, below UI)
 
@@ -52,7 +52,7 @@ class ProjectileFactory {
 		    entity, SpriteComponent{.texture = &texture, .tileSize = config.frameSize, .tileMapPosition = {0, 0}});
 
 		// Projectile is always dealing damage like a bodyHitBox (therefore hurtboxComponent instead of HitBoxComponent)
-		const SDL_FRect hitRect = {flipX ? 5.0f : -5.0f, 0.0f, 30, 16};
+		SDL_FRect hitRect = {(direction.x < 0.0f) ? 5.0f : -5.0f, 0.0f, 30, 16};
 		registry.registerComponent(entity, HurtBoxComponent{.hurtBox = hitRect});
 		registry.registerComponent(entity, CollisionComponent{.collisionBox = hitRect});
 
