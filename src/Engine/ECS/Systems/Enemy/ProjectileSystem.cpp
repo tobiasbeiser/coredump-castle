@@ -3,7 +3,7 @@
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/RangedAttackComponent.hpp"
-#include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
+#include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
 #include "Engine/ECS/Components/Render/AnimationComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
@@ -12,8 +12,10 @@
 #include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
 #include "Engine/ECS/View.hpp"
 #include "Engine/Graphics/TextureManager.hpp"
-#include "Game/Factories/AnimationFactory.hpp"
 #include "Game/Factories/ProjectileFactory.hpp"
+
+#include <cmath>
+#include <numbers>
 
 namespace GameEngine::ECS::Systems::ProjectileSystem {
 
@@ -27,6 +29,23 @@ void update(Registry &registry, const float deltaTime, TextureManager &textureMa
 		auto &position = projectileView.get<PositionComponent>(entity);
 
 		position.position += velocity.velocity * deltaTime;
+	}
+
+	bool onGround = false;
+	auto playerView = registry.view<PlayerTag, CollisionComponent, PositionComponent, GroundedComponent>();
+	glm::vec2 playerCenterPosition{0.0f, 0.0f};
+	glm::vec2 playerScale = {1.0f, 1.0f};
+
+	for (auto player : playerView) {
+		const auto &pos = playerView.get<PositionComponent>(player).position;
+		const auto &collision = playerView.get<CollisionComponent>(player).collisionBox;
+		if (registry.has<TransformComponent>(player)) {
+			playerScale = registry.get<TransformComponent>(player).scale;
+		}
+		onGround = registry.get<GroundedComponent>(player).grounded;
+
+		playerCenterPosition.x = pos.x + (collision.x * playerScale.x) + (collision.w * playerScale.x * 0.5f);
+		playerCenterPosition.y = pos.y + (collision.y * playerScale.y) + (collision.h * playerScale.y * 0.5f);
 	}
 
 	// Spawn new projectiles
@@ -75,7 +94,7 @@ void update(Registry &registry, const float deltaTime, TextureManager &textureMa
 
 		if (registry.has<RenderComponent>(entity)) {
 			const auto dir = registry.get<RenderComponent>(entity).flipX;
-			direction = {dir ? -1.0f : 1.0f, 0.0f};
+
 			if (dir) {
 				spawnPosition.x += (enemyHurtBox.hurtBox.x * scale.x) - rangedAttack.projectileOffset.x;
 			} else {
@@ -83,12 +102,33 @@ void update(Registry &registry, const float deltaTime, TextureManager &textureMa
 				                   + rangedAttack.projectileOffset.x;
 			}
 			spawnPosition.y += rangedAttack.projectileOffset.y;
+
+			if (constexpr float VERTICAL_SNAP_THRESHOLD = 20.0f;
+			    onGround && std::abs(playerCenterPosition.y - spawnPosition.y) < VERTICAL_SNAP_THRESHOLD) {
+				direction = {dir ? -1.0f : 1.0f, 0.0f};
+			} else {
+				direction = glm::normalize(playerCenterPosition - spawnPosition);
+			}
 		}
 
 		const ProjectileFactory factory(registry, textureManager);
 
-		factory.createProjectile(spawnPosition, direction, projectileSettings.speed, projectileSettings.maxRange);
+		double rotation = std::atan2(direction.y, direction.x) * (180.0 / std::numbers::pi);
+
+		factory.createProjectile(spawnPosition, direction, projectileSettings.speed, projectileSettings.maxRange,
+		                         rotation);
 		rangedAttack.projectileSpawned = true;
+	}
+
+	auto projectileView =
+	    registry.view<EnemyTag, PositionComponent, ProjectileComponent>().exclude<RangedAttackComponent>();
+	for (auto entity : projectileView) {
+		const auto &projectile = registry.get<ProjectileComponent>(entity);
+		const auto &position = registry.get<PositionComponent>(entity);
+
+		if (glm::distance(position.position, projectile.spawnPosition) >= projectile.maxRange) {
+			registry.deleteEntity(entity);
+		}
 	}
 }
 

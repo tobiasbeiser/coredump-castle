@@ -6,6 +6,7 @@
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/PendingDamageComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
@@ -97,7 +98,6 @@ void resolveAttacks(Registry &registry)
 
 	for (const auto attacker : attackerView) {
 		const auto &attackComponent = registry.get<AttackComponent>(attacker);
-		const auto &[attackerBodyHitBox, attackerWeaponHitBox] = registry.get<HitBoxComponent>(attacker);
 
 		const bool isAttacking = AttackSystem::isAttacking(attackComponent);
 
@@ -106,7 +106,7 @@ void resolveAttacks(Registry &registry)
 			attackerWeaponRect = getWeaponHitBoxRect(registry, attacker);
 		}
 
-		SDL_FRect attackerBodyRect = getHurtBoxRect(registry, attacker);
+		SDL_FRect attackerHurtBox = getHurtBoxRect(registry, attacker);
 
 		for (const auto victim : victimView) {
 			if (victim == attacker) {
@@ -133,7 +133,46 @@ void resolveAttacks(Registry &registry)
 
 			// always body damage on for enemies, but not for the player
 			if (!hit && registry.has<EnemyTag>(attacker)) {
-				if (SDL_HasRectIntersectionFloat(&attackerBodyRect, &victimHurtBoxRect)) {
+				if (SDL_HasRectIntersectionFloat(&attackerHurtBox, &victimHurtBoxRect)) {
+					hit = true;
+				}
+			}
+
+			if (hit) {
+				if (!registry.has<PendingDamageComponent>(victim)) {
+					registry.registerComponent(victim, PendingDamageComponent{10});
+				}
+			}
+		}
+	}
+}
+
+void resolveProjectileHits(Registry &registry)
+{
+	auto projectileView = registry.view<EnemyTag, ProjectileComponent>();
+	auto victimView = registry.view<HurtBoxComponent, PositionComponent, HealthComponent>();
+
+	for (const auto attacker : projectileView) {
+		for (const auto victim : victimView) {
+			if (victim == attacker) {
+				continue;
+			}
+
+			if (!isHostile(registry, attacker, victim)) {
+				continue;
+			}
+
+			if (const auto &victimHealth = registry.get<HealthComponent>(victim); HealthSystem::isDead(victimHealth)) {
+				continue;
+			}
+			SDL_FRect projectileHurtBox = getHurtBoxRect(registry, attacker);
+
+			SDL_FRect victimHurtBoxRect = getHurtBoxRect(registry, victim);
+			bool hit = false;
+
+			// always body damage on for enemies, but not for the player
+			if (registry.has<EnemyTag>(attacker)) {
+				if (SDL_HasRectIntersectionFloat(&projectileHurtBox, &victimHurtBoxRect)) {
 					hit = true;
 				}
 			}
@@ -152,6 +191,7 @@ void resolveAttacks(Registry &registry)
 void update(Registry &registry)
 {
 	resolveAttacks(registry);
+	resolveProjectileHits(registry);
 }
 
 } // namespace GameEngine::ECS::Systems::HitDetectionSystem

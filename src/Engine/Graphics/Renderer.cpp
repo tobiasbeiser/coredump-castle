@@ -152,7 +152,7 @@ void Renderer::renderCircularFade(float progress, SDL_FColor color)
 }
 
 void Renderer::renderTexture(SDL_Texture &texture, const std::optional<SDL_FRect> srcRect,
-                             std::optional<SDL_FRect> dstRect, const bool flip) const
+                             std::optional<SDL_FRect> dstRect, const bool flip, const double angle) const
 {
 	const SDL_FRect *srcPtr = srcRect ? &srcRect.value() : nullptr;
 	SDL_FRect localDst;
@@ -166,5 +166,5 @@ void Renderer::renderTexture(SDL_Texture &texture, const std::optional<SDL_FRect
 	}
 
 	const SDL_FlipMode flipMode = flip ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
-	SDL_RenderTextureRotated(renderer.get(), &texture, srcPtr, dstPtr, 0, nullptr, flipMode);
+	SDL_RenderTextureRotated(renderer.get(), &texture, srcPtr, dstPtr, angle, nullptr, flipMode);
 }

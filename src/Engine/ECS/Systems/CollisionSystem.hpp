@@ -14,4 +14,6 @@ void resolveHorizontalCollisions(Entity entity, Registry &registry, const Utils:
 
 void resolveVerticalCollisions(Entity entity, Registry &registry, const Utils::SpatialHash &grid);
 
+void handleEnemyProjectileCollisions(Registry &registry, const Utils::SpatialHash &grid);
+
 } // namespace GameEngine::ECS::Systems::CollisionSystem

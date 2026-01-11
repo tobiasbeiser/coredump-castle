@@ -53,7 +53,7 @@
             {
              "name":"projectileSpeed",
              "type":"float",
-             "value":1
+             "value":200
             }, 
             {
              "name":"reactionDelay",

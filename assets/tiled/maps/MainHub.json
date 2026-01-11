@@ -383,6 +383,30 @@
                  "template":"..\/objects\/rangedEnemy.tj",
                  "x":423.239436619718,
                  "y":850
+                }, 
+                {
+                 "height":13.0736110521499,
+                 "id":35,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":87.8275633802817,
+                 "x":807.494669014084,
+                 "y":720.940652240822
+                }, 
+                {
+                 "id":36,
+                 "name":"RangedEnemy",
+                 "properties":[
+                        {
+                         "name":"area",
+                         "type":"object",
+                         "value":35
+                        }],
+                 "template":"..\/objects\/rangedEnemy.tj",
+                 "x":863.798709471747,
+                 "y":691.492487437653
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -485,7 +509,7 @@
          "y":0
         }],
  "nextlayerid":13,
- "nextobjectid":35,
+ "nextobjectid":37,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",

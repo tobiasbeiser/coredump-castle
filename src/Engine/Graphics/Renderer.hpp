@@ -41,8 +41,8 @@ class Renderer {
 	void resize(Resolution newResolution);
 
 	std::unique_ptr<SDL_Texture, SDLTextureDeleter> loadTexture(const std::filesystem::path &filePath);
-	void renderTexture(SDL_Texture &texture, const std::optional<SDL_FRect> srcRect, std::optional<SDL_FRect> dstRect,
-	                   const bool flip) const;
+	void renderTexture(SDL_Texture &texture, std::optional<SDL_FRect> srcRect, std::optional<SDL_FRect> dstRect,
+	                   bool flip, double angle = 0.0) const;
 	void renderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, const float scrollFactor) const;
 
 	void renderCircularFade(float progress, SDL_FColor color = {0, 0, 0, 255});

@@ -50,6 +50,8 @@ void update(Registry &registry, float timeStep)
 
 		previousPosition = position;
 	};
+
+	CollisionSystem::handleEnemyProjectileCollisions(registry, staticColliderGrid);
 }
 
 } // namespace GameEngine::ECS::Systems::PhysicsSystem

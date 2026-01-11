@@ -3,6 +3,8 @@
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/RangedAttackComponent.hpp"
 #include "Engine/ECS/Components/Physics/AccelerationComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
@@ -157,6 +159,40 @@ void resolveVerticalCollisions(const Entity entity, Registry &registry, const Ut
 	if (registry.has<GroundedComponent>(entity)) {
 		auto &[cGrounded] = registry.get<GroundedComponent>(entity);
 		cGrounded = grounded;
+	}
+}
+
+void handleEnemyProjectileCollisions(Registry &registry, const Utils::SpatialHash &grid)
+{
+
+	for (auto projectileView = registry.view<EnemyTag, ProjectileComponent>().exclude<RangedAttackComponent>();
+	     const auto projectileEntity : projectileView) {
+		if (!registry.has<PositionComponent>(projectileEntity) || !registry.has<CollisionComponent>(projectileEntity)) {
+			continue;
+		}
+
+		const auto projectileBox = buildEntityCollisionBox(projectileEntity, registry);
+		bool hit = false;
+
+		grid.queryExcluding(projectileBox, projectileEntity, [&](const SDL_FRect &tileBox) {
+			if (SDL_HasRectIntersectionFloat(&projectileBox, &tileBox)) {
+				hit = true;
+			}
+		});
+
+		if (hit) {
+			registry.deleteEntity(projectileEntity);
+			continue;
+		}
+
+		for (auto playerView = registry.view<PlayerTag, CollisionComponent, PositionComponent>();
+		     const auto playerEntity : playerView) {
+			const auto playerBox = buildEntityCollisionBox(playerEntity, registry);
+			if (SDL_HasRectIntersectionFloat(&projectileBox, &playerBox)) {
+				registry.deleteEntity(projectileEntity);
+				break;
+			}
+		}
 	}
 }
 

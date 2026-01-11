@@ -46,8 +46,8 @@ class EnemyFactory {
 		const auto attackCooldown = getFloatProp(enemyObj, "attackCooldown", 0.5);
 		const auto reactionDelay = getFloatProp(enemyObj, "reactionDelay", 0.5);
 		const auto isRangedEnemy = getBoolProp(enemyObj, "isRangedEnemy");
-		const auto projectileSpeed = getFloatProp(enemyObj, "projectileSpeed", 1.0f);
-		const auto detectionRange = getFloatProp(enemyObj, "detectionRange", 1.0f);
+		const auto projectileSpeed = getFloatProp(enemyObj, "projectileSpeed", 300.0f);
+		const auto detectionRange = getFloatProp(enemyObj, "detectionRange", 300.0f);
 		glm::vec2 projectileOffset = {0.0f, 0.0f};
 		if (const auto offsetStr = getStringProp(enemyObj, "projectileOffset", "")) {
 			const auto parsed = parseCollisionBox(offsetStr.value());
@@ -108,7 +108,8 @@ class EnemyFactory {
 			                                       .projectileSpeed = projectileSpeed,
 			                                       .projectileOffset = projectileOffset,
 			                                   });
-			registry.registerComponent(entity, ProjectileComponent{500, 100});
+			registry.registerComponent(
+			    entity, ProjectileComponent{.maxRange = 2000.0f, .speed = projectileSpeed});
 		}
 
 		AnimationFactory::loadAnimationsFromTileset(registry, texMgr, map, enemyObj, entity);
