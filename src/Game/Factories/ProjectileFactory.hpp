@@ -25,31 +25,32 @@ class ProjectileFactory {
 	void createProjectile(const glm::vec2 &startPosition, const glm::vec2 &direction, const float speed,
 	                      const float range, const std::string &tilesetPath, const double rotation = 0.0) const
 	{
-		const auto entity = registry.create();
+		auto &reg = registry.get();
+		const auto entity = reg.create();
 
-		registry.registerComponent(entity, PositionComponent{.position = startPosition});
-		registry.registerComponent(
+		reg.registerComponent(entity, PositionComponent{.position = startPosition});
+		reg.registerComponent(
 		    entity, TransformComponent{.scale = glm::vec2(1.0f, 1.0f), .rotation = static_cast<float>(rotation)});
 
 		const glm::vec2 velocity = direction * speed;
-		registry.registerComponent(entity, VelocityComponent{.velocity = velocity});
+		reg.registerComponent(entity, VelocityComponent{.velocity = velocity});
 
-		registry.registerComponent(entity, RenderComponent{.layer = 15, .flipX = false});
+		reg.registerComponent(entity, RenderComponent{.layer = 15, .flipX = false});
 
 		// Projectile is always dealing damage like a bodyHitBox (therefore hurtboxComponent instead of HitBoxComponent)
-		SDL_FRect hitRect = {(direction.x < 0.0f) ? 5.0f : -5.0f, 0.0f, 30, 16};
-		registry.registerComponent(entity, HurtBoxComponent{.hurtBox = hitRect});
-		registry.registerComponent(entity, CollisionComponent{.collisionBox = hitRect});
+		const SDL_FRect hitRect = {(direction.x < 0.0f) ? 5.0f : -5.0f, 0.0f, 30, 16};
+		reg.registerComponent(entity, HurtBoxComponent{.hurtBox = hitRect});
+		reg.registerComponent(entity, CollisionComponent{.collisionBox = hitRect});
 
-		registry.registerComponent(entity, EnemyTag{});
-		registry.registerComponent(
-		    entity, ProjectileComponent{.maxRange = range, .speed = speed, .spawnPosition = startPosition});
+		reg.registerComponent(entity, EnemyTag{});
+		reg.registerComponent(entity,
+		                      ProjectileComponent{.maxRange = range, .speed = speed, .spawnPosition = startPosition});
 
 		// Load animation from tileset using AnimationFactory
 		AnimationFactory::loadProjectileAnimation(registry, textureManager, tilesetPath, entity);
 	}
 
   private:
-	GameEngine::ECS::Registry &registry;
-	TextureManager &textureManager;
+	std::reference_wrapper<GameEngine::ECS::Registry> registry;
+	std::reference_wrapper<TextureManager> textureManager;
 };

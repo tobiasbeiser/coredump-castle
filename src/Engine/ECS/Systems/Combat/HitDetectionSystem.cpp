@@ -22,7 +22,7 @@ namespace GameEngine::ECS::Systems::HitDetectionSystem {
 
 namespace {
 
-constexpr int DEFAULT_DAMAGE = 10;
+constexpr int defaultDamage = 10;
 
 bool isHostile(Registry &registry, const Entity attacker, const Entity victim)
 {
@@ -61,7 +61,7 @@ bool isValidVictim(Registry &registry, const Entity attacker, const Entity victi
 	return !HealthSystem::isDead(victimHealth);
 }
 
-void applyDamage(Registry &registry, const Entity victim, const int damage = DEFAULT_DAMAGE)
+void applyDamage(Registry &registry, const Entity victim, const int damage = defaultDamage)
 {
 	if (!registry.has<PendingDamageComponent>(victim)) {
 		registry.registerComponent(victim, PendingDamageComponent{damage});

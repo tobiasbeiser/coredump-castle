@@ -21,7 +21,7 @@ namespace GameEngine::ECS::Systems::ProjectileSystem {
 
 namespace {
 // Constants
-constexpr float VERTICAL_SNAP_THRESHOLD = 20.0f;
+constexpr float verticalThreshold = 20.0f;
 
 struct PlayerTargetData {
 	glm::vec2 centerPosition{0.0f, 0.0f};
@@ -77,7 +77,7 @@ glm::vec2 calculateSpawnPosition(const glm::vec2 &enemyPosition, const SDL_FRect
 glm::vec2 calculateProjectileDirection(const glm::vec2 &spawnPosition, const PlayerTargetData &playerData,
                                        const bool facingLeft)
 {
-	if (playerData.isGrounded && std::abs(playerData.centerPosition.y - spawnPosition.y) < VERTICAL_SNAP_THRESHOLD) {
+	if (playerData.isGrounded && std::abs(playerData.centerPosition.y - spawnPosition.y) < verticalThreshold) {
 		return {facingLeft ? -1.0f : 1.0f, 0.0f}; // Shoot horizontally in one straight line
 	}
 

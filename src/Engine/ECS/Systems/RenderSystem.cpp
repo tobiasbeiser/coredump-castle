@@ -157,9 +157,10 @@ void RenderSystem::update(Registry &registry, float alpha)
 				const float centerY = position.y + hurtBox.y * scale.y + hurtBox.h * scale.y * 0.5f;
 
 				SDL_FRect rangeRect;
-				rangeRect.w = chase.detectionWidthRange.value() * 2.0f;
+				const auto detectionWidth = chase.detectionWidthRange.value_or(0.0f);
+				rangeRect.w = detectionWidth * 2.0f;
 				rangeRect.h = chase.detectionHeightRange * 2.0f;
-				rangeRect.x = centerX - chase.detectionWidthRange.value();
+				rangeRect.x = centerX - detectionWidth;
 				rangeRect.y = centerY - chase.detectionHeightRange;
 
 				constexpr SDL_Color rangeColor = {255, 165, 0, 255}; // Orange
