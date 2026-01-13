@@ -6,6 +6,7 @@
 #include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/RangedAttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/ChaseComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
@@ -34,10 +35,9 @@ class ChaseSystemTest : public ::testing::Test {
 		registry.registerComponent<InputComponent>(enemy, InputComponent{});
 		registry.registerComponent<PatrolComponent>(enemy, PatrolComponent{{0.0f, 0.0f}, {200.0f, 0.0f}});
 		registry.registerComponent<PositionComponent>(enemy, {{100.0f, 0.0f}});
-		registry.registerComponent<ChaseComponent>(enemy, ChaseComponent{.verticalDetectionHeight = 50.0f,
-		                                                                 .chaseSpeed = 120.0f,
-		                                                                 .originalPatrolSpeed = 50.0f,
-		                                                                 .reactionDelay = Timer{0.5s}});
+		registry.registerComponent<ChaseComponent>(enemy, ChaseComponent{.chaseSpeed = 120.0f,
+		                                                                 .originalPatrolSpeed = 50.0f,.reactionDelay = Timer{0.5s},
+		                                                                 .detectionHeightRange = 50.0f});
 		registry.registerComponent<HitBoxComponent>(
 		    enemy, {.bodyHitBox = {0.f, 0.f, 20.f, 20.f}, .weaponHitBox = {0.f, 0.f, 0.f, 0.f}});
 		registry.registerComponent<HurtBoxComponent>(enemy, {.hurtBox = {0.f, 0.f, 20.f, 20.f}});
@@ -214,8 +214,41 @@ TEST_F(ChaseSystemTest, ChasesPlayerWhenJumpingHigh)
 
 	GameEngine::ECS::Systems::ChaseSystem::update(registry, 0.0f);
 
-	// Should still chase
 	ASSERT_FALSE(enemyRender.flipX);
 	ASSERT_FLOAT_EQ(enemyInput.horizontalDirection, 1.0f);
 	ASSERT_FLOAT_EQ(enemyMovement.maxSpeedX, enemyChase.chaseSpeed);
+}
+
+TEST_F(ChaseSystemTest, RangedEnemyStopsAndAttacksInDetectionRange)
+{
+	using namespace std::chrono_literals;
+	registry.registerComponent<RangedAttackComponent>(enemy, {});
+	auto &enemyChase = registry.get<ChaseComponent>(enemy);
+	enemyChase.detectionWidthRange = 150.0f;
+	enemyChase.detectionHeightRange = 100.0f;
+
+	auto &playerPosition = registry.get<PositionComponent>(player);
+	playerPosition.position = {150.0f, 0.0f};
+
+	GameEngine::ECS::Systems::ChaseSystem::update(registry, 0.6f);
+
+	const auto &enemyInput = registry.get<InputComponent>(enemy);
+	EXPECT_FLOAT_EQ(enemyInput.horizontalDirection, 0.0f);
+	EXPECT_TRUE(enemyInput.attackPressed);
+}
+
+TEST_F(ChaseSystemTest, RangedEnemyResetsWhenPlayerOutOfRange)
+{
+	registry.registerComponent<RangedAttackComponent>(enemy, {});
+	auto &enemyChase = registry.get<ChaseComponent>(enemy);
+	enemyChase.detectionWidthRange = 100.0f;
+	enemyChase.detectionHeightRange = 50.0f;
+
+	auto &playerPosition = registry.get<PositionComponent>(player);
+	playerPosition.position = {300.0f, 0.0f};
+
+	GameEngine::ECS::Systems::ChaseSystem::update(registry, 0.1f);
+
+	const auto &enemyInput = registry.get<InputComponent>(enemy);
+	EXPECT_FALSE(enemyInput.attackPressed);
 }

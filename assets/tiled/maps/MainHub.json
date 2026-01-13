@@ -384,6 +384,16 @@
                          "name":"canPatrol",
                          "type":"bool",
                          "value":true
+                        }, 
+                        {
+                         "name":"detectionHeightRange",
+                         "type":"float",
+                         "value":50
+                        }, 
+                        {
+                         "name":"projectileOffset",
+                         "type":"string",
+                         "value":"33,60,0,0"
                         }],
                  "template":"..\/objects\/rangedEnemy.tj",
                  "x":411.907991860511,

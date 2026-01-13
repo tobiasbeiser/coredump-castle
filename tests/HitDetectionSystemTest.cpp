@@ -7,6 +7,7 @@
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/PendingDamageComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
 #include "Engine/ECS/Components/Render/AnimationComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
@@ -225,3 +226,46 @@ TEST_F(HitDetectionTest, PendingDamageIsRemovedAfterProcessing)
 	GameEngine::ECS::Systems::HealthSystem::update(registry, 0.1f);
 	EXPECT_FALSE(registry.has<PendingDamageComponent>(attacker));
 }
+
+TEST_F(HitDetectionTest, ProjectileHitsPlayer)
+{
+	auto projectile = registry.create();
+	registry.registerComponent<EnemyTag>(projectile, {});
+	registry.registerComponent<ProjectileComponent>(projectile, {});
+	registry.registerComponent<PositionComponent>(projectile, {{0.f, 0.f}});
+	registry.registerComponent<HurtBoxComponent>(projectile, {{0.f, 0.f, 10.f, 10.f}});
+
+	GameEngine::ECS::Systems::HitDetectionSystem::update(registry);
+
+	EXPECT_TRUE(registry.has<PendingDamageComponent>(attacker));
+}
+
+TEST_F(HitDetectionTest, ProjectileDoesNotHitWhenNoOverlap)
+{
+	auto projectile = registry.create();
+	registry.registerComponent<EnemyTag>(projectile, {});
+	registry.registerComponent<ProjectileComponent>(projectile, {});
+	registry.registerComponent<PositionComponent>(projectile, {{500.f, 500.f}});
+	registry.registerComponent<HurtBoxComponent>(projectile, {{0.f, 0.f, 10.f, 10.f}});
+
+	GameEngine::ECS::Systems::HitDetectionSystem::update(registry);
+
+	EXPECT_FALSE(registry.has<PendingDamageComponent>(attacker));
+}
+
+TEST_F(HitDetectionTest, ProjectileDoesNotHitDeadVictim)
+{
+	auto projectile = registry.create();
+	registry.registerComponent<EnemyTag>(projectile, {});
+	registry.registerComponent<ProjectileComponent>(projectile, {});
+	registry.registerComponent<PositionComponent>(projectile, {{0.f, 0.f}});
+	registry.registerComponent<HurtBoxComponent>(projectile, {{0.f, 0.f, 10.f, 10.f}});
+
+	auto &attackerState = registry.get<StateComponent>(attacker);
+	attackerState.state = State::Dead;
+
+	GameEngine::ECS::Systems::HitDetectionSystem::update(registry);
+
+	EXPECT_FALSE(registry.has<PendingDamageComponent>(attacker));
+}
+

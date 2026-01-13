@@ -1,6 +1,7 @@
 #include "HitDetectionSystem.hpp"
 
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
+#include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
@@ -48,6 +49,12 @@ bool isValidVictim(Registry &registry, const Entity attacker, const Entity victi
 
 	if (!isHostile(registry, attacker, victim)) {
 		return false;
+	}
+
+	if (registry.has<StateComponent>(victim)) {
+		if (registry.get<StateComponent>(victim).state == State::Dead) {
+			return false;
+		}
 	}
 
 	const auto &victimHealth = registry.get<HealthComponent>(victim);

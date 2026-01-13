@@ -203,7 +203,7 @@ class AnimationFactory {
 		tson::Tileset tileset;
 		tson::Json11 json;
 		if (!json.parse(tilesetPath)) {
-			SDL_Log("Warning: Failed to parse projectile tileset: %s, using defaults", tilesetPath.c_str());
+			SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Failed to parse: %s", tilesetPath.c_str());
 			return;
 		}
 		tileset.parse(json, nullptr);

@@ -1,5 +1,7 @@
 #pragma once
 
+class TextureManager;
+
 namespace GameEngine::ECS {
 class Registry;
 }
