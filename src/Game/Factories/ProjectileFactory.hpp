@@ -28,6 +28,9 @@ class ProjectileFactory {
 		auto &reg = registry.get();
 		const auto entity = reg.create();
 
+		// Load animation from tileset using AnimationFactory
+		AnimationFactory::loadProjectileAnimation(registry, textureManager, tilesetPath, entity);
+
 		reg.registerComponent(entity, PositionComponent{.position = startPosition});
 		reg.registerComponent(
 		    entity, TransformComponent{.scale = glm::vec2(1.0f, 1.0f), .rotation = static_cast<float>(rotation)});
@@ -37,17 +40,23 @@ class ProjectileFactory {
 
 		reg.registerComponent(entity, RenderComponent{.layer = 15, .flipX = false});
 
-		// Projectile is always dealing damage like a bodyHitBox (therefore hurtboxComponent instead of HitBoxComponent)
-		const SDL_FRect hitRect = {(direction.x < 0.0f) ? 5.0f : -5.0f, 0.0f, 30, 16};
+		float hitBoxX = 0.0f;
+		float hitBoxY = 0.0f;
+		if (reg.has<SpriteComponent>(entity)) {
+			const auto &sprite = reg.get<SpriteComponent>(entity);
+			hitBoxX = (static_cast<float>(sprite.tileSize.x)) / 2.0f;
+			hitBoxY = (static_cast<float>(sprite.tileSize.y)) / 2.0f;
+		}
+
+		const SDL_FRect hitRect = {hitBoxX, hitBoxY, 3, 3};
 		reg.registerComponent(entity, HurtBoxComponent{.hurtBox = hitRect});
 		reg.registerComponent(entity, CollisionComponent{.collisionBox = hitRect});
 
 		reg.registerComponent(entity, EnemyTag{});
-		reg.registerComponent(entity,
-		                      ProjectileComponent{.maxRange = range, .speed = speed, .spawnPosition = startPosition});
-
-		// Load animation from tileset using AnimationFactory
-		AnimationFactory::loadProjectileAnimation(registry, textureManager, tilesetPath, entity);
+		reg.registerComponent(entity, ProjectileComponent{.maxRange = range,
+		                                                  .speed = speed,
+		                                                  .spawnPosition = startPosition,
+		                                                  .projectileSize = {hitRect.w, hitRect.h}});
 	}
 
   private:

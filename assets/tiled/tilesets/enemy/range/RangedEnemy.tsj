@@ -47,7 +47,6 @@
          "objectgroup":
             {
              "draworder":"index",
-             "id":2,
              "name":"",
              "objects":[
                     {
@@ -165,31 +164,31 @@
         {
          "animation":[
                 {
-                 "duration":100,
+                 "duration":75,
                  "tileid":16
                 }, 
                 {
-                 "duration":100,
+                 "duration":75,
                  "tileid":17
                 }, 
                 {
-                 "duration":100,
+                 "duration":75,
                  "tileid":18
                 }, 
                 {
-                 "duration":100,
+                 "duration":75,
                  "tileid":19
                 }, 
                 {
-                 "duration":100,
+                 "duration":75,
                  "tileid":20
                 }, 
                 {
-                 "duration":100,
+                 "duration":75,
                  "tileid":21
                 }, 
                 {
-                 "duration":100,
+                 "duration":75,
                  "tileid":22
                 }],
          "id":16,
@@ -223,7 +222,6 @@
          "objectgroup":
             {
              "draworder":"index",
-             "id":2,
              "name":"",
              "objects":[
                     {

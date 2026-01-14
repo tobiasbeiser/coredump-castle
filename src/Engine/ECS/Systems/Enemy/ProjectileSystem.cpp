@@ -60,14 +60,14 @@ PlayerTargetData getPlayerTargetData(Registry &registry, bool facingLeft)
 }
 
 glm::vec2 calculateSpawnPosition(const glm::vec2 &enemyPosition, const SDL_FRect &enemyHurtBox,
-                                 const glm::vec2 &enemyScale, const glm::vec2 &projectileOffset, bool facingLeft)
+                                 const glm::vec2 &enemyScale, const glm::vec2 &projectileOffset, const bool facingLeft)
 {
 	glm::vec2 spawnPosition = enemyPosition;
 
 	if (facingLeft) {
 		spawnPosition.x += (enemyHurtBox.x * enemyScale.x) - projectileOffset.x;
 	} else {
-		spawnPosition.x += (enemyHurtBox.x * enemyScale.x) + (enemyHurtBox.w * enemyScale.x) + projectileOffset.x;
+		spawnPosition.x += (enemyHurtBox.x * enemyScale.x) + projectileOffset.x;
 	}
 	spawnPosition.y += projectileOffset.y;
 
@@ -75,16 +75,16 @@ glm::vec2 calculateSpawnPosition(const glm::vec2 &enemyPosition, const SDL_FRect
 }
 
 glm::vec2 calculateProjectileDirection(const glm::vec2 &spawnPosition, const PlayerTargetData &playerData,
-                                       const bool facingLeft)
+                                       const glm::vec2 &targetSnapshotPosition, const bool facingLeft)
 {
-	if (playerData.isGrounded && std::abs(playerData.centerPosition.y - spawnPosition.y) < verticalThreshold) {
-		return {facingLeft ? -1.0f : 1.0f, 0.0f}; // Shoot horizontally in one straight line
+	if (playerData.isGrounded && std::abs(targetSnapshotPosition.y - spawnPosition.y) < verticalThreshold) {
+		return {facingLeft ? -1.0f : 1.0f, 0.0f};
 	}
 
-	return glm::normalize(playerData.cornerPosition - spawnPosition);
+	return glm::normalize(targetSnapshotPosition - spawnPosition);
 }
 
-bool shouldSpawnProjectile(Registry &registry, Entity entity, const AttackComponent &attack, float deltaTime)
+bool shouldSpawnProjectile(Registry &registry, const Entity entity, const AttackComponent &attack, float deltaTime)
 {
 	if (registry.has<AnimationComponent>(entity)) {
 		const auto &anim = registry.get<AnimationComponent>(entity);
@@ -144,7 +144,11 @@ void update(Registry &registry, const float deltaTime, TextureManager &textureMa
 
 			const glm::vec2 spawnPosition = calculateSpawnPosition(position.position, enemyHurtBox.hurtBox, enemyScale,
 			                                                       rangedAttack.projectileOffset, facingLeft);
-			const glm::vec2 direction = calculateProjectileDirection(spawnPosition, playerData, facingLeft);
+			
+			const glm::vec2 spawnCenter = spawnPosition + (projectileSettings.projectileSize * 0.5f);
+			
+			const glm::vec2 direction =
+			    calculateProjectileDirection(spawnCenter, playerData, rangedAttack.targetSnapshot, facingLeft);
 
 			const double rotation = std::atan2(direction.y, direction.x) * (180.0 / std::numbers::pi);
 

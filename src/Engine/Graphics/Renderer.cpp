@@ -66,6 +66,15 @@ void Renderer::endFrame() const
 		SDL_RenderRect(renderer.get(), &debug.rect);
 	}
 
+	for (auto &line : DebugSystem::instance().debugLines) {
+		SDL_SetRenderDrawColor(renderer.get(), line.color.r, line.color.g, line.color.b, line.color.a);
+		line.start.x -= viewport.x;
+		line.start.y -= viewport.y;
+		line.end.x -= viewport.x;
+		line.end.y -= viewport.y;
+		SDL_RenderLine(renderer.get(), line.start.x, line.start.y, line.end.x, line.end.y);
+	}
+
 	std::string debugMessage;
 	for (std::string message : DebugSystem::instance().debugMessages) {
 		debugMessage.append(message + "\n");

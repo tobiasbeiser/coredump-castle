@@ -1,4 +1,6 @@
 #include "CollisionSystem.hpp"
+#include <vector>
+#include <algorithm>
 
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
@@ -194,6 +196,55 @@ void handleEnemyProjectileCollisions(Registry &registry, const Utils::SpatialHas
 			}
 		}
 	}
+}
+
+bool isPathObstructed(const glm::vec2 &start, const glm::vec2 &end, const Utils::SpatialHash &grid,
+                      const glm::vec2 &projectileSize)
+{
+	SDL_FRect pathQuery;
+	// Expand query box to cover full projectile path
+	const float minX = std::min(start.x, end.x) - projectileSize.x;
+	const float maxX = std::max(start.x, end.x) + projectileSize.x;
+	const float minY = std::min(start.y, end.y) - projectileSize.y;
+	const float maxY = std::max(start.y, end.y) + projectileSize.y;
+	
+	pathQuery.x = minX;
+	pathQuery.y = minY;
+	pathQuery.w = maxX - minX;
+	pathQuery.h = maxY - minY;
+
+	// Check center line
+	std::vector<std::pair<glm::vec2, glm::vec2>> lines;
+	lines.push_back({start, end});
+
+	// If thick, check edges
+	if (projectileSize.y > 1.0f) {
+		const float halfH = projectileSize.y * 0.45f; // slightly less than half to avoid grazing hits
+		lines.push_back({{start.x, start.y - halfH}, {end.x, end.y - halfH}});
+		lines.push_back({{start.x, start.y + halfH}, {end.x, end.y + halfH}});
+	}
+	if (projectileSize.x > 1.0f) {
+		const float halfW = projectileSize.x * 0.45f;
+		lines.push_back({{start.x - halfW, start.y}, {end.x - halfW, end.y}});
+		lines.push_back({{start.x + halfW, start.y}, {end.x + halfW, end.y}});
+	}
+
+	bool obstructed = false;
+	grid.query(pathQuery, [&](const Entity, const SDL_FRect &tileBox) {
+		if (obstructed) return;
+
+		for (const auto &line : lines) {
+			float x1 = line.first.x, y1 = line.first.y;
+			float x2 = line.second.x, y2 = line.second.y;
+
+			if (SDL_GetRectAndLineIntersectionFloat(&tileBox, &x1, &y1, &x2, &y2)) {
+				obstructed = true;
+				return;
+			}
+		}
+	});
+
+	return obstructed;
 }
 
 } // namespace GameEngine::ECS::Systems::CollisionSystem

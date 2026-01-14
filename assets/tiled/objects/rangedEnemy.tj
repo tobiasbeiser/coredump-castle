@@ -18,7 +18,7 @@
             {
              "name":"canPatrol",
              "type":"bool",
-             "value":false
+             "value":true
             }, 
             {
              "name":"collisionBox",
@@ -33,7 +33,7 @@
             {
              "name":"detectionWidthRange",
              "type":"float",
-             "value":200
+             "value":300
             }, 
             {
              "name":"isRangedEnemy",
@@ -53,17 +53,17 @@
             {
              "name":"projectileOffset",
              "type":"string",
-             "value":"8,48,0,0"
-            }, 
-            {
-             "name":"projectileTileset",
-             "type":"file",
-             "value":"..\/tilesets\/Projectile.tsj"
+             "value":"10,60,0,0"
             }, 
             {
              "name":"projectileSpeed",
              "type":"float",
              "value":200
+            }, 
+            {
+             "name":"projectileTileset",
+             "type":"file",
+             "value":"..\/tilesets\/Projectile.tsj"
             }, 
             {
              "name":"reactionDelay",
@@ -74,6 +74,11 @@
              "name":"scale",
              "type":"float",
              "value":1.6
+            }, 
+            {
+             "name":"windUpLimit",
+             "type":"float",
+             "value":0.7
             }],
      "rotation":0,
      "type":"",

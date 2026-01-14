@@ -50,6 +50,7 @@ class EnemyFactory {
 		const auto projectileSpeed = getFloatProp(enemyObj, "projectileSpeed", 300.0f);
 		const auto detectionWidthRange = getFloatProp(enemyObj, "detectionWidthRange", 300.0f);
 		const auto detectionHeightRange = getFloatProp(enemyObj, "detectionHeightRange", 50.0f);
+		const auto windUpLimit = getFloatProp(enemyObj, "windUpLimit", 0.0f);
 
 		glm::vec2 projectileOffset = {0.0f, 0.0f};
 		if (const auto offsetStr = getStringProp(enemyObj, "projectileOffset", "")) {
@@ -120,10 +121,18 @@ class EnemyFactory {
 			                                       .projectileSpeed = projectileSpeed,
 			                                       .projectileOffset = projectileOffset,
 			                                   });
+			glm::vec2 projSize = {0.0f, 0.0f};
+			if (const auto sizeStr = getStringProp(enemyObj, "projectileSize", "")) {
+				const auto parsed = parseCollisionBox(sizeStr.value());
+				projSize = {parsed.w, parsed.h};
+			}
+
 			registry.registerComponent(entity, ProjectileComponent{
 			                                       .maxRange = 2000.0f,
 			                                       .speed = projectileSpeed,
+			                                       .spawnPosition = {0.f, 0.f},
 			                                       .projectileTilesetPath = projectileTilesetPath,
+			                                       .projectileSize = projSize,
 			                                   });
 		}
 
@@ -156,7 +165,8 @@ class EnemyFactory {
 
 		registry.registerComponent(
 		    entity, AttackComponent{.attackTimer = Timer{attackDuration},
-		                            .attackCoolDownTimer = Timer{std::chrono::duration<float>(attackCooldown)}});
+		                            .attackCoolDownTimer = Timer{std::chrono::duration<float>(attackCooldown)},
+		                            .windUpLimit = windUpLimit});
 
 		ensureSafeSpawn(registry, entity);
 

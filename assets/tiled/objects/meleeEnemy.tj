@@ -31,6 +31,11 @@
              "value":"23,12,16,22"
             }, 
             {
+             "name":"detectionHeightRange",
+             "type":"float",
+             "value":50
+            }, 
+            {
              "name":"hitBox",
              "type":"string",
              "value":"0,0,12,22"
@@ -54,11 +59,6 @@
              "name":"scale",
              "type":"float",
              "value":1.7
-            }, 
-            {
-             "name":"verticalDetectionHeight",
-             "type":"float",
-             "value":50
             }],
      "rotation":0,
      "type":"",
