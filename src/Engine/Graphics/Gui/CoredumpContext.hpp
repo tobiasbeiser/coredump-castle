@@ -17,6 +17,7 @@ inline std::unique_ptr<UIContext> getContext(GameEngine::GameEngine &game)
 	    Paint{{50, 50, 150, 255}, {255, 255, 0, 255}, {255, 255, 255, 255}},
 	    // Pressed: Lighter Grey Fill, Grey Outline, WHITE Text
 	    Paint{{100, 100, 100, 255}, {200, 200, 200, 255}, {255, 255, 255, 255}},
+	    Paint{{150, 150, 150, 255}, {200, 200, 200, 255}, {215, 215, 215, 215}},
 	};
 	UiTheme theme = {{255, 215, 0, 255}, btnStyle, frameStyle};
 

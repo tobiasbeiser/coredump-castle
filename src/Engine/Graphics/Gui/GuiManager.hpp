@@ -69,6 +69,7 @@ struct ButtonStyle {
 	Paint normal;
 	Paint hovered;
 	Paint pressed;
+	Paint disabled;
 
 	[[nodiscard]] const Paint &paintFor(const WidgetState s) const noexcept
 	{
@@ -77,6 +78,8 @@ struct ButtonStyle {
 			return hovered;
 		case WidgetState::Pressed:
 			return pressed;
+		case WidgetState::Disabled:
+			return disabled;
 		case WidgetState::Normal:
 		default:
 			return normal;
@@ -233,14 +236,16 @@ class Button final : public Widget {
 	void layout(const UIContext &ctx, SDL_FRect allocatedRect) override;
 	bool handleEvent(glm::vec2 mousePos, const SDL_Event &event) override;
 	void draw(const UIContext &ctx) override;
+	void setButtonDisabled(const bool disabled);
 
-  private:
+private:
 	glm::vec2 performMeasure(const UIContext &ctx, BoxConstraints constraints) override;
 	std::unique_ptr<Widget> content;
 	std::function<void()> callback;
 
 	bool isHovered = false;
 	bool isPressed = false;
+	bool isDisabled = false;
 };
 
 class Container : public Widget {

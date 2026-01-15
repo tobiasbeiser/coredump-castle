@@ -34,9 +34,9 @@ void Label::draw(const UIContext &ctx)
 {
 	const auto absPos = getAbsolutePosition();
 
-	auto rect = getAbsoluteRect();
-	SDL_SetRenderDrawColor(ctx.renderer.getNativeRenderer(), 255, 0, 0, 0);
-	SDL_RenderRect(ctx.renderer.getNativeRenderer(), &rect);
+	// auto rect = getAbsoluteRect();
+	// SDL_SetRenderDrawColor(ctx.renderer.getNativeRenderer(), 255, 0, 0, 0);
+	// SDL_RenderRect(ctx.renderer.getNativeRenderer(), &rect);
 
 	// TODO: solve subpixel rendering prevention
 	ctx.renderer.drawTextAt(textObject.get(), absPos.x, absPos.y, color);
@@ -133,8 +133,12 @@ bool Button::handleEvent(const glm::vec2 mousePos, const SDL_Event &event)
 
 void Button::draw(const UIContext &ctx)
 {
+	auto s = WidgetState::Disabled;
+	if (!isDisabled)
+	{
+		 s = isPressed ? WidgetState::Pressed : isHovered ? WidgetState::Hovered : WidgetState::Normal;
+	}
 
-	const WidgetState s = isPressed ? WidgetState::Pressed : isHovered ? WidgetState::Hovered : WidgetState::Normal;
 
 	const auto &[fillCol, outlineCol, textCol] = ctx.theme.button.paintFor(s);
 	const SDL_FRect r = getAbsoluteRect();
@@ -148,6 +152,9 @@ void Button::draw(const UIContext &ctx)
 	content->draw(ctx);
 }
 
+void Button::setButtonDisabled(const bool disabled)
+{ isDisabled = disabled; }
+
 bool Container::handleEvent(const glm::vec2 mousePos, const SDL_Event &event)
 {
 	// Reverse iteration for event bubbling (top-most child first)
@@ -160,10 +167,10 @@ bool Container::handleEvent(const glm::vec2 mousePos, const SDL_Event &event)
 
 void Container::draw(const UIContext &context)
 {
-	auto rect = getAbsoluteRect();
-
-	SDL_SetRenderDrawColor(context.renderer.getNativeRenderer(), 255, 0, 0, 0);
-	SDL_RenderRect(context.renderer.getNativeRenderer(), &rect);
+	// auto rect = getAbsoluteRect();
+	//
+	// SDL_SetRenderDrawColor(context.renderer.getNativeRenderer(), 255, 0, 0, 0);
+	// SDL_RenderRect(context.renderer.getNativeRenderer(), &rect);
 
 	for (const auto &child : children) {
 		child->draw(context);
