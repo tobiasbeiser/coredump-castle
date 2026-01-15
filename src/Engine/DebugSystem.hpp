@@ -9,6 +9,10 @@ struct DebugRenderOptions {
 	bool showHitBoxes = false;
 };
 
+struct DebugSkipMenuOptions {
+	bool skipMainMenu = false;
+};
+
 struct DebugPlayerOptions {
 	bool showState = false;
 
@@ -25,6 +29,7 @@ class DebugSystem {
   public:
 	DebugRenderOptions render;
 	DebugPlayerOptions player;
+	DebugSkipMenuOptions skipMenu;
 	std::vector<DebugRect> debugRects{};
 	std::vector<std::string> debugMessages{};
 
