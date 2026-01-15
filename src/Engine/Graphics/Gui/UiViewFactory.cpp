@@ -2,12 +2,12 @@
 #include "UiViewFactory.hpp"
 
 #include <ranges>
+#include <utility>
 
 inline std::unique_ptr<Spacer> makeSpacer(const float layoutWeight = 1.0f)
 {
 	auto btn = std::make_unique<Spacer>();
-	std::clamp(layoutWeight, 0.f, 1.0f);
-	btn->setLayoutWeight(layoutWeight);
+	btn->setLayoutWeight(std::clamp(layoutWeight, 0.f, 1.0f));
 	return btn;
 }
 
@@ -39,15 +39,33 @@ inline std::unique_ptr<LinearLayout> makeMenuRoot(const UIContext &ctx, std::str
 	root->addWidget(std::make_unique<Spacer>(0.f, ctx.resolution.height * 0.1f));
 	return root;
 }
+inline std::unique_ptr<LinearLayout> makeBackButtonFooter(const UIContext &ctx, std::function<void()> cb)
+{
+	auto footer = std::make_unique<LinearLayout>();
+	footer->setOrientation(Orientation::Horizontal);
+	footer->setCrossAxisAlignment(CrossAxisAlignment::Center);
+
+	footer->addWidget(makeSpacer());
+
+	std::unique_ptr<Button> backButton = makeWrappingButton(ctx, "Back", std::move(cb));
+	footer->addWidget(std::move(backButton));
+	return footer;
+}
+
+inline std::unique_ptr<LinearLayout> makeButtonContainer()
+{
+	auto buttonContainer = std::make_unique<LinearLayout>();
+	buttonContainer->setSpacing(8.0f);
+	buttonContainer->setCrossAxisAlignment(CrossAxisAlignment::Center);
+	buttonContainer->setSizeMode(SizeMode::WrapContent, SizeMode::MatchParent);
+	return buttonContainer;
+}
 
 std::unique_ptr<Widget> UiViewFactory::createMainMenu(const UIContext &ctx, const MainMenuActions &actions)
 {
 	auto root = makeMenuRoot(ctx, "Coredump Castle");
 
-	auto buttonContainer = std::make_unique<LinearLayout>();
-	buttonContainer->setSpacing(8.0f);
-	buttonContainer->setCrossAxisAlignment(CrossAxisAlignment::Stretch);
-	buttonContainer->setSizeMode(SizeMode::WrapContent, SizeMode::MatchParent);
+	auto buttonContainer = makeButtonContainer();
 
 	if (actions.onStartNewGame) {
 		buttonContainer->addWidget(makeBigMenuButton(ctx, "Start New Game", actions.onStartNewGame));
@@ -55,6 +73,10 @@ std::unique_ptr<Widget> UiViewFactory::createMainMenu(const UIContext &ctx, cons
 
 	if (actions.onShowContinue) {
 		buttonContainer->addWidget(makeBigMenuButton(ctx, "Continue", actions.onShowContinue));
+	} else {
+		auto bigMenuButton = makeBigMenuButton(ctx, "Continue", []{});
+		bigMenuButton->setButtonDisabled(true);
+		buttonContainer->addWidget(std::move(bigMenuButton));
 	}
 
 	if (actions.onShowOptions) {
@@ -75,14 +97,32 @@ std::unique_ptr<Widget> UiViewFactory::createContinueMenu(const UIContext &ctx, 
 {
 	auto root = makeMenuRoot(ctx, "Continue Game");
 
+	auto posContainer = std::make_unique<LinearLayout>();
+	posContainer->setOrientation(Orientation::Horizontal);
+	posContainer->addWidget(makeSpacer());
+
+
+	auto buttonContainer = makeButtonContainer();
+
 	for (const auto saveName : saveNames) {
 		auto loadCallback = [actions, saveName] { actions.onContinue(saveName); };
-		root->addWidget(makeBigMenuButton(ctx, saveName, loadCallback));
+		buttonContainer->addWidget(makeBigMenuButton(ctx, saveName, loadCallback));
 	}
 
+	auto continueContainer = std::make_unique<LinearLayout>();
+
+	continueContainer->setSpacing(20.f);
+	continueContainer->addWidget(std::move(buttonContainer));
+	continueContainer->setSizeMode(SizeMode::WrapContent, SizeMode::WrapContent);
+
 	if (actions.onBack) {
-		root->addWidget(makeWrappingButton(ctx, "Back", actions.onBack));
+		continueContainer->addWidget(makeBackButtonFooter(ctx, actions.onBack));
 	}
+	continueContainer->setLayoutWeight(0.6f);
+	posContainer->addWidget(std::move(continueContainer));
+	posContainer->addWidget(makeSpacer());
+
+	root->addWidget(std::move(posContainer));
 
 	return root;
 }
@@ -117,15 +157,7 @@ std::unique_ptr<Widget> UiViewFactory::createOptionsMenu(const UIContext &ctx, c
 		content->addWidget(std::move(listElement));
 	}
 
-	auto footer = std::make_unique<LinearLayout>();
-	footer->setOrientation(Orientation::Horizontal);
-	footer->setCrossAxisAlignment(CrossAxisAlignment::Start);
-
-	footer->addWidget(makeSpacer());
-
-	std::unique_ptr<Button> backButton = makeWrappingButton(ctx, "Back", actions.onBack);
-	footer->addWidget(std::move(backButton));
-	content->addWidget(std::move(footer));
+	content->addWidget(makeBackButtonFooter(ctx, actions.onBack));
 
 	container->addWidget(std::move(content));
 

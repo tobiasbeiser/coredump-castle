@@ -9,7 +9,8 @@ namespace GameEngine {
 
 void MainMenuState::init(GameEngine &game)
 {
-
+	// TODO: add debug skip to init game
+	// game.changeState(std::make_unique<PlayState>(game.getInputManager(), game.getTextureManager(), game.getRenderer()));
 	context = CoredumpContext::getContext(game);
 
 	guiManager = std::make_unique<GuiManager>();
@@ -30,7 +31,7 @@ void MainMenuState::resume()
 
 void MainMenuState::handleEvents(GameEngine &game, const SDL_Event& event)
 {
-	guiManager->handleEvent(*context.get(), event);
+	guiManager->handleEvent(*context, event);
 }
 
 void MainMenuState::update(GameEngine &game, const float deltaTime) {}
@@ -39,7 +40,7 @@ void MainMenuState::render(GameEngine &game, const float alpha)
 {
 
 	if (guiManager) {
-		guiManager->render(*context.get());
+		guiManager->render(*context);
 	}
 
 }
@@ -53,22 +54,26 @@ void MainMenuState::setupUI(GameEngine& game)
 		game.pushState(std::make_unique<PlayState>(game.getInputManager(), game.getTextureManager(), game.getRenderer()));
 	};
 
-	actions.onShowContinue = [this, &game]() {
-		ContinueMenuActions contActions;
+	 if (!game.getSaveSystem().getSaves().empty())
+	 {
+		 actions.onShowContinue = [this, &game]() {
+		 	ContinueMenuActions contActions;
 
-		contActions.onContinue = [&game](const std::string_view saveName) {
-			game.pushState(std::make_unique<PlayState>(game.getInputManager(), game.getTextureManager(), game.getRenderer()));
-		};
+		 	contActions.onContinue = [&game](const std::string_view saveName) {
+		 		game.getSaveSystem().setCurrentSaveName(saveName);
+		 		game.pushState(std::make_unique<PlayState>(game.getInputManager(), game.getTextureManager(), game.getRenderer()));
+		 	};
 
-		contActions.onBack = [this, &game]() { setupUI(game); }; // Recursive call to rebuild MainMenu
+		 	contActions.onBack = [this, &game]() { setupUI(game); }; // Recursive call to rebuild MainMenu
 
-		const auto gameSaves = game.getSaveSystem().getSaves();
-		auto continueView = UiViewFactory::createContinueMenu(*context.get(), contActions, gameSaves);
-		guiManager->setRoot(std::move(continueView));
+		 	const auto gameSaves = game.getSaveSystem().getSaves();
+		 	auto continueView = UiViewFactory::createContinueMenu(*context, contActions, gameSaves);
+		 	guiManager->setRoot(std::move(continueView));
 
-		const auto [width, height] = renderer.getLogicalResolution();
-		guiManager->updateLayout(*context.get(), width , height);
-	};
+		 	const auto [width, height] = renderer.getLogicalResolution();
+		 	guiManager->updateLayout(*context, width , height);
+		 };
+	 }
 
 
 	// switch the UI, but remain in MainMenuState
@@ -76,10 +81,10 @@ void MainMenuState::setupUI(GameEngine& game)
 		OptionsMenuActions optActions;
 		optActions.onBack = [this, &game]() { setupUI(game); }; // Recursive call to rebuild MainMenu
 
-		auto optionsView = UiViewFactory::createOptionsMenu(*context.get(), optActions);
+		auto optionsView = UiViewFactory::createOptionsMenu(*context, optActions);
 		guiManager->setRoot(std::move(optionsView));
 		const auto [width, height] = renderer.getLogicalResolution();
-		guiManager->updateLayout(*context.get(), width , height);
+		guiManager->updateLayout(*context, width , height);
 	};
 
 	actions.onQuit = []() {
@@ -87,11 +92,11 @@ void MainMenuState::setupUI(GameEngine& game)
 		SDL_PushEvent(&quit);
 	};
 
-	auto mainView = UiViewFactory::createMainMenu(*context.get(), actions);
+	auto mainView = UiViewFactory::createMainMenu(*context, actions);
 
 	this->guiManager->setRoot(std::move(mainView));
 
 	Resolution resolution = renderer.getLogicalResolution();
-	guiManager->updateLayout(*context.get(), resolution.width , resolution.height);
+	guiManager->updateLayout(*context, resolution.width , resolution.height);
 }
 } // namespace GameEngine
