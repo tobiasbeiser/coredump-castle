@@ -285,7 +285,7 @@
          "visible":true,
          "x":0,
          "y":0
-        },
+        }, 
         {
          "data":[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -333,21 +333,6 @@
          "name":"Enemies",
          "objects":[
                 {
-                 "id":17,
-                 "point":true,
-                 "properties":[
-                        {
-                         "name":"area",
-                         "type":"object",
-                         "value":23
-                        }],
-                 "rotation":0,
-                 "template":"..\/objects\/baseEnemy.tj",
-                 "visible":true,
-                 "x":439.246303753112,
-                 "y":899.087080810254
-                },
-                {
                  "height":23.9756554882734,
                  "id":23,
                  "name":"",
@@ -357,13 +342,53 @@
                  "width":161.067224049427,
                  "x":319.98278670888,
                  "y":904.005163987336
+                }, 
+                {
+                 "height":22.9578216764548,
+                 "id":24,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":282.434596903364,
+                 "x":837.159636946076,
+                 "y":904.431393486386
+                }, 
+                {
+                 "id":29,
+                 "properties":[
+                        {
+                         "name":"area",
+                         "type":"object",
+                         "value":24
+                        }, 
+                        {
+                         "name":"chaseSpeed",
+                         "type":"float",
+                         "value":80
+                        }],
+                 "template":"..\/objects\/meleeEnemy.tj",
+                 "x":878.66832602663,
+                 "y":898.126076265387
+                }, 
+                {
+                 "id":32,
+                 "properties":[
+                        {
+                         "name":"area",
+                         "type":"object",
+                         "value":23
+                        }],
+                 "template":"..\/objects\/baseEnemy.tj",
+                 "x":431.69014084507,
+                 "y":897.887323943662
                 }],
          "opacity":1,
          "type":"objectgroup",
          "visible":true,
          "x":0,
          "y":0
-        },
+        }, 
         {
          "draworder":"topdown",
          "id":5,
@@ -386,9 +411,15 @@
                  "width":32,
                  "x":974.5,
                  "y":911
-                },
+                }, 
                 {
                  "id":19,
+                 "properties":[
+                        {
+                         "name":"hitBox",
+                         "type":"string",
+                         "value":"6,10,21,13"
+                        }],
                  "template":"..\/objects\/Player.tj",
                  "x":116.75,
                  "y":887
@@ -453,7 +484,7 @@
          "y":0
         }],
  "nextlayerid":13,
- "nextobjectid":22,
+ "nextobjectid":33,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",

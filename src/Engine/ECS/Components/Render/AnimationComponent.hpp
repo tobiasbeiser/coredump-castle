@@ -66,6 +66,14 @@ class AnimationComponent {
 
 	void stepAnimation(const AnimationType &type, const std::chrono::duration<float> deltaTime) { animations.at(type).step(deltaTime); }
 
+	std::chrono::duration<float> getAnimationDuration(const AnimationType &type) const
+	{
+		if (!animations.contains(type)) {
+			return std::chrono::duration<float>::zero();
+		}
+		return animations.at(type).getLength();
+	}
+
 	AnimationType getAnimation() const { return currentAnimation; }
 	void setAnimation(const AnimationType &type)
 	{

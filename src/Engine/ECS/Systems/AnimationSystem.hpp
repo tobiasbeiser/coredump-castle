@@ -3,8 +3,6 @@
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Render/AnimationComponent.hpp"
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
-#include "Engine/ECS/Components/Tags/EnemyTag.hpp"
-#include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 
 namespace GameEngine::ECS::Systems {

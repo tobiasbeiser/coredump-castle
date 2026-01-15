@@ -2,7 +2,7 @@
     {
      "height":0,
      "id":1,
-     "name":"Enemy",
+     "name":"BaseEnemy",
      "point":true,
      "properties":[
             {
@@ -18,7 +18,12 @@
             {
              "name":"collisionBox",
              "type":"string",
-             "value":"6,10,21,13"
+             "value":"2,10,26,13"
+            }, 
+            {
+             "name":"maxHealth",
+             "type":"int",
+             "value":100
             }, 
             {
              "name":"maxSpeedX",
@@ -28,7 +33,7 @@
             {
              "name":"scale",
              "type":"float",
-             "value":1.6
+             "value":1.8
             }],
      "rotation":0,
      "type":"",

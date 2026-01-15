@@ -6,6 +6,7 @@
 
 struct DebugRenderOptions {
 	bool showBoundingBoxes = false;
+	bool showHitBoxes = false;
 };
 
 struct DebugPlayerOptions {

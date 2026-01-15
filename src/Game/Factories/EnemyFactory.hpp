@@ -1,22 +1,27 @@
 #pragma once
-#include "../../Engine/ECS/Components/Core/PositionComponent.hpp"
-#include "../../Engine/ECS/Components/Core/StateComponent.hpp"
-#include "../../Engine/ECS/Components/Core/TransformComponent.hpp"
-#include "../../Engine/ECS/Components/Core/VelocityComponent.hpp"
-#include "../../Engine/ECS/Components/Physics/AccelerationComponent.hpp"
-#include "../../Engine/ECS/Components/Physics/CollisionComponent.hpp"
-#include "../../Engine/ECS/Components/Physics/GravityComponent.hpp"
-#include "../../Engine/ECS/Components/Physics/GroundedComponent.hpp"
-#include "../../Engine/ECS/Components/Render/RenderComponent.hpp"
-#include "../../Engine/ECS/Registry.hpp"
-#include "../../Engine/Graphics/TextureManager.hpp"
+
 #include "AnimationFactory.hpp"
 #include "Engine/DebugSystem.hpp"
+#include "Engine/ECS/Components/Core/PositionComponent.hpp"
+#include "Engine/ECS/Components/Core/StateComponent.hpp"
+#include "Engine/ECS/Components/Core/TransformComponent.hpp"
+#include "Engine/ECS/Components/Core/VelocityComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/HealthComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
-#include <Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp>
-#include <Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp>
-#include <Engine/ECS/Components/Tags/EnemyTag.hpp>
+#include "Engine/ECS/Components/Render/BlinkComponent.hpp"
+
+#include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Enemy/ChaseComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp"
+#include "Engine/ECS/Components/Physics/AccelerationComponent.hpp"
+#include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
+#include "Engine/ECS/Components/Physics/GravityComponent.hpp"
+#include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
+#include "Engine/ECS/Components/Render/RenderComponent.hpp"
+#include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include <tileson.hpp>
 
 class EnemyFactory {
@@ -30,8 +35,14 @@ class EnemyFactory {
 
 		const auto scale = getFloatProp(enemyObj, "scale", 1.0f);
 		const auto maxSpeedX = getFloatProp(enemyObj, "maxSpeedX", 50.0f);
-		const auto canPatrol = getBoolProp(enemyObj, "canPatrol", false);
+		const auto chaseSpeed = getFloatProp(enemyObj, "chaseSpeed", 0.0f);
+		const auto verticalDetectionHeight = getFloatProp(enemyObj, "verticalDetectionHeight", 50.0f);
+		const auto canPatrol = getBoolProp(enemyObj, "canPatrol");
 		const auto collisionStr = getStringProp(enemyObj, "collisionBox", "0,0,0,0");
+		const auto hitBoxStr = getStringProp(enemyObj, "hitBox", "");
+		const auto maxHealth = getIntProp(enemyObj, "maxHealth", 100);
+		const auto attackCooldown = getFloatProp(enemyObj, "attackCooldown", 0.5);
+		const auto reactionDelay = getFloatProp(enemyObj, "reactionDelay", 0.5);
 
 		const tson::Vector2 pos = enemyObj.getPosition();
 		const glm::vec2 spawn = glm::vec2(pos.x, pos.y) + levelPos;
@@ -45,13 +56,22 @@ class EnemyFactory {
 		registry.registerComponent(entity, TransformComponent{.scale = glm::vec2(scale, scale)});
 		registry.registerComponent(entity, StateComponent{});
 		using namespace std::chrono_literals;
-		registry.registerComponent(entity,
-		                           AttackComponent{.attackTimer = Timer{0.6s}, .attackCoolDownTimer = Timer{0.2s}});
+
 		registry.registerComponent(entity, InputComponent{});
-		registry.registerComponent(entity, MovementComponent{.accelerationRate = 400.0f, .maxSpeedX = maxSpeedX});
+		registry.registerComponent(entity, MovementComponent{.maxSpeedX = maxSpeedX});
+		registry.registerComponent(entity, BlinkComponent{});
+
+		SDL_FRect weaponHitBox = {0.f, 0.f, 0.f, 0.f};
+		if (hitBoxStr) {
+			weaponHitBox = parseCollisionBox(hitBoxStr.value());
+		}
 
 		if (collisionStr) {
-			registry.registerComponent(entity, parseCollisionBox(collisionStr.value()));
+			const auto collisionBox = parseCollisionBox(collisionStr.value());
+			registry.registerComponent(entity, HitBoxComponent{.bodyHitBox = parseCollisionBox(collisionStr.value()),
+			                                                   .weaponHitBox = weaponHitBox});
+			registry.registerComponent(entity, CollisionComponent{collisionBox});
+			registry.registerComponent(entity, HurtBoxComponent{collisionBox});
 		}
 
 		if (canPatrol) {
@@ -59,9 +79,37 @@ class EnemyFactory {
 				registry.registerComponent(entity,
 				                           PatrolComponent{.minBounds = patrolRect->min, .maxBounds = patrolRect->max});
 			}
+			if (chaseSpeed > 0.0f) {
+				registry.registerComponent(
+				    entity, ChaseComponent{.verticalDetectionHeight = verticalDetectionHeight,
+				                           .chaseSpeed = chaseSpeed,
+				                           .originalPatrolSpeed = maxSpeedX,
+				                           .reactionDelay = Timer{std::chrono::duration<float>(reactionDelay)}});
+			}
 		}
 
 		AnimationFactory::loadAnimationsFromTileset(registry, texMgr, map, enemyObj, entity);
+
+		using namespace std::chrono_literals;
+		std::chrono::duration<float> attackDuration = 1s;
+		std::chrono::duration<float> invulnerabilityTime = 1s;
+
+		if (registry.has<AnimationComponent>(entity)) {
+			auto &animComp = registry.get<AnimationComponent>(entity);
+			if (animComp.hasAnimation(AnimationType::Attacking)) {
+				attackDuration = animComp.getAnimationDuration(AnimationType::Attacking);
+			}
+			if (animComp.hasAnimation(AnimationType::Hurting)) {
+				invulnerabilityTime = animComp.getAnimationDuration(AnimationType::Hurting);
+			}
+		}
+
+		registry.registerComponent(entity, HealthComponent{maxHealth, maxHealth, invulnerabilityTime});
+
+		registry.registerComponent(
+		    entity, AttackComponent{.attackTimer = Timer{attackDuration},
+		                            .attackCoolDownTimer = Timer{std::chrono::duration<float>(attackCooldown)}});
+
 		return entity;
 	}
 
@@ -70,20 +118,38 @@ class EnemyFactory {
 		glm::vec2 min;
 		glm::vec2 max;
 	};
-	static float getFloatProp(tson::Object &obj, const std::string &name, float defaultValue)
+	static float getFloatProp(tson::Object &obj, const std::string &name, const float defaultValue)
 	{
-		auto prop = obj.getProp(name);
-		if (prop && prop->getType() != tson::Type::Float) {
+		const auto prop = obj.getProp(name);
+		if (prop == nullptr) {
+			return defaultValue;
+		}
+		if (prop->getType() != tson::Type::Float) {
 			return defaultValue;
 		}
 		return prop->getValue<float>();
 	}
 
-	static bool getBoolProp(tson::Object &obj, const std::string &name, bool defaultValue)
+	static int getIntProp(tson::Object &obj, const std::string &name, const int defaultValue)
 	{
-		auto prop = obj.getProp(name);
-		if (prop && prop->getType() != tson::Type::Boolean) {
+		const auto prop = obj.getProp(name);
+		if (prop == nullptr) {
 			return defaultValue;
+		}
+		if (prop->getType() != tson::Type::Int) {
+			return defaultValue;
+		}
+		return prop->getValue<int>();
+	}
+
+	static bool getBoolProp(tson::Object &obj, const std::string &name)
+	{
+		const auto prop = obj.getProp(name);
+		if (prop == nullptr) {
+			return false;
+		}
+		if (prop->getType() != tson::Type::Boolean) {
+			return false;
 		}
 		return prop->getValue<bool>();
 	}
@@ -91,21 +157,25 @@ class EnemyFactory {
 	static std::optional<std::string> getStringProp(tson::Object &obj, const std::string &name,
 	                                                const std::string &defaultValue)
 	{
-		auto prop = obj.getProp(name);
-		if (prop && prop->getType() != tson::Type::String) {
-			return defaultValue.empty() ? std::nullopt : std::optional<std::string>{defaultValue};
+		const auto prop = obj.getProp(name);
+		if (!prop) {
+			return defaultValue.empty() ? std::nullopt : std::optional{defaultValue};
+		}
+		if (prop->getType() != tson::Type::String) {
+			return defaultValue.empty() ? std::nullopt : std::optional{defaultValue};
 		}
 		return prop->getValue<std::string>();
 	}
 
-	static CollisionComponent parseCollisionBox(const std::string &value)
+	static SDL_FRect parseCollisionBox(const std::string &value)
 	{
-		float x = NAN, y = NAN, w = NAN, h = NAN;
+		float x = 0.f, y = 0.f, w = 0.f, h = 0.f;
 		std::istringstream iss(value);
-		if (char sep = ','; iss >> x >> sep >> y >> sep >> w >> sep >> h && iss.eof()) {
+		char c1 = 0, c2 = 0, c3 = 0;
+		if (iss >> x >> c1 >> y >> c2 >> w >> c3 >> h && c1 == ',' && c2 == ',' && c3 == ',') {
 			return {x, y, w, h};
 		}
-		return CollisionComponent{x, y, w, h};
+		return {0.f, 0.f, 0.f, 0.f};
 	}
 
 	static std::optional<PatrolRect> findPatrolRect(tson::Object &enemyObj, const glm::vec2 &levelPos, tson::Map &map)
