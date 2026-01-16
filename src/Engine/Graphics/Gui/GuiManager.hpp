@@ -14,6 +14,10 @@
 // Use float limits for "Infinite" space
 constexpr float kInfinity = std::numeric_limits<float>::infinity();
 
+constexpr bool operator==(const SDL_Color& a, const SDL_Color& b) noexcept {
+	return a.r == b.r && a.g == b.g && a.b == b.b && a.a == b.a;
+}
+
 // Defines the constraints passed from Parent to Child during layout.
 struct BoxConstraints {
 	float minWidth = 0.0f;
@@ -32,7 +36,6 @@ struct BoxConstraints {
 		return {std::clamp(size.x, minWidth, maxWidth), std::clamp(size.y, minHeight, maxHeight)};
 	}
 
-	[[nodiscard]] bool isTight() const { return minWidth == maxWidth && minHeight == maxHeight; }
 	[[nodiscard]] bool hasBoundedWith() const { return maxWidth < kInfinity; }
 	[[nodiscard]] bool hasBoundedHeight() const { return maxHeight < kInfinity; }
 };
@@ -87,17 +90,9 @@ struct ButtonStyle {
 	}
 };
 
-struct FrameStyle {
-	// TODO: rework frame default to allow for individual colors
-	SDL_Color fill{0, 0, 0, 0};
-	SDL_Color outline{0, 0, 0, 0};
-	float padding = 0.0f; // could be used by layout later
-};
-
 struct UiTheme {
 	SDL_Color titleTextColor;
 	ButtonStyle button;
-	FrameStyle frame;
 };
 
 struct UIContext {
@@ -117,64 +112,27 @@ class Widget {
 	Widget &operator=(Widget &&) = delete;
 	virtual ~Widget() = default;
 
-	glm::vec2 measure(const UIContext &ctx, BoxConstraints constraints)
-	{
-		if (widthMode == SizeMode::Fixed) {
-			constraints.minWidth = fixedSize.x;
-			constraints.maxWidth = fixedSize.x;
-		}
-
-		if (heightMode == SizeMode::Fixed) {
-			constraints.minHeight = fixedSize.y;
-			constraints.maxHeight = fixedSize.y;
-		}
-
-		if (cachedSize.has_value() && lastConstraints.has_value() && constraints.minWidth == lastConstraints->minWidth
-		    && constraints.maxWidth == lastConstraints->maxWidth && constraints.minHeight == lastConstraints->minHeight
-		    && constraints.maxHeight == lastConstraints->maxHeight && !isDirty) {
-			return cachedSize.value();
-		}
-
-		glm::vec2 size = performMeasure(ctx, constraints);
-		size = constraints.constrain(size);
-
-		cachedSize = size;
-		lastConstraints = constraints;
-		isDirty = false;
-		return size;
-	}
-
-	[[nodiscard]] glm::vec2 getMeasuredSize() const { return cachedSize.value_or(glm::vec2{0.0f, 0.0f}); }
-
-	virtual void layout(const UIContext &ctx, const SDL_FRect allocatedRect) { bounds = allocatedRect; }
+	glm::vec2 measure(const UIContext &ctx, BoxConstraints constraints);
+	[[nodiscard]] glm::vec2 getMeasuredSize() const;
+	virtual void layout(const UIContext &ctx, SDL_FRect allocatedRect);
 
 	virtual bool handleEvent(glm::vec2 mousePos, const SDL_Event &event) = 0;
 	virtual void draw(const UIContext &ctx) = 0;
 
-	void invalidate() { isDirty = true; }
+	void invalidate();
 
-	void setLayoutWeight(const float weight) { layoutWeight = weight; }
-	[[nodiscard]] float getLayoutWeight() const { return layoutWeight; }
+	void setLayoutWeight(float weight);
+	[[nodiscard]] float getLayoutWeight() const;
 
-	void setSizeMode(const SizeMode w, const SizeMode h)
-	{
-		widthMode = w;
-		heightMode = h;
-		invalidate();
-	}
-	void setFixedSize(const glm::vec2 size)
-	{
-		fixedSize = size;
-		widthMode = SizeMode::Fixed;
-		heightMode = SizeMode::Fixed;
-	}
+	void setSizeMode(SizeMode w, SizeMode h);
+	void setFixedSize(glm::vec2 size);
 
-	[[nodiscard]] SDL_FRect getBounds() const { return bounds; }
-	[[nodiscard]] SizeMode getWidthMode() const { return widthMode; }
-	[[nodiscard]] SizeMode getHeightMode() const { return heightMode; }
-	[[nodiscard]] glm::vec2 getAbsolutePosition() const { return {bounds.x, bounds.y}; }
+	[[nodiscard]] SDL_FRect getBounds() const;
+	[[nodiscard]] SizeMode getWidthMode() const;
+	[[nodiscard]] auto getHeightMode() const -> SizeMode;
+	[[nodiscard]] glm::vec2 getAbsolutePosition() const;
 
-  protected:
+protected:
 	Widget() = default;
 	[[nodiscard]] SDL_FRect getAbsoluteRect() const noexcept { return bounds; }
 
@@ -207,23 +165,23 @@ class Spacer : public Widget {
 	float height;
 };
 
-// A simple text label
 class Label : public Widget {
   public:
-	Label(const std::string_view labelText, TTF_Font *font) : labelText(labelText), font(font)
-	{
-		setSizeMode(SizeMode::WrapContent, SizeMode::WrapContent);
-	}
+	Label(const std::string_view labelText, TTF_Font *font);
 
 	void layout(const UIContext &ctx, SDL_FRect allocatedRect) override;
 	bool handleEvent(glm::vec2 mousePos, const SDL_Event &) override { return false; }
 	void draw(const UIContext &ctx) override;
 
-	void setColor(const SDL_Color newColor) { color = newColor; }
+	void setColor(SDL_Color newColor);
+	void setText(std::string_view newText);
 
-  private:
+private:
 	glm::vec2 performMeasure(const UIContext &ctx, BoxConstraints constraints) override;
+	void ensureTextObject(const UIContext& ctx);
+
 	std::string labelText;
+	bool colorDirty;
 	std::unique_ptr<TTF_Text, TTFTextDestroyer> textObject;
 	TTF_Font *font;
 	SDL_Color color{255, 255, 255, 255}; // white default
@@ -236,11 +194,12 @@ class Button final : public Widget {
 	void layout(const UIContext &ctx, SDL_FRect allocatedRect) override;
 	bool handleEvent(glm::vec2 mousePos, const SDL_Event &event) override;
 	void draw(const UIContext &ctx) override;
-	void setButtonDisabled(const bool disabled);
+	void setButtonDisabled(bool disabled);
 
 private:
 	glm::vec2 performMeasure(const UIContext &ctx, BoxConstraints constraints) override;
 	std::unique_ptr<Widget> content;
+	Label* textLabel=nullptr;
 	std::function<void()> callback;
 
 	bool isHovered = false;
@@ -250,7 +209,7 @@ private:
 
 class Container : public Widget {
   public:
-	void addWidget(std::unique_ptr<Widget> widget) { children.push_back(std::move(widget)); }
+	void addWidget(std::unique_ptr<Widget> widget);
 	bool handleEvent(glm::vec2 mousePos, const SDL_Event &event) override;
 	void draw(const UIContext &context) override;
 
@@ -260,21 +219,14 @@ class Container : public Widget {
 
 class LinearLayout : public Container {
   public:
-	explicit LinearLayout(const Orientation orient = Orientation::Vertical, const float gap = 5.0f)
-	    : orientation(orient), spacing(gap)
-	{
-		setSizeMode(SizeMode::MatchParent, SizeMode::MatchParent);
-	}
+	explicit LinearLayout(const Orientation orient = Orientation::Vertical, const float gap = 5.0f);
 
 	void layout(const UIContext &ctx, SDL_FRect allocatedRect) override;
-	void setOrientation(const Orientation newOrientation) { orientation = newOrientation; }
+	void setOrientation(const Orientation newOrientation);
 	void setCrossAxisAlignment(CrossAxisAlignment align);
-	void setSpacing(const float gap)
-	{ // TODO: change return type to LinearLayout& (return *this;) after CRTP implementation
-		spacing = gap;
-	}
+	void setSpacing(const float gap);
 
-  protected:
+protected:
 	glm::vec2 performMeasure(const UIContext &ctx, BoxConstraints constraints) override;
 
   private:
@@ -285,7 +237,7 @@ class LinearLayout : public Container {
 
 class GuiManager {
   public:
-	void setRoot(std::unique_ptr<Widget> root) { rootWidget = std::move(root); }
+	void setRoot(std::unique_ptr<Widget> root);
 
 	void updateLayout(const UIContext &context, float screenWidth, float screenHeight) const;
 

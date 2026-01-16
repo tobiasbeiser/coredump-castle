@@ -58,8 +58,6 @@ class Renderer {
 	void resize(Resolution newResolution);
 	[[nodiscard]] Resolution getLogicalResolution() const { return logicalResolution; }
 	[[nodiscard]] glm::vec2 windowToLogical(float windowX, float windowY) const;
-	void setClipRect(const SDL_Rect& rect) const;
-	void clearClipRect() const;
 
 	[[nodiscard]] SDL_Renderer* getNativeRenderer() const { return renderer.get(); }
 	[[nodiscard]] TTF_TextEngine* getTextEngine() const { return textEngine.get(); }
@@ -70,8 +68,7 @@ class Renderer {
 	void renderTexture(SDL_Texture &texture, std::optional<SDL_FRect> srcRect, std::optional<SDL_FRect> dstRect,
 	                   bool flip) const;
 	void drawRectShape(SDL_FRect rect, SDL_Color fillColor, SDL_Color outlineColor) const;
-	void drawTextAt(TTF_Text* textObject, float x, float y, SDL_Color color) const;
-	// void drawTextCentered(TTF_Text* textObject, float x, float y, float w, float h, SDL_Color color) const;
+	void drawText(TTF_Text* textObject, float x, float y) const;
 	void renderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, float scrollFactor) const;
 	void renderCircularFade(float progress, SDL_FColor color = {0, 0, 0, 255});
 

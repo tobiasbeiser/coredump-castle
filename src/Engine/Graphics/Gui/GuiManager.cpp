@@ -4,27 +4,76 @@
 
 #include "Engine/Graphics/Renderer.hpp"
 
-glm::vec2 Label::performMeasure(const UIContext &ctx, const BoxConstraints constraints)
+glm::vec2 Widget::measure(const UIContext& ctx, BoxConstraints constraints)
 {
-	if (labelText.empty())
-		return {0, 0};
-
-	if (!textObject) {
-		textObject = ctx.renderer.createText(font, labelText);
+	if (widthMode == SizeMode::Fixed) {
+		constraints.minWidth = fixedSize.x;
+		constraints.maxWidth = fixedSize.x;
 	}
 
-	int w = 0, h = 0;
-	TTF_GetTextSize(textObject.get(), &w, &h);
-
-	// check if we need to wrap text
-	if (w > constraints.maxWidth) {
-		TTF_SetTextWrapWidth(textObject.get(), static_cast<int>(constraints.maxWidth));
-		TTF_GetTextSize(textObject.get(), &w, &h);
+	if (heightMode == SizeMode::Fixed) {
+		constraints.minHeight = fixedSize.y;
+		constraints.maxHeight = fixedSize.y;
 	}
 
-	return {static_cast<float>(w), static_cast<float>(h)};
+	if (cachedSize.has_value() && lastConstraints.has_value() && constraints.minWidth == lastConstraints->minWidth
+		&& constraints.maxWidth == lastConstraints->maxWidth && constraints.minHeight == lastConstraints->minHeight
+		&& constraints.maxHeight == lastConstraints->maxHeight && !isDirty) {
+		return cachedSize.value();
+	}
+
+	glm::vec2 size = performMeasure(ctx, constraints);
+	size = constraints.constrain(size);
+
+	cachedSize = size;
+	lastConstraints = constraints;
+	isDirty = false;
+	return size;
 }
 
+glm::vec2 Widget::getMeasuredSize() const
+{
+	return cachedSize.value_or(glm::vec2{0.0f, 0.0f});
+}
+
+void Widget::layout(const UIContext& ctx, const SDL_FRect allocatedRect)
+{ bounds = allocatedRect; }
+
+void Widget::invalidate()
+{ isDirty = true; }
+
+void Widget::setLayoutWeight(const float weight)
+{ layoutWeight = weight; }
+
+float Widget::getLayoutWeight() const
+{ return layoutWeight; }
+
+
+void Widget::setSizeMode(const SizeMode w, const SizeMode h)
+{
+	widthMode = w;
+	heightMode = h;
+	invalidate();
+}
+
+void Widget::setFixedSize(const glm::vec2 size)
+{
+	fixedSize = size;
+	widthMode = SizeMode::Fixed;
+	heightMode = SizeMode::Fixed;
+}
+
+SDL_FRect Widget::getBounds() const
+{ return bounds; }
+
+SizeMode Widget::getWidthMode() const
+{ return widthMode; }
+
+SizeMode Widget::getHeightMode() const
+{ return heightMode; }
+
+glm::vec2 Widget::getAbsolutePosition() const
+{ return {bounds.x, bounds.y}; }
 void Label::layout(const UIContext &ctx, const SDL_FRect allocatedRect)
 {
 	Widget::layout(ctx, allocatedRect);
@@ -32,19 +81,85 @@ void Label::layout(const UIContext &ctx, const SDL_FRect allocatedRect)
 
 void Label::draw(const UIContext &ctx)
 {
-	const auto absPos = getAbsolutePosition();
+	if (labelText.empty()) return;
+
+	ensureTextObject(ctx);
+	if (colorDirty)
+	{
+		TTF_SetTextColor(textObject.get(), color.r, color.g, color.b, color.a);
+		colorDirty = false;
+	}
 
 	// auto rect = getAbsoluteRect();
 	// SDL_SetRenderDrawColor(ctx.renderer.getNativeRenderer(), 255, 0, 0, 0);
 	// SDL_RenderRect(ctx.renderer.getNativeRenderer(), &rect);
 
 	// TODO: solve subpixel rendering prevention
-	ctx.renderer.drawTextAt(textObject.get(), absPos.x, absPos.y, color);
+	const auto absPos = getAbsolutePosition();
+	ctx.renderer.drawText(textObject.get(), absPos.x, absPos.y);
+}
+
+void Label::setColor(const SDL_Color newColor)
+{
+	if (newColor == color) return;
+
+	color = newColor;
+	colorDirty = true;
+}
+
+
+void Label::setText(const std::string_view newText)
+{
+	if (labelText == newText) return;
+
+	labelText = newText;
+
+	if (textObject) {
+		TTF_SetTextString(textObject.get(), labelText.c_str(), labelText.length());
+	}
+
+	invalidate();
+}
+
+glm::vec2 Label::performMeasure(const UIContext &ctx, const BoxConstraints constraints)
+{
+	if (labelText.empty()) return {0, 0};
+
+	ensureTextObject(ctx);
+
+	int w = 0, h = 0;
+
+	// check if we need to wrap text
+	if (constraints.hasBoundedWith()) {
+		TTF_SetTextWrapWidth(textObject.get(), static_cast<int>(constraints.maxWidth));
+	} else
+	{
+		TTF_SetTextWrapWidth(textObject.get(), 0);
+	}
+
+	TTF_GetTextSize(textObject.get(), &w, &h);
+	return {static_cast<float>(w), static_cast<float>(h)};
+}
+
+void Label::ensureTextObject(const UIContext& ctx)
+{
+	if (!textObject)
+	{
+		textObject = ctx.renderer.createText(font, labelText);
+		colorDirty = true;
+	}
+}
+
+Label::Label(const std::string_view labelText, TTF_Font* font): labelText(labelText), font(font)
+{
+	setSizeMode(SizeMode::WrapContent, SizeMode::WrapContent);
 }
 
 Button::Button(std::string_view label, TTF_Font *font, const std::function<void()> &onClick) : callback(onClick)
 {
-	content = std::make_unique<Label>(label, font);
+	auto lbl = std::make_unique<Label>(label, font);
+	textLabel = lbl.get();
+	content = std::move(lbl);
 	setSizeMode(SizeMode::WrapContent, SizeMode::WrapContent);
 }
 
@@ -79,17 +194,13 @@ void Button::layout(const UIContext &ctx, SDL_FRect allocatedRect)
 	float offsetX = 0.0f;
 	float offsetY = 0.0f;
 
-	if (getWidthMode() == SizeMode::WrapContent) {
-		offsetX = ctx.theme.button.widthPadding;
-	} else {
-		offsetX = (allocatedRect.w - contentSize.x) / 2.0f;
-	}
+	offsetX = getWidthMode() == SizeMode::WrapContent
+		? ctx.theme.button.widthPadding
+		: (allocatedRect.w - contentSize.x) / 2.0f;
 
-	if (getHeightMode() == SizeMode::WrapContent) {
-		offsetY = ctx.theme.button.heightPadding;
-	} else {
-		offsetY = (allocatedRect.h - contentSize.y) / 2.0f;
-	}
+	offsetY = getHeightMode() == SizeMode::WrapContent
+		? ctx.theme.button.heightPadding
+		: (allocatedRect.h - contentSize.y) / 2.0f;
 
 	SDL_FRect contentRect;
 	contentRect.x = allocatedRect.x + offsetX;
@@ -133,14 +244,13 @@ bool Button::handleEvent(const glm::vec2 mousePos, const SDL_Event &event)
 
 void Button::draw(const UIContext &ctx)
 {
-	auto s = WidgetState::Disabled;
-	if (!isDisabled)
-	{
-		 s = isPressed ? WidgetState::Pressed : isHovered ? WidgetState::Hovered : WidgetState::Normal;
-	}
+	const WidgetState state = isDisabled ? WidgetState::Disabled
+		: isPressed ? WidgetState::Pressed
+		: isHovered ? WidgetState::Hovered
+		: WidgetState::Normal;
 
 
-	const auto &[fillCol, outlineCol, textCol] = ctx.theme.button.paintFor(s);
+	const auto &[fillCol, outlineCol, textCol] = ctx.theme.button.paintFor(state);
 	const SDL_FRect r = getAbsoluteRect();
 
 	ctx.renderer.drawRectShape(r, fillCol, outlineCol);
@@ -154,6 +264,9 @@ void Button::draw(const UIContext &ctx)
 
 void Button::setButtonDisabled(const bool disabled)
 { isDisabled = disabled; }
+
+void Container::addWidget(std::unique_ptr<Widget> widget)
+{ children.push_back(std::move(widget)); }
 
 bool Container::handleEvent(const glm::vec2 mousePos, const SDL_Event &event)
 {
@@ -181,6 +294,11 @@ void LinearLayout::setCrossAxisAlignment(const CrossAxisAlignment align)
 {
 	crossAxisAlignment = align;
 	invalidate();
+}
+
+void LinearLayout::setSpacing(const float gap)
+{ // TODO: change return type to LinearLayout& (return *this;) after CRTP implementation
+	spacing = gap;
 }
 
 glm::vec2 LinearLayout::performMeasure(const UIContext &ctx, BoxConstraints constraints)
@@ -263,6 +381,11 @@ glm::vec2 LinearLayout::performMeasure(const UIContext &ctx, BoxConstraints cons
 	return isVert ? glm::vec2{maxCrossAxis, totalMain} : glm::vec2{totalMain, maxCrossAxis};
 }
 
+LinearLayout::LinearLayout(const Orientation orient, const float gap): orientation(orient), spacing(gap)
+{
+	setSizeMode(SizeMode::MatchParent, SizeMode::MatchParent);
+}
+
 void LinearLayout::layout(const UIContext &ctx, const SDL_FRect allocatedRect)
 {
 	Widget::layout(ctx, allocatedRect);
@@ -325,17 +448,23 @@ void LinearLayout::layout(const UIContext &ctx, const SDL_FRect allocatedRect)
 	}
 }
 
+void LinearLayout::setOrientation(const Orientation newOrientation)
+{ orientation = newOrientation; }
+
+void GuiManager::setRoot(std::unique_ptr<Widget> root)
+{ rootWidget = std::move(root); }
+
 void GuiManager::updateLayout(const UIContext &context, const float screenWidth, const float screenHeight) const
 {
 	if (!rootWidget)
 		return;
 	// // TODO: check if this is even necessary
-	BoxConstraints screenConstraints = BoxConstraints::tight(screenWidth, screenHeight);
+	const BoxConstraints screenConstraints = BoxConstraints::tight(screenWidth, screenHeight);
 
 	rootWidget->measure(context, screenConstraints);
 
 	// 2. Layout Pass: Set the root to its preferred size (or fullscreen)
-	SDL_FRect finalRect = {0.0f, 0.0f, screenWidth, screenHeight};
+	const SDL_FRect finalRect = {0.0f, 0.0f, screenWidth, screenHeight};
 
 	rootWidget->layout(context, finalRect);
 }

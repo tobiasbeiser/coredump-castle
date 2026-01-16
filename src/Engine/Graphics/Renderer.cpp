@@ -187,14 +187,12 @@ void Renderer::drawRectShape(const SDL_FRect rect, const SDL_Color fillColor, co
     SDL_RenderRect(renderer.get(), &rect);
 }
 
-void Renderer::drawTextAt(TTF_Text* textObject, const float x, const float y, const SDL_Color color) const
+void Renderer::drawText(TTF_Text* textObject, const float x, const float y) const
 {
-	TTF_SetTextColor(textObject, color.r, color.g, color.b, color.a);
 	TTF_DrawRendererText(textObject, x, y);
-
 }
 
-glm::vec2 Renderer::windowToLogical(float windowX, float windowY) const
+glm::vec2 Renderer::windowToLogical(const float windowX, const float windowY) const
 {
 	float logicalX = 0.0f;
 	float logicalY = 0.0f;
