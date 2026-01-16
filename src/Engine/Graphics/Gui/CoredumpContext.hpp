@@ -7,7 +7,6 @@
 namespace CoredumpContext {
 inline std::unique_ptr<UIContext> getContext(GameEngine::GameEngine &game)
 {
-	FrameStyle frameStyle{};
 	ButtonStyle btnStyle = {
 	    10.0f,
 	    5.0f,
@@ -19,7 +18,7 @@ inline std::unique_ptr<UIContext> getContext(GameEngine::GameEngine &game)
 	    Paint{{100, 100, 100, 255}, {200, 200, 200, 255}, {255, 255, 255, 255}},
 	    Paint{{150, 150, 150, 255}, {200, 200, 200, 255}, {215, 215, 215, 215}},
 	};
-	UiTheme theme = {{255, 215, 0, 255}, btnStyle, frameStyle};
+	UiTheme theme = {{255, 215, 0, 255}, btnStyle};
 
 	return std::make_unique<UIContext>(game.getRenderer(),
 	                                   game.getFontManager().getFont("assets/fonts/upheaval/upheavtt.ttf", 60),

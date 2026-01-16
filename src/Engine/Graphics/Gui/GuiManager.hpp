@@ -116,8 +116,8 @@ class Widget {
 	[[nodiscard]] glm::vec2 getMeasuredSize() const;
 	virtual void layout(const UIContext &ctx, SDL_FRect allocatedRect);
 
-	virtual bool handleEvent(glm::vec2 mousePos, const SDL_Event &event) = 0;
-	virtual void draw(const UIContext &ctx) = 0;
+	virtual bool handleEvent(glm::vec2 localMousePos, const SDL_Event &event) = 0;
+	virtual void draw(const UIContext &ctx, glm::vec2 parentOffset) = 0;
 
 	void invalidate();
 
@@ -130,12 +130,13 @@ class Widget {
 	[[nodiscard]] SDL_FRect getBounds() const;
 	[[nodiscard]] SizeMode getWidthMode() const;
 	[[nodiscard]] auto getHeightMode() const -> SizeMode;
-	[[nodiscard]] glm::vec2 getAbsolutePosition() const;
+	[[nodiscard]] glm::vec2 getRelativePosition() const;
 
 protected:
 	Widget() = default;
-	[[nodiscard]] SDL_FRect getAbsoluteRect() const noexcept { return bounds; }
-
+	[[nodiscard]] SDL_FRect getScreenRect(glm::vec2 parentOffset) const noexcept {
+		return {parentOffset.x + bounds.x, parentOffset.y + bounds.y, bounds.w, bounds.h};
+	}
 	virtual glm::vec2 performMeasure(const UIContext &ctx, BoxConstraints constraints) = 0;
 
   private:
@@ -154,8 +155,8 @@ class Spacer : public Widget {
   public:
 	explicit Spacer(const float width = 0.f, const float height = 0.f) : width(width), height(height) {}
 
-	bool handleEvent(glm::vec2 mousePos, const SDL_Event &) override { return false; }
-	void draw(const UIContext &) override {} // Invisible
+	bool handleEvent(glm::vec2 localMousePos, const SDL_Event &) override { return false; }
+	void draw(const UIContext &, glm::vec2) override {} // Invisible
 
   protected:
 	glm::vec2 performMeasure(const UIContext &ctx, BoxConstraints constraints) override { return {width, height}; }
@@ -167,11 +168,11 @@ class Spacer : public Widget {
 
 class Label : public Widget {
   public:
-	Label(const std::string_view labelText, TTF_Font *font);
+	Label(std::string_view labelText, TTF_Font *font);
 
 	void layout(const UIContext &ctx, SDL_FRect allocatedRect) override;
-	bool handleEvent(glm::vec2 mousePos, const SDL_Event &) override { return false; }
-	void draw(const UIContext &ctx) override;
+	bool handleEvent(glm::vec2 localMousePos, const SDL_Event &) override { return false; }
+	void draw(const UIContext &ctx, glm::vec2 parentOffset) override;
 
 	void setColor(SDL_Color newColor);
 	void setText(std::string_view newText);
@@ -192,8 +193,8 @@ class Button final : public Widget {
 	Button(std::string_view label, TTF_Font *font, const std::function<void()> &onClick);
 	Button(std::unique_ptr<Widget> customContent, std::function<void()> onClick);
 	void layout(const UIContext &ctx, SDL_FRect allocatedRect) override;
-	bool handleEvent(glm::vec2 mousePos, const SDL_Event &event) override;
-	void draw(const UIContext &ctx) override;
+	bool handleEvent(glm::vec2 localMousePos, const SDL_Event &event) override;
+	void draw(const UIContext &ctx, glm::vec2 parentOffset) override;
 	void setButtonDisabled(bool disabled);
 
 private:
@@ -210,8 +211,8 @@ private:
 class Container : public Widget {
   public:
 	void addWidget(std::unique_ptr<Widget> widget);
-	bool handleEvent(glm::vec2 mousePos, const SDL_Event &event) override;
-	void draw(const UIContext &context) override;
+	bool handleEvent(glm::vec2 localMousePos, const SDL_Event &event) override;
+	void draw(const UIContext &context, glm::vec2 parentOffset) override;
 
   protected:
 	std::vector<std::unique_ptr<Widget>> children;

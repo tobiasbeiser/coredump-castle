@@ -37,16 +37,22 @@ glm::vec2 Widget::getMeasuredSize() const
 }
 
 void Widget::layout(const UIContext& ctx, const SDL_FRect allocatedRect)
-{ bounds = allocatedRect; }
+{
+	bounds = allocatedRect;
+}
 
 void Widget::invalidate()
-{ isDirty = true; }
+{
+	isDirty = true;
+}
 
 void Widget::setLayoutWeight(const float weight)
 { layoutWeight = weight; }
 
 float Widget::getLayoutWeight() const
-{ return layoutWeight; }
+{
+	return layoutWeight;
+}
 
 
 void Widget::setSizeMode(const SizeMode w, const SizeMode h)
@@ -64,22 +70,31 @@ void Widget::setFixedSize(const glm::vec2 size)
 }
 
 SDL_FRect Widget::getBounds() const
-{ return bounds; }
+{
+	return bounds;
+}
 
 SizeMode Widget::getWidthMode() const
-{ return widthMode; }
+{
+	return widthMode;
+}
 
 SizeMode Widget::getHeightMode() const
-{ return heightMode; }
+{
+	return heightMode;
+}
 
-glm::vec2 Widget::getAbsolutePosition() const
-{ return {bounds.x, bounds.y}; }
+glm::vec2 Widget::getRelativePosition() const
+{
+	return {bounds.x, bounds.y};
+}
+
 void Label::layout(const UIContext &ctx, const SDL_FRect allocatedRect)
 {
 	Widget::layout(ctx, allocatedRect);
 }
 
-void Label::draw(const UIContext &ctx)
+void Label::draw(const UIContext &ctx, const glm::vec2 parentOffset)
 {
 	if (labelText.empty()) return;
 
@@ -90,13 +105,13 @@ void Label::draw(const UIContext &ctx)
 		colorDirty = false;
 	}
 
-	// auto rect = getAbsoluteRect();
+	// auto rect = getScreenRect();
 	// SDL_SetRenderDrawColor(ctx.renderer.getNativeRenderer(), 255, 0, 0, 0);
 	// SDL_RenderRect(ctx.renderer.getNativeRenderer(), &rect);
 
 	// TODO: solve subpixel rendering prevention
-	const auto absPos = getAbsolutePosition();
-	ctx.renderer.drawText(textObject.get(), absPos.x, absPos.y);
+	const auto absolutePosition = parentOffset + getRelativePosition();
+	ctx.renderer.drawText(textObject.get(), absolutePosition.x, absolutePosition.y);
 }
 
 void Label::setColor(const SDL_Color newColor)
@@ -202,20 +217,16 @@ void Button::layout(const UIContext &ctx, SDL_FRect allocatedRect)
 		? ctx.theme.button.heightPadding
 		: (allocatedRect.h - contentSize.y) / 2.0f;
 
-	SDL_FRect contentRect;
-	contentRect.x = allocatedRect.x + offsetX;
-	contentRect.y = allocatedRect.y + offsetY;
-	contentRect.w = contentSize.x;
-	contentRect.h = contentSize.y;
+	const SDL_FRect contentRect = {offsetX, offsetY, contentSize.x, contentSize.y};
 
 	content->layout(ctx, contentRect);
 }
 
-bool Button::handleEvent(const glm::vec2 mousePos, const SDL_Event &event)
+bool Button::handleEvent(const glm::vec2 localMousePos, const SDL_Event &event)
 {
-	const SDL_FRect absRect = getAbsoluteRect();
-	const SDL_FPoint mousePt = {mousePos.x, mousePos.y};
-	const bool isInside = SDL_PointInRectFloat(&mousePt, &absRect);
+	const SDL_FRect bounds = getBounds();
+	const SDL_FPoint mousePt = {localMousePos.x, localMousePos.y};
+	const bool isInside = SDL_PointInRectFloat(&mousePt, &bounds);
 
 	if (event.type == SDL_EVENT_MOUSE_MOTION) {
 		isHovered = isInside;
@@ -242,7 +253,7 @@ bool Button::handleEvent(const glm::vec2 mousePos, const SDL_Event &event)
 	return false;
 }
 
-void Button::draw(const UIContext &ctx)
+void Button::draw(const UIContext &ctx, const glm::vec2 parentOffset)
 {
 	const WidgetState state = isDisabled ? WidgetState::Disabled
 		: isPressed ? WidgetState::Pressed
@@ -251,15 +262,17 @@ void Button::draw(const UIContext &ctx)
 
 
 	const auto &[fillCol, outlineCol, textCol] = ctx.theme.button.paintFor(state);
-	const SDL_FRect r = getAbsoluteRect();
+	SDL_FRect rect = getScreenRect(parentOffset);
 
-	ctx.renderer.drawRectShape(r, fillCol, outlineCol);
+
+	ctx.renderer.drawRectShape(rect, fillCol, outlineCol);
 
 	if (auto *label = dynamic_cast<Label *>(content.get())) {
 		label->setColor(textCol);
 	}
-
-	content->draw(ctx);
+	if (content) {
+		content->draw(ctx, {rect.x, rect.y});
+	}
 }
 
 void Button::setButtonDisabled(const bool disabled)
@@ -268,26 +281,35 @@ void Button::setButtonDisabled(const bool disabled)
 void Container::addWidget(std::unique_ptr<Widget> widget)
 { children.push_back(std::move(widget)); }
 
-bool Container::handleEvent(const glm::vec2 mousePos, const SDL_Event &event)
+bool Container::handleEvent(const glm::vec2 localMousePos, const SDL_Event &event)
 {
+	const auto childMousePos = localMousePos - getRelativePosition();
+
 	// Reverse iteration for event bubbling (top-most child first)
 	for (const auto &child : std::ranges::reverse_view(children)) {
-		if (child->handleEvent(mousePos, event))
-			return true;
+		if (child->handleEvent(childMousePos, event))
+		return true;
 	}
 	return false;
 }
 
-void Container::draw(const UIContext &context)
+void Container::draw(const UIContext &context, const glm::vec2 parentOffset)
 {
-	// auto rect = getAbsoluteRect();
-	//
-	// SDL_SetRenderDrawColor(context.renderer.getNativeRenderer(), 255, 0, 0, 0);
-	// SDL_RenderRect(context.renderer.getNativeRenderer(), &rect);
+	const auto rect = getScreenRect(parentOffset);
 
+	SDL_SetRenderDrawColor(context.renderer.getNativeRenderer(), 255, 0, 0, 0);
+	SDL_RenderRect(context.renderer.getNativeRenderer(), &rect);
+
+
+	const auto selfOffset = parentOffset + getRelativePosition();
 	for (const auto &child : children) {
-		child->draw(context);
+		child->draw(context, selfOffset);
 	}
+}
+
+LinearLayout::LinearLayout(const Orientation orient, const float gap): orientation(orient), spacing(gap)
+{
+	setSizeMode(SizeMode::MatchParent, SizeMode::MatchParent);
 }
 
 void LinearLayout::setCrossAxisAlignment(const CrossAxisAlignment align)
@@ -375,15 +397,9 @@ glm::vec2 LinearLayout::performMeasure(const UIContext &ctx, BoxConstraints cons
 		maxCrossAxis = std::max(maxCrossAxis, isVert ? childSize.x : childSize.y);
 	}
 
-	// final dimension: flex children? all available space, otherwise only fixed space
 	const float totalMain = fixedSpace + (totalFlex > 0 ? remainingSpace : 0);
 
 	return isVert ? glm::vec2{maxCrossAxis, totalMain} : glm::vec2{totalMain, maxCrossAxis};
-}
-
-LinearLayout::LinearLayout(const Orientation orient, const float gap): orientation(orient), spacing(gap)
-{
-	setSizeMode(SizeMode::MatchParent, SizeMode::MatchParent);
 }
 
 void LinearLayout::layout(const UIContext &ctx, const SDL_FRect allocatedRect)
@@ -391,7 +407,7 @@ void LinearLayout::layout(const UIContext &ctx, const SDL_FRect allocatedRect)
 	Widget::layout(ctx, allocatedRect);
 
 	const bool isVert = (orientation == Orientation::Vertical);
-	float cursor = isVert ? allocatedRect.y : allocatedRect.x;
+	float cursor = 0;
 
 	// recalculate size based on actual size
 	float totalFlex = 0.0f;
@@ -422,7 +438,8 @@ void LinearLayout::layout(const UIContext &ctx, const SDL_FRect allocatedRect)
 		}
 
 		float crossAxisLen = isVert ? childSize.x : childSize.y;
-		float crossAxisPos = isVert ? allocatedRect.x : allocatedRect.y;
+		// float crossAxisPos = isVert ? allocatedRect.x : allocatedRect.y;
+		float crossAxisPos = 0;
 		const float crossAxisAvail = isVert ? allocatedRect.w : allocatedRect.h;
 
 		const bool isMatchParentCross = isVert ? (child->getWidthMode() == SizeMode::MatchParent)
@@ -497,5 +514,5 @@ void GuiManager::handleEvent(const UIContext &ctx, const SDL_Event &event) const
 void GuiManager::render(const UIContext &ctx) const
 {
 	if (rootWidget)
-		rootWidget->draw(ctx);
+		rootWidget->draw(ctx, {0, 0});
 }
