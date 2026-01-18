@@ -21,10 +21,11 @@ struct OptionsMenuActions {
 };
 
 namespace UiViewFactory {
-std::unique_ptr<Widget> createMainMenu(const UIContext &ctx, const MainMenuActions &actions);
+	using namespace Ui;
+	std::unique_ptr<Widget> createMainMenu(const UIContext &ctx, const MainMenuActions &actions);
 
-std::unique_ptr<Widget> createContinueMenu(const UIContext &ctx, const ContinueMenuActions &actions,
-                                           std::vector<std::string> saveNames);
+	std::unique_ptr<Widget> createContinueMenu(const UIContext &ctx, const ContinueMenuActions &actions,
+											   std::vector<std::string> saveNames);
 
-std::unique_ptr<Widget> createOptionsMenu(const UIContext &ctx, const OptionsMenuActions &actions);
+	std::unique_ptr<Widget> createOptionsMenu(const UIContext &ctx, const OptionsMenuActions &actions);
 }; // namespace UiViewFactory

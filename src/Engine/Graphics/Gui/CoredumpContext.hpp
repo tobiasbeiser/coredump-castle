@@ -5,6 +5,7 @@
 #include "GuiManager.hpp"
 
 namespace CoredumpContext {
+	using namespace Ui;
 inline std::unique_ptr<UIContext> getContext(GameEngine::GameEngine &game)
 {
 	ButtonStyle btnStyle = {

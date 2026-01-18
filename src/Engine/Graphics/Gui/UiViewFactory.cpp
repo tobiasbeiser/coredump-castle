@@ -3,6 +3,7 @@
 
 #include <ranges>
 #include <utility>
+using namespace Ui;
 
 inline std::unique_ptr<Spacer> makeSpacer(const float layoutWeight = 1.0f)
 {

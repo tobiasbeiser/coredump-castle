@@ -15,7 +15,7 @@ void MainMenuState::init(GameEngine &game)
 	}
 	context = CoredumpContext::getContext(game);
 
-	guiManager = std::make_unique<GuiManager>();
+	guiManager = std::make_unique<Ui::GuiManager>();
 	setupUI(game);
 }
 
