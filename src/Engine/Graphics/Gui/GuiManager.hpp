@@ -122,14 +122,13 @@ namespace Ui
 		Widget &operator=(Widget &&) = delete;
 		virtual ~Widget() = default;
 
-		glm::vec2 measure(const UIContext &ctx, BoxConstraints constraints);
+		glm::vec2 measure(const UIContext &ctx, BoxConstraints constraints) const;
 		[[nodiscard]] glm::vec2 getMeasuredSize() const;
 		virtual void layout(const UIContext &ctx, SDL_FRect allocatedRect);
 
 		virtual bool handleEvent(glm::vec2 localMousePos, const SDL_Event &event) = 0;
-		virtual void draw(const UIContext &ctx, glm::vec2 parentOffset) = 0;
+		virtual void draw(const UIContext &ctx, glm::vec2 parentOffset) const = 0;
 
-		void invalidate();
 
 		void setLayoutWeight(float weight);
 		[[nodiscard]] float getLayoutWeight() const;
@@ -147,7 +146,8 @@ namespace Ui
 		[[nodiscard]] SDL_FRect getScreenRect(glm::vec2 parentOffset) const noexcept {
 			return {parentOffset.x + bounds.x, parentOffset.y + bounds.y, bounds.w, bounds.h};
 		}
-		virtual glm::vec2 performMeasure(const UIContext &ctx, BoxConstraints constraints) = 0;
+		virtual glm::vec2 performMeasure(const UIContext &ctx, BoxConstraints constraints) const = 0;
+		void invalidate();
 
 	private:
 		SDL_FRect bounds = {0.0f, 0.0f, 0.0f, 0.0f}; // Position is relative to Parent
@@ -156,9 +156,9 @@ namespace Ui
 		SizeMode widthMode = SizeMode::WrapContent;
 		SizeMode heightMode = SizeMode::WrapContent;
 		glm::vec2 fixedSize = {0.0f, 0.0f};
-		std::optional<glm::vec2> cachedSize;
-		std::optional<BoxConstraints> lastConstraints;
-		bool isDirty = true;
+		mutable std::optional<glm::vec2> cachedSize;
+		mutable std::optional<BoxConstraints> lastConstraints;
+		mutable bool isDirty = true;
 	};
 
 	class Spacer : public Widget {
@@ -166,10 +166,10 @@ namespace Ui
 		explicit Spacer(const float width = 0.f, const float height = 0.f) : width(width), height(height) {}
 
 		bool handleEvent(glm::vec2 localMousePos, const SDL_Event &) override { return false; }
-		void draw(const UIContext &, glm::vec2) override {} // Invisible
+		void draw(const UIContext &, glm::vec2) const override {} // Invisible
 
 	protected:
-		glm::vec2 performMeasure(const UIContext &ctx, BoxConstraints constraints) override { return {width, height}; }
+		glm::vec2 performMeasure(const UIContext &ctx, BoxConstraints constraints) const override { return {width, height}; }
 
 	private:
 		float width;
@@ -182,18 +182,18 @@ namespace Ui
 
 		void layout(const UIContext &ctx, SDL_FRect allocatedRect) override;
 		bool handleEvent(glm::vec2 localMousePos, const SDL_Event &) override { return false; }
-		void draw(const UIContext &ctx, glm::vec2 parentOffset) override;
+		void draw(const UIContext &ctx, glm::vec2 parentOffset) const override;
 
 		void setColor(SDL_Color newColor);
 		void setText(std::string_view newText);
 
 	private:
-		glm::vec2 performMeasure(const UIContext &ctx, BoxConstraints constraints) override;
-		void ensureTextObject(const UIContext& ctx);
+		glm::vec2 performMeasure(const UIContext &ctx, BoxConstraints constraints) const override;
+		void ensureTextObject(const UIContext& ctx) const;
 
 		std::string labelText;
-		bool colorDirty;
-		std::unique_ptr<TTF_Text, TTFTextDestroyer> textObject;
+		mutable bool colorDirty;
+		mutable std::unique_ptr<TTF_Text, TTFTextDestroyer> textObject;
 		TTF_Font *font;
 		SDL_Color color{255, 255, 255, 255}; // white default
 	};
@@ -204,11 +204,11 @@ namespace Ui
 		Button(std::unique_ptr<Widget> customContent, std::function<void()> onClick);
 		void layout(const UIContext &ctx, SDL_FRect allocatedRect) override;
 		bool handleEvent(glm::vec2 localMousePos, const SDL_Event &event) override;
-		void draw(const UIContext &ctx, glm::vec2 parentOffset) override;
+		void draw(const UIContext &ctx, glm::vec2 parentOffset) const override;
 		void setButtonDisabled(bool disabled);
 
 	private:
-		glm::vec2 performMeasure(const UIContext &ctx, BoxConstraints constraints) override;
+		glm::vec2 performMeasure(const UIContext &ctx, BoxConstraints constraints) const override;
 		std::unique_ptr<Widget> content;
 		Label* textLabel=nullptr;
 		std::function<void()> callback;
@@ -222,7 +222,7 @@ namespace Ui
 	public:
 		void addWidget(std::unique_ptr<Widget> widget);
 		bool handleEvent(glm::vec2 localMousePos, const SDL_Event &event) override;
-		void draw(const UIContext &context, glm::vec2 parentOffset) override;
+		void draw(const UIContext &context, glm::vec2 parentOffset) const override;
 
 	protected:
 		std::vector<std::unique_ptr<Widget>> children;
@@ -239,8 +239,8 @@ namespace Ui
 
 
 	private:
-		glm::vec2 performMeasure(const UIContext &ctx, BoxConstraints constraints) override;
-		InternalDimensions measureFixedChildren(bool isVert, BoxConstraints constraints, const UIContext& ctx) const;
+		[[nodiscard]] glm::vec2 performMeasure(const UIContext &ctx, BoxConstraints constraints) const override;
+		[[nodiscard]] InternalDimensions measureFixedChildren(bool isVert, BoxConstraints constraints, const UIContext& ctx) const;
 		void measureFlexibleChildren(InternalDimensions& tmpDimensions, bool isVert, BoxConstraints constraints, const UIContext& ctx) const;
 
 		Orientation orientation;

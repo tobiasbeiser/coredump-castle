@@ -6,7 +6,7 @@
 
 using namespace Ui;
 
-glm::vec2 Widget::measure(const UIContext& ctx, BoxConstraints constraints)
+glm::vec2 Widget::measure(const UIContext& ctx, BoxConstraints constraints) const
 {
 	if (widthMode == SizeMode::Fixed) {
 		constraints.minWidth = fixedSize.x;
@@ -35,6 +35,7 @@ glm::vec2 Widget::measure(const UIContext& ctx, BoxConstraints constraints)
 
 glm::vec2 Widget::getMeasuredSize() const
 {
+	// helper, since we don't have box constraints in layout phase and therefore can't call measure()
 	return cachedSize.value_or(glm::vec2{0.0f, 0.0f});
 }
 
@@ -96,7 +97,7 @@ void Label::layout(const UIContext &ctx, const SDL_FRect allocatedRect)
 	Widget::layout(ctx, allocatedRect);
 }
 
-void Label::draw(const UIContext &ctx, const glm::vec2 parentOffset)
+void Label::draw(const UIContext &ctx, const glm::vec2 parentOffset) const
 {
 	if (labelText.empty()) return;
 
@@ -138,7 +139,7 @@ void Label::setText(const std::string_view newText)
 	invalidate();
 }
 
-glm::vec2 Label::performMeasure(const UIContext &ctx, const BoxConstraints constraints)
+glm::vec2 Label::performMeasure(const UIContext &ctx, const BoxConstraints constraints) const
 {
 	if (labelText.empty()) return {0, 0};
 
@@ -158,7 +159,7 @@ glm::vec2 Label::performMeasure(const UIContext &ctx, const BoxConstraints const
 	return {static_cast<float>(w), static_cast<float>(h)};
 }
 
-void Label::ensureTextObject(const UIContext& ctx)
+void Label::ensureTextObject(const UIContext& ctx) const
 {
 	if (!textObject)
 	{
@@ -186,7 +187,7 @@ Button::Button(std::unique_ptr<Widget> customContent, std::function<void()> onCl
 	setSizeMode(SizeMode::WrapContent, SizeMode::WrapContent);
 }
 
-glm::vec2 Button::performMeasure(const UIContext &ctx, const BoxConstraints constraints)
+glm::vec2 Button::performMeasure(const UIContext &ctx, const BoxConstraints constraints) const
 {
 	const float xPad = ctx.theme.button.widthPadding * 2.0f;
 	const float yPad = ctx.theme.button.heightPadding * 2.0f;
@@ -255,7 +256,7 @@ bool Button::handleEvent(const glm::vec2 localMousePos, const SDL_Event &event)
 	return false;
 }
 
-void Button::draw(const UIContext &ctx, const glm::vec2 parentOffset)
+void Button::draw(const UIContext &ctx, const glm::vec2 parentOffset) const
 {
 	const WidgetState state = isDisabled ? WidgetState::Disabled
 		: isPressed ? WidgetState::Pressed
@@ -295,7 +296,7 @@ bool Container::handleEvent(const glm::vec2 localMousePos, const SDL_Event &even
 	return false;
 }
 
-void Container::draw(const UIContext &context, const glm::vec2 parentOffset)
+void Container::draw(const UIContext &context, const glm::vec2 parentOffset) const
 {
 	const auto rect = getScreenRect(parentOffset);
 
@@ -396,7 +397,7 @@ void LinearLayout::measureFlexibleChildren(InternalDimensions& tmpDimensions, co
 	}
 }
 
-glm::vec2 LinearLayout::performMeasure(const UIContext &ctx, const BoxConstraints constraints)
+glm::vec2 LinearLayout::performMeasure(const UIContext &ctx, const BoxConstraints constraints) const
 {
 	const bool isVert = (orientation == Orientation::Vertical);
 
