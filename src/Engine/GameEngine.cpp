@@ -34,38 +34,17 @@ void GameEngine::cleanup() noexcept {}
 
 void GameEngine::changeState(std::unique_ptr<GameState> state)
 {
-	pendingOperations.emplace_back([this, s = std::move(state)]() mutable {
-		if (!states.empty()) {
-			states.back()->cleanup();
-			states.pop_back();
-		}
-		states.push_back(std::move(s));
-		states.back()->init(*this);
-	});
+	actionQueue.push_back({PendingAction::Type::Change, std::move(state)});
 }
 
 void GameEngine::pushState(std::unique_ptr<GameState> state)
 {
-	pendingOperations.emplace_back([this, s = std::move(state)]() mutable {
-		if (!states.empty()) {
-			states.back()->pause();
-		}
-		states.push_back(std::move(s));
-		states.back()->init(*this);
-	});
+	actionQueue.push_back({PendingAction::Type::Push, std::move(state)});
 }
 
 void GameEngine::popState()
 {
-	pendingOperations.emplace_back([this]() {
-		if (!states.empty()) {
-			states.back()->cleanup();
-			states.pop_back();
-		}
-		if (!states.empty()) {
-			states.back()->resume();
-		}
-	});
+	actionQueue.push_back({PendingAction::Type::Pop});
 }
 
 void GameEngine::handleEvents()
@@ -106,10 +85,41 @@ void GameEngine::update(const float deltaTime)
 		state->update(*this, deltaTime);
 	}
 
-	for (auto &operation : pendingOperations) {
-		operation();
+	for (auto &action : actionQueue) {
+		switch (action.type) {
+		case PendingAction::Type::Change:
+			if (!states.empty()) {
+				states.back()->cleanup();
+				states.pop_back();
+			}
+			if (action.state) {
+				states.push_back(std::move(action.state).value());
+				states.back()->init(*this);
+			}
+			break;
+
+		case PendingAction::Type::Push:
+			if (!states.empty()) {
+				states.back()->pause();
+			}
+			if (action.state) {
+				states.push_back(std::move(action.state).value());
+				states.back()->init(*this);
+			}
+			break;
+
+		case PendingAction::Type::Pop:
+			if (!states.empty()) {
+				states.back()->cleanup();
+				states.pop_back();
+			}
+			if (!states.empty()) {
+				states.back()->resume();
+			}
+			break;
+		}
 	}
-	pendingOperations.clear();
+	actionQueue.clear();
 }
 
 void GameEngine::render(const float alpha)
