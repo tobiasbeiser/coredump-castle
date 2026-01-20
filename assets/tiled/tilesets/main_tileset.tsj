@@ -842,9 +842,9 @@
                  "value":true
                 }, 
                 {
-                 "name":"type",
-                 "type":"string",
-                 "value":"spike"
+                 "name":"hazard",
+                 "type":"bool",
+                 "value":true
                 }]
         }, 
         {

@@ -4,7 +4,6 @@
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
 #include "Engine/Input/InputManager.hpp"
-#include <string>
 
 namespace GameEngine::ECS::Systems {
 class InputSystem {
