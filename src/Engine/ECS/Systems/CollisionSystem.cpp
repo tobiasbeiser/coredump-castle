@@ -4,6 +4,7 @@
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Hazard/LastGroundedPositionComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Hazard/SpikeComponent.hpp"
 #include "Engine/ECS/Components/Physics/AccelerationComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
@@ -115,7 +116,7 @@ void resolveHorizontalCollisions(const Entity entity, Registry &registry, const 
 
 	auto currentEntityCollisionBox = buildEntityCollisionBox(entity, registry);
 
-	grid.queryExcluding(currentEntityCollisionBox, entity, [&](const SDL_FRect &tileBox) {
+	grid.queryExcluding(currentEntityCollisionBox, entity, [&](const Entity tileEntity, const SDL_FRect &tileBox) {
 		if (resolveHorizontalCollision(tileBox, position, velocity, acceleration, currentEntityCollisionBox)) {
 			// We must update the collision box so subsequent checks use the new position
 			currentEntityCollisionBox = buildEntityCollisionBox(entity, registry);
@@ -133,12 +134,10 @@ void resolveVerticalCollisions(const Entity entity, Registry &registry, const Ut
 	auto currentEntityCollisionBox = buildEntityCollisionBox(entity, registry);
 
 	SDL_FRect queryBox = currentEntityCollisionBox;
-	// Check for ground tile in the next bucket
 	queryBox.h += 1.0f;
 
-	grid.queryExcluding(queryBox, entity, [&](const SDL_FRect &tileBox) {
+	grid.queryExcluding(queryBox, entity, [&](const Entity tileEntity, const SDL_FRect &tileBox) {
 		if (resolveVerticalCollision(tileBox, position, velocity, acceleration, currentEntityCollisionBox)) {
-			// We must update the collision box so subsequent checks use the new position
 			currentEntityCollisionBox = buildEntityCollisionBox(entity, registry);
 		}
 
@@ -152,13 +151,20 @@ void resolveVerticalCollisions(const Entity entity, Registry &registry, const Ut
 				if (sensorIntersection.w > sensorIntersection.h) {
 					grounded = true;
 
-					constexpr float overlapRatioThreshold = 0.70f;
-
+					constexpr float overlapRatioThreshold = 0.7f;
 					if (const float overlapRatio = sensorIntersection.w / currentEntityCollisionBox.w;
 					    overlapRatio > overlapRatioThreshold) {
-						if (registry.has<LastGroundedPositionComponent>(entity)) {
+
+						// Store grounded position as center of last secure tile
+						if (const bool isHazard = registry.has<SpikeComponent>(tileEntity);
+						    registry.has<LastGroundedPositionComponent>(entity) && !isHazard) {
 							auto &[lastGroundedPosition] = registry.get<LastGroundedPositionComponent>(entity);
-							lastGroundedPosition = glm::vec2(position.x, position.y);
+							const float offsetX = currentEntityCollisionBox.x - position.x;
+							const float offsetY = currentEntityCollisionBox.y - position.y;
+							const float tileCenterX = tileBox.x + (tileBox.w * 0.5f);
+							const float targetHitboxX = tileCenterX - (currentEntityCollisionBox.w * 0.5f);
+							const float targetHitboxY = tileBox.y - currentEntityCollisionBox.h;
+							lastGroundedPosition = glm::vec2(targetHitboxX - offsetX, targetHitboxY - offsetY);
 						}
 					}
 				}

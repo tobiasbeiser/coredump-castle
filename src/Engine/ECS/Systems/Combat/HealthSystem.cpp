@@ -44,14 +44,6 @@ void update(Registry &registry, const float deltaTime)
 			chase.reactionDelay.reset();
 		}
 
-		if (damageSource == DamageSource::Hazard) {
-			if (registry.has<LastGroundedPositionComponent>(entity) && registry.has<TransformComponent>(entity)) {
-				const auto &[lastGroundedPosition] = registry.get<LastGroundedPositionComponent>(entity);
-				auto &[position, previousPosition] = registry.get<PositionComponent>(entity);
-				position = lastGroundedPosition;
-			}
-		}
-
 		registry.remove<PendingDamageComponent>(entity);
 	}
 }

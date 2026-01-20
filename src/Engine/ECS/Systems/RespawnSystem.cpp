@@ -23,7 +23,7 @@ void GameEngine::ECS::Systems::RespawnSystem::update(Registry &registry, GameEng
 		auto respawnLogic = [&position, &lastGroundedPosition, &velocity, &invulnerabilityTimer]() {
 			position = lastGroundedPosition;
 			velocity = {0.0f, 0.0f};
-			invulnerabilityTimer.timeoutNow();
+			invulnerabilityTimer.reset();
 		};
 
 		game.pushState(std::make_unique<FadeTransitionState>(respawnLogic));
