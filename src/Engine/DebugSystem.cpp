@@ -6,36 +6,28 @@ void DebugSystem::debug(const std::string &message)
 	instance().debugMessages.push_back(message);
 }
 
-void DebugSystem::addRect(const SDL_FRect &rect, const SDL_Color &color)
-{
-	instance().debugRects.push_back({rect, color});
-}
-
 void DebugSystem::clear()
 {
 	instance().debugRects.clear();
 	instance().debugMessages.clear();
 }
-
 void DebugSystem::renderGameOverlay(SDL_Renderer *renderer, const SDL_FRect &viewport)
 {
-	for (DebugSystem &sys = instance(); const auto &[rect, color] : sys.debugRects) {
-		SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
 
-		SDL_FRect drawRect = rect;
-		drawRect.x -= viewport.x;
-		drawRect.y -= viewport.y;
+	if (DebugSystem &sys = instance(); sys.render.showBoundingBoxes) {
+		for (auto [rect, color] : sys.debugRects) {
+			SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+			rect.x -= viewport.x;
+			rect.y -= viewport.y;
 
-		SDL_RenderRect(renderer, &drawRect);
+			SDL_RenderRect(renderer, &rect);
+		}
 	}
 }
 
 void DebugSystem::drawUI()
 {
 	DebugSystem &sys = instance();
-
-	if (!sys.enabled)
-		return;
 
 	if (ImGui::Begin("Debug Control Panel")) {
 
