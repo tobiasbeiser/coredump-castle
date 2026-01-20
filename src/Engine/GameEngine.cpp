@@ -9,7 +9,10 @@
 namespace GameEngine {
 
 GameEngine::GameEngine(const std::string &title, const Resolution resolution)
-    : renderer(title, resolution), textureManager(renderer), saveSystem(std::make_unique<ECS::FileSaveStorage>()) {};
+    : renderer(title, resolution), textureManager(renderer), saveSystem(std::make_unique<ECS::FileSaveStorage>())
+{
+	DebugSystem::instance().setRegistry(registry);
+};
 
 GameEngine::~GameEngine()
 {
@@ -31,41 +34,38 @@ void GameEngine::cleanup() noexcept {}
 
 void GameEngine::changeState(std::unique_ptr<GameState> state)
 {
-	// cleanup the current state
-	if (!states.empty()) {
-		states.back()->cleanup();
-		states.pop_back();
-	}
-
-	// store and init the new state
-	states.push_back(std::move(state));
-	states.back()->init(*this);
+	pendingOperations.emplace_back([this, s = std::move(state)]() mutable {
+		if (!states.empty()) {
+			states.back()->cleanup();
+			states.pop_back();
+		}
+		states.push_back(std::move(s));
+		states.back()->init(*this);
+	});
 }
 
 void GameEngine::pushState(std::unique_ptr<GameState> state)
 {
-	// pause current state
-	if (!states.empty()) {
-		states.back()->pause();
-	}
-
-	// store and init the new state
-	states.push_back(std::move(state));
-	states.back()->init(*this);
+	pendingOperations.emplace_back([this, s = std::move(state)]() mutable {
+		if (!states.empty()) {
+			states.back()->pause();
+		}
+		states.push_back(std::move(s));
+		states.back()->init(*this);
+	});
 }
 
 void GameEngine::popState()
 {
-	// cleanup the current state
-	if (!states.empty()) {
-		states.back()->cleanup();
-		states.pop_back();
-	}
-
-	// resume previous state
-	if (!states.empty()) {
-		states.back()->resume();
-	}
+	pendingOperations.emplace_back([this]() {
+		if (!states.empty()) {
+			states.back()->cleanup();
+			states.pop_back();
+		}
+		if (!states.empty()) {
+			states.back()->resume();
+		}
+	});
 }
 
 void GameEngine::handleEvents()
@@ -105,6 +105,11 @@ void GameEngine::update(const float deltaTime)
 	for (const auto &state : states) {
 		state->update(*this, deltaTime);
 	}
+
+	for (auto &operation : pendingOperations) {
+		operation();
+	}
+	pendingOperations.clear();
 }
 
 void GameEngine::render(const float alpha)

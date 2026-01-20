@@ -64,5 +64,6 @@ class GameEngine {
 	InputManager inputManager;
 	TextureManager textureManager;
 	ECS::Systems::SaveSystem saveSystem;
+	std::vector<std::move_only_function<void()>> pendingOperations;
 };
 } // namespace GameEngine

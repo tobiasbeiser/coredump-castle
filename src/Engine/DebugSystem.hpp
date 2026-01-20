@@ -1,4 +1,6 @@
 #pragma once
+#include "ECS/Registry.hpp"
+
 #include <SDL3/SDL_pixels.h>
 #include <SDL3/SDL_rect.h>
 #include <SDL3/SDL_render.h>
@@ -37,6 +39,7 @@ class DebugSystem {
 	static void drawUI();
 
 	void toggle() { enabled = !enabled; }
+	void setRegistry(GameEngine::ECS::Registry &registryPtr) { registry = &registryPtr; }
 
 	const DebugRenderOptions &getRenderOptions() const { return render; }
 	const DebugPlayerOptions &getPlayerOptions() const { return player; }
@@ -47,4 +50,5 @@ class DebugSystem {
 	std::vector<std::string> debugMessages{};
 	DebugRenderOptions render;
 	DebugPlayerOptions player;
+	GameEngine::ECS::Registry *registry = nullptr;
 };

@@ -1,4 +1,9 @@
 ﻿#include "DebugSystem.hpp"
+
+#include "ECS/Components/Gameplay/Hazard/PendingRespawnComponent.hpp"
+#include "ECS/Components/Tags/PlayerTag.hpp"
+#include "ECS/View.hpp"
+
 #include <imgui.h>
 
 void DebugSystem::debug(const std::string &message)
@@ -53,6 +58,19 @@ void DebugSystem::drawUI()
 			ImGui::Checkbox("Show State", &sys.player.showState);
 			ImGui::Checkbox("God Mode", &sys.player.godMode);
 			ImGui::Checkbox("No Clip", &sys.player.noClip);
+		}
+
+		if (sys.registry) {
+			ImGui::Separator();
+			if (ImGui::Button("Respawn")) {
+				for (auto player = sys.registry->view<PlayerTag>(); const auto entity : player) {
+					if (sys.registry->has<PendingRespawnComponent>(entity)) {
+						continue;
+					}
+					sys.registry->registerComponent<PendingRespawnComponent>(entity, {});
+				}
+			}
+			ImGui::Separator();
 		}
 
 		if (!sys.debugMessages.empty()) {

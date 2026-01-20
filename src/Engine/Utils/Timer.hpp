@@ -37,4 +37,10 @@ class Timer {
 		time = std::chrono::duration<float>::zero();
 		timeout = false;
 	}
+
+	void timeoutNow() noexcept
+	{
+		time = length;
+		timeout = true;
+	}
 };

@@ -3,6 +3,7 @@
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Hazard/LastGroundedPositionComponent.hpp"
 #include "Engine/ECS/Components/Physics/AccelerationComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
@@ -148,8 +149,19 @@ void resolveVerticalCollisions(const Entity entity, Registry &registry, const Ut
 
 			SDL_FRect sensorIntersection;
 			if (SDL_GetRectIntersectionFloat(&sensorBox, &tileBox, &sensorIntersection)) {
-				if (sensorIntersection.w > sensorIntersection.h)
+				if (sensorIntersection.w > sensorIntersection.h) {
 					grounded = true;
+
+					constexpr float overlapRatioThreshold = 0.70f;
+
+					if (const float overlapRatio = sensorIntersection.w / currentEntityCollisionBox.w;
+					    overlapRatio > overlapRatioThreshold) {
+						if (registry.has<LastGroundedPositionComponent>(entity)) {
+							auto &[lastGroundedPosition] = registry.get<LastGroundedPositionComponent>(entity);
+							lastGroundedPosition = glm::vec2(position.x, position.y);
+						}
+					}
+				}
 			}
 		}
 	});
