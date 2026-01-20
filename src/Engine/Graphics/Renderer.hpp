@@ -2,6 +2,7 @@
 #include <SDL3/SDL.h>
 #include <filesystem>
 #include <glm/vec2.hpp>
+#include <imgui.h>
 #include <memory>
 #include <optional>
 #include <string>
@@ -25,7 +26,7 @@ struct Resolution {
 
 class Renderer {
   public:
-	Renderer(const std::string &title, Resolution resolution);
+	Renderer(const std::string &title, const Resolution resolution);
 	// delete copy, move and assignments as we want only one instance of the renderer (create one at start that lives
 	// until shutdown) Cannot be copied as it manages a unique resource (the SDL_Renderer and SDL_Window)
 	Renderer(const Renderer &) = delete;
@@ -40,7 +41,7 @@ class Renderer {
 
 	void resize(Resolution newResolution);
 
-	std::unique_ptr<SDL_Texture, SDLTextureDeleter> loadTexture(const std::filesystem::path &filePath);
+	std::unique_ptr<SDL_Texture, SDLTextureDeleter> loadTexture(const std::filesystem::path &filePath) const;
 	void renderTexture(SDL_Texture &texture, const std::optional<SDL_FRect> srcRect, std::optional<SDL_FRect> dstRect,
 	                   const bool flip) const;
 	void renderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, const float scrollFactor) const;
@@ -48,6 +49,8 @@ class Renderer {
 	void renderCircularFade(float progress, SDL_FColor color = {0, 0, 0, 255});
 
   private:
+	void setupImGui() const;
+	static void startImGuiFrame();
 	Resolution currentResolution{1920, 1080};
 	Resolution logicalResolution{768, 432};
 

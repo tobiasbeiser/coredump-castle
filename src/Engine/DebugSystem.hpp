@@ -1,6 +1,7 @@
 #pragma once
 #include <SDL3/SDL_pixels.h>
 #include <SDL3/SDL_rect.h>
+#include <SDL3/SDL_render.h>
 #include <string>
 #include <vector>
 
@@ -11,7 +12,6 @@ struct DebugRenderOptions {
 
 struct DebugPlayerOptions {
 	bool showState = false;
-
 	bool godMode = false;
 	bool noClip = false;
 };
@@ -34,11 +34,9 @@ class DebugSystem {
 		return instance;
 	}
 
-	static void debug(const std::string &message) { instance().debugMessages.push_back(message); }
+	static void debug(const std::string &message);
+	static void clear();
 
-	static void clear()
-	{
-		instance().debugRects.clear();
-		instance().debugMessages.clear();
-	}
+	static void renderGameOverlay(SDL_Renderer *renderer, const SDL_FRect &viewport);
+	static void drawUI();
 };

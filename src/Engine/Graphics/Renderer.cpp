@@ -1,14 +1,15 @@
 #include "Renderer.hpp"
 #include "Engine/DebugSystem.hpp"
-#include "math.h"
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
 #include <algorithm>
 #include <cmath>
+#include <imgui_impl_sdl3.h>
+#include <imgui_impl_sdlrenderer3.h>
 #include <numbers>
 #include <stdexcept>
 
-Renderer::Renderer(const std::string &title, Resolution resolution) : currentResolution(resolution)
+Renderer::Renderer(const std::string &title, const Resolution resolution) : currentResolution(resolution)
 {
 	if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) {
 		throw std::runtime_error(SDL_GetError());
@@ -23,10 +24,9 @@ Renderer::Renderer(const std::string &title, Resolution resolution) : currentRes
 	if (!renderer)
 		throw std::runtime_error(SDL_GetError());
 
-	SDL_SetRenderLogicalPresentation(renderer.get(), logicalResolution.width, logicalResolution.height,
-	                                 SDL_LOGICAL_PRESENTATION_LETTERBOX);
-
 	SDL_SetRenderVSync(renderer.get(), 1);
+
+	setupImGui();
 }
 
 Renderer::~Renderer()
@@ -40,7 +40,7 @@ void Renderer::resize(Resolution newResolution)
 	SDL_SetWindowSize(window.get(), currentResolution.width, currentResolution.height);
 }
 
-std::unique_ptr<SDL_Texture, SDLTextureDeleter> Renderer::loadTexture(const std::filesystem::path &filePath)
+std::unique_ptr<SDL_Texture, SDLTextureDeleter> Renderer::loadTexture(const std::filesystem::path &filePath) const
 {
 	SDL_Texture *tex = IMG_LoadTexture(renderer.get(), filePath.string().c_str());
 	if (!tex) {
@@ -53,29 +53,24 @@ std::unique_ptr<SDL_Texture, SDLTextureDeleter> Renderer::loadTexture(const std:
 
 void Renderer::startFrame(const int red, const int green, const int blue, const int alpha) const
 {
+	SDL_SetRenderLogicalPresentation(renderer.get(), 0, 0, SDL_LOGICAL_PRESENTATION_DISABLED);
+	startImGuiFrame();
+	SDL_SetRenderLogicalPresentation(renderer.get(), logicalResolution.width, logicalResolution.height,
+	                                 SDL_LOGICAL_PRESENTATION_LETTERBOX);
+
 	SDL_SetRenderDrawColor(renderer.get(), red, green, blue, alpha);
 	SDL_RenderClear(renderer.get());
 }
 
 void Renderer::endFrame() const
 {
-	for (auto &debug : DebugSystem::instance().debugRects) {
-		SDL_SetRenderDrawColor(renderer.get(), debug.color.r, debug.color.g, debug.color.b, debug.color.a);
-		debug.rect.x -= viewport.x;
-		debug.rect.y -= viewport.y;
-		SDL_RenderRect(renderer.get(), &debug.rect);
-	}
+	DebugSystem::renderGameOverlay(renderer.get(), viewport);
+	DebugSystem::drawUI();
 
-	std::string debugMessage;
-	for (std::string message : DebugSystem::instance().debugMessages) {
-		debugMessage.append(message + "\n");
-	}
-	const std::uint8_t red = 255, green = 255, blue = 255, alpha = 255;
-	SDL_SetRenderDrawColor(renderer.get(), red, green, blue, alpha);
+	SDL_SetRenderLogicalPresentation(renderer.get(), 0, 0, SDL_LOGICAL_PRESENTATION_DISABLED);
 
-	const float debugTextX = 5, debugTextY = 5;
-	SDL_RenderDebugText(renderer.get(), debugTextX, debugTextY, debugMessage.c_str());
-
+	ImGui::Render();
+	ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer.get());
 	SDL_RenderPresent(renderer.get());
 }
 
@@ -100,14 +95,11 @@ void Renderer::centerCameraOn(const glm::vec2 &position, const glm::vec2 &levelP
 	} else {
 		viewport.y = std::clamp(newViewportYCoordinate, levelPos.y, levelSize.y + levelPos.y - viewport.h);
 	}
-
-	// SDL_Log("Center camera on (%f) with level of (pos,size):(%f,%f), viewport (x,y):(%f,%f)", position.x, levelPos.x,
-	// levelSize.x, viewport.x, viewport.y);
 }
 
 void Renderer::renderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, const float scrollFactor) const
 {
-	const float repetitions = 5.0f;
+	constexpr float repetitions = 5.0f;
 	dstRect.x -= viewport.x * scrollFactor + texture.w;
 	dstRect.w = static_cast<float>(texture.w) * repetitions;
 	dstRect.y -= viewport.y;
@@ -124,19 +116,19 @@ void Renderer::renderCircularFade(float progress, SDL_FColor color)
 		progress = 1.0f;
 
 	const auto [width, height] = std::make_pair(logicalResolution.width, logicalResolution.height);
-	float maxRadius = std::sqrt(width * width + height * height);
-	float radius = maxRadius * progress;
+	const float maxRadius = std::sqrt(width * width + height * height);
+	const float radius = maxRadius * progress;
 
-	const int segments = 64;
+	constexpr int segments = 64;
 	std::vector<SDL_Vertex> vertices(segments + 2);
 
 	vertices[0].position = {width / 2.0f, height / 2.0f};
 	vertices[0].color = color;
 
 	for (int i = 0; i <= segments; ++i) {
-		float angle = 2.0f * std::numbers::pi * i / segments;
-		float x = width / 2.0f + radius * cos(angle);
-		float y = height / 2.0f + radius * sin(angle);
+		const float angle = 2.0f * std::numbers::pi * i / segments;
+		const float x = width / 2.0f + radius * cos(angle);
+		const float y = height / 2.0f + radius * sin(angle);
 		vertices[i + 1].position = {x, y};
 		vertices[i + 1].color = color;
 	}
@@ -149,6 +141,26 @@ void Renderer::renderCircularFade(float progress, SDL_FColor color)
 	}
 
 	SDL_RenderGeometry(renderer.get(), nullptr, vertices.data(), vertices.size(), indices.data(), indices.size());
+}
+void Renderer::setupImGui() const
+{
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO &io = ImGui::GetIO();
+	(void)io;
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
+
+	ImGui::StyleColorsDark();
+	ImGui_ImplSDL3_InitForSDLRenderer(window.get(), renderer.get());
+	ImGui_ImplSDLRenderer3_Init(renderer.get());
+}
+
+void Renderer::startImGuiFrame()
+{
+	ImGui_ImplSDLRenderer3_NewFrame();
+	ImGui_ImplSDL3_NewFrame();
+	ImGui::NewFrame();
 }
 
 void Renderer::renderTexture(SDL_Texture &texture, const std::optional<SDL_FRect> srcRect,
