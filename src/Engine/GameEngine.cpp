@@ -84,6 +84,9 @@ void GameEngine::handleEvents()
 			break;
 
 		case SDL_EVENT_KEY_DOWN:
+			if (event.key.key == SDLK_F3) {
+				DebugSystem::instance().toggle();
+			}
 		case SDL_EVENT_KEY_UP:
 			inputManager.processEvent(&event.key);
 			break;

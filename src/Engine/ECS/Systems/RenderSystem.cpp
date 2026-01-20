@@ -96,17 +96,17 @@ void RenderSystem::update(Registry &registry, float alpha)
 		                                 .flipX = flipX,
 		                                 .colorMod = colorMod});
 
-		if (DebugSystem::instance().render.showBoundingBoxes && registry.has<CollisionComponent>(entity)) {
+		if (DebugSystem::instance().getRenderOptions().showBoundingBoxes && registry.has<CollisionComponent>(entity)) {
 			auto col = registry.get<CollisionComponent>(entity).collisionBox;
 			col.x = position.x + col.x;
 			col.y = position.y + col.y;
 
 			const SDL_Color color =
 			    registry.has<MovementComponent>(entity) ? SDL_Color{0, 0, 255, 255} : SDL_Color{255, 0, 0, 255};
-			DebugSystem::instance().debugRects.push_back({col, color});
+			DebugSystem::addRect(col, color);
 		}
 
-		if (DebugSystem::instance().render.showHitBoxes && registry.has<HitBoxComponent>(entity)
+		if (DebugSystem::instance().getRenderOptions().showHitBoxes && registry.has<HitBoxComponent>(entity)
 		    && registry.has<HurtBoxComponent>(entity)) {
 			const auto &[bodyHitbox, weaponHitBox] = registry.get<HitBoxComponent>(entity);
 			const auto &[hurtBox] = registry.get<HurtBoxComponent>(entity);
@@ -119,16 +119,16 @@ void RenderSystem::update(Registry &registry, float alpha)
 				hitBoxRect.x = position.x + hurtBox.x * scale.x + hurtBox.w * scale.x;
 			}
 			hitBoxRect.y = position.y + hurtBox.y * scale.y;
-			
+
 			if (hitBoxRect.w > 0.0f && hitBoxRect.h > 0.0f) {
 				constexpr SDL_Color hitboxColor = {0, 255, 0, 255};
-				DebugSystem::instance().debugRects.push_back({hitBoxRect, hitboxColor});
+				DebugSystem::addRect(hitBoxRect, hitboxColor);
 			}
 
 			SDL_FRect hurtBoxRect = {position.x + hurtBox.x * scale.x, position.y + hurtBox.y * scale.y,
 			                         hurtBox.w * scale.x, hurtBox.h * scale.y};
 			constexpr SDL_Color hurtBoxColor = {255, 0, 255, 255};
-			DebugSystem::instance().debugRects.push_back({hurtBoxRect, hurtBoxColor});
+			DebugSystem::addRect(hurtBoxRect, hurtBoxColor);
 		}
 	}
 
