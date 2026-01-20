@@ -1,27 +1,30 @@
 #include "LevelFactory.hpp"
-
 #include "EnemyFactory.hpp"
 #include "Engine/ECS/Components/Core/LevelComponent.hpp"
-#include "Engine/ECS/Components/Core/PortalComponent.hpp"
-#include "Engine/ECS/Components/Core/SavePointComponent.hpp"
-#include "Engine/ECS/Components/Gameplay/InteractionComponent.hpp"
-#include "Engine/ECS/Components/Gameplay/KeyComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/LockComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Render/BackgroundComponent.hpp"
-#include "Engine/ECS/Components/Render/SpriteComponent.hpp"
 #include "Engine/ECS/Components/Tags/InactiveTag.hpp"
 #include "Game/Factories/PlayerFactory.hpp"
+#include "Parsers/EnemyParser.hpp"
+#include "Parsers/KeyParser.hpp"
+#include "Parsers/PlayerParser.hpp"
 
-#include <algorithm>
-#include <cctype>
 #include <glm/vec2.hpp>
 
 LevelFactory::LevelFactory(GameEngine::ECS::Registry &registry, TextureManager &textureManager)
-    : registry(registry), textureManager(textureManager) {};
+    : registry(registry), textureManager(textureManager), tileFactory(registry, textureManager, animationFactory),
+      enemyFactory(registry, animationFactory), playerFactory(registry, textureManager, animationFactory)
+{
+	registerParsers();
+};
 
 GameEngine::ECS::Entity LevelFactory::createLevel(tson::Map &map, const glm::vec2 &pos)
 {
+	animationFactory.setMap(map);
+	tileFactory.setMap(map);
+	enemyFactory.setMap(map);
+
 	const std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now();
 
 	if (map.getStatus() != tson::ParseStatus::OK) {
@@ -73,7 +76,7 @@ void LevelFactory::loadLayer(tson::Layer &layer, int &layerIndex, const glm::vec
 		if (layer.getProperties().hasProperty("player") && layer.getProp("player")->getValue<bool>()) {
 			playerLayer = layerIndex;
 		}
-		loadObjects(layer, layerIndex, levelPos, map);
+		loadObjects(layer, layerIndex, levelPos);
 		break;
 	case tson::LayerType::Group:
 		for (auto &subLayer : layer.getLayers()) {
@@ -86,75 +89,16 @@ void LevelFactory::loadLayer(tson::Layer &layer, int &layerIndex, const glm::vec
 	layerIndex++;
 }
 
-GameEngine::ECS::Entity LevelFactory::createTile(const int layerIndex, const glm::vec2 &levelPos, tson::Tile &tile,
-                                                 const glm::vec2 position) const
-{
-	const auto tileSize = glm::vec2(tile.getTileSize().x, tile.getTileSize().y);
-	glm::ivec2 imageSize = glm::ivec2(tile.getImageSize().x, tile.getImageSize().y);
-	const glm::ivec2 offset = glm::ivec2(tile.getTileset()->getTileOffset().x, tile.getTileset()->getTileOffset().y);
-	const tson::Rect rectSrc = tile.getDrawingRect();
-
-	if (imageSize.x == 0 && imageSize.y == 0) {
-		imageSize = tileSize;
-	}
-
-	fs::path imagePath;
-	if (tile.getTileset()->getType() == tson::TilesetType::ImageTileset) {
-		imagePath = tile.getTileset()->getFullImagePath();
-	} else {
-		imagePath = basePath / tile.getImage();
-	}
-
-	const bool flipX = tile.getFlipFlags() == tson::TileFlipFlags::Horizontally;
-
-	const auto entity = registry.create();
-	registry.registerComponent(
-	    entity, SpriteComponent{.texture = &textureManager.getTexture(imagePath),
-	                            .tileSize = {static_cast<float>(imageSize.x), static_cast<float>(imageSize.y)},
-	                            .tileMapPosition = {static_cast<float>(rectSrc.x), static_cast<float>(rectSrc.y)}});
-	registry.registerComponent(entity, RenderComponent{.layer = layerIndex, .flipX = flipX});
-	auto positionComponent = PositionComponent{position};
-	positionComponent.position += offset;
-	positionComponent.position += levelPos;
-	positionComponent.previousPosition = positionComponent.position;
-	registry.registerComponent(entity, positionComponent);
-
-	if (tile.getAnimation().any()) {
-		animationFactory.loadAnimation(&tile, entity);
-	}
-
-	if (tile.getProp("collidable")) {
-		auto collisionBoxes = tile.getObjectgroup().getObjectsByType(tson::ObjectType::Rectangle);
-		if (!collisionBoxes.empty()) {
-			registry.registerComponent(entity,
-			                           CollisionComponent{static_cast<float>(collisionBoxes.at(0).getPosition().x),
-			                                              static_cast<float>(collisionBoxes.at(0).getPosition().y),
-			                                              static_cast<float>(collisionBoxes.at(0).getSize().x),
-			                                              static_cast<float>(collisionBoxes.at(0).getSize().y)});
-		} else {
-			registry.registerComponent(
-			    entity, CollisionComponent{0, 0, static_cast<float>(tileSize.x), static_cast<float>(tileSize.y)});
-		}
-	}
-
-	return entity;
-}
 void LevelFactory::loadTiles(tson::Layer &layer, const int layerIndex, const glm::vec2 &levelPos) const
 {
 	std::map<std::tuple<int, int>, tson::Tile *> tileData = layer.getTileData();
 	for (const auto &[tilePos, tile] : tileData) {
 		if (tile != nullptr) {
-			const glm::ivec2 position = glm::ivec2(std::get<0>(tilePos), std::get<1>(tilePos));
-			const glm::ivec2 tileSize = glm::ivec2(tile->getTileSize().x, tile->getTileSize().y);
-			const GameEngine::ECS::Entity entity = createTile(layerIndex, levelPos, *tile, position * tileSize);
-			if (layer.getProperties().hasProperty("lock")) {
-				const auto lock = LockComponent{layer.get<int>("lock")};
-				if (!registry.has<CollisionComponent>(entity)) {
-					registry.registerComponent(entity, CollisionComponent{0, 0, static_cast<float>(tileSize.x),
-					                                                      static_cast<float>(tileSize.y)});
-				}
-				registry.registerComponent(entity, lock);
-			}
+			const auto position = glm::ivec2(std::get<0>(tilePos), std::get<1>(tilePos));
+			const auto tileSize = glm::ivec2(tile->getTileSize().x, tile->getTileSize().y);
+			const auto worldPosition = glm::vec2(position * tileSize) + levelPos;
+			const GameEngine::ECS::Entity entity = tileFactory.createTile(*tile, worldPosition, layerIndex);
+			processLayerModifications(layer, entity, glm::vec2(tileSize));
 		}
 	}
 }
@@ -183,65 +127,39 @@ void LevelFactory::createBackground(const glm::vec2 &levelPos, const fs::path &f
 	registry.registerComponent(entity, PositionComponent{.position = levelPos});
 }
 
-void LevelFactory::loadObjects(tson::Layer &layer, const int layerIndex, const glm::vec2 &levelPos,
-                               tson::Map &map) const
+void LevelFactory::loadObjects(tson::Layer &layer, const int layerIndex, const glm::vec2 &levelPos) const
 {
-
-	for (auto &obj : layer.getObjectsByType(tson::ObjectType::Rectangle)) {
-		if (obj.getProperties().hasProperty("Portal")) {
-			loadPortals(levelPos, obj);
-		}
-	}
 	for (auto &obj : layer.getObjects()) {
-		if (obj.getName() == "Player") {
-			PlayerFactory::createPlayer(registry, textureManager, layer.getObjectsByName("Player").front(), levelPos,
-			                            map);
-		}
-		std::string name = obj.getName();
-		std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c) { return std::tolower(c); });
-		if (name.find("enemy") != std::string::npos) {
-			EnemyFactory::createEnemy(registry, textureManager, obj, levelPos, map, layerIndex);
-			continue;
-		}
-		if (const auto tileset = layer.getMap()->getTilesetByGid(obj.getGid()); tileset != nullptr) {
-			const int tilesetGid = tileset->getFirstgid();
-			if (const auto tile = tileset->getTile(obj.getGid() - tilesetGid + 1); tile != nullptr) {
-				auto position = glm::vec2(obj.getPosition().x, obj.getPosition().y - obj.getSize().y);
-				const GameEngine::ECS::Entity entity = createTile(layerIndex, levelPos, *tile, position);
-
-				if (obj.getProp("key")) {
-					const auto key = obj.get<int>("key");
-					registry.registerComponent(entity, KeyComponent{key});
-					registry.registerComponent(entity, InteractionComponent{0, 0, static_cast<float>(obj.getSize().x),
-					                                                        static_cast<float>(obj.getSize().y)});
-				}
-				if (obj.getName() == "SavePoint") {
-					registry.registerComponent(entity, SavePointComponent{});
-					registry.registerComponent(entity, InteractionComponent{0, 0, static_cast<float>(obj.getSize().x),
-					                                                        static_cast<float>(obj.getSize().y)});
-				}
+		bool parsed = false;
+		for (const auto &parser : parsers) {
+			if (parser->canParse(obj)) {
+				parser->parse(obj, levelPos, layerIndex);
+				parsed = true;
+				break;
 			}
+		}
+		if (!parsed) {
+			tileFactory.createFromObject(obj, levelPos, layerIndex);
 		}
 	}
 }
-
-void LevelFactory::loadPortals(const glm::vec2 &levelPos, tson::Object &obj) const
+void LevelFactory::registerParsers()
 {
-	const auto portalProp = obj.getProp("Portal");
-	auto portalClass = std::any_cast<tson::TiledClass>(portalProp->getValue());
-	auto portalId = portalClass.get<std::string>("portalId");
-	const auto targetLevel = portalClass.get<std::string>("targetLevel");
-	const auto targetPortalId = portalClass.get<std::string>("targetPortalId");
+	parsers.push_back(std::make_unique<PlayerParser>(playerFactory));
+	parsers.push_back(std::make_unique<EnemyParser>(enemyFactory));
+	parsers.push_back(std::make_unique<SavePointParser>(registry, tileFactory));
+	parsers.push_back(std::make_unique<KeyParser>(registry, tileFactory));
+}
 
-	const auto entity = registry.create();
-	auto positionComponent = PositionComponent{
-	    .position = {static_cast<float>(obj.getPosition().x), static_cast<float>(obj.getPosition().y)}};
-	positionComponent.position += levelPos;
-	registry.registerComponent(entity, positionComponent);
-	registry.registerComponent(
-	    entity,
-	    InteractionComponent{.interactionBox{
-	        .x = 0, .y = 0, .w = static_cast<float>(obj.getSize().x), .h = static_cast<float>(obj.getSize().y)}});
-	registry.registerComponent(
-	    entity, PortalComponent{.portalId = portalId, .targetLevel = targetLevel, .targetPortalId = targetPortalId});
+void LevelFactory::processLayerModifications(tson::Layer &layer, GameEngine::ECS::Entity entity,
+                                             const glm::vec2 &tileSize) const
+{
+	if (layer.getProperties().hasProperty("lock")) {
+		const auto lock = LockComponent{layer.get<int>("lock")};
+		if (!registry.has<CollisionComponent>(entity)) {
+			registry.registerComponent(
+			    entity, CollisionComponent{0, 0, static_cast<float>(tileSize.x), static_cast<float>(tileSize.y)});
+		}
+		registry.registerComponent(entity, lock);
+	}
 }
