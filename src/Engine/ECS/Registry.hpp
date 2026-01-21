@@ -1,7 +1,7 @@
 #pragma once
 #include "ComponentStorage.hpp"
+#include "Entity.hpp"
 #include "IStorage.hpp"
-#include "TypedStorage.hpp"
 #include <memory>
 #include <ranges>
 #include <typeindex>
@@ -12,57 +12,64 @@ template <typename... Components>
 class View;
 
 class Registry {
-	std::unordered_map<std::type_index, std::unique_ptr<IStorage>> storagePools;
+	std::vector<std::unique_ptr<IStorage>> storagePools;
 
   public:
 	template <typename T>
 	ComponentStorage<T> &getStorage()
 	{
-		static const std::type_index id = std::type_index(typeid(T)); // cached once
-		auto it = storagePools.find(id);
-		if (it == storagePools.end()) {
-			it = storagePools.emplace(id, std::make_unique<TypedStorage<T>>()).first;
+		const size_t id = ComponentId<T>::value;
+
+		if (id >= storagePools.size()) {
+			storagePools.resize(id + 1);
 		}
-		return static_cast<TypedStorage<T> *>(it->second.get())->storage;
+
+		if (!storagePools[id]) {
+			storagePools[id] = std::make_unique<ComponentStorage<T>>();
+		}
+
+		return *static_cast<ComponentStorage<T> *>(storagePools[id].get());
 	}
 
 	void deleteEntity(const Entity entity) const
 	{
-		for (const auto &storagePool : storagePools | std::views::values) {
-			storagePool->removeComponent(entity);
+		for (const auto &storagePool : storagePools) {
+			if (storagePool) {
+				storagePool->remove(entity);
+			}
 		}
 	}
 
 	void clearAll() { storagePools.clear(); }
 
-	int size() const { return next; }
+	[[nodiscard]] int size() const { return next; }
 
 	Entity create() { return next++; }
 
 	template <typename T>
 	void registerComponent(Entity entity, T component)
 	{
-		getStorage<T>().addComponent(entity, std::move(component));
+		getStorage<T>().insert(entity, std::move(component));
 	}
 
 	template <typename T>
 	bool has(Entity entity)
 	{
-		if (!storagePools.contains(std::type_index(typeid(T))))
+		if (const size_t id = ComponentId<T>::value; id >= storagePools.size() || !storagePools[id])
 			return false;
-		return getStorage<T>().containsComponent(entity);
+		return getStorage<T>().contains(entity);
 	}
 
 	template <typename T>
 	void remove(Entity entity)
 	{
-		getStorage<T>().removeComponent(entity);
+		getStorage<T>().remove(entity);
 	}
 
 	template <typename T>
 	T &get(Entity entity)
 	{
-		return getStorage<T>().getComponent(entity);
+		return getStorage<T>().get(entity);
 	}
 
 	template <typename... Components>
@@ -73,5 +80,14 @@ class Registry {
 
   private:
 	Entity next = 0;
+
+	struct ComponentCounter {
+		static inline std::atomic<size_t> counter = 0;
+	};
+
+	template <typename T>
+	struct ComponentId {
+		static inline const size_t value = ComponentCounter::counter++;
+	};
 };
 } // namespace GameEngine::ECS

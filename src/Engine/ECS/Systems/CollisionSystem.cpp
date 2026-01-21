@@ -84,7 +84,7 @@ Utils::SpatialHash buildStaticColliderGrid(Registry &registry)
 {
 	Utils::SpatialHash grid;
 
-	for (auto staticView = registry.view<PositionComponent, CollisionComponent>()
+	for (auto staticView = registry.view<CollisionComponent, PositionComponent>()
 	                           .exclude<InactiveTag>()
 	                           .exclude<PlayerTag>()
 	                           .exclude<EnemyTag>();
@@ -109,7 +109,6 @@ Utils::SpatialHash buildStaticColliderGrid(Registry &registry)
 
 void resolveHorizontalCollisions(const Entity entity, Registry &registry, const Utils::SpatialHash &grid)
 {
-	PROFILE_SCOPE("CollisionSystem::resolveHorizontalCollisions");
 	auto &[position, previousPosition] = registry.get<PositionComponent>(entity);
 	auto &[velocity] = registry.get<VelocityComponent>(entity);
 	auto &[acceleration] = registry.get<AccelerationComponent>(entity);
@@ -126,7 +125,6 @@ void resolveHorizontalCollisions(const Entity entity, Registry &registry, const 
 
 void resolveVerticalCollisions(const Entity entity, Registry &registry, const Utils::SpatialHash &grid)
 {
-	PROFILE_SCOPE("CollisionSystem::resolveVerticalCollisions");
 	auto &[position, previousPosition] = registry.get<PositionComponent>(entity);
 	auto &[velocity] = registry.get<VelocityComponent>(entity);
 	auto &[acceleration] = registry.get<AccelerationComponent>(entity);

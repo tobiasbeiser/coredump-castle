@@ -9,7 +9,10 @@
 namespace GameEngine {
 
 GameEngine::GameEngine(const std::string &title, const Resolution resolution)
-    : renderer(title, resolution), textureManager(renderer), saveSystem(std::make_unique<ECS::FileSaveStorage>()) {};
+    : renderer(title, resolution), textureManager(renderer), saveSystem(std::make_unique<ECS::FileSaveStorage>())
+{
+	DebugSystem::instance().setRegistry(registry);
+};
 
 GameEngine::~GameEngine()
 {

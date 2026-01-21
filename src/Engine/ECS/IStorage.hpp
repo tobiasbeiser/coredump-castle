@@ -1,4 +1,5 @@
 #pragma once
+#include "Engine/ECS/Entity.hpp"
 
 namespace GameEngine::ECS {
 class IStorage {
@@ -9,7 +10,7 @@ class IStorage {
 	IStorage &operator=(const IStorage &&) = delete;
 	virtual ~IStorage() = default;
 
-	virtual void removeComponent(Entity entity) = 0;
+	virtual void remove(Entity entity) = 0;
 
   protected:
 	IStorage() = default;

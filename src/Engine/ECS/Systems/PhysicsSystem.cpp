@@ -29,7 +29,7 @@ void update(Registry &registry, const float timeStep)
 		velocity += glm::vec2(0, gravity) * timeStep;
 	}
 
-	for (auto view = registry.view<PositionComponent, VelocityComponent, AccelerationComponent, MovementComponent>()
+	for (auto view = registry.view<MovementComponent, PositionComponent, VelocityComponent, AccelerationComponent>()
 	                     .exclude<InactiveTag>();
 	     const auto entity : view) {
 		auto &[position, previousPosition] = view.get<PositionComponent>(entity);
@@ -41,7 +41,6 @@ void update(Registry &registry, const float timeStep)
 		if (std::abs(velocity.x) > maxSpeedX) {
 			velocity.x = maxSpeedX * (velocity.x > 0 ? 1 : -1);
 		}
-
 		position.x += velocity.x * timeStep;
 		if (registry.has<CollisionComponent>(entity)) {
 			CollisionSystem::resolveHorizontalCollisions(entity, registry, staticColliderGrid);

@@ -42,8 +42,8 @@ class Renderer {
 	void resize(Resolution newResolution);
 
 	std::unique_ptr<SDL_Texture, SDLTextureDeleter> loadTexture(const std::filesystem::path &filePath) const;
-	void renderTexture(SDL_Texture &texture, const std::optional<SDL_FRect> srcRect, std::optional<SDL_FRect> dstRect,
-	                   const bool flip) const;
+	void renderTexture(SDL_Texture &texture, const std::optional<SDL_FRect> &srcRect,
+	                   const std::optional<SDL_FRect> &dstRect, const bool flip) const;
 	void renderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, const float scrollFactor) const;
 
 	void renderCircularFade(float progress, SDL_FColor color = {0, 0, 0, 255});
@@ -51,6 +51,7 @@ class Renderer {
   private:
 	void setupImGui() const;
 	static void startImGuiFrame();
+	bool isInViewport(const SDL_FRect &rect) const;
 	Resolution currentResolution{1920, 1080};
 	Resolution logicalResolution{768, 432};
 

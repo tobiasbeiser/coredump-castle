@@ -1,19 +1,24 @@
 #pragma once
 #include "Entity.hpp"
+#include "IStorage.hpp"
 #include <unordered_map>
 
 namespace GameEngine::ECS {
+
 template <typename T>
-class ComponentStorage {
+class ComponentStorage final : public IStorage {
   public:
 	std::unordered_map<Entity, T> components;
 
-	void addComponent(Entity entity, const T &component) { components[entity] = component; }
+	void remove(Entity entity) override { components.erase(entity); }
 
-	void removeComponent(Entity entity) { components.erase(entity); }
+	void insert(Entity entity, T component) { components.insert_or_assign(entity, std::move(component)); }
 
-	bool containsComponent(Entity entity) const { return components.contains(entity); }
+	[[nodiscard]] bool contains(Entity entity) const { return components.contains(entity); }
 
-	T &getComponent(Entity entity) { return components[entity]; }
+	T &get(Entity entity)
+	{
+		return components.at(entity); // .at() throws if missing, [] creates if missing
+	}
 };
 } // namespace GameEngine::ECS
