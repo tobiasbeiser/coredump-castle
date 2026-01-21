@@ -27,8 +27,6 @@ enum class AnimationType {
 
 class AnimationComponent {
   public:
-	AnimationComponent() noexcept(false) = default;
-
 	void addAnimation(const AnimationType &type, const std::vector<AnimationFrame> &animationFrames,
 	                  const std::chrono::duration<float> duration)
 	{
