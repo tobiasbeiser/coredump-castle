@@ -1,15 +1,16 @@
 #include "MainMenuState.hpp"
+
+#include "GameLoadingState.hpp"
 #include "Engine/GameEngine.hpp"
 
+#include "PlayState.hpp"
 #include "Engine/Graphics/Gui/CoredumpContext.hpp"
 #include "Engine/Graphics/Gui/UiViewFactory.hpp"
-#include "PlayState.hpp"
 
 namespace GameEngine {
 
 void MainMenuState::init(GameEngine &game)
 {
-	// TODO: add debug skip to init game
 	if (DebugSystem::instance().getSkipMenuOptions().skipMainMenu) {
 		game.pushState(std::make_unique<PlayState>(game.getInputManager(), game.getTextureManager(), game.getRenderer(),
 		                                           game.getEffectFactory()));
@@ -52,48 +53,24 @@ void MainMenuState::setupUI(GameEngine &game)
 
 	MainMenuActions actions;
 
-	actions.onStartNewGame = [&game]() {
-		game.pushState(std::make_unique<PlayState>(game.getInputManager(), game.getTextureManager(), game.getRenderer(),
-		                                           game.getEffectFactory()));
+	actions.onStartNewGame = [&game]()
+	{
+		transitionToPlayState(game);
 	};
 
 	if (!game.getSaveSystem().getSaves().empty()) {
 		actions.onShowContinue = [this, &game]() {
-			ContinueMenuActions contActions;
-
-			contActions.onContinue = [&game](const std::string_view saveName) {
-				game.getSaveSystem().setCurrentSaveName(saveName);
-				game.pushState(std::make_unique<PlayState>(game.getInputManager(), game.getTextureManager(),
-				                                           game.getRenderer(), game.getEffectFactory()));
-			};
-
-			contActions.onBack = [this, &game]() { setupUI(game); }; // Recursive call to rebuild MainMenu
-
-			const auto gameSaves = game.getSaveSystem().getSaves();
-			auto continueView = UiViewFactory::createContinueMenu(*context, contActions, gameSaves);
-			guiManager->setRoot(std::move(continueView));
-
-			const auto [width, height] = renderer.getLogicalResolution();
-			guiManager->updateLayout(*context, width, height);
+			showContinueMenu(game);
 		};
 	}
 
 	// switch the UI, but remain in MainMenuState
 	actions.onShowOptions = [this, &game]() {
-		OptionsMenuActions optActions;
-		optActions.onBack = [this, &game]() { setupUI(game); }; // Recursive call to rebuild MainMenu
-		// TODO: add hint at bottom of the screen, that saves have been deleted
-		// TODO: disable delete button if there are no saves
-		optActions.onDelete = [&game] { game.getSaveSystem().deleteAllSaves(); };
-
-		auto optionsView = UiViewFactory::createOptionsMenu(*context, optActions);
-		guiManager->setRoot(std::move(optionsView));
-		const auto [width, height] = renderer.getLogicalResolution();
-		guiManager->updateLayout(*context, width, height);
+		showOptionsMenu(game);
 	};
 
 	actions.onQuit = []() {
-		SDL_Event quit = {SDL_EVENT_QUIT};
+		SDL_Event quit = { SDL_EVENT_QUIT };
 		SDL_PushEvent(&quit);
 	};
 
@@ -102,6 +79,48 @@ void MainMenuState::setupUI(GameEngine &game)
 	this->guiManager->setRoot(std::move(mainView));
 
 	Resolution resolution = renderer.getLogicalResolution();
-	guiManager->updateLayout(*context, resolution.width, resolution.height);
+	guiManager->updateLayout(*context, resolution.width , resolution.height);
 }
+
+void MainMenuState::showContinueMenu(GameEngine &game)
+{
+	ContinueMenuActions contActions;
+
+	contActions.onContinue = [&game](const std::string_view saveName) {
+		game.getSaveSystem().setCurrentSaveName(saveName);
+		transitionToPlayState(game);
+	};
+
+	contActions.onBack = [this, &game]() { setupUI(game); }; // Recursive call to rebuild MainMenu
+
+	const auto gameSaves = game.getSaveSystem().getSaves();
+	auto continueView = UiViewFactory::createContinueMenu(*context, contActions, gameSaves);
+	guiManager->setRoot(std::move(continueView));
+
+	const auto [width, height] = renderer.getLogicalResolution();
+	guiManager->updateLayout(*context, width, height);
+}
+
+void MainMenuState::showOptionsMenu(GameEngine &game)
+{
+	OptionsMenuActions optActions;
+	optActions.onBack = [this, &game]() { setupUI(game); }; // Recursive call to rebuild MainMenu
+	// TODO: add hint at bottom of the screen, that saves have been deleted
+	// TODO: disable delete button if there are no saves
+	optActions.onDelete = [&game] { game.getSaveSystem().deleteAllSaves(); };
+
+	auto optionsView = UiViewFactory::createOptionsMenu(*context, optActions);
+	guiManager->setRoot(std::move(optionsView));
+	const auto [width, height] = renderer.getLogicalResolution();
+	guiManager->updateLayout(*context, width, height);
+}
+
+void MainMenuState::transitionToPlayState(GameEngine &game)
+{
+	auto playStateFactory = [&game]() {
+		return std::make_unique<PlayState>(game.getInputManager(), game.getTextureManager(), game.getRenderer(), game.getEffectFactory());
+	};
+	game.changeState(std::make_unique<GameLoadingState>(std::move(playStateFactory)));
+}
+
 } // namespace GameEngine

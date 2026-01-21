@@ -25,6 +25,9 @@ class MainMenuState final : public GameState {
 
 private:
 	void setupUI(GameEngine& game);
+	void showContinueMenu(GameEngine& game);
+	void showOptionsMenu(GameEngine& game);
+	static void transitionToPlayState(GameEngine& game);
 	std::unique_ptr<Ui::GuiManager> guiManager;
 	std::unique_ptr<Ui::UIContext> context;
 	InputManager &inputManager;
