@@ -38,7 +38,6 @@ void RenderSystem::update(Registry &registry, float alpha)
 	auto view = registry.view<RenderComponent, PositionComponent, SpriteComponent>().exclude<InactiveTag>();
 
 	if (const int requiredCapacity = bgView.size() + view.size(); requiredCapacity > renderItemsCapacity) {
-		SDL_Log("Resizing render items");
 		renderItemsCapacity = static_cast<int>(requiredCapacity * 1.5f);
 		renderItems.reserve(renderItemsCapacity);
 	}

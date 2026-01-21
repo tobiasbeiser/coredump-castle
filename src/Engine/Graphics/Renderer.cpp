@@ -170,7 +170,7 @@ bool Renderer::isInViewport(const SDL_FRect &rect) const
 void Renderer::renderTexture(SDL_Texture &texture, const std::optional<SDL_FRect> &srcRect,
                              const std::optional<SDL_FRect> &dstRect, const bool flip) const
 {
-	if (!dstRect || !isInViewport(dstRect.value()))
+	if (dstRect && !isInViewport(dstRect.value()))
 		return;
 
 	const SDL_FRect *srcPtr = srcRect ? &srcRect.value() : nullptr;
@@ -178,10 +178,12 @@ void Renderer::renderTexture(SDL_Texture &texture, const std::optional<SDL_FRect
 
 	const SDL_FRect *dstPtr = nullptr;
 
-	localDst = dstRect.value();
-	localDst.x -= viewport.x;
-	localDst.y -= viewport.y;
-	dstPtr = &localDst;
+	if (dstRect) {
+		localDst = dstRect.value();
+		localDst.x -= viewport.x;
+		localDst.y -= viewport.y;
+		dstPtr = &localDst;
+	}
 
 	const SDL_FlipMode flipMode = flip ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
 	SDL_RenderTextureRotated(renderer.get(), &texture, srcPtr, dstPtr, 0, nullptr, flipMode);
