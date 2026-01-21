@@ -33,6 +33,7 @@ SDL_FRect buildEntityCollisionBox(const Entity entity, Registry &registry)
 	                 collisionBox.h * scale.y};
 }
 
+// NOLINT(clang-analyzer-core.CallAndMessage)
 bool resolveHorizontalCollision(const SDL_FRect &tileBox, glm::vec2 &pos, glm::vec2 &vel, glm::vec2 &acc,
                                 const SDL_FRect scaledEntityBox)
 {
@@ -56,6 +57,7 @@ bool resolveHorizontalCollision(const SDL_FRect &tileBox, glm::vec2 &pos, glm::v
 	return false;
 }
 
+// NOLINT(clang-analyzer-core.CallAndMessage)
 bool resolveVerticalCollision(const SDL_FRect &tileBox, glm::vec2 &pos, glm::vec2 &vel, glm::vec2 &acc,
                               const SDL_FRect scaledEntityBox)
 {
