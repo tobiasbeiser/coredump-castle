@@ -27,6 +27,8 @@ enum class AnimationType {
 
 class AnimationComponent {
   public:
+	AnimationComponent() noexcept(false) = default;
+
 	void addAnimation(const AnimationType &type, const std::vector<AnimationFrame> &animationFrames,
 	                  const std::chrono::duration<float> duration)
 	{
@@ -64,7 +66,10 @@ class AnimationComponent {
 		return animations.at(type).completed();
 	}
 
-	void stepAnimation(const AnimationType &type, const std::chrono::duration<float> deltaTime) { animations.at(type).step(deltaTime); }
+	void stepAnimation(const AnimationType &type, const std::chrono::duration<float> deltaTime)
+	{
+		animations.at(type).step(deltaTime);
+	}
 
 	std::chrono::duration<float> getAnimationDuration(const AnimationType &type) const
 	{
