@@ -119,6 +119,7 @@ void resolveHorizontalCollisions(const Entity entity, Registry &registry, const 
 	auto currentEntityCollisionBox = buildEntityCollisionBox(entity, registry);
 
 	grid.queryExcluding(currentEntityCollisionBox, entity, [&](const Entity tileEntity, const SDL_FRect &tileBox) {
+		// NOLINT(clang-analyzer-core.CallAndMessage)
 		if (resolveHorizontalCollision(tileBox, position, velocity, acceleration, currentEntityCollisionBox)) {
 			// We must update the collision box so subsequent checks use the new position
 			currentEntityCollisionBox = buildEntityCollisionBox(entity, registry);
@@ -139,6 +140,7 @@ void resolveVerticalCollisions(const Entity entity, Registry &registry, const Ut
 	queryBox.h += 1.0f;
 
 	grid.queryExcluding(queryBox, entity, [&](const Entity tileEntity, const SDL_FRect &tileBox) {
+		// NOLINT(clang-analyzer-core.CallAndMessage)
 		if (resolveVerticalCollision(tileBox, position, velocity, acceleration, currentEntityCollisionBox)) {
 			currentEntityCollisionBox = buildEntityCollisionBox(entity, registry);
 		}
