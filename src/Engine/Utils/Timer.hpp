@@ -42,4 +42,10 @@ class Timer {
 		timeout = false;
 		started = false;
 	}
+
+	void timeoutNow() noexcept
+	{
+		time = length;
+		timeout = true;
+	}
 };

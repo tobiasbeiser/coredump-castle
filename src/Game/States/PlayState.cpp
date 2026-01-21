@@ -5,11 +5,13 @@
 #include "Engine/ECS/Systems/Combat/HitDetectionSystem.hpp"
 #include "Engine/ECS/Systems/Enemy/ChaseSystem.hpp"
 #include "Engine/ECS/Systems/Enemy/PatrolSystem.hpp"
+#include "Engine/ECS/Systems/Hazard/SpikeSystem.hpp"
 #include "Engine/ECS/Systems/InteractionSystem.hpp"
 #include "Engine/ECS/Systems/JumpSystem.hpp"
 #include "Engine/ECS/Systems/MovementSystem.hpp"
 #include "Engine/ECS/Systems/PhysicsSystem.hpp"
 #include "Engine/ECS/Systems/RenderSystem.hpp"
+#include "Engine/ECS/Systems/RespawnSystem.hpp"
 #include "Engine/ECS/Systems/StateSystem.hpp"
 #include "Engine/GameEngine.hpp"
 #include "Game/Factories/WorldFactory.hpp"
@@ -63,11 +65,14 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 		ECS::Systems::MovementSystem::update(game.getRegistry(), stepSize);
 		ECS::Systems::PhysicsSystem::update(game.getRegistry(), stepSize);
 	}
+
+	ECS::Systems::SpikeSystem::update(game.getRegistry());
 	ECS::Systems::HealthSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::StateSystem::update(game.getRegistry());
 	ECS::Systems::AnimationSystem::update(game.getRegistry(), deltaTime);
 
 	ECS::Systems::InteractionSystem::update(game, game.getRegistry());
+	ECS::Systems::RespawnSystem::update(game.getRegistry(), game, deltaTime);
 }
 
 void PlayState::render(GameEngine &game, const float alpha)

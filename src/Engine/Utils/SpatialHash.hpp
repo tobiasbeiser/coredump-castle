@@ -73,7 +73,7 @@ class SpatialHash {
 	{
 		query(queryBox, [&](const ECS::Entity entity, const SDL_FRect &box) {
 			if (entity != excludeEntity) {
-				callback(box);
+				callback(entity, box);
 			}
 		});
 	}

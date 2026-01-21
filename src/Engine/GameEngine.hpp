@@ -64,5 +64,11 @@ class GameEngine {
 	InputManager inputManager;
 	TextureManager textureManager;
 	ECS::Systems::SaveSystem saveSystem;
+	struct PendingAction {
+		enum class Type { Push, Pop, Change };
+		Type type;
+		std::optional<std::unique_ptr<GameState>> state;
+	};
+	std::vector<PendingAction> actionQueue;
 };
 } // namespace GameEngine
