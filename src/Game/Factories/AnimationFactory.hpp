@@ -22,6 +22,8 @@ class AnimationFactory {
 	AnimationFactory &operator=(AnimationFactory &&) = delete;
 	~AnimationFactory() = default;
 
+	void setMap(tson::Map &tsonMap) { map = &tsonMap; }
+
 	static AnimationType getAnimationType(const std::string &string)
 	{
 		if (string == "Idle") {
@@ -126,26 +128,26 @@ class AnimationFactory {
 		}
 	}
 
-	static void loadAnimationsFromTileset(GameEngine::ECS::Registry &registry, TextureManager &texMgr, tson::Map &map,
-	                                      tson::Object &object, const GameEngine::ECS::Entity entity)
+	void loadAnimationsFromTileset(tson::Object &object, const GameEngine::ECS::Entity entity) const
 	{
+		if (!map) {
+			throw std::runtime_error("Map is null");
+		}
 		const auto prop = object.getProp("animations");
 		if (prop == nullptr || prop->getType() != tson::Type::File) {
 			return;
 		}
 
-		const std::filesystem::path basePath = "assets/tiled/tilesets/";
 		const auto tilesetPath = basePath / prop->getValue<std::filesystem::path>();
 
 		tson::Tileset tileset;
 		tson::Json11 json;
 		json.parse(tilesetPath);
-		tileset.parse(json, &map);
+		tileset.parse(json, map);
 
-		const AnimationFactory animFactory(registry, texMgr);
 		for (auto tile : tileset.getTiles()) {
 			if (auto anim = tile.getAnimation(); anim.any()) {
-				animFactory.loadAnimation(&tile, entity);
+				loadAnimation(&tile, entity);
 			}
 		}
 	}
@@ -214,5 +216,6 @@ class AnimationFactory {
   private:
 	GameEngine::ECS::Registry &registry;
 	TextureManager &textureManager;
+	tson::Map *map = nullptr;
 	const std::filesystem::path basePath = "assets/tiled/tilesets/";
 };

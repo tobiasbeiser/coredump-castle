@@ -1,12 +1,14 @@
 #include "CollisionSystem.hpp"
-#include <vector>
 #include <algorithm>
+#include <vector>
 
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/RangedAttackComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Hazard/LastGroundedPositionComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Hazard/SpikeComponent.hpp"
 #include "Engine/ECS/Components/Physics/AccelerationComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
@@ -118,7 +120,7 @@ void resolveHorizontalCollisions(const Entity entity, Registry &registry, const 
 
 	auto currentEntityCollisionBox = buildEntityCollisionBox(entity, registry);
 
-	grid.queryExcluding(currentEntityCollisionBox, entity, [&](const SDL_FRect &tileBox) {
+	grid.queryExcluding(currentEntityCollisionBox, entity, [&](const Entity tileEntity, const SDL_FRect &tileBox) {
 		if (resolveHorizontalCollision(tileBox, position, velocity, acceleration, currentEntityCollisionBox)) {
 			// We must update the collision box so subsequent checks use the new position
 			currentEntityCollisionBox = buildEntityCollisionBox(entity, registry);
@@ -136,12 +138,10 @@ void resolveVerticalCollisions(const Entity entity, Registry &registry, const Ut
 	auto currentEntityCollisionBox = buildEntityCollisionBox(entity, registry);
 
 	SDL_FRect queryBox = currentEntityCollisionBox;
-	// Check for ground tile in the next bucket
 	queryBox.h += 1.0f;
 
-	grid.queryExcluding(queryBox, entity, [&](const SDL_FRect &tileBox) {
+	grid.queryExcluding(queryBox, entity, [&](const Entity tileEntity, const SDL_FRect &tileBox) {
 		if (resolveVerticalCollision(tileBox, position, velocity, acceleration, currentEntityCollisionBox)) {
-			// We must update the collision box so subsequent checks use the new position
 			currentEntityCollisionBox = buildEntityCollisionBox(entity, registry);
 		}
 
@@ -152,8 +152,26 @@ void resolveVerticalCollisions(const Entity entity, Registry &registry, const Ut
 
 			SDL_FRect sensorIntersection;
 			if (SDL_GetRectIntersectionFloat(&sensorBox, &tileBox, &sensorIntersection)) {
-				if (sensorIntersection.w > sensorIntersection.h)
+				if (sensorIntersection.w > sensorIntersection.h) {
 					grounded = true;
+
+					constexpr float overlapRatioThreshold = 0.7f;
+					if (const float overlapRatio = sensorIntersection.w / currentEntityCollisionBox.w;
+					    overlapRatio > overlapRatioThreshold) {
+
+						// Store grounded position as center of last secure tile
+						if (const bool isHazard = registry.has<SpikeComponent>(tileEntity);
+						    registry.has<LastGroundedPositionComponent>(entity) && !isHazard) {
+							auto &[lastGroundedPosition] = registry.get<LastGroundedPositionComponent>(entity);
+							const float offsetX = currentEntityCollisionBox.x - position.x;
+							const float offsetY = currentEntityCollisionBox.y - position.y;
+							const float tileCenterX = tileBox.x + (tileBox.w * 0.5f);
+							const float targetHitboxX = tileCenterX - (currentEntityCollisionBox.w * 0.5f);
+							const float targetHitboxY = tileBox.y - currentEntityCollisionBox.h;
+							lastGroundedPosition = glm::vec2(targetHitboxX - offsetX, targetHitboxY - offsetY);
+						}
+					}
+				}
 			}
 		}
 	});
@@ -176,7 +194,7 @@ void handleEnemyProjectileCollisions(Registry &registry, const Utils::SpatialHas
 		const auto projectileBox = buildEntityCollisionBox(projectileEntity, registry);
 		bool hit = false;
 
-		grid.queryExcluding(projectileBox, projectileEntity, [&](const SDL_FRect &tileBox) {
+		grid.queryExcluding(projectileBox, projectileEntity, [&](const Entity, const SDL_FRect &tileBox) {
 			if (SDL_HasRectIntersectionFloat(&projectileBox, &tileBox)) {
 				hit = true;
 			}
@@ -207,7 +225,7 @@ bool isPathObstructed(const glm::vec2 &start, const glm::vec2 &end, const Utils:
 	const float maxX = std::max(start.x, end.x) + projectileSize.x;
 	const float minY = std::min(start.y, end.y) - projectileSize.y;
 	const float maxY = std::max(start.y, end.y) + projectileSize.y;
-	
+
 	pathQuery.x = minX;
 	pathQuery.y = minY;
 	pathQuery.w = maxX - minX;
@@ -231,7 +249,8 @@ bool isPathObstructed(const glm::vec2 &start, const glm::vec2 &end, const Utils:
 
 	bool obstructed = false;
 	grid.query(pathQuery, [&](const Entity, const SDL_FRect &tileBox) {
-		if (obstructed) return;
+		if (obstructed)
+			return;
 
 		for (const auto &line : lines) {
 			float x1 = line.first.x, y1 = line.first.y;

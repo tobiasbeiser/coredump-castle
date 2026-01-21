@@ -35,7 +35,7 @@ TEST_F(SpatialHashTest, QueryExcludingSelf)
 	hash.insert(e2, {15, 15, 20, 20});
 
 	std::vector<SDL_FRect> results;
-	hash.queryExcluding({0, 0, 50, 50}, e1, [&](const SDL_FRect &box) { results.push_back(box); });
+	hash.queryExcluding({0, 0, 50, 50}, e1, [&](const Entity entity, const SDL_FRect &box) { results.push_back(box); });
 
 	EXPECT_EQ(results.size(), 1);
 	EXPECT_FLOAT_EQ(results[0].x, 15.0f);

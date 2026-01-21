@@ -6,10 +6,10 @@
 #include "Engine/ECS/Components/Render/AnimationComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 
+#include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HealthComponent.hpp"
 #include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
 #include "Engine/ECS/Systems/Combat/HealthSystem.hpp"
-#include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
 
 namespace GameEngine::ECS::Systems {
 class StateSystem {
@@ -71,7 +71,7 @@ class StateSystem {
 				}
 			}
 
-			if (DebugSystem::instance().player.showState) {
+			if (DebugSystem::instance().getPlayerOptions().showState) {
 				DebugSystem::debug("Entity " + std::to_string(entity) + " State: " + toString(state.state));
 			}
 		}

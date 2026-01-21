@@ -77,7 +77,7 @@ EnemyContext createEnemyContext(Registry &registry, Entity entity)
 {
 	const auto &pos = registry.get<PositionComponent>(entity);
 	const auto &hurtBox = registry.get<HurtBoxComponent>(entity).hurtBox;
-    m::vec2 scale =
+	glm::vec2 scale =
 	    registry.has<TransformComponent>(entity) ? registry.get<TransformComponent>(entity).scale : glm::vec2(1.0f);
 
 	const glm::vec2 center = {pos.position.x + (hurtBox.x * scale.x) + (hurtBox.w * scale.x) * 0.5f,
@@ -136,9 +136,10 @@ void handleRangeAttack(const EnemyContext &enemy, const PlayerContext &player, c
 		for (const auto &targetPoint : targetPoints) {
 			const bool obstructed = CollisionSystem::isPathObstructed(rayStart, targetPoint, grid, projectileSize);
 
-			if (DebugSystem::instance().render.showRayasts) {
+			if (DebugSystem::instance().getRenderOptions().showRaycasts) {
 				const SDL_Color color = obstructed ? SDL_Color{255, 0, 0, 255} : SDL_Color{0, 255, 0, 255};
-				DebugSystem::instance().debugLines.push_back({rayStart, targetPoint, color});
+				// DebugSystem::instance().debugLines.push_back({rayStart, targetPoint, color});
+				DebugSystem::addLine(rayStart, targetPoint, color);
 			}
 
 			if (!obstructed) {

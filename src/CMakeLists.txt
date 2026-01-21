@@ -10,7 +10,8 @@ target_link_libraries(GameLib PUBLIC
     SDL3::SDL3 
     $<IF:$<TARGET_EXISTS:SDL3_image::SDL3_image-shared>,SDL3_image::SDL3_image-shared,SDL3_image::SDL3_image-static>
     glm::glm 
-    nlohmann_json::nlohmann_json 
+    nlohmann_json::nlohmann_json
+    imgui::imgui
     vendor
 )
 
