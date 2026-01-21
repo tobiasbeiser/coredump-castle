@@ -10,7 +10,7 @@ namespace GameEngine {
 void MainMenuState::init(GameEngine &game)
 {
 	// TODO: add debug skip to init game
-	if (DebugSystem::instance().skipMenu.skipMainMenu) {
+	if (DebugSystem::instance().getSkipMenuOptions().skipMainMenu) {
 		game.pushState(std::make_unique<PlayState>(game.getInputManager(), game.getTextureManager(), game.getRenderer()));
 	}
 	context = CoredumpContext::getContext(game);

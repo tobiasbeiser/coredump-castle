@@ -57,11 +57,11 @@ class Renderer {
 	void centerCameraOn(const glm::vec2 &position, const glm::vec2 &levelPos, const glm::vec2 &levelSize);
 
 	void resize(Resolution newResolution);
-	[[nodiscard]] Resolution getLogicalResolution() const { return logicalResolution; } // TODO: move implementation to cpp
+	[[nodiscard]] Resolution getLogicalResolution() const;
 	[[nodiscard]] glm::vec2 windowToLogical(float windowX, float windowY) const;
 
-	[[nodiscard]] SDL_Renderer* getNativeRenderer() const { return renderer.get(); }
-	[[nodiscard]] TTF_TextEngine* getTextEngine() const { return textEngine.get(); }
+	[[nodiscard]] SDL_Renderer* getNativeRenderer() const;
+	[[nodiscard]] TTF_TextEngine* getTextEngine() const;
 
 	[[nodiscard]] std::unique_ptr<SDL_Texture, SDLTextureDeleter> loadTexture(const std::filesystem::path &filePath) const;
 	static std::unique_ptr<TTF_Font, TTFFontCloser> loadFont(const std::filesystem::path &filePath, int fontSize);

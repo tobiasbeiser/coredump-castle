@@ -14,7 +14,7 @@ void GameEngine::FadeTransitionState::pause() {}
 
 void GameEngine::FadeTransitionState::resume() {}
 
-void GameEngine::FadeTransitionState::handleEvents(GameEngine &game) {}
+void GameEngine::FadeTransitionState::handleEvents(GameEngine &game, const SDL_Event& event) {}
 
 void GameEngine::FadeTransitionState::update(GameEngine &game, const float deltaTime)
 {

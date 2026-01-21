@@ -48,6 +48,32 @@ void Renderer::resize(const Resolution newResolution)
 	currentResolution = newResolution;
 }
 
+Resolution Renderer::getLogicalResolution() const
+{
+	return logicalResolution;
+}
+
+glm::vec2 Renderer::windowToLogical(const float windowX, const float windowY) const
+{
+	float logicalX = 0.0f;
+	float logicalY = 0.0f;
+
+	// SDL3 Helper: Converts window (mouse) coordinates to logical space
+	SDL_RenderCoordinatesFromWindow(renderer.get(), windowX, windowY, &logicalX, &logicalY);
+
+	return glm::vec2{logicalX, logicalY};
+}
+
+SDL_Renderer* Renderer::getNativeRenderer() const
+{
+	return renderer.get();
+}
+
+TTF_TextEngine* Renderer::getTextEngine() const
+{
+	return textEngine.get();
+}
+
 std::unique_ptr<SDL_Texture, SDLTextureDeleter> Renderer::loadTexture(const std::filesystem::path &filePath) const
 {
 	SDL_Texture *tex = IMG_LoadTexture(renderer.get(), filePath.string().c_str());
@@ -77,7 +103,6 @@ std::unique_ptr<TTF_Text, TTFTextDestroyer> Renderer::createText(TTF_Font *font,
 
 void Renderer::startFrame(const int red, const int green, const int blue, const int alpha) const
 {
-	// TODO: is this expensive to do every frame? necessary evil?
 	SDL_SetRenderLogicalPresentation(renderer.get(), 0, 0, SDL_LOGICAL_PRESENTATION_DISABLED);
 	startImGuiFrame();
 	SDL_SetRenderLogicalPresentation(renderer.get(), logicalResolution.width, logicalResolution.height,
@@ -96,6 +121,9 @@ void Renderer::endFrame() const
 
 	ImGui::Render();
 	ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer.get());
+
+	SDL_SetRenderLogicalPresentation(renderer.get(), logicalResolution.width, logicalResolution.height,
+									 SDL_LOGICAL_PRESENTATION_LETTERBOX);
 	SDL_RenderPresent(renderer.get());
 }
 
@@ -220,15 +248,4 @@ void Renderer::drawRectShape(const SDL_FRect rect, const SDL_Color fillColor, co
 void Renderer::drawText(TTF_Text* textObject, const float x, const float y) const
 {
 	TTF_DrawRendererText(textObject, x, y);
-}
-
-glm::vec2 Renderer::windowToLogical(const float windowX, const float windowY) const
-{
-	float logicalX = 0.0f;
-	float logicalY = 0.0f;
-
-	// SDL3 Helper: Converts window (mouse) coordinates to logical space
-	SDL_RenderCoordinatesFromWindow(renderer.get(), windowX, windowY, &logicalX, &logicalY);
-
-	return glm::vec2{logicalX, logicalY};
 }

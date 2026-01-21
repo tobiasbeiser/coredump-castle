@@ -62,7 +62,6 @@ void GameEngine::handleEvents()
 
 		case SDL_EVENT_WINDOW_RESIZED:
 			renderer.resize({.width = event.window.data1, .height = event.window.data2});
-			this->render(1.0f); //TODO: investigate
 			break;
 
 		case SDL_EVENT_KEY_DOWN:
@@ -70,15 +69,15 @@ void GameEngine::handleEvents()
 				DebugSystem::instance().toggle();
 			}
 		case SDL_EVENT_KEY_UP:
-			inputManager.processEvent(&event.key); //TODO: check if redundant
+			inputManager.processEvent(&event.key);
 			break;
 		default:
+			if (!states.empty())
+				states.back()->handleEvents(*this, event);
 			break;
 		};
 	}
 
-	if (!states.empty())
-		states.back()->handleEvents(*this, event);
 }
 
 void GameEngine::update(const float deltaTime)

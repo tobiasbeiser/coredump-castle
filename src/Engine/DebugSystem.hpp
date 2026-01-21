@@ -47,6 +47,7 @@ class DebugSystem {
 
 	const DebugRenderOptions &getRenderOptions() const { return render; }
 	const DebugPlayerOptions &getPlayerOptions() const { return player; }
+	const DebugSkipMenuOptions &getSkipMenuOptions() const { return skipMenu; }
 
   private:
 	bool enabled = false;
