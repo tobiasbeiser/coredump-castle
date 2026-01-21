@@ -45,7 +45,7 @@ class PlayerFactory {
 		const tson::Vector2 pos = player.getPosition();
 		const glm::vec2 spawn = glm::vec2(pos.x, pos.y) + levelPos;
 
-		constexpr SDL_FRect collisionBox = {19, 25, 21, 32};
+		SDL_FRect collisionBox = {18, 25, 15, 32};
 
 		registry.registerComponent(e, PositionComponent{.position = spawn});
 		registry.registerComponent(e, LastGroundedPositionComponent{.position = spawn});
@@ -78,12 +78,12 @@ class PlayerFactory {
 
 		registry.registerComponent(e, InputComponent{});
 		registry.registerComponent(e, MovementComponent{});
-		registry.registerComponent(e, JumpComponent{.maxJumps = 2, .coyoteTimer = Timer{0.08s}});
+		registry.registerComponent(e, JumpComponent{.maxJumps = 5, .coyoteTimer = Timer{0.08s}});
 		registry.registerComponent(e, BlinkComponent{});
 
 		registry.registerComponent(e, InteractionComponent{19, 25, 21, 32});
 		registry.registerComponent(e, HurtBoxComponent{19, 25, 21, 32});
-		registry.registerComponent(e, HitBoxComponent{.weaponHitBox = {0, 0, 21, 32}});
+		registry.registerComponent(e, HitBoxComponent{.weaponHitBox = {0, -5, 35, 45}});
 		registry.registerComponent(e, HealthComponent{100, 300, 0.6s});
 
 		return e;

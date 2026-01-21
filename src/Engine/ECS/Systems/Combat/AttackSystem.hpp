@@ -3,10 +3,12 @@
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
+#include "Game/Factories/EffectFactory.hpp"
 
 namespace GameEngine::ECS::Systems {
-struct AttackSystem {
-	static void update(Registry &registry, const float deltaTime)
+class AttackSystem {
+  public:
+	static void update(Registry &registry, const EffectFactory &effectFactory, const float deltaTime)
 	{
 		for (auto view = registry.view<AttackComponent, InputComponent>(); const auto entity : view) {
 			auto &attack = registry.get<AttackComponent>(entity);
@@ -16,6 +18,7 @@ struct AttackSystem {
 
 			if (input.attackPressed && !isAttacking(attack) && isCoolDown(attack)) {
 				startAttack(attack, deltaTime);
+				effectFactory.createAttackEffect(entity);
 			} else if (isAttacking(attack)) {
 				processAttack(attack, deltaTime);
 

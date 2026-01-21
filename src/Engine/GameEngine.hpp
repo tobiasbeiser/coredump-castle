@@ -1,6 +1,7 @@
 #pragma once
 #include "ECS/Registry.hpp"
 #include "ECS/Systems/SaveSystem.hpp"
+#include "Game/Factories/EffectFactory.hpp"
 #include "Graphics/Renderer.hpp"
 #include "Graphics/TextureManager.hpp"
 #include "Input/InputManager.hpp"
@@ -70,5 +71,6 @@ class GameEngine {
 		std::optional<std::unique_ptr<GameState>> state;
 	};
 	std::vector<PendingAction> actionQueue;
+	EffectFactory effectFactory{registry, textureManager};
 };
 } // namespace GameEngine

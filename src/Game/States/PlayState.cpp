@@ -3,6 +3,7 @@
 #include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
 #include "Engine/ECS/Systems/Combat/HealthSystem.hpp"
 #include "Engine/ECS/Systems/Combat/HitDetectionSystem.hpp"
+#include "Engine/ECS/Systems/EffectSystem.hpp"
 #include "Engine/ECS/Systems/Enemy/ChaseSystem.hpp"
 #include "Engine/ECS/Systems/Enemy/PatrolSystem.hpp"
 #include "Engine/ECS/Systems/Hazard/SpikeSystem.hpp"
@@ -58,7 +59,7 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 
 	ECS::Systems::JumpSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::MovementSystem::update(game.getRegistry(), deltaTime);
-	ECS::Systems::AttackSystem::update(game.getRegistry(), deltaTime);
+	ECS::Systems::AttackSystem::update(game.getRegistry(), effectFactory, deltaTime);
 
 	accumulator += deltaTime;
 	while (accumulator >= stepSize) {
@@ -70,6 +71,7 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 	ECS::Systems::HealthSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::StateSystem::update(game.getRegistry());
 	ECS::Systems::AnimationSystem::update(game.getRegistry(), deltaTime);
+	ECS::Systems::EffectSystem::update(game.getRegistry(), deltaTime);
 
 	ECS::Systems::InteractionSystem::update(game, game.getRegistry());
 	ECS::Systems::RespawnSystem::update(game.getRegistry(), game, deltaTime);

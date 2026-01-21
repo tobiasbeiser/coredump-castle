@@ -47,27 +47,27 @@
         {
          "animation":[
                 {
-                 "duration":50,
+                 "duration":25,
                  "tileid":8
                 }, 
                 {
-                 "duration":50,
+                 "duration":25,
                  "tileid":9
                 }, 
                 {
-                 "duration":50,
+                 "duration":25,
                  "tileid":10
                 }, 
                 {
-                 "duration":50,
+                 "duration":25,
                  "tileid":11
                 }, 
                 {
-                 "duration":50,
+                 "duration":25,
                  "tileid":12
                 }, 
                 {
-                 "duration":50,
+                 "duration":25,
                  "tileid":13
                 }],
          "id":8,

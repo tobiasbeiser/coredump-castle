@@ -4,3 +4,4 @@ build
 *.tiled-session
 /vcpkg_installed
 /.vscode
+/imgui.ini

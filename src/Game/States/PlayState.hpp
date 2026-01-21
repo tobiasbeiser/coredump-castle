@@ -4,13 +4,14 @@
 #include "Engine/ECS/Systems/RenderSystem.hpp"
 #include "Engine/GameState.hpp"
 #include "Engine/Utils/LevelHistory.hpp"
+#include "Game/Factories/EffectFactory.hpp"
 namespace GameEngine {
 
 class PlayState final : public GameState {
 	// Inherited via GameState
   public:
-	PlayState(InputManager &input, TextureManager &textureManager, Renderer &renderer)
-	    : inputManager(input), textureManager(textureManager), renderer(renderer)
+	PlayState(InputManager &input, TextureManager &textureManager, Renderer &renderer, EffectFactory &effectFactory)
+	    : inputManager(input), textureManager(textureManager), renderer(renderer), effectFactory(effectFactory)
 	{
 	}
 	void init(GameEngine &game) override;
@@ -29,6 +30,7 @@ class PlayState final : public GameState {
 	ECS::Systems::RenderSystem renderSystem{renderer};
 	ECS::Systems::InputSystem inputSystem{inputManager};
 	ECS::Systems::MapActivationSystem mapActivationSystem{};
+	EffectFactory &effectFactory;
 	bool paused = false;
 	float accumulator = 0.0f;
 	static constexpr float stepSize = 1.0f / 120.0f;
