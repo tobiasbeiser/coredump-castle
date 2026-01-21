@@ -33,7 +33,6 @@ SDL_FRect buildEntityCollisionBox(const Entity entity, Registry &registry)
 	                 collisionBox.h * scale.y};
 }
 
-// NOLINT(clang-analyzer-core.CallAndMessage)
 bool resolveHorizontalCollision(const SDL_FRect &tileBox, glm::vec2 &pos, glm::vec2 &vel, glm::vec2 &acc,
                                 const SDL_FRect scaledEntityBox)
 {
@@ -57,7 +56,6 @@ bool resolveHorizontalCollision(const SDL_FRect &tileBox, glm::vec2 &pos, glm::v
 	return false;
 }
 
-// NOLINT(clang-analyzer-core.CallAndMessage)
 bool resolveVerticalCollision(const SDL_FRect &tileBox, glm::vec2 &pos, glm::vec2 &vel, glm::vec2 &acc,
                               const SDL_FRect scaledEntityBox)
 {
@@ -112,6 +110,10 @@ Utils::SpatialHash buildStaticColliderGrid(Registry &registry)
 
 void resolveHorizontalCollisions(const Entity entity, Registry &registry, const Utils::SpatialHash &grid)
 {
+	if (!registry.hasAll<PositionComponent, VelocityComponent, AccelerationComponent>(entity)) {
+		return;
+	}
+
 	auto &[position, previousPosition] = registry.get<PositionComponent>(entity);
 	auto &[velocity] = registry.get<VelocityComponent>(entity);
 	auto &[acceleration] = registry.get<AccelerationComponent>(entity);
@@ -119,7 +121,6 @@ void resolveHorizontalCollisions(const Entity entity, Registry &registry, const 
 	auto currentEntityCollisionBox = buildEntityCollisionBox(entity, registry);
 
 	grid.queryExcluding(currentEntityCollisionBox, entity, [&](const Entity tileEntity, const SDL_FRect &tileBox) {
-		// NOLINT(clang-analyzer-core.CallAndMessage)
 		if (resolveHorizontalCollision(tileBox, position, velocity, acceleration, currentEntityCollisionBox)) {
 			// We must update the collision box so subsequent checks use the new position
 			currentEntityCollisionBox = buildEntityCollisionBox(entity, registry);
@@ -129,6 +130,10 @@ void resolveHorizontalCollisions(const Entity entity, Registry &registry, const 
 
 void resolveVerticalCollisions(const Entity entity, Registry &registry, const Utils::SpatialHash &grid)
 {
+	if (!registry.hasAll<PositionComponent, VelocityComponent, AccelerationComponent>(entity)) {
+		return;
+	}
+
 	auto &[position, previousPosition] = registry.get<PositionComponent>(entity);
 	auto &[velocity] = registry.get<VelocityComponent>(entity);
 	auto &[acceleration] = registry.get<AccelerationComponent>(entity);
@@ -140,7 +145,6 @@ void resolveVerticalCollisions(const Entity entity, Registry &registry, const Ut
 	queryBox.h += 1.0f;
 
 	grid.queryExcluding(queryBox, entity, [&](const Entity tileEntity, const SDL_FRect &tileBox) {
-		// NOLINT(clang-analyzer-core.CallAndMessage)
 		if (resolveVerticalCollision(tileBox, position, velocity, acceleration, currentEntityCollisionBox)) {
 			currentEntityCollisionBox = buildEntityCollisionBox(entity, registry);
 		}

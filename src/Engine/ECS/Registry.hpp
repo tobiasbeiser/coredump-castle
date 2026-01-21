@@ -61,6 +61,12 @@ class Registry {
 		return getStorage<T>().contains(entity);
 	}
 
+	template <typename ... Components>
+	bool hasAll(const Entity entity)
+	{
+		return (has<Components>(entity) && ...);
+	}
+
 	template <typename T>
 	void remove(Entity entity)
 	{
