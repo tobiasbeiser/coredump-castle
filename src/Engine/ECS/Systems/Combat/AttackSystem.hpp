@@ -4,6 +4,7 @@
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
+#include "SDL3/SDL_log.h"
 
 namespace GameEngine::ECS::Systems {
 struct AttackSystem {
@@ -30,7 +31,7 @@ struct AttackSystem {
 
 	static bool isAttacking(const AttackComponent &attack)
 	{
-		return attack.attackTimer.getTime() > std::chrono::duration<float>::zero() && !attack.attackTimer.isTimeout();
+		return attack.attackTimer.isRunning() && !attack.attackTimer.isTimeout();
 	}
 
   private:

@@ -52,7 +52,7 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 	inputSystem.update(game.getRegistry());
 
 	ECS::Systems::HitDetectionSystem::update(game.getRegistry());
-	ECS::Systems::ChaseSystem::update(game.getRegistry(), stepSize);
+	ECS::Systems::ChaseSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::JumpSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::AttackSystem::update(game.getRegistry(), deltaTime);
 

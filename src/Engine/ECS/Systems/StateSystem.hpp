@@ -20,6 +20,10 @@ class StateSystem {
 		for (auto view = registry.view<StateComponent>(); const auto entity : view) {
 			auto &state = view.get<StateComponent>(entity);
 
+			if (DebugSystem::instance().getPlayerOptions().showState) {
+				DebugSystem::debug("Entity " + std::to_string(entity) + " State: " + toString(state.state));
+			}
+
 			if (registry.has<HealthComponent>(entity)) {
 				const auto &health = registry.get<HealthComponent>(entity);
 				if (HealthSystem::isDead(health)) {
@@ -69,10 +73,6 @@ class StateSystem {
 						state.state = State::Idle;
 					}
 				}
-			}
-
-			if (DebugSystem::instance().getPlayerOptions().showState) {
-				DebugSystem::debug("Entity " + std::to_string(entity) + " State: " + toString(state.state));
 			}
 		}
 	}

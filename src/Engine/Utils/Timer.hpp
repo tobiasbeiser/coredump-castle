@@ -4,6 +4,7 @@
 class Timer {
 	std::chrono::duration<float> length, time{0};
 	bool timeout = false;
+	bool started = false;
 
   public:
 	explicit Timer(const std::chrono::duration<float> length, const bool startTimedOut = false)
@@ -14,8 +15,11 @@ class Timer {
 		}
 	}
 
+	[[nodiscard]] bool isRunning() const noexcept { return started; }
+
 	void step(const std::chrono::duration<float> deltaTime, const bool loop) noexcept
 	{
+		started = true;
 		time += deltaTime;
 		if (loop) {
 			if (time >= length) {
@@ -36,5 +40,6 @@ class Timer {
 	{
 		time = std::chrono::duration<float>::zero();
 		timeout = false;
+		started = false;
 	}
 };
