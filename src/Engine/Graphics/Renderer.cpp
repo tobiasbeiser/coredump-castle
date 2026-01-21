@@ -1,5 +1,5 @@
 #include "Renderer.hpp"
-#include "Engine/DebugSystem.hpp"
+#include "../Debug/DebugSystem.hpp"
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
 #include <algorithm>

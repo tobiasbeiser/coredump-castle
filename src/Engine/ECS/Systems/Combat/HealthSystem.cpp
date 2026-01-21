@@ -1,4 +1,6 @@
 #include "HealthSystem.hpp"
+
+#include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/PendingDamageComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/ChaseComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
@@ -8,6 +10,8 @@ namespace GameEngine::ECS::Systems::HealthSystem {
 
 void update(Registry &registry, const float deltaTime)
 {
+	PROFILE_SCOPE("AttackSystem");
+
 	for (auto entityView = registry.view<HealthComponent>(); const auto entity : entityView) {
 		if (auto &health = registry.get<HealthComponent>(entity); isInvulnerable(health)) {
 			health.invulnerabilityTimer.step(std::chrono::duration<float>(deltaTime), false);

@@ -1,6 +1,6 @@
 #include "GameEngine.hpp"
 #include "../Game/States/PlayState.hpp"
-#include "DebugSystem.hpp"
+#include "Debug/DebugSystem.hpp"
 #include "FileIO/FileSaveStorage.hpp"
 #include "GameState.hpp"
 

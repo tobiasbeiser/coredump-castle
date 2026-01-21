@@ -1,5 +1,6 @@
 #include "RenderSystem.hpp"
-#include "Engine/DebugSystem.hpp"
+#include "../../Debug/DebugSystem.hpp"
+#include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Core/LevelComponent.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
@@ -27,6 +28,8 @@ RenderSystem::RenderSystem(Renderer &renderer) : renderer(renderer) {}
 
 void RenderSystem::update(Registry &registry, float alpha)
 {
+	PROFILE_SCOPE("RenderSystem");
+
 	renderItems.clear();
 	centerCamera(registry);
 

@@ -1,5 +1,6 @@
 #include "HitDetectionSystem.hpp"
 
+#include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
@@ -151,6 +152,8 @@ void resolveAttacks(Registry &registry)
 
 void update(Registry &registry)
 {
+	PROFILE_SCOPE("HitDetectionSystem");
+
 	resolveAttacks(registry);
 }
 

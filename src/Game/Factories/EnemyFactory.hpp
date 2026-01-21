@@ -1,7 +1,7 @@
 #pragma once
 
+#include "../../Engine/Debug/DebugSystem.hpp"
 #include "AnimationFactory.hpp"
-#include "Engine/DebugSystem.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"

@@ -1,6 +1,7 @@
 #include "PhysicsSystem.hpp"
 
 #include "CollisionSystem.hpp"
+#include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
@@ -15,8 +16,10 @@
 
 namespace GameEngine::ECS::Systems::PhysicsSystem {
 
-void update(Registry &registry, float timeStep)
+void update(Registry &registry, const float timeStep)
 {
+	PROFILE_SCOPE("PhysicsSystem");
+
 	const auto staticColliderGrid = CollisionSystem::buildStaticColliderGrid(registry);
 
 	for (auto viewGravity = registry.view<VelocityComponent, GravityComponent>().exclude<InactiveTag>();

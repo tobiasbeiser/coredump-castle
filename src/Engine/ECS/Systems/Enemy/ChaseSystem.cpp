@@ -1,3 +1,4 @@
+#include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
@@ -30,6 +31,8 @@ void resetChaseState(InputComponent &input, MovementComponent &movement, ChaseCo
 
 void update(Registry &registry, float deltaTime)
 {
+	PROFILE_SCOPE("ChaseSystem");
+
 	auto playerView =
 	    registry.view<PlayerTag, PositionComponent, HurtBoxComponent, TransformComponent, GroundedComponent>();
 

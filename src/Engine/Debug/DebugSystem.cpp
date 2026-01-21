@@ -1,5 +1,9 @@
 ﻿#include "DebugSystem.hpp"
+
+#include "Profiler.hpp"
+
 #include <imgui.h>
+#include <numeric>
 
 void DebugSystem::debug(const std::string &message)
 {
@@ -53,6 +57,31 @@ void DebugSystem::drawUI()
 			ImGui::Checkbox("Show State", &sys.player.showState);
 			ImGui::Checkbox("God Mode", &sys.player.godMode);
 			ImGui::Checkbox("No Clip", &sys.player.noClip);
+		}
+
+		if (ImGui::CollapsingHeader("System Profiler", ImGuiTreeNodeFlags_DefaultOpen)) {
+			auto &[results] = Profiler::instance();
+
+			if (results.empty()) {
+				ImGui::TextDisabled("No systems profiled yet.");
+			}
+			int id = 0;
+			for (auto &[name, data] : results) {
+				const float average =
+				    std::accumulate(data.history.begin(), data.history.end(), 0.0f) / data.history.size();
+
+				ImVec4 color =
+				    (average < 1.0f) ? ImVec4(0, 1, 0, 1) : (average < 5.0f ? ImVec4(1, 1, 0, 1) : ImVec4(1, 0, 0, 1));
+
+				ImGui::PushStyleColor(ImGuiCol_Text, color);
+				ImGui::Text("%s: %.3f ms", name.c_str(), average);
+				ImGui::PopStyleColor();
+				// Draw the graph
+				ImGui::PlotLines(name.c_str(), data.history.data(), data.history.size(), data.offset, nullptr, 0.0f,
+				                 data.maxTime.count() * 1.1f, // <--- Passed as raw float here
+				                 ImVec2(0, 40));
+				ImGui::Spacing();
+			}
 		}
 
 		if (!sys.debugMessages.empty()) {

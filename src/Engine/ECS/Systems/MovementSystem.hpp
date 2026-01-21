@@ -4,14 +4,17 @@
 #include "../Components/Gameplay/MovementComponent.hpp"
 #include "../Components/Physics/AccelerationComponent.hpp"
 #include "../Registry.hpp"
+#include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Tags/InactiveTag.hpp"
+#include "Engine/ECS/View.hpp"
 
 namespace GameEngine::ECS::Systems {
 class MovementSystem {
   public:
 	static void update(Registry &registry, const float stepSize)
 	{
+		PROFILE_SCOPE("MovementSystem");
 		for (auto view = registry.view<VelocityComponent, AccelerationComponent, MovementComponent, InputComponent>()
 		                     .exclude<InactiveTag>();
 		     const auto entity : view) {

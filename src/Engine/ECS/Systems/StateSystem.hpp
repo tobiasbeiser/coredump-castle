@@ -1,5 +1,5 @@
 #pragma once
-#include "Engine/DebugSystem.hpp"
+#include "../../Debug/DebugSystem.hpp"
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"

@@ -1,9 +1,11 @@
 #pragma once
 
+#include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Render/AnimationComponent.hpp"
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
+#include "Engine/ECS/View.hpp"
 
 namespace GameEngine::ECS::Systems {
 
@@ -87,14 +89,14 @@ class AnimationSystem {
 	}
 	static void update(Registry &registry, const float deltaTime)
 	{
+		PROFILE_SCOPE("AnimationSystem");
 		for (auto view = registry.view<AnimationComponent, SpriteComponent>(); const auto entity : view) {
 			auto &anim = view.get<AnimationComponent>(entity);
 			auto &[texture, tileSize, tileMapPosition] = view.get<SpriteComponent>(entity);
 
 			// Determine current animation from state
 			if (registry.has<StateComponent>(entity)) {
-				const auto &[state] = registry.get<StateComponent>(entity);
-				switch (state) {
+				switch (const auto &[state] = registry.get<StateComponent>(entity); state) {
 				case State::Idle:
 					handleLanding(anim, AnimationType::Idle);
 					break;

@@ -1,4 +1,5 @@
 #pragma once
+#include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Core/PortalComponent.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/SavePointComponent.hpp"
@@ -17,6 +18,7 @@ class InteractionSystem {
   public:
 	static void update(GameEngine &game, Registry &registry)
 	{
+		PROFILE_SCOPE("InteractionSystem");
 
 		for (auto playerView =
 		         registry.view<InputComponent, PositionComponent, InteractionComponent, InventoryComponent>();

@@ -1,5 +1,6 @@
 #include "CollisionSystem.hpp"
 
+#include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
@@ -108,6 +109,7 @@ Utils::SpatialHash buildStaticColliderGrid(Registry &registry)
 
 void resolveHorizontalCollisions(const Entity entity, Registry &registry, const Utils::SpatialHash &grid)
 {
+	PROFILE_SCOPE("CollisionSystem::resolveHorizontalCollisions");
 	auto &[position, previousPosition] = registry.get<PositionComponent>(entity);
 	auto &[velocity] = registry.get<VelocityComponent>(entity);
 	auto &[acceleration] = registry.get<AccelerationComponent>(entity);
@@ -124,6 +126,7 @@ void resolveHorizontalCollisions(const Entity entity, Registry &registry, const 
 
 void resolveVerticalCollisions(const Entity entity, Registry &registry, const Utils::SpatialHash &grid)
 {
+	PROFILE_SCOPE("CollisionSystem::resolveVerticalCollisions");
 	auto &[position, previousPosition] = registry.get<PositionComponent>(entity);
 	auto &[velocity] = registry.get<VelocityComponent>(entity);
 	auto &[acceleration] = registry.get<AccelerationComponent>(entity);

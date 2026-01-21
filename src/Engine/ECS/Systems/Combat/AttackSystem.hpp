@@ -1,4 +1,5 @@
 #pragma once
+#include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
@@ -8,6 +9,7 @@ namespace GameEngine::ECS::Systems {
 struct AttackSystem {
 	static void update(Registry &registry, const float deltaTime)
 	{
+		PROFILE_SCOPE("AttackSystem");
 		for (auto view = registry.view<AttackComponent, InputComponent>(); const auto entity : view) {
 			auto &attack = registry.get<AttackComponent>(entity);
 			const auto &input = registry.get<InputComponent>(entity);
