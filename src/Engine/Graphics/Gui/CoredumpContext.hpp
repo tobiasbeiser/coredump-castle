@@ -21,7 +21,7 @@ inline std::unique_ptr<UIContext> getContext(GameEngine::GameEngine &game)
 	};
 	UiTheme theme = {{255, 215, 0, 255}, btnStyle};
 
-	return std::make_unique<UIContext>(game.getRenderer(),
+	return std::make_unique<UIContext>(&game.getRenderer(),
 	                                   game.getFontManager().getFont("assets/fonts/upheaval/upheavtt.ttf", 60),
 	                                   // Upheaval font is designed for size 20, use only multiples for crips fonts
 	                                   game.getFontManager().getFont("assets/fonts/upheaval/upheavtt.ttf", 20),
@@ -29,4 +29,4 @@ inline std::unique_ptr<UIContext> getContext(GameEngine::GameEngine &game)
 	                                   game.getFontManager().getFont("assets/fonts/aansa/aansa.ttf", 16), theme,
 	                                   game.getRenderer().getLogicalResolution());
 }
-} // namespace CoredumpContext
+}
