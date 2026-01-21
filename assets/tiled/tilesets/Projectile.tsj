@@ -28,6 +28,41 @@
                  "tileid":3
                 }],
          "id":0,
+         "objectgroup":
+            {
+             "draworder":"index",
+             "id":2,
+             "name":"",
+             "objects":[
+                    {
+                     "height":0,
+                     "id":1,
+                     "name":"center",
+                     "point":true,
+                     "rotation":0,
+                     "type":"",
+                     "visible":true,
+                     "width":0,
+                     "x":17.5485150280228,
+                     "y":8.79577443773562
+                    }, 
+                    {
+                     "height":4.00399164975828,
+                     "id":2,
+                     "name":"hitbox",
+                     "rotation":0.894464460009794,
+                     "type":"",
+                     "visible":true,
+                     "width":3.63528971272907,
+                     "x":15.4779621471465,
+                     "y":6.33442828307895
+                    }],
+             "opacity":1,
+             "type":"objectgroup",
+             "visible":true,
+             "x":0,
+             "y":0
+            },
          "properties":[
                 {
                  "name":"state",

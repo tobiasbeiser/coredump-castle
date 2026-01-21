@@ -1,6 +1,6 @@
 ﻿#include "EnemyParser.hpp"
 
-EnemyParser::EnemyParser(EnemyFactory &enemyFactory) : enemyFactory(enemyFactory) {}
+EnemyParser::EnemyParser(GameEngine::ECS::EnemyFactory &enemyFactory) : enemyFactory(enemyFactory) {}
 bool EnemyParser::canParse(tson::Object &obj) const
 {
 	std::string name = obj.getName();

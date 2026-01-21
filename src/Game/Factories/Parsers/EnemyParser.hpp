@@ -4,7 +4,7 @@
 
 class EnemyParser final : public IObjectParser {
   public:
-	explicit EnemyParser(EnemyFactory &enemyFactory);
+	explicit EnemyParser(GameEngine::ECS::EnemyFactory &enemyFactory);
 
 	EnemyParser(EnemyParser &&) = delete;
 	EnemyParser(const EnemyParser &) = delete;
@@ -16,5 +16,5 @@ class EnemyParser final : public IObjectParser {
 	void parse(tson::Object &obj, const glm::vec2 &levelPos, int layerIndex) const override;
 
   private:
-	EnemyFactory &enemyFactory;
+	GameEngine::ECS::EnemyFactory &enemyFactory;
 };

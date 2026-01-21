@@ -23,7 +23,7 @@
             {
              "name":"collisionBox",
              "type":"string",
-             "value":"24,27,17,23"
+             "value":"23,27,17,20"
             }, 
             {
              "name":"detectionHeightRange",
@@ -53,7 +53,7 @@
             {
              "name":"projectileOffset",
              "type":"string",
-             "value":"10,60,0,0"
+             "value":"0,30,0,0"
             }, 
             {
              "name":"projectileSpeed",
@@ -73,7 +73,7 @@
             {
              "name":"scale",
              "type":"float",
-             "value":1.6
+             "value":1.7
             }, 
             {
              "name":"windUpLimit",

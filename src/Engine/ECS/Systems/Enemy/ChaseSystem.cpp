@@ -33,6 +33,7 @@ struct PlayerContext {
 // this struct will never be stored or copied, therefore the ignores
 struct EnemyContext {
 	// NOLINTBEGIN(cppcoreguidelines-avoid-const-or-ref-data-members)
+	Entity entity;
 	InputComponent &input;
 	ChaseComponent &chase;
 	MovementComponent &movement;
@@ -40,12 +41,12 @@ struct EnemyContext {
 	AttackComponent &attack;
 	const PatrolComponent &patrol;
 	// NOLINTEND(cppcoreguidelines-avoid-const-or-ref-data-members)
-	SDL_FRect hurtBox = {0, 0, 0, 0};
-	glm::vec2 center = glm::vec2(0.0f);
-	glm::vec2 scale = glm::vec2(1.0f, 1.0f);
-	glm::vec2 position = glm::vec2(0.0f);
-};
 
+	SDL_FRect hurtBox;
+	glm::vec2 center;
+	glm::vec2 scale;
+	glm::vec2 position;
+};
 void resetChaseState(const EnemyContext &enemy)
 {
 	enemy.input.attackPressed = false;
@@ -54,50 +55,60 @@ void resetChaseState(const EnemyContext &enemy)
 	enemy.chase.lastKnownPlayerX = std::nullopt;
 }
 
-PlayerContext getPlayerContext(Registry &registry)
+glm::vec2 calculateCenter(const glm::vec2 &pos, const SDL_FRect &box, const glm::vec2 &scale)
 {
+	return {pos.x + (box.x * scale.x) + (box.w * scale.x) * 0.5f, pos.y + (box.y * scale.y) + (box.h * scale.y) * 0.5f};
+}
 
+std::optional<PlayerContext> getPlayerContext(Registry &registry)
+{
 	for (auto view =
 	         registry.view<PlayerTag, PositionComponent, HurtBoxComponent, TransformComponent, GroundedComponent>();
 	     const auto entity : view) {
+
 		const auto &pos = registry.get<PositionComponent>(entity).position;
 		const auto &hurtBox = registry.get<HurtBoxComponent>(entity).hurtBox;
 		const auto &transform = registry.get<TransformComponent>(entity);
 		const auto &ground = registry.get<GroundedComponent>(entity);
 
-		const glm::vec2 center = {pos.x + (hurtBox.x * transform.scale.x) + (hurtBox.w * transform.scale.x) * 0.5f,
-		                          pos.y + (hurtBox.y * transform.scale.y) + (hurtBox.h * transform.scale.y) * 0.5f};
-
-		return {center, hurtBox, transform.scale, ground.grounded};
+		return PlayerContext{calculateCenter(pos, hurtBox, transform.scale), hurtBox, transform.scale, ground.grounded};
 	}
-	return {};
+	return std::nullopt;
 }
 
-EnemyContext createEnemyContext(Registry &registry, Entity entity)
+bool checkLineOfSight(const EnemyContext &enemy, const PlayerContext &player, const Utils::SpatialHash &grid,
+                      RangedAttackComponent &ranged, const glm::vec2 &projectileSize, const glm::vec2 &spriteSize,
+                      const glm::vec2 &hitboxOffset)
 {
-	const auto &pos = registry.get<PositionComponent>(entity);
-	const auto &hurtBox = registry.get<HurtBoxComponent>(entity).hurtBox;
-	glm::vec2 scale =
-	    registry.has<TransformComponent>(entity) ? registry.get<TransformComponent>(entity).scale : glm::vec2(1.0f);
+	const bool facingLeft = (player.center.x - enemy.center.x) < 0.0f;
 
-	const glm::vec2 center = {pos.position.x + (hurtBox.x * scale.x) + (hurtBox.w * scale.x) * 0.5f,
-	                          pos.position.y + (hurtBox.y * scale.y) + (hurtBox.h * scale.y) * 0.5f};
+	glm::vec2 spawnPosition = enemy.position;
+	float xOffset = (enemy.hurtBox.x * enemy.scale.x);
+	xOffset += facingLeft ? -ranged.projectileOffset.x : ranged.projectileOffset.x;
 
-	return {registry.get<InputComponent>(entity),
-	        registry.get<ChaseComponent>(entity),
-	        registry.get<MovementComponent>(entity),
-	        registry.get<RenderComponent>(entity),
-	        registry.get<AttackComponent>(entity),
-	        registry.get<PatrolComponent>(entity),
-	        hurtBox,
-	        center,
-	        scale,
-	        pos.position};
+	spawnPosition.x += xOffset;
+	spawnPosition.y += ranged.projectileOffset.y;
+
+	const glm::vec2 rayStart = spawnPosition + hitboxOffset + (projectileSize * 0.5f);
+
+	const glm::vec2 playerTop = player.center - glm::vec2(0.0f, player.hurtBox.h * player.scale.y * 0.25f);
+
+	for (const std::vector targetPoints = {player.center, playerTop}; const auto &targetPoint : targetPoints) {
+
+		if (const bool obstructed = CollisionSystem::isPathObstructed(rayStart, targetPoint, grid, projectileSize);
+		    !obstructed) {
+			ranged.targetSnapshot = targetPoint;
+			return true;
+		}
+	}
+	return false;
 }
 
 void handleRangeAttack(const EnemyContext &enemy, const PlayerContext &player, const Utils::SpatialHash &grid,
-                       RangedAttackComponent &ranged, const glm::vec2 &projectileSize)
+                       Registry &registry)
 {
+	auto &ranged = registry.get<RangedAttackComponent>(enemy.entity);
+
 	const float directionToPlayer = player.center.x > enemy.center.x ? 1.0f : -1.0f;
 	const float xDistance = std::abs(player.center.x - enemy.center.x);
 	const float yDistance = std::abs(player.center.y - enemy.center.y);
@@ -117,39 +128,18 @@ void handleRangeAttack(const EnemyContext &enemy, const PlayerContext &player, c
 	}
 
 	if (progress <= enemy.attack.windUpLimit) {
-		const bool facingLeft = directionToPlayer < 0.0f;
-		glm::vec2 spawnPosition = enemy.position;
+		glm::vec2 projectileSize = {0.f, 0.f};
+		glm::vec2 hitboxOffset = {0.0f, 0.0f};
+		glm::vec2 spriteSize = {32.0f, 32.0f};
 
-		if (facingLeft) {
-			spawnPosition.x += (enemy.hurtBox.x * enemy.scale.x) - ranged.projectileOffset.x;
-		} else {
-			spawnPosition.x += (enemy.hurtBox.x * enemy.scale.x) + ranged.projectileOffset.x;
-		}
-		spawnPosition.y += ranged.projectileOffset.y;
-
-		const glm::vec2 rayStart = spawnPosition + (projectileSize * 0.5f);
-
-		const glm::vec2 playerTop = player.center - glm::vec2(0.0f, player.hurtBox.h * player.scale.y * 0.25f);
-		const std::vector targetPoints = {player.center, playerTop};
-
-		bool pathClear = false;
-		for (const auto &targetPoint : targetPoints) {
-			const bool obstructed = CollisionSystem::isPathObstructed(rayStart, targetPoint, grid, projectileSize);
-
-			if (DebugSystem::instance().getRenderOptions().showRaycasts) {
-				const SDL_Color color = obstructed ? SDL_Color{255, 0, 0, 255} : SDL_Color{0, 255, 0, 255};
-				// DebugSystem::instance().debugLines.push_back({rayStart, targetPoint, color});
-				DebugSystem::addLine(rayStart, targetPoint, color);
-			}
-
-			if (!obstructed) {
-				pathClear = true;
-				ranged.targetSnapshot = targetPoint;
-				break;
-			}
+		if (registry.has<ProjectileComponent>(enemy.entity)) {
+			const auto &pc = registry.get<ProjectileComponent>(enemy.entity);
+			projectileSize = pc.projectileSize;
+			spriteSize = pc.spriteSize;
+			hitboxOffset = pc.hitboxOffset;
 		}
 
-		if (!pathClear) {
+		if (!checkLineOfSight(enemy, player, grid, ranged, projectileSize, spriteSize, hitboxOffset)) {
 			enemy.input.attackPressed = false;
 			enemy.chase.reactionDelay.reset();
 			enemy.attack.attackTimer.reset();
@@ -207,23 +197,15 @@ void handleMeleeAttack(const EnemyContext &enemy, const PlayerContext &player)
 
 void update(Registry &registry, const float deltaTime)
 {
-	auto playerView =
-	    registry.view<PlayerTag, PositionComponent, HurtBoxComponent, TransformComponent, GroundedComponent>();
 
-	PlayerContext playerCtx;
+	const auto playerCtxOpt = getPlayerContext(registry);
 
-	for (const auto entity : playerView) {
-		const auto &pos = registry.get<PositionComponent>(entity).position;
-		playerCtx.hurtBox = registry.get<HurtBoxComponent>(entity).hurtBox;
-		playerCtx.scale = registry.get<TransformComponent>(entity).scale;
-		playerCtx.isGrounded = registry.get<GroundedComponent>(entity).grounded;
-
-		playerCtx.center = glm::vec2(
-		    pos.x + (playerCtx.hurtBox.x * playerCtx.scale.x) + (playerCtx.hurtBox.w * playerCtx.scale.x) * 0.5f,
-		    pos.y + (playerCtx.hurtBox.y * playerCtx.scale.y) + (playerCtx.hurtBox.h * playerCtx.scale.y) * 0.5f);
-
-		break;
+	if (!playerCtxOpt.has_value()) {
+		return;
 	}
+	const PlayerContext &playerCtx = playerCtxOpt.value();
+
+	const auto staticColliderGrid = CollisionSystem::buildStaticColliderGrid(registry);
 
 	auto enemyView = registry.view<EnemyTag, InputComponent, PatrolComponent, ChaseComponent, PositionComponent,
 	                               HitBoxComponent, HurtBoxComponent, CollisionComponent, MovementComponent,
@@ -232,40 +214,32 @@ void update(Registry &registry, const float deltaTime)
 	for (const auto entity : enemyView) {
 		const auto &pos = registry.get<PositionComponent>(entity);
 		const auto &enemyHurtBox = registry.get<HurtBoxComponent>(entity).hurtBox;
-		const auto &patrol = registry.get<PatrolComponent>(entity);
-
-		auto &attack = registry.get<AttackComponent>(entity);
-		auto &input = registry.get<InputComponent>(entity);
 		auto &chase = registry.get<ChaseComponent>(entity);
-		auto &movement = registry.get<MovementComponent>(entity);
-		auto &render = registry.get<RenderComponent>(entity);
 
 		glm::vec2 enemyScale = {1.0f, 1.0f};
 		if (registry.has<TransformComponent>(entity)) {
 			enemyScale = registry.get<TransformComponent>(entity).scale;
 		}
 
-		const glm::vec2 enemyCenter = {
-		    pos.position.x + (enemyHurtBox.x * enemyScale.x) + (enemyHurtBox.w * enemyScale.x) * 0.5f,
-		    pos.position.y + (enemyHurtBox.y * enemyScale.y) + (enemyHurtBox.h * enemyScale.y) * 0.5f};
+		EnemyContext enemyCtx{entity,
+		                      registry.get<InputComponent>(entity),
+		                      registry.get<ChaseComponent>(entity),
+		                      registry.get<MovementComponent>(entity),
+		                      registry.get<RenderComponent>(entity),
+		                      registry.get<AttackComponent>(entity),
+		                      registry.get<PatrolComponent>(entity),
+		                      enemyHurtBox,
+		                      calculateCenter(pos.position, enemyHurtBox, enemyScale),
+		                      enemyScale,
+		                      pos.position};
 
-		EnemyContext enemyCtx = {input,  chase,        movement,    render,     attack,
-		                         patrol, enemyHurtBox, enemyCenter, enemyScale, pos.position};
 		chase.reactionDelay.step(std::chrono::duration<float>(deltaTime), false);
 
 		if (registry.has<RangedAttackComponent>(entity)) {
-			auto &ranged = registry.get<RangedAttackComponent>(entity);
-
-			glm::vec2 projectileSize = {0.f, 0.f};
-			if (registry.has<ProjectileComponent>(entity)) {
-				projectileSize = registry.get<ProjectileComponent>(entity).projectileSize;
-			}
-
-			const auto staticColliderGrid = CollisionSystem::buildStaticColliderGrid(registry);
-			handleRangeAttack(enemyCtx, playerCtx, staticColliderGrid, ranged, projectileSize);
-			continue;
+			handleRangeAttack(enemyCtx, playerCtx, staticColliderGrid, registry);
+		} else {
+			handleMeleeAttack(enemyCtx, playerCtx);
 		}
-		handleMeleeAttack(enemyCtx, playerCtx);
 	}
 }
 
