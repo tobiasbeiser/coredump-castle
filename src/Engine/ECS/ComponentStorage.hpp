@@ -12,7 +12,7 @@ class ComponentStorage final : public IStorage {
 
 	void remove(Entity entity) override { components.erase(entity); }
 
-	void insert(Entity entity, T component) { components.insert_or_assign(entity, std::move(component)); }
+	void insert(Entity entity, const T &component) { components.insert_or_assign(entity, T(component)); }
 
 	[[nodiscard]] bool contains(Entity entity) const { return components.contains(entity); }
 
