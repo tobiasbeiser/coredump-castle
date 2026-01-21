@@ -3,5 +3,5 @@
 
 struct PositionComponent {
 	glm::vec2 position{0.0f, 0.0f};
-	glm::vec2 previousPosition = position;
+	glm::vec2 previousPosition = {0.0f, 0.0f};
 };
