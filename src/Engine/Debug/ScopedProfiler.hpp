@@ -22,5 +22,7 @@ struct ScopedProfiler {
 	}
 };
 
+// NOLINTBEGIN(cppcoreguidelines-macro-usage)
 #define PROFILE_SCOPE(name) ScopedProfiler timer##__LINE__(name)
 #define PROFILE_FUNCTION() ScopedProfiler timer##__LINE__(__FUNCTION__)
+// NOLINTEND(cppcoreguidelines-macro-usage)
