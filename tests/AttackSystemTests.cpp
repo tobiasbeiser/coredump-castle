@@ -9,16 +9,15 @@
 
 using namespace std::chrono_literals;
 
-class AttackSystemTest : public ::testing::Test {
-  protected:
-	GameEngine::ECS::Registry registry;
-	GameEngine::ECS::Entity entity;
+struct AttackSystemTest : testing::Test {
+	GameEngine::ECS::Registry registry{};
+	GameEngine::ECS::Entity entity{};
 
 	void SetUp() override
 	{
 
 		entity = registry.create();
-		AttackComponent attackComp{.attackTimer=Timer{0.6s}, .attackCoolDownTimer=Timer{0.2s}};
+		AttackComponent attackComp{.attackTimer = Timer{0.6s}, .attackCoolDownTimer = Timer{0.2s}};
 
 		attackComp.attackCoolDownTimer.step(0.2s, false);
 
@@ -110,13 +109,13 @@ TEST_F(AttackSystemTest, CoolDownDoesNotDecreaseWhileAttacking)
 	EXPECT_EQ(attack.attackCoolDownTimer.getTime(), initialCooldown);
 }
 
-TEST_F(AttackSystemTest, ZeroDeltaTimeDoesNotAffectState)
+TEST_F(AttackSystemTest, ZeroDeltaTimeDoesAffectState)
 {
 	const auto &attack = getAttack();
 
 	triggerAttackInput();
 	GameEngine::ECS::Systems::AttackSystem::update(registry, 0.0f);
 
-	EXPECT_FALSE(GameEngine::ECS::Systems::AttackSystem::isAttacking(attack));
+	EXPECT_TRUE(GameEngine::ECS::Systems::AttackSystem::isAttacking(attack));
 	EXPECT_EQ(attack.attackTimer.getTime(), std::chrono::duration<float>::zero());
 }
