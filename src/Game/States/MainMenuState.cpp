@@ -82,6 +82,9 @@ void MainMenuState::setupUI(GameEngine &game)
 	actions.onShowOptions = [this, &game]() {
 		OptionsMenuActions optActions;
 		optActions.onBack = [this, &game]() { setupUI(game); }; // Recursive call to rebuild MainMenu
+		// TODO: add hint at bottom of the screen, that saves have been deleted
+		// TODO: disable delete button if there are no saves
+		optActions.onDelete = [&game] { game.getSaveSystem().deleteAllSaves(); };
 
 		auto optionsView = UiViewFactory::createOptionsMenu(*context, optActions);
 		guiManager->setRoot(std::move(optionsView));

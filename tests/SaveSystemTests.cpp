@@ -1,6 +1,8 @@
-
 #include <gtest/gtest.h>
 #include <vector>
+#include <chrono>
+#include <filesystem>
+#include <algorithm>
 
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InventoryComponent.hpp"
@@ -15,6 +17,7 @@ namespace {
 using GameEngine::ECS::Entity;
 using GameEngine::ECS::ISaveStorage;
 using GameEngine::ECS::Registry;
+using GameEngine::ECS::SaveMetaData;
 using GameEngine::ECS::Systems::SaveSystem;
 using json = nlohmann::json;
 using namespace std::chrono_literals;
@@ -25,20 +28,30 @@ class FakeSaveStorage final : public ISaveStorage {
 
 	[[nodiscard]] json read() const override { return store; }
 
-	[[nodiscard]] std::vector<std::string> getSavesNames() const override { return existingSaveNames; }
+    [[nodiscard]] std::vector<SaveMetaData> getSavesData() const override {
+        return existingSaves;
+    }
 
-	std::string getSaveName() override { return currentSaveName; }
-	void setSaveName(std::string saveName) override { currentSaveName = std::move(saveName); }
+    void deleteSaves() override {
+        existingSaves.clear();
+        store.clear();
+        deletionCalled = true;
+    }
 
-	// Test helpers
-	[[nodiscard]] const json &getStoredData() const { return store; }
-	void setExistingSaveNames(std::vector<std::string> names) { existingSaveNames = std::move(names); }
-	void syncCreatedFile() { if (!currentSaveName.empty()) existingSaveNames.push_back(currentSaveName); }
+    [[nodiscard]] std::string getSaveName() const override { return currentSaveName; }
+    void setSaveName(std::string saveName) override { currentSaveName = std::move(saveName); }
+
+    [[nodiscard]] const json &getStoredData() const { return store; }
+
+    void setExistingSaves(std::vector<SaveMetaData> saves) { existingSaves = std::move(saves); }
+
+    [[nodiscard]] bool wasDeleteCalled() const { return deletionCalled; }
 
   private:
-	json store{};
-	std::string currentSaveName;
-	std::vector<std::string> existingSaveNames;
+    json store{};
+    std::string currentSaveName;
+    std::vector<SaveMetaData> existingSaves;
+    bool deletionCalled = false;
 };
 
 class SaveSystemTest : public ::testing::Test {
@@ -98,7 +111,6 @@ TEST_F(SaveSystemTest, LoadSavedGame_RestoresPlayerStateFromJson)
 	saved["positionY"] = -3.0F;
 	saved["keys"] = std::vector{1, 2, 3};
 	storagePtr->write(saved);
-
 
 	// Reset components to defaults to ensure they are actually changed by load
 	auto playerView = registry.view<PlayerTag>();
@@ -177,13 +189,10 @@ TEST_F(SaveSystemTest, LoadSavedGame_RemovesCollectedLocksAndKeys)
 
 TEST_F(SaveSystemTest, SaveGame_CreatesNewEmptySave_IfFileDoesNotExist)
 {
-	// NEW TEST: Covers the logic where a missing file initializes a new save
 	auto storage = std::make_unique<FakeSaveStorage>();
 	auto *storagePtr = storage.get();
 	const SaveSystem saveSystem{std::move(storage)};
-
-	// Ensure storage says "No files exist"
-	storagePtr->setExistingSaveNames({});
+    storagePtr->setExistingSaves({});
 
 	// Put garbage in storage to verify it gets overwritten
 	const std::string junkKey = "foo";
@@ -233,27 +242,37 @@ TEST_F(SaveSystemTest, LoadSavedGame_ThrowsIfMultiplePlayerEntitiesExist)
 	EXPECT_THROW(saveSystem.loadSavedGame(registry), std::runtime_error);
 }
 
-TEST_F(SaveSystemTest, GetSaves_ReturnsStorageList)
+TEST_F(SaveSystemTest, GetSaves_ReturnsStorageListWithMetadata)
 {
 	auto storage = std::make_unique<FakeSaveStorage>();
 	auto *storagePtr = storage.get();
 
-	const std::vector<std::string> expectedSaves = {"Save1", "Save2", "AutoSave"};
-	storagePtr->setExistingSaveNames(expectedSaves);
+    // Create a fixed time point for testing
+    const auto now = std::filesystem::file_time_type::clock::now();
+
+    const std::vector<SaveMetaData> expectedSaves = {
+        {"Save1", now},
+        {"Save2", now}
+    };
+    storagePtr->setExistingSaves(expectedSaves);
 
 	const SaveSystem saveSystem{std::move(storage)};
 
 	const auto result = saveSystem.getSaves();
-	EXPECT_EQ(expectedSaves, result);
+
+    ASSERT_EQ(expectedSaves.size(), result.size());
+    EXPECT_EQ(expectedSaves[0].saveName, result[0].saveName);
+    EXPECT_EQ(expectedSaves[0].lastSaved, result[0].lastSaved);
+    EXPECT_EQ(expectedSaves[1].saveName, result[1].saveName);
 }
+
 TEST_F(SaveSystemTest, RoundTrip_SaveThenLoad_PreservesState)
 {
-    // This test ensures that the keys written by SaveGame match the keys read by LoadGame
     auto storage = std::make_unique<FakeSaveStorage>();
     auto *storagePtr = storage.get();
     const SaveSystem saveSystem{std::move(storage)};
 
-    // 1. Modify initial state to be distinct from defaults
+    // 1. Modify initial state
     auto playerView = registry.view<PlayerTag>();
     const Entity entity = playerView.at(0U);
 
@@ -265,13 +284,15 @@ TEST_F(SaveSystemTest, RoundTrip_SaveThenLoad_PreservesState)
 
     // 2. Save
     const std::string saveName = "RoundTripSave";
-    storagePtr->setSaveName(saveName); // FileStorage requires name
+    storagePtr->setSaveName(saveName);
     saveSystem.saveGame(registry);
 
-    // Simulate file existing now
-    storagePtr->setExistingSaveNames({saveName});
+    // Simulate file existing now (requires SaveMetaData construction)
+    storagePtr->setExistingSaves({
+        SaveMetaData{saveName, std::filesystem::file_time_type::clock::now()}
+    });
 
-    // 3. Corrupt the registry (reset to zero)
+    // 3. Corrupt the registry
     jump.maxJumps = 0;
     pos.position = glm::vec2{0.0F, 0.0F};
 
@@ -286,9 +307,6 @@ TEST_F(SaveSystemTest, RoundTrip_SaveThenLoad_PreservesState)
 
 TEST_F(SaveSystemTest, LoadSavedGame_Throws_WhenSaveDataIsCorrupt)
 {
-    // .at("key") throws nlohmann::json::out_of_range
-    // if the key is missing. This test ensures we catch regressions if
-    // validation logic changes.
     auto storage = std::make_unique<FakeSaveStorage>();
     auto *storagePtr = storage.get();
     const SaveSystem saveSystem{std::move(storage)};
@@ -300,8 +318,32 @@ TEST_F(SaveSystemTest, LoadSavedGame_Throws_WhenSaveDataIsCorrupt)
     corruptData["keys"] = std::vector<int>{};
 
     storagePtr->write(corruptData);
-    storagePtr->setExistingSaveNames({"CorruptFile"});
+
+    storagePtr->setExistingSaves({
+        SaveMetaData{"CorruptFile", std::filesystem::file_time_type::clock::now()}
+    });
 
     EXPECT_THROW(saveSystem.loadSavedGame(registry), json::out_of_range);
 }
+
+TEST_F(SaveSystemTest, DeleteAllSaves_DelegatesToStorage)
+{
+    auto storage = std::make_unique<FakeSaveStorage>();
+    auto *storagePtr = storage.get();
+
+    // Populate with dummy data
+    storagePtr->setExistingSaves({
+        SaveMetaData{"Save1", std::filesystem::file_time_type::clock::now()}
+    });
+
+    const SaveSystem saveSystem{std::move(storage)};
+
+    // Act
+    saveSystem.deleteAllSaves();
+
+    // Verify
+    EXPECT_TRUE(storagePtr->wasDeleteCalled());
+    EXPECT_TRUE(storagePtr->getSavesData().empty());
+}
+
 } // namespace

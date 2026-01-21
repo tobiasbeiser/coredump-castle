@@ -45,15 +45,46 @@ class SaveSystem {
 		}
 	}
 
-	[[nodiscard]] std::vector<std::string> getSaves() const { return saveStorage->getSavesNames(); }
+	[[nodiscard]] std::vector<SaveMetaData> getSaves() const { return saveStorage->getSavesData(); }
+
+	void deleteAllSaves() const
+	{
+		saveStorage->deleteSaves();
+	}
 
   private:
 	std::unique_ptr<ISaveStorage> saveStorage;
 
 	void initNewGameSave() const
 	{
-		const std::vector<std::string> saves = saveStorage->getSavesNames();
-		const std::string saveName = "Saved Game " + std::to_string(saves.size() + 1);
+		const auto saves = saveStorage->getSavesData();
+
+		std::vector<int> existingIndices;
+		existingIndices.reserve(saves.size());
+
+		for (const auto& [saveName, lastSaved] : saves) {
+			if (saveName.starts_with("Saved Game ")) {
+				try {
+					const std::string numberPart = saveName.substr(11); // Length of "Saved Game "
+					existingIndices.push_back(std::stoi(numberPart));
+				} catch (...) {
+				}
+			}
+		}
+
+		std::ranges::sort(existingIndices);
+
+		int newIndex = 1;
+		for (const int index : existingIndices) {
+			if (index == newIndex) {
+				newIndex++;
+			} else if (index > newIndex) {
+				break;
+			}
+		}
+
+		const std::string saveName = "Saved Game " + std::to_string(newIndex);
+
 		saveStorage->setSaveName(saveName);
 		writeEmptyGameSave();
 	}

@@ -1,8 +1,10 @@
 
 #include "UiViewFactory.hpp"
 
-#include <ranges>
 #include <utility>
+
+#include "Engine/Utils/SaveGameFormatter.hpp"
+
 
 #include "Layouts/LinearLayout.hpp"
 #include "Widgets/Button.hpp"
@@ -13,9 +15,9 @@ namespace UiViewFactory
 {
 	inline std::unique_ptr<Spacer> makeSpacer(const float layoutWeight = 1.0f)
 	{
-		auto btn = std::make_unique<Spacer>();
-		btn->setLayoutWeight(std::clamp(layoutWeight, 0.f, 1.0f));
-		return btn;
+		auto spacer = std::make_unique<Spacer>();
+		spacer->setLayoutWeight(std::clamp(layoutWeight, 0.f, 1.0f));
+		return spacer;
 	}
 
 	inline std::unique_ptr<Button> makeWrappingButton(const UIContext &ctx, std::string_view text, std::function<void()> cb)
@@ -100,7 +102,7 @@ namespace UiViewFactory
 	}
 
 	std::unique_ptr<Widget> createContinueMenu(const UIContext &ctx, const ContinueMenuActions &actions,
-															  std::vector<std::string> saveNames)
+															  std::vector<GameEngine::ECS::SaveMetaData> savesData)
 	{
 		auto root = makeMenuRoot(ctx, "Continue Game");
 
@@ -111,10 +113,16 @@ namespace UiViewFactory
 
 		auto buttonContainer = makeButtonContainer();
 
-		for (const auto saveName : saveNames) {
-			auto loadCallback = [actions, saveName] { actions.onContinue(saveName); };
-			buttonContainer->addWidget(makeBigMenuButton(ctx, saveName, loadCallback));
-		}
+		for (const auto saveData: savesData) {
+		auto buttonRow = std::make_unique<LinearLayout>();
+		buttonRow->setOrientation(Orientation::Horizontal);
+
+		auto metaLabel= std::make_unique<Label>(GameEngine::Utils::SaveGameFormatter::getDisplayString(saveData), ctx.textFont);
+		buttonRow->addWidget(std::move(metaLabel));
+			auto loadCallback = [actions, saveData] { actions.onContinue(saveData.saveName); };
+			buttonRow->addWidget(makeWrappingButton(ctx, "continue", loadCallback));
+		buttonContainer->addWidget(std::move(buttonRow));
+	}
 
 		auto continueContainer = std::make_unique<LinearLayout>();
 
@@ -125,7 +133,6 @@ namespace UiViewFactory
 		if (actions.onBack) {
 			continueContainer->addWidget(makeBackButtonFooter(ctx, actions.onBack));
 		}
-		continueContainer->setLayoutWeight(0.6f);
 		posContainer->addWidget(std::move(continueContainer));
 		posContainer->addWidget(makeSpacer());
 
@@ -136,7 +143,7 @@ namespace UiViewFactory
 
 	std::unique_ptr<Widget> createOptionsMenu(const UIContext &ctx, const OptionsMenuActions &actions)
 	{
-		auto root = makeMenuRoot(ctx, "Controls");
+		auto root = makeMenuRoot(ctx, "Settings");
 
 		std::unordered_map<std::string, std::string> keyMapping = {
 			{"Left", "[A]"}, {"Right", "[D]"}, {"Jump", "[Space]"}, {"Attack", "[K]"}, {"Interact", "[E]"},
@@ -162,6 +169,21 @@ namespace UiViewFactory
 			listElement->addWidget(std::move(keyLabel));
 
 			content->addWidget(std::move(listElement));
+		}
+
+
+		if (actions.onDelete)
+		{
+			auto deleteAll = std::make_unique<LinearLayout>();
+			deleteAll->setOrientation(Orientation::Horizontal);
+			auto deleteLabel = std::make_unique<Label>("Delete all saves", ctx.textFont);
+			deleteLabel->setLayoutWeight(1.0f);
+			deleteAll->addWidget(std::move(deleteLabel));
+			// TODO: make delete greyed out if there are no saves to delete
+			auto deleteButton = std::make_unique<Button>("Delete", ctx.textFont, actions.onDelete);
+			deleteAll->addWidget(std::move(deleteButton));
+
+			content-> addWidget(std::move(deleteAll));
 		}
 
 		content->addWidget(makeBackButtonFooter(ctx, actions.onBack));

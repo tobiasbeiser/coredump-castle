@@ -1,7 +1,8 @@
 #pragma once
 #include "GuiManager.hpp"
 #include <functional>
-#include <string>
+
+#include "Engine/FileIO/ISaveStorage.hpp"
 
 struct MainMenuActions {
 	std::function<void()> onStartNewGame;
@@ -17,7 +18,7 @@ struct ContinueMenuActions {
 
 struct OptionsMenuActions {
 	std::function<void()> onBack;
-	// Add volume toggles etc here
+	std::function<void()> onDelete;
 };
 
 namespace UiViewFactory {
@@ -25,7 +26,7 @@ namespace UiViewFactory {
 	std::unique_ptr<Widget> createMainMenu(const UIContext &ctx, const MainMenuActions &actions);
 
 	std::unique_ptr<Widget> createContinueMenu(const UIContext &ctx, const ContinueMenuActions &actions,
-											   std::vector<std::string> saveNames);
+											   std::vector<GameEngine::ECS::SaveMetaData> savesData);
 
 	std::unique_ptr<Widget> createOptionsMenu(const UIContext &ctx, const OptionsMenuActions &actions);
 }; // namespace UiViewFactory
