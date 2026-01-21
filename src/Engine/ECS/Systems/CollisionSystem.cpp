@@ -1,6 +1,5 @@
 #include "CollisionSystem.hpp"
 
-#include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
