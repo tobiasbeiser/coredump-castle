@@ -1,4 +1,5 @@
 #pragma once
+#include "Engine/ECS/Components/Gameplay/Hazard/PendingRespawnComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Registry.hpp"
@@ -26,13 +27,23 @@ class InputSystem {
 			horizontalDirection += 1;
 		}
 
-		for (auto view = registry.view<InputComponent>().exclude<EnemyTag>(); const auto entity : view) {
+		for (auto view = registry.view<InputComponent>().exclude<EnemyTag, PendingRespawnComponent>();
+		     const auto entity : view) {
 			auto &[horizontalDirectionTarget, jumpPressed, attackPressed, interactPressed, interactConsumed] =
 			    view.get<InputComponent>(entity);
 			horizontalDirectionTarget = horizontalDirection;
 			jumpPressed = inputManager.isKeyPressed(Key::Up);
 			attackPressed = inputManager.isKeyPressed(Key::Attack);
 			interactPressed = inputManager.isKeyPressed(Key::Interact);
+		}
+
+		for (auto view = registry.view<InputComponent, PendingRespawnComponent>(); const auto entity : view) {
+			auto &[horizontalDirectionTarget, jumpPressed, attackPressed, interactPressed, interactConsumed] =
+			    view.get<InputComponent>(entity);
+			horizontalDirectionTarget = 0.0f;
+			jumpPressed = false;
+			attackPressed = false;
+			interactPressed = false;
 		}
 
 		// update input manager for next frame (for correct handling of isKeyPressed and isKeyReleased, this has to be

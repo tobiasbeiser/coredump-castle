@@ -72,7 +72,7 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 	ECS::Systems::AnimationSystem::update(game.getRegistry(), deltaTime);
 
 	ECS::Systems::InteractionSystem::update(game, game.getRegistry());
-	ECS::Systems::RespawnSystem::update(game.getRegistry(), game);
+	ECS::Systems::RespawnSystem::update(game.getRegistry(), game, deltaTime);
 }
 
 void PlayState::render(GameEngine &game, const float alpha)

@@ -2,17 +2,17 @@
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/PendingDamageComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Hazard/LastGroundedPositionComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Hazard/PendingRespawnComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Hazard/SpikeComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/View.hpp"
-
-#include <SDL3/SDL_log.h>
 
 void GameEngine::ECS::Systems::SpikeSystem::update(Registry &registry)
 {
 	auto spikeView = registry.view<SpikeComponent, CollisionComponent, PositionComponent>();
 
-	for (auto view = registry.view<LastGroundedPositionComponent, CollisionComponent, PositionComponent>();
+	for (auto view = registry.view<LastGroundedPositionComponent, CollisionComponent, PositionComponent>()
+	                     .exclude<PendingRespawnComponent>();
 	     const auto entity : view) {
 		for (const auto spikeEntity : spikeView) {
 			if (entity == spikeEntity) {

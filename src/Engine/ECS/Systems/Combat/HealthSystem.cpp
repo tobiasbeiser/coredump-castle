@@ -9,6 +9,8 @@
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
 
+#include <SDL3/SDL_log.h>
+
 namespace GameEngine::ECS::Systems::HealthSystem {
 
 void update(Registry &registry, const float deltaTime)
@@ -19,7 +21,8 @@ void update(Registry &registry, const float deltaTime)
 		}
 	}
 
-	for (auto view = registry.view<HealthComponent, PendingDamageComponent>(); const auto entity : view) {
+	for (auto view = registry.view<HealthComponent, PendingDamageComponent>().exclude<PendingRespawnComponent>();
+	     const auto entity : view) {
 		auto &health = view.get<HealthComponent>(entity);
 		const auto &[damage, damageSource] = view.get<PendingDamageComponent>(entity);
 

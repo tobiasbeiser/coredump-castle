@@ -4,6 +4,6 @@
 
 namespace GameEngine::ECS::Systems::RespawnSystem {
 
-void update(Registry &registry, GameEngine &game);
+void update(Registry &registry, GameEngine &game, const float deltaTime);
 
 } // namespace GameEngine::ECS::Systems::RespawnSystem
