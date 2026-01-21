@@ -46,7 +46,8 @@ std::unique_ptr<SDL_Texture, SDLTextureDeleter> Renderer::loadTexture(const std:
 	if (!tex) {
 		throw std::runtime_error(SDL_GetError());
 	}
-	SDL_SetTextureScaleMode(tex, SDL_ScaleMode::SDL_SCALEMODE_NEAREST);
+	SDL_SetTextureScaleMode(tex, SDL_SCALEMODE_NEAREST);
+	SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
 
 	return std::unique_ptr<SDL_Texture, SDLTextureDeleter>(tex);
 }

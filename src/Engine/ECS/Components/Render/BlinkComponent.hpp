@@ -3,5 +3,5 @@
 
 struct BlinkComponent {
 	SDL_Color color{165, 0, 0, 155};
-	float blinkFrequency{0.2f};
+	float blinkFrequency{0.08f};
 };

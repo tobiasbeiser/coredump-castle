@@ -15,7 +15,7 @@ SDL_Color getBlinkColor(Registry &registry, Entity entity)
 	const auto elapsed =
 	    std::chrono::duration_cast<std::chrono::duration<float>>(health.invulnerabilityTimer.getTime()).count();
 	if (!health.invulnerabilityTimer.isTimeout()) {
-		if (const int toggle = static_cast<int>(elapsed / blinkFrequency) % 2; toggle != 0) {
+		if (const int toggle = static_cast<int>(elapsed / blinkFrequency) % 2 < 1; toggle != 0) {
 			return color;
 		}
 	}

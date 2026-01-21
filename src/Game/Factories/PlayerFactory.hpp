@@ -79,7 +79,7 @@ class PlayerFactory {
 		registry.registerComponent(e, InputComponent{});
 		registry.registerComponent(e, MovementComponent{});
 		registry.registerComponent(e, JumpComponent{.maxJumps = 5, .coyoteTimer = Timer{0.08s}});
-		registry.registerComponent(e, BlinkComponent{});
+		registry.registerComponent(e, BlinkComponent{.color = {50, 50, 50, 150}});
 
 		registry.registerComponent(e, InteractionComponent{19, 25, 21, 32});
 		registry.registerComponent(e, HurtBoxComponent{19, 25, 21, 32});
