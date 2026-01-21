@@ -1,8 +1,15 @@
 #include "HealthSystem.hpp"
+#include "Engine/ECS/Components/Core/PositionComponent.hpp"
+#include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/PendingDamageComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/ChaseComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Hazard/LastGroundedPositionComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Hazard/PendingRespawnComponent.hpp"
+#include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
+
+#include <SDL3/SDL_log.h>
 
 namespace GameEngine::ECS::Systems::HealthSystem {
 
@@ -14,11 +21,12 @@ void update(Registry &registry, const float deltaTime)
 		}
 	}
 
-	for (auto view = registry.view<HealthComponent, PendingDamageComponent>(); const auto entity : view) {
+	for (auto view = registry.view<HealthComponent, PendingDamageComponent>().exclude<PendingRespawnComponent>();
+	     const auto entity : view) {
 		auto &health = view.get<HealthComponent>(entity);
-		const auto &[damage] = view.get<PendingDamageComponent>(entity);
+		const auto &[damage, damageSource] = view.get<PendingDamageComponent>(entity);
 
-		if (isInvulnerable(health) || damage == 0) {
+		if ((isInvulnerable(health) || damage == 0) && damageSource != DamageSource::Hazard) {
 			registry.remove<PendingDamageComponent>(entity);
 			continue;
 		}
@@ -28,11 +36,17 @@ void update(Registry &registry, const float deltaTime)
 
 		if (health.health <= 0) {
 			health.health = 0;
+		} else if (damageSource == DamageSource::Hazard) {
+			if (registry.has<LastGroundedPositionComponent>(entity) && registry.has<PlayerTag>(entity)) {
+				registry.registerComponent<PendingRespawnComponent>(entity, {});
+			}
 		}
+
 		if (registry.has<ChaseComponent>(entity)) {
 			auto &chase = registry.get<ChaseComponent>(entity);
 			chase.reactionDelay.reset();
 		}
+
 		registry.remove<PendingDamageComponent>(entity);
 	}
 }

@@ -3,6 +3,7 @@
 #include <SDL3_ttf/SDL_ttf.h>
 #include <filesystem>
 #include <glm/vec2.hpp>
+#include <imgui.h>
 #include <memory>
 #include <optional>
 #include <string>
@@ -42,7 +43,7 @@ struct Resolution {
 
 class Renderer {
   public:
-	Renderer(const std::string &title, Resolution resolution);
+	Renderer(const std::string &title, const Resolution resolution);
 	// delete copy, move and assignments as we want only one instance of the renderer (create one at start that lives
 	// until shutdown) Cannot be copied as it manages a unique resource (the SDL_Renderer and SDL_Window)
 	Renderer(const Renderer &) = delete;
@@ -56,7 +57,7 @@ class Renderer {
 	void centerCameraOn(const glm::vec2 &position, const glm::vec2 &levelPos, const glm::vec2 &levelSize);
 
 	void resize(Resolution newResolution);
-	[[nodiscard]] Resolution getLogicalResolution() const { return logicalResolution; }
+	[[nodiscard]] Resolution getLogicalResolution() const { return logicalResolution; } // TODO: move implementation to cpp
 	[[nodiscard]] glm::vec2 windowToLogical(float windowX, float windowY) const;
 
 	[[nodiscard]] SDL_Renderer* getNativeRenderer() const { return renderer.get(); }
@@ -73,6 +74,8 @@ class Renderer {
 	void renderCircularFade(float progress, SDL_FColor color = {0, 0, 0, 255});
 
   private:
+	void setupImGui() const;
+	static void startImGuiFrame();
 	Resolution currentResolution{1920, 1080};
 	Resolution logicalResolution{768, 432};
 

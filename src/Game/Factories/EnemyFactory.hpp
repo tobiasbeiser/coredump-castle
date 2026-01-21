@@ -26,10 +26,24 @@
 
 class EnemyFactory {
   public:
-	static GameEngine::ECS::Entity createEnemy(GameEngine::ECS::Registry &registry, TextureManager &texMgr,
-	                                           tson::Object &enemyObj, const glm::vec2 &levelPos, tson::Map &map,
-	                                           const int layer)
+	EnemyFactory(GameEngine::ECS::Registry &registry, AnimationFactory &animationFactory)
+	    : registry(registry), animationFactory(animationFactory)
 	{
+	}
+
+	EnemyFactory(EnemyFactory &&) = delete;
+	EnemyFactory(const EnemyFactory &) = delete;
+	EnemyFactory &operator=(const EnemyFactory &) = delete;
+	EnemyFactory &operator=(EnemyFactory &&) = delete;
+	~EnemyFactory() = default;
+
+	void setMap(tson::Map &tsonMap) { map = &tsonMap; }
+	GameEngine::ECS::Entity createEnemy(tson::Object &enemyObj, const glm::vec2 &levelPos, const int layer) const
+	{
+		if (!map) {
+			throw std::runtime_error("Map is null");
+		}
+
 		const auto entity = registry.create();
 		registry.registerComponent(entity, EnemyTag{});
 
@@ -75,7 +89,7 @@ class EnemyFactory {
 		}
 
 		if (canPatrol) {
-			if (const auto patrolRect = findPatrolRect(enemyObj, levelPos, map)) {
+			if (const auto patrolRect = findPatrolRect(enemyObj, levelPos, *map)) {
 				registry.registerComponent(entity,
 				                           PatrolComponent{.minBounds = patrolRect->min, .maxBounds = patrolRect->max});
 			}
@@ -88,7 +102,7 @@ class EnemyFactory {
 			}
 		}
 
-		AnimationFactory::loadAnimationsFromTileset(registry, texMgr, map, enemyObj, entity);
+		animationFactory.loadAnimationsFromTileset(enemyObj, entity);
 
 		using namespace std::chrono_literals;
 		std::chrono::duration<float> attackDuration = 1s;
@@ -114,6 +128,10 @@ class EnemyFactory {
 	}
 
   private:
+	GameEngine::ECS::Registry &registry;
+	AnimationFactory &animationFactory;
+	tson::Map *map = nullptr;
+
 	struct PatrolRect {
 		glm::vec2 min;
 		glm::vec2 max;

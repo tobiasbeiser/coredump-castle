@@ -6,12 +6,13 @@ add_library(GameLib STATIC ${ENGINE_SRC} ${GAME_SRC})
 
 target_include_directories(GameLib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries(GameLib PUBLIC
-    SDL3::SDL3
+target_link_libraries(GameLib PUBLIC 
+    SDL3::SDL3 
     $<IF:$<TARGET_EXISTS:SDL3_image::SDL3_image-shared>,SDL3_image::SDL3_image-shared,SDL3_image::SDL3_image-static>
     glm::glm
-    SDL3_ttf::SDL3_ttf
     nlohmann_json::nlohmann_json
+    imgui::imgui
+    SDL3_ttf::SDL3_ttf
     vendor
 )
 

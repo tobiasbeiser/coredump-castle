@@ -3,12 +3,11 @@
 #include <string>
 
 namespace GameEngine {
-class TransitionLevelState : public GameState {
+class FadeTransitionState : public GameState {
 
   public:
-	TransitionLevelState();
+	explicit FadeTransitionState(std::function<void()> onMidpointAction);
 
-	// Inherited via GameState
 	void init(GameEngine &game) override;
 	void cleanup() override;
 	void pause() override;
@@ -18,8 +17,9 @@ class TransitionLevelState : public GameState {
 	void render(GameEngine &game, float alpha) override;
 
   private:
-	float progress = 0.0f; // 0 = start, 1 = full black
-	float duration = 0.5f;
-	bool loadingDone = false;
+	std::function<void()> onMidpointAction;
+	bool actionPerformed = false;
+	float progress = 0.0f;
+	float speed = 2.0f;
 };
 } // namespace GameEngine
