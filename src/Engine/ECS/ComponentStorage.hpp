@@ -12,13 +12,9 @@ class ComponentStorage final : public IStorage {
 
 	void remove(Entity entity) override { components.erase(entity); }
 
-	void insert(Entity entity, const T &component) { components.insert_or_assign(entity, T(component)); }
-
+	void insert(Entity entity, const T &component) { components.insert_or_assign(entity, component); }
 	[[nodiscard]] bool contains(Entity entity) const { return components.contains(entity); }
 
-	T &get(Entity entity)
-	{
-		return components.at(entity); // .at() throws if missing, [] creates if missing
-	}
+	T &get(Entity entity) { return components.at(entity); }
 };
 } // namespace GameEngine::ECS
