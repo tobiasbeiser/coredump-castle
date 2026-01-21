@@ -23,8 +23,6 @@ The goal of the project is to build a game *from scratch* as a learning exercise
 brew install pkg-config
 brew install cmake
 brew install llvm   # Required for clang-format / clang-tidy
-pip3 install pre-commit
-pre-commit install
 ```
 
 Make sure the LLVM tools (`clang-format`, `clang-tidy`) are available in your `PATH`.
@@ -32,6 +30,12 @@ Make sure the LLVM tools (`clang-format`, `clang-tidy`) are available in your `P
 ---
 
 ### All Platforms
+
+#### pre-commit
+```bash
+pip3 install pre-commit
+pre-commit install
+```
 
 #### vcpkg
 
