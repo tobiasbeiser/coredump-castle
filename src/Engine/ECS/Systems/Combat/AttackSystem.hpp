@@ -13,7 +13,7 @@ class AttackSystem {
 	using AttackCallback = std::function<void(Entity)>;
 
   public:
-	static void update(Registry &registry, const float deltaTime, AttackCallback onAttack)
+	static void update(Registry &registry, const float deltaTime, const AttackCallback &onAttack)
 	{
 		PROFILE_SCOPE("AttackSystem");
 		for (auto view = registry.view<AttackComponent, InputComponent>(); const auto entity : view) {

@@ -91,7 +91,7 @@ SDL_FRect getHurtBoxRect(Registry &registry, const Entity entity)
 	        hurtBox.h * scale.y};
 }
 
-void resolveAttacks(Registry &registry)
+void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
 {
 	auto attackerView = registry.view<AttackComponent, HitBoxComponent, PositionComponent>();
 	auto victimView = registry.view<HurtBoxComponent, PositionComponent, HealthComponent>();
@@ -119,7 +119,7 @@ void resolveAttacks(Registry &registry)
 			}
 
 			const auto &victimHealth = registry.get<HealthComponent>(victim);
-			if (HealthSystem::isDead(victimHealth)) {
+			if (HealthSystem::isDead(victimHealth) || HealthSystem::isInvulnerable(victimHealth)) {
 				continue;
 			}
 
@@ -141,7 +141,8 @@ void resolveAttacks(Registry &registry)
 
 			if (hit) {
 				if (!registry.has<PendingDamageComponent>(victim)) {
-					registry.registerComponent(victim, PendingDamageComponent{10});
+					registry.registerComponent<PendingDamageComponent>(victim, {10});
+					onHit(attacker, victim);
 				}
 			}
 		}
@@ -150,11 +151,11 @@ void resolveAttacks(Registry &registry)
 
 } // anonymous namespace
 
-void update(Registry &registry)
+void update(Registry &registry, const EnemyHitCallback &onHit)
 {
 	PROFILE_SCOPE("HitDetectionSystem");
 
-	resolveAttacks(registry);
+	resolveAttacks(registry, onHit);
 }
 
 } // namespace GameEngine::ECS::Systems::HitDetectionSystem

@@ -56,11 +56,15 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 
 	inputSystem.update(game.getRegistry());
 
-	ECS::Systems::HitDetectionSystem::update(game.getRegistry());
+	ECS::Systems::HitDetectionSystem::update(game.getRegistry(),
+	                                         [&](const ECS::Entity attacker, const ECS::Entity victim) {
+		                                         effectFactory.createIsHitEffect(attacker, victim);
+	                                         });
 	ECS::Systems::ChaseSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::JumpSystem::update(game.getRegistry(), deltaTime);
-	ECS::Systems::AttackSystem::update(game.getRegistry(), deltaTime,
-	                                   [&](const ECS::Entity e) { effectFactory.createAttackEffect(e); });
+	ECS::Systems::AttackSystem::update(game.getRegistry(), deltaTime, [&](const ECS::Entity e) {
+		effectFactory.createEffectOnEntity(e, EffectType::PlayerSwoosh);
+	});
 
 	accumulator += deltaTime;
 	while (accumulator >= stepSize) {
