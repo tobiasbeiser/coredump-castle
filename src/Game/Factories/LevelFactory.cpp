@@ -13,9 +13,11 @@
 
 #include <glm/vec2.hpp>
 
-LevelFactory::LevelFactory(GameEngine::ECS::Registry &registry, TextureManager &textureManager)
-    : registry(registry), textureManager(textureManager), tileFactory(registry, textureManager, animationFactory),
-      enemyFactory(registry, animationFactory), playerFactory(registry, textureManager, animationFactory)
+LevelFactory::LevelFactory(GameEngine::ECS::Registry &registry, TextureManager &textureManager,
+                           InputManager &inputManager)
+    : registry(registry), textureManager(textureManager), inputManager(inputManager),
+      tileFactory(registry, textureManager, animationFactory), enemyFactory(registry, animationFactory),
+      playerFactory(registry, textureManager, animationFactory)
 {
 	registerParsers();
 };
@@ -150,7 +152,7 @@ void LevelFactory::registerParsers()
 	parsers.push_back(std::make_unique<EnemyParser>(enemyFactory));
 	parsers.push_back(std::make_unique<SavePointParser>(registry, tileFactory));
 	parsers.push_back(std::make_unique<KeyParser>(registry, tileFactory));
-	parsers.push_back(std::make_unique<TooltipParser>(registry));
+	parsers.push_back(std::make_unique<TooltipParser>(registry, inputManager));
 }
 
 void LevelFactory::processLayerModifications(tson::Layer &layer, GameEngine::ECS::Entity entity,

@@ -39,3 +39,15 @@ bool InputManager::isKeyReleased(Key key) const
 {
 	return !currentKeyStates.at(key) && previousKeyStates.at(key);
 }
+
+std::string InputManager::getHumanReadableKey(const Key key) const
+{
+	for (auto &[code, storedKey] : scancodeMapping) {
+		if (storedKey == key) {
+			const SDL_Keycode keycode = SDL_GetKeyFromScancode(code, SDL_KMOD_NONE, false);
+			const char *keyName = SDL_GetKeyName(keycode);
+			return keyName;
+		}
+	}
+	return "Unknown";
+}

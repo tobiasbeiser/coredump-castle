@@ -5,6 +5,7 @@
 #include <glm/vec2.hpp>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 enum class AnimationType {
 	None,

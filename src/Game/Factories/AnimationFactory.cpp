@@ -1,6 +1,8 @@
 ﻿#include "AnimationFactory.hpp"
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
+#include "Engine/ECS/Registry.hpp"
 #include <glm/vec2.hpp>
+#include <vector>
 
 AnimationType AnimationFactory::getAnimationType(const std::string &string)
 {

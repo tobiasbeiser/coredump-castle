@@ -1,9 +1,12 @@
 ﻿#pragma once
 #include "Engine/ECS/Components/Render/AnimationComponent.hpp"
 #include "Engine/ECS/Entity.hpp"
-#include "Engine/ECS/Registry.hpp"
 #include "Engine/Graphics/TextureManager.hpp"
 #include "tileson.hpp"
+
+namespace GameEngine::ECS {
+class Registry;
+}
 
 class AnimationFactory {
   public:
