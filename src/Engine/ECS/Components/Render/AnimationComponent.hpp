@@ -4,7 +4,7 @@
 #include <SDL3/SDL_render.h>
 #include <glm/vec2.hpp>
 #include <unordered_map>
-#include <vector>
+#include <unordered_set>
 
 enum class AnimationType {
 	None,
@@ -17,6 +17,7 @@ enum class AnimationType {
 	Landing,
 	Attacking,
 	Hurting,
+	Interacting,
 	Dead
 };
 
@@ -25,7 +26,7 @@ class AnimationComponent {
 	void addAnimation(const AnimationType &type, const std::vector<AnimationFrame> &animationFrames,
 	                  const std::chrono::duration<float> duration)
 	{
-		const bool loop = type != AnimationType::Dead;
+		const bool loop = !nonLoopingAnimations.contains(type);
 		animations[type] = Animation(static_cast<int>(animationFrames.size()), duration, loop);
 		frames[type] = animationFrames;
 	}
@@ -87,4 +88,6 @@ class AnimationComponent {
 	std::unordered_map<AnimationType, Animation> animations{};
 	std::unordered_map<AnimationType, std::vector<AnimationFrame>> frames{};
 	AnimationType currentAnimation = AnimationType::None;
+	std::unordered_set<AnimationType> nonLoopingAnimations = {AnimationType::Dead, AnimationType::Hurting,
+	                                                          AnimationType::Attacking, AnimationType::Interacting};
 };

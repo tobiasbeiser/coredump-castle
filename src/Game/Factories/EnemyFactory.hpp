@@ -105,8 +105,8 @@ class EnemyFactory {
 		animationFactory.loadAnimationsFromTileset(enemyObj, entity);
 
 		using namespace std::chrono_literals;
-		std::chrono::duration<float> attackDuration = 1s;
-		std::chrono::duration<float> invulnerabilityTime = 1s;
+		std::chrono::duration<float> attackDuration = 100ms;
+		std::chrono::duration<float> invulnerabilityTime = 300ms;
 
 		if (registry.has<AnimationComponent>(entity)) {
 			auto &animComp = registry.get<AnimationComponent>(entity);

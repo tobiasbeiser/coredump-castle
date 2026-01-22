@@ -1,6 +1,7 @@
 #include "HealthSystem.hpp"
 #include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
+#include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/PendingDamageComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/ChaseComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Hazard/LastGroundedPositionComponent.hpp"
@@ -29,6 +30,11 @@ void update(Registry &registry, const float deltaTime)
 		if ((isInvulnerable(health) || damage == 0) && damageSource != DamageSource::Hazard) {
 			registry.remove<PendingDamageComponent>(entity);
 			continue;
+		}
+
+		if (registry.has<StateComponent>(entity)) {
+			auto &[state] = registry.get<StateComponent>(entity);
+			state = State::Hurting;
 		}
 
 		health.health -= damage;

@@ -15,7 +15,7 @@ using namespace std::chrono_literals;
 EffectFactory::EffectFactory(GameEngine::ECS::Registry &registry, TextureManager &texture_manager)
     : registry(registry), textureManager(texture_manager)
 {
-	loadEffect({EffectType::PlayerSwoosh, "PlayerAttackSwoosh.png", 5, 200ms, glm::ivec2(192, 192), glm::ivec2(11, 0),
+	loadEffect({EffectType::PlayerSwoosh, "PlayerAttackSwoosh.png", 6, 200ms, glm::ivec2(192, 192), glm::ivec2(9, 0),
 	            glm::vec2(0.4f, 0.7f), glm::vec2(10.0f, 35.0f), false});
 
 	loadEffect({EffectType::IsHit, "HitEffect.png", 7, 200ms, glm::ivec2(128, 128), glm::ivec2(0, 0),

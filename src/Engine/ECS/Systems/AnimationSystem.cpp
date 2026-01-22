@@ -13,10 +13,6 @@ void handleJumping(AnimationComponent &anim)
 		return;
 	}
 	switch (anim.getAnimation()) {
-	case AnimationType::None:
-	case AnimationType::Idle:
-	case AnimationType::Walking:
-	case AnimationType::Landing:
 	case AnimationType::Attacking:
 		anim.setAnimation(AnimationType::JumpStart);
 		break;
@@ -49,14 +45,6 @@ void handleFalling(AnimationComponent &anim)
 		return;
 	}
 	switch (anim.getAnimation()) {
-	case AnimationType::None:
-	case AnimationType::Idle:
-	case AnimationType::Walking:
-	case AnimationType::JumpStart:
-	case AnimationType::FlyingUp:
-	case AnimationType::Attacking:
-	case AnimationType::Hurting:
-	case AnimationType::Dead:
 	case AnimationType::Landing:
 		anim.setAnimation(AnimationType::JumpReload);
 		break;
@@ -70,6 +58,7 @@ void handleFalling(AnimationComponent &anim)
 	case AnimationType::Falling:
 		anim.setAnimation(AnimationType::Falling);
 		break;
+	default:;
 	}
 	anim.setAnimation(AnimationType::Falling);
 }
@@ -121,6 +110,11 @@ void GameEngine::ECS::Systems::AnimationSystem::update(Registry &registry, const
 			case State::Dead:
 				if (anim.hasAnimation(AnimationType::Dead)) {
 					anim.setAnimation(AnimationType::Dead);
+				}
+				break;
+			case State::Interacting:
+				if (anim.hasAnimation(AnimationType::Interacting)) {
+					anim.setAnimation(AnimationType::Interacting);
 				}
 				break;
 			}

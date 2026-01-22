@@ -8,6 +8,7 @@
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/View.hpp"
+#include "Engine/Utils/HitBoxUtils.hpp"
 #include "Profiler.hpp"
 
 #include <imgui.h>
@@ -134,37 +135,22 @@ void DebugSystem::drawCollisionBoxes() const
 }
 void DebugSystem::drawHitBoxes() const
 {
-	if (!instance().getRenderOptions().showHitBoxes || !registry)
+	if (!instance().getRenderOptions().showHitBoxes || registry == nullptr) {
 		return;
+	}
 
 	for (auto view =
 	         registry
 	             ->view<HitBoxComponent, HurtBoxComponent, RenderComponent, TransformComponent, PositionComponent>();
 	     const auto entity : view) {
 
-		const auto &[bodyHitbox, weaponHitBox] = view.get<HitBoxComponent>(entity);
-		const auto &[hurtBox] = view.get<HurtBoxComponent>(entity);
-		const auto &[layer, flipX] = view.get<RenderComponent>(entity);
-		const auto &[position, previousPosition] = view.get<PositionComponent>(entity);
-		const auto &[scale, rotation] = view.get<TransformComponent>(entity);
-
-		const bool facingLeft = flipX;
-
-		SDL_FRect hitBoxRect = {0, 0, weaponHitBox.w * scale.x, weaponHitBox.h * scale.y};
-		if (facingLeft) {
-			hitBoxRect.x = position.x + hurtBox.x * scale.x - weaponHitBox.w * scale.x;
-		} else {
-			hitBoxRect.x = position.x + hurtBox.x * scale.x + hurtBox.w * scale.x;
-		}
-		hitBoxRect.y = position.y + hurtBox.y * scale.y;
-
-		if (hitBoxRect.w > 0.0f && hitBoxRect.h > 0.0f) {
+		if (const auto hitBoxRect = GameEngine::Utils::HitBoxUtils::getWeaponHitBoxRect(*registry, entity);
+		    hitBoxRect.w > 0.0f && hitBoxRect.h > 0.0f) {
 			constexpr SDL_Color hitboxColor = {0, 255, 0, 255};
 			addRect(hitBoxRect, hitboxColor);
 		}
 
-		SDL_FRect hurtBoxRect = {position.x + hurtBox.x * scale.x, position.y + hurtBox.y * scale.y,
-		                         hurtBox.w * scale.x, hurtBox.h * scale.y};
+		SDL_FRect hurtBoxRect = GameEngine::Utils::HitBoxUtils::getHurtBoxRect(*registry, entity);
 		constexpr SDL_Color hurtBoxColor = {255, 0, 255, 255};
 		addRect(hurtBoxRect, hurtBoxColor);
 	}
