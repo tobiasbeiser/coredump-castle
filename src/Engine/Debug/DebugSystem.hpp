@@ -9,6 +9,7 @@
 struct DebugRenderOptions {
 	bool showBoundingBoxes = false;
 	bool showHitBoxes = false;
+	bool showTooltipBoxes = false;
 };
 
 struct DebugSkipMenuOptions {
@@ -17,6 +18,7 @@ struct DebugSkipMenuOptions {
 
 struct DebugPlayerOptions {
 	bool showState = false;
+	bool showPosition = true;
 	bool godMode = false;
 	bool noClip = false;
 };
@@ -58,6 +60,7 @@ class DebugSystem {
 	GameEngine::ECS::Registry *registry = nullptr;
 	void drawCollisionBoxes() const;
 	void drawHitBoxes() const;
+	void drawTooltopBoxes() const;
 	void updateFPS();
 
 	static constexpr int fpsHistorySize = 400;

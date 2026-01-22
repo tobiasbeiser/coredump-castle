@@ -273,6 +273,74 @@
                  "template":"..\/objects\/Player.tj",
                  "x":80,
                  "y":468.666666666667
+                }, 
+                {
+                 "height":37.6363636363636,
+                 "id":10,
+                 "name":"",
+                 "properties":[
+                        {
+                         "name":"tooltip",
+                         "type":"string",
+                         "value":"jump"
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":66,
+                 "x":221.636363636364,
+                 "y":474.909090909091
+                }, 
+                {
+                 "height":36,
+                 "id":11,
+                 "name":"",
+                 "properties":[
+                        {
+                         "name":"tooltip",
+                         "type":"string",
+                         "value":"movement"
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":86.5,
+                 "x":41,
+                 "y":475.25
+                }, 
+                {
+                 "height":41.6666666666667,
+                 "id":12,
+                 "name":"",
+                 "properties":[
+                        {
+                         "name":"tooltip",
+                         "type":"string",
+                         "value":"save"
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":94.3333333333333,
+                 "x":545,
+                 "y":117.333333333333
+                }, 
+                {
+                 "height":36,
+                 "id":13,
+                 "name":"",
+                 "properties":[
+                        {
+                         "name":"tooltip",
+                         "type":"string",
+                         "value":"combat"
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":58.3333333333334,
+                 "x":801.666666666667,
+                 "y":122.333333333333
                 }],
          "opacity":1,
          "properties":[
@@ -316,7 +384,7 @@
          "y":0
         }],
  "nextlayerid":17,
- "nextobjectid":10,
+ "nextobjectid":14,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",
@@ -340,6 +408,6 @@
         }],
  "tilewidth":32,
  "type":"map",
- "version":"1.10",
+ "version":"1.11",
  "width":38
 }

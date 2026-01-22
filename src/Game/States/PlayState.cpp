@@ -16,6 +16,7 @@
 #include "Engine/ECS/Systems/RenderSystem.hpp"
 #include "Engine/ECS/Systems/RespawnSystem.hpp"
 #include "Engine/ECS/Systems/StateSystem.hpp"
+#include "Engine/ECS/Systems/TooltipSystem.hpp"
 #include "Engine/GameEngine.hpp"
 #include "Game/Factories/WorldFactory.hpp"
 
@@ -84,6 +85,7 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 	ECS::Systems::DeathSystem::update(game.getRegistry(), deltaTime);
 
 	ECS::Systems::InteractionSystem::update(game, game.getRegistry());
+	ECS::Systems::TooltipSystem::update(game.getRegistry());
 	ECS::Systems::RespawnSystem::update(game.getRegistry(), game, deltaTime);
 }
 

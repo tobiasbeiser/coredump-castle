@@ -9,6 +9,7 @@
 #include "Parsers/EnemyParser.hpp"
 #include "Parsers/KeyParser.hpp"
 #include "Parsers/PlayerParser.hpp"
+#include "Parsers/TooltipParser.hpp"
 
 #include <glm/vec2.hpp>
 
@@ -149,6 +150,7 @@ void LevelFactory::registerParsers()
 	parsers.push_back(std::make_unique<EnemyParser>(enemyFactory));
 	parsers.push_back(std::make_unique<SavePointParser>(registry, tileFactory));
 	parsers.push_back(std::make_unique<KeyParser>(registry, tileFactory));
+	parsers.push_back(std::make_unique<TooltipParser>(registry));
 }
 
 void LevelFactory::processLayerModifications(tson::Layer &layer, GameEngine::ECS::Entity entity,
