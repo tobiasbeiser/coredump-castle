@@ -238,27 +238,13 @@ bool isPathObstructed(const glm::vec2 &start, const glm::vec2 &end, const Utils:
 	std::vector<std::pair<glm::vec2, glm::vec2>> lines;
 	lines.push_back({start, end});
 
-	if (projectileSize.x > 1.0f && projectileSize.y > 1.0f) {
-		const float halfW = projectileSize.x * 0.5f;
-		const float halfH = projectileSize.y * 0.5f;
+	const float halfW = projectileSize.x * 0.5f;
+	const float halfH = projectileSize.y * 0.5f;
 
-		lines.push_back({{start.x - halfW, start.y - halfH}, {end.x - halfW, end.y - halfH}}); // Top-Left
-		lines.push_back({{start.x + halfW, start.y - halfH}, {end.x + halfW, end.y - halfH}}); // Top-Right
-		lines.push_back({{start.x - halfW, start.y + halfH}, {end.x - halfW, end.y + halfH}}); // Bottom-Left
-		lines.push_back({{start.x + halfW, start.y + halfH}, {end.x + halfW, end.y + halfH}}); // Bottom-Right
-	} else {
-		// Fallback for thin/small projectiles (checking simple edges)
-		if (projectileSize.y > 1.0f) {
-			const float halfH = projectileSize.y * 0.5f;
-			lines.push_back({{start.x, start.y - halfH}, {end.x, end.y - halfH}});
-			lines.push_back({{start.x, start.y + halfH}, {end.x, end.y + halfH}});
-		}
-		if (projectileSize.x > 1.0f) {
-			const float halfW = projectileSize.x * 0.5f;
-			lines.push_back({{start.x - halfW, start.y}, {end.x - halfW, end.y}});
-			lines.push_back({{start.x + halfW, start.y}, {end.x + halfW, end.y}});
-		}
-	}
+	lines.push_back({{start.x - halfW, start.y - halfH}, {end.x - halfW, end.y - halfH}}); // Top-Left
+	lines.push_back({{start.x + halfW, start.y - halfH}, {end.x + halfW, end.y - halfH}}); // Top-Right
+	lines.push_back({{start.x - halfW, start.y + halfH}, {end.x - halfW, end.y + halfH}}); // Bottom-Left
+	lines.push_back({{start.x + halfW, start.y + halfH}, {end.x + halfW, end.y + halfH}}); // Bottom-Right
 
 	bool obstructed = false;
 	grid.query(pathQuery, [&](const Entity, const SDL_FRect &tileBox) {
@@ -276,6 +262,7 @@ bool isPathObstructed(const glm::vec2 &start, const glm::vec2 &end, const Utils:
 		}
 	});
 
+	// Done here since it could be demanding to recalculate the path lines inside debugsystem
 	const SDL_Color color = obstructed ? SDL_Color{255, 0, 0, 255} : SDL_Color{0, 255, 0, 255};
 	DebugSystem::addLine(start, end, color);
 

@@ -13,6 +13,7 @@
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Registry.hpp"
+#include "Engine/ECS/View.hpp"
 #include "Engine/Graphics/TextureManager.hpp"
 
 #include <gtest/gtest.h>
@@ -85,6 +86,23 @@ TEST_F(ProjectileSystemTest, SpawnsProjectileWhenAttacking)
 	GameEngine::ECS::Systems::ProjectileSystem::update(registry, 0.1f, *textureManager);
 
 	EXPECT_GT(registry.size(), initialEntityCount);
+}
+
+TEST_F(ProjectileSystemTest, SpawnsProjectileTowardTargetSnapshot)
+{
+	auto &attack = registry.get<AttackComponent>(enemy);
+	auto &rangedAttack = registry.get<RangedAttackComponent>(enemy);
+	attack.attackTimer.reset();
+	attack.attackTimer.step(std::chrono::duration<float>(0.1f), false);
+	rangedAttack.targetSnapshot = {400.0f, 100.0f};
+
+	GameEngine::ECS::Systems::ProjectileSystem::update(registry, 0.1f, *textureManager);
+
+	auto projectileView = registry.view<ProjectileComponent, VelocityComponent>().exclude<RangedAttackComponent>();
+	ASSERT_GT(projectileView.size(), 0u);
+	const auto projectile = projectileView.at(0);
+	const auto &velocity = registry.get<VelocityComponent>(projectile);
+	EXPECT_GT(velocity.velocity.x, 0.0f);
 }
 
 TEST_F(ProjectileSystemTest, MarksProjectileAsSpawned)
