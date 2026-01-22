@@ -38,9 +38,18 @@ TEST_F(AttackSystemTest, StartsAttackOnMeleeInput)
 	const auto &input = getInput();
 
 	EXPECT_FALSE(GameEngine::ECS::Systems::AttackSystem::isAttacking(attack));
+	bool callbackCalled = false;
+	GameEngine::ECS::Entity calledEntity{};
+	auto mockCallback = [&](GameEngine::ECS::Entity e) {
+		callbackCalled = true;
+		calledEntity = e;
+	};
 
 	triggerAttackInput();
-	GameEngine::ECS::Systems::AttackSystem::update(registry, 0.1f);
+	GameEngine::ECS::Systems::AttackSystem::update(registry, 0.1f, mockCallback);
+
+	EXPECT_TRUE(callbackCalled);
+	EXPECT_EQ(calledEntity, entity);
 
 	EXPECT_TRUE(GameEngine::ECS::Systems::AttackSystem::isAttacking(attack));
 	EXPECT_FLOAT_EQ(attack.attackTimer.getTime().count(), 0.1s .count());
@@ -55,7 +64,8 @@ TEST_F(AttackSystemTest, RespectsCooldown)
 	attack.attackCoolDownTimer.reset();
 
 	triggerAttackInput(); // not possible to attack in a cooldown
-	GameEngine::ECS::Systems::AttackSystem::update(registry, 0.1f);
+	auto noopCallback = [](GameEngine::ECS::Entity) {};
+	GameEngine::ECS::Systems::AttackSystem::update(registry, 0.1f, noopCallback);
 
 	EXPECT_FALSE(GameEngine::ECS::Systems::AttackSystem::isAttacking(attack));
 	EXPECT_FLOAT_EQ(attack.attackCoolDownTimer.getTime().count(), 0.1s .count());
@@ -66,11 +76,12 @@ TEST_F(AttackSystemTest, EndsAttackAfterDuration)
 	const auto &attack = getAttack();
 
 	triggerAttackInput();
-	GameEngine::ECS::Systems::AttackSystem::update(registry, 0.1f);
+	auto noopCallback = [](GameEngine::ECS::Entity) {};
+	GameEngine::ECS::Systems::AttackSystem::update(registry, 0.1f, noopCallback);
 
 	EXPECT_TRUE(GameEngine::ECS::Systems::AttackSystem::isAttacking(attack));
 
-	GameEngine::ECS::Systems::AttackSystem::update(registry, 0.6f);
+	GameEngine::ECS::Systems::AttackSystem::update(registry, 0.6f, noopCallback);
 
 	EXPECT_FALSE(GameEngine::ECS::Systems::AttackSystem::isAttacking(attack));
 }
@@ -84,14 +95,15 @@ TEST_F(AttackSystemTest, AttackWithoutStateComponentDoesNotCrash)
 
 	auto &input = registry.get<InputComponent>(entity);
 	input.attackPressed = true;
-	EXPECT_NO_THROW(GameEngine::ECS::Systems::AttackSystem::update(registry, 0.1f));
+	auto noopCallback = [](GameEngine::ECS::Entity) {};
+	EXPECT_NO_THROW(GameEngine::ECS::Systems::AttackSystem::update(registry, 0.1f, noopCallback));
 }
 
 TEST_F(AttackSystemTest, NoAttackShouldResultInIdleState)
 {
 	const auto &attack = getAttack();
 
-	GameEngine::ECS::Systems::AttackSystem::update(registry, 0.1f);
+	GameEngine::ECS::Systems::AttackSystem::update(registry, 0.1f, {});
 
 	EXPECT_FALSE(GameEngine::ECS::Systems::AttackSystem::isAttacking(attack));
 }
@@ -101,11 +113,13 @@ TEST_F(AttackSystemTest, CoolDownDoesNotDecreaseWhileAttacking)
 	auto &attack = getAttack();
 
 	triggerAttackInput();
-	GameEngine::ECS::Systems::AttackSystem::update(registry, 0.1f);
+	auto noopCallback = [](GameEngine::ECS::Entity) {};
+
+	GameEngine::ECS::Systems::AttackSystem::update(registry, 0.1f, noopCallback);
 
 	const std::chrono::duration<float> initialCooldown = attack.attackCoolDownTimer.getTime();
 
-	GameEngine::ECS::Systems::AttackSystem::update(registry, 0.2f);
+	GameEngine::ECS::Systems::AttackSystem::update(registry, 0.2f, noopCallback);
 	EXPECT_EQ(attack.attackCoolDownTimer.getTime(), initialCooldown);
 }
 
@@ -114,7 +128,9 @@ TEST_F(AttackSystemTest, ZeroDeltaTimeDoesAffectState)
 	const auto &attack = getAttack();
 
 	triggerAttackInput();
-	GameEngine::ECS::Systems::AttackSystem::update(registry, 0.0f);
+	auto noopCallback = [](GameEngine::ECS::Entity) {};
+
+	GameEngine::ECS::Systems::AttackSystem::update(registry, 0.0f, noopCallback);
 
 	EXPECT_TRUE(GameEngine::ECS::Systems::AttackSystem::isAttacking(attack));
 	EXPECT_EQ(attack.attackTimer.getTime(), std::chrono::duration<float>::zero());

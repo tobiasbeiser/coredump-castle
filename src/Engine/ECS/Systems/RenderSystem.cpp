@@ -4,7 +4,6 @@
 #include "Engine/ECS/Components/Core/LevelComponent.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
-#include "Engine/ECS/Components/Gameplay/Combat/HealthComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
@@ -13,10 +12,10 @@
 #include "Engine/ECS/Components/Render/BlinkComponent.hpp"
 #include "Engine/ECS/Components/Render/CenterCameraComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
+#include "Engine/ECS/Components/Render/SimpleDeathComponent.hpp"
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
 #include "Engine/ECS/Components/Tags/InactiveTag.hpp"
 #include "Engine/ECS/View.hpp"
-#include "Engine/Utils/BlinkUtils.hpp"
 
 #include <algorithm>
 #include <stdexcept>
@@ -67,7 +66,7 @@ void RenderSystem::update(Registry &registry, float alpha)
 	// Tiles, Player
 	for (const auto entity : view) {
 		const auto &[position, previousPosition] = view.get<PositionComponent>(entity);
-		const auto &[texture, TileSize, TileMapPosition] = view.get<SpriteComponent>(entity);
+		const auto &[texture, TileSize, TileMapPosition, spriteColorMod] = view.get<SpriteComponent>(entity);
 		const auto &[layer, flipX] = view.get<RenderComponent>(entity);
 
 		glm::vec2 scale = glm::vec2(1.0f, 1.0f);
@@ -92,39 +91,25 @@ void RenderSystem::update(Registry &registry, float alpha)
 		              .w = tile.TileSize,
 		              .h = tile.TileSize};*/
 
-		SDL_Color colorMod = {255, 255, 255, 255};
-		if (registry.has<BlinkComponent>(entity) && registry.has<HealthComponent>(entity)) {
-			colorMod = Utils::Blink::getBlinkColor(registry, entity);
-		}
-
-		renderItems.emplace_back(RenderItem{.layer = layer,
-		                                    .texture = texture,
-		                                    .src = src,
-		                                    .dst = dst,
-		                                    .parallax = false,
-		                                    .flipX = flipX,
-		                                    .colorMod = colorMod});
+		renderItems.push_back(RenderItem{.layer = layer,
+		                                 .texture = texture,
+		                                 .src = src,
+		                                 .dst = dst,
+		                                 .parallax = false,
+		                                 .flipX = flipX,
+		                                 .colorMod = spriteColorMod});
 	}
 
 	std::ranges::sort(renderItems, [](const RenderItem &a, const RenderItem &b) { return a.layer < b.layer; });
 
 	for (auto &renderItem : renderItems) {
-		constexpr int rWhite = 255, gWhite = 255, bWhite = 255;
-		bool reset = false;
-		if (renderItem.colorMod.r != rWhite || renderItem.colorMod.g != gWhite || renderItem.colorMod.b != bWhite) {
-			SDL_SetTextureColorMod(renderItem.texture, renderItem.colorMod.r, renderItem.colorMod.g,
-			                       renderItem.colorMod.b);
-			reset = true;
-		}
+		SDL_SetTextureColorMod(renderItem.texture, renderItem.colorMod.r, renderItem.colorMod.g, renderItem.colorMod.b);
+		SDL_SetTextureAlphaMod(renderItem.texture, renderItem.colorMod.a);
 
 		if (!renderItem.parallax) {
 			renderer.renderTexture(*renderItem.texture, renderItem.src, renderItem.dst, renderItem.flipX);
 		} else if (renderItem.dst.has_value()) {
 			renderer.renderTextureTiled(*renderItem.texture, renderItem.dst.value(), renderItem.scrollFactor);
-		}
-
-		if (reset) {
-			SDL_SetTextureColorMod(renderItem.texture, rWhite, gWhite, gWhite);
 		}
 	}
 	renderItems.clear();

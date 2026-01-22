@@ -1,18 +1,19 @@
 #include "Engine/ECS/Systems/Combat/HealthSystem.hpp"
-#include "Engine/ECS/Components/Core/PositionComponent.hpp"
+
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HealthComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/PendingDamageComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp"
 #include "Engine/ECS/Components/Render/AnimationComponent.hpp"
+#include "Engine/ECS/Entity.hpp"
+#include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/Systems/StateSystem.hpp"
 #include <gtest/gtest.h>
 
 using namespace std::chrono_literals;
 
-class HealthSystemTest : public ::testing::Test {
-  protected:
-	GameEngine::ECS::Registry registry;
+struct HealthSystemTest : testing::Test {
+	GameEngine::ECS::Registry registry{};
 	GameEngine::ECS::Entity entity{};
 
 	void SetUp() override

@@ -18,15 +18,15 @@ void GameEngine::ECS::Systems::RespawnSystem::update(Registry &registry, GameEng
 
 		delay.step(std::chrono::duration<float>(deltaTime), false);
 		if (delay.isTimeout()) {
-			auto &healthComp = registry.get<HealthComponent>(entity);
-			auto &invulnerabilityTimer = healthComp.invulnerabilityTimer;
-			auto &[position, previousPosition] = registry.get<PositionComponent>(entity);
-			const auto &[lastGroundedPosition] = registry.get<LastGroundedPositionComponent>(entity);
-			auto [velocity] = registry.get<VelocityComponent>(entity);
 
-			auto respawnLogic = [&position, &lastGroundedPosition, &invulnerabilityTimer, &velocity]() {
+			auto respawnLogic = [&registry, entity]() {
+				auto &healthComp = registry.get<HealthComponent>(entity);
+				auto &[position, previousPosition] = registry.get<PositionComponent>(entity);
+				const auto &[lastGroundedPosition] = registry.get<LastGroundedPositionComponent>(entity);
+				auto & [velocity] = registry.get<VelocityComponent>(entity);
+
 				position = lastGroundedPosition;
-				invulnerabilityTimer.reset();
+				healthComp.invulnerabilityTimer.reset();
 				velocity = {0.0f, 0.0f};
 			};
 

@@ -4,7 +4,6 @@
 #include <unordered_map>
 
 namespace GameEngine::ECS {
-
 template <typename T>
 class ComponentStorage final : public IStorage {
   public:
