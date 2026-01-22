@@ -1,73 +1,9 @@
 #pragma once
-#include "Engine/DebugSystem.hpp"
-#include "Engine/ECS/Components/Core/StateComponent.hpp"
-#include "Engine/ECS/Components/Core/VelocityComponent.hpp"
-#include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
-#include "Engine/ECS/Components/Render/AnimationComponent.hpp"
-#include "Engine/ECS/Registry.hpp"
 
-#include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
-#include "Engine/ECS/Components/Gameplay/Combat/HealthComponent.hpp"
-#include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
-#include "Engine/ECS/Systems/Combat/HealthSystem.hpp"
+namespace GameEngine::ECS {
+class Registry;
+}
 
-namespace GameEngine::ECS::Systems {
-class StateSystem {
-  public:
-	static void update(Registry &registry)
-	{
-
-		for (auto view = registry.view<StateComponent>(); const auto entity : view) {
-			auto &state = view.get<StateComponent>(entity);
-
-			if (DebugSystem::instance().getPlayerOptions().showState) {
-				DebugSystem::debug("Entity " + std::to_string(entity) + " State: " + toString(state.state));
-			}
-
-			if (registry.has<HealthComponent>(entity)) {
-				const auto &health = registry.get<HealthComponent>(entity);
-				if (HealthSystem::isDead(health)) {
-					state.state = State::Dead;
-					continue;
-				}
-
-				if (HealthSystem::isHurting(health)) {
-					if (registry.has<AnimationComponent>(entity)) {
-						if (const auto &anim = registry.get<AnimationComponent>(entity);
-						    anim.hasAnimation(AnimationType::Hurting)) {
-							state.state = State::Hurting;
-							continue;
-						}
-					}
-				}
-			}
-
-			if (registry.has<AttackComponent>(entity)) {
-				if (const auto &attack = registry.get<AttackComponent>(entity); AttackSystem::isAttacking(attack)) {
-					state.state = State::Attacking;
-					continue;
-				}
-			}
-
-			if (registry.has<VelocityComponent>(entity) && registry.has<GroundedComponent>(entity)) {
-				const auto &vel = registry.get<VelocityComponent>(entity);
-				const auto &ground = registry.get<GroundedComponent>(entity);
-
-				if (!ground.grounded) {
-					if (vel.velocity.y < 0) {
-						state.state = State::Jumping;
-					} else {
-						state.state = State::Falling;
-					}
-				} else {
-					if (std::abs(vel.velocity.x) > 0.1f) {
-						state.state = State::Walking;
-					} else {
-						state.state = State::Idle;
-					}
-				}
-			}
-		}
-	}
-};
-} // namespace GameEngine::ECS::Systems
+namespace GameEngine::ECS::Systems::StateSystem {
+void update(Registry &registry);
+} // namespace GameEngine::ECS::Systems::StateSystem

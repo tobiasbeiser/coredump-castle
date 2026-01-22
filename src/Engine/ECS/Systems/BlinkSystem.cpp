@@ -3,9 +3,8 @@
 #include "Engine/ECS/Components/Gameplay/Combat/HealthComponent.hpp"
 #include "Engine/ECS/Components/Render/BlinkComponent.hpp"
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
+#include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
-
-#include <SDL3/SDL_log.h>
 
 void GameEngine::ECS::Systems::BlinkSystem::update(Registry &registry)
 {

@@ -3,6 +3,7 @@
 // #include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Render/EffectComponent.hpp"
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
+#include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
 
 void GameEngine::ECS::Systems::EffectSystem::update(Registry &registry, const float deltaTime)
