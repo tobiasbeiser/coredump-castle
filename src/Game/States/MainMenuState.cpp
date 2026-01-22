@@ -1,18 +1,19 @@
 #include "MainMenuState.hpp"
 
-#include "GameLoadingState.hpp"
 #include "Engine/GameEngine.hpp"
-
-#include "PlayState.hpp"
 #include "Engine/Graphics/Gui/CoredumpContext.hpp"
 #include "Engine/Graphics/Gui/UiViewFactory.hpp"
+#include "GameLoadingState.hpp"
+#include "PlayState.hpp"
+
 
 namespace GameEngine {
 
 void MainMenuState::init(GameEngine &game)
 {
 	if (DebugSystem::instance().getSkipMenuOptions().skipMainMenu) {
-		game.pushState(std::make_unique<PlayState>(game.getInputManager(), game.getTextureManager(), game.getRenderer(),
+		game.pushState(std::make_unique<PlayState>(game.getInputManager(), game.getTextureManager(),
+		                                           game.getGuiManager(), game.getRenderer(),
 		                                           game.getEffectFactory()));
 	}
 	context = CoredumpContext::getContext(game);
@@ -35,7 +36,7 @@ void MainMenuState::resume()
 
 void MainMenuState::handleEvents(GameEngine &game, const SDL_Event &event)
 {
-	guiManager->handleEvent(*context, event);
+	guiManager.handleEvent(event);
 }
 
 void MainMenuState::update(GameEngine &game, const float deltaTime) {}
@@ -43,9 +44,7 @@ void MainMenuState::update(GameEngine &game, const float deltaTime) {}
 void MainMenuState::render(GameEngine &game, const float alpha)
 {
 
-	if (guiManager) {
-		guiManager->render(*context);
-	}
+	guiManager.render();
 }
 
 void MainMenuState::setupUI(GameEngine &game)
@@ -53,10 +52,7 @@ void MainMenuState::setupUI(GameEngine &game)
 
 	MainMenuActions actions;
 
-	actions.onStartNewGame = [&game]()
-	{
-		transitionToPlayState(game);
-	};
+	actions.onStartNewGame = [&game]() { transitionToPlayState(game); };
 
 	if (!game.getSaveSystem().getSaves().empty()) {
 		actions.onShowContinue = [this, &game]() {
@@ -74,12 +70,11 @@ void MainMenuState::setupUI(GameEngine &game)
 		SDL_PushEvent(&quit);
 	};
 
-	auto mainView = UiViewFactory::createMainMenu(*context, actions);
+	auto mainView = UiViewFactory::createMainMenu(guiManager.getContext(), actions);
 
-	this->guiManager->setRoot(std::move(mainView));
+	guiManager.setRoot(std::move(mainView));
 
-	Resolution resolution = renderer.getLogicalResolution();
-	guiManager->updateLayout(*context, resolution.width , resolution.height);
+	guiManager.updateLayout();
 }
 
 void MainMenuState::showContinueMenu(GameEngine &game)
@@ -94,11 +89,10 @@ void MainMenuState::showContinueMenu(GameEngine &game)
 	contActions.onBack = [this, &game]() { setupUI(game); }; // Recursive call to rebuild MainMenu
 
 	const auto gameSaves = game.getSaveSystem().getSaves();
-	auto continueView = UiViewFactory::createContinueMenu(*context, contActions, gameSaves);
-	guiManager->setRoot(std::move(continueView));
+	auto continueView = UiViewFactory::createContinueMenu(guiManager.getContext(), contActions, gameSaves);
+	guiManager.setRoot(std::move(continueView));
 
-	const auto [width, height] = renderer.getLogicalResolution();
-	guiManager->updateLayout(*context, width, height);
+	guiManager.updateLayout();
 }
 
 void MainMenuState::showOptionsMenu(GameEngine &game)
@@ -114,18 +108,18 @@ void MainMenuState::showOptionsMenu(GameEngine &game)
 		};
 	}
 
-	auto optionsView = UiViewFactory::createOptionsMenu(*context, optActions);
-	guiManager->setRoot(std::move(optionsView));
-	const auto [width, height] = renderer.getLogicalResolution();
-	guiManager->updateLayout(*context, width, height);
+	auto optionsView = UiViewFactory::createOptionsMenu(guiManager.getContext(), optActions);
+	guiManager.setRoot(std::move(optionsView));
+	guiManager.updateLayout();
 }
 
 void MainMenuState::transitionToPlayState(GameEngine &game)
 {
 	auto playStateFactory = [&game]() {
-		return std::make_unique<PlayState>(game.getInputManager(), game.getTextureManager(), game.getRenderer(), game.getEffectFactory());
+		return std::make_unique<PlayState>(game.getInputManager(), game.getTextureManager(),
+		game.getGuiManager(),game.getRenderer(), game.getEffectFactory());
 	};
-	game.changeState(std::make_unique<GameLoadingState>(std::move(playStateFactory)));
+	game.changeState(std::make_unique<GameLoadingState>(std::move(playStateFactory), game.getGuiManager()));
 }
 
 } // namespace GameEngine
