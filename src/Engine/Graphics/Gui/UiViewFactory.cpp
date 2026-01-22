@@ -80,13 +80,11 @@ namespace UiViewFactory
 			buttonContainer->addWidget(makeBigMenuButton(ctx, "Start New Game", actions.onStartNewGame));
 		}
 
-		if (actions.onShowContinue) {
-			buttonContainer->addWidget(makeBigMenuButton(ctx, "Continue", actions.onShowContinue));
-		} else {
-			auto bigMenuButton = makeBigMenuButton(ctx, "Continue", []{});
+		auto bigMenuButton = makeBigMenuButton(ctx, "Continue", actions.onShowContinue);
+		if (!actions.onShowContinue) {
 			bigMenuButton->setButtonDisabled(true);
-			buttonContainer->addWidget(std::move(bigMenuButton));
 		}
+		buttonContainer->addWidget(std::move(bigMenuButton));
 
 		if (actions.onShowOptions) {
 			buttonContainer->addWidget(makeBigMenuButton(ctx, "Options", actions.onShowOptions));
@@ -172,19 +170,23 @@ namespace UiViewFactory
 		}
 
 
-		if (actions.onDelete)
-		{
-			auto deleteAll = std::make_unique<LinearLayout>();
-			deleteAll->setOrientation(Orientation::Horizontal);
-			auto deleteLabel = std::make_unique<Label>("Delete all saves", ctx.textFont);
-			deleteLabel->setLayoutWeight(1.0f);
-			deleteAll->addWidget(std::move(deleteLabel));
-			// TODO: make delete greyed out if there are no saves to delete
-			auto deleteButton = std::make_unique<Button>("Delete", ctx.textFont, actions.onDelete);
-			deleteAll->addWidget(std::move(deleteButton));
+		auto deleteAll = std::make_unique<LinearLayout>();
+		deleteAll->setOrientation(Orientation::Horizontal);
+		auto deleteLabel = std::make_unique<Label>("Delete all saves", ctx.textFont);
+		deleteLabel->setLayoutWeight(1.0f);
+		deleteAll->addWidget(std::move(deleteLabel));
 
-			content-> addWidget(std::move(deleteAll));
+
+
+		auto deleteButton = std::make_unique<Button>("Delete", ctx.textFont, actions.onDelete);
+		if (!actions.onDelete)
+		{
+			deleteButton->setButtonDisabled(true);
 		}
+
+		deleteAll->addWidget(std::move(deleteButton));
+
+		content-> addWidget(std::move(deleteAll));
 
 		content->addWidget(makeBackButtonFooter(ctx, actions.onBack));
 
