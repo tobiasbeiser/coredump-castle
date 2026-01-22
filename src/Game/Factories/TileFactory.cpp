@@ -1,5 +1,6 @@
 ﻿#include "TileFactory.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
+#include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Hazard/SpikeComponent.hpp"
 #include "Engine/ECS/Components/Physics/AccelerationComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
@@ -55,8 +56,32 @@ GameEngine::ECS::Entity TileFactory::createTile(tson::Tile &tile, const glm::vec
 	return entity;
 }
 
-GameEngine::ECS::Entity TileFactory::createFromObject(const tson::Object &object, const glm::vec2 &levelPos,
-                                                      const int layerIndex) const
+std::optional<GameEngine::ECS::Entity>
+TileFactory::createFromObject(const tson::Object &object, const glm::vec2 &levelPos, const int layerIndex) const
+{
+	auto tile = getTileFromObject(object);
+	if (!tile.has_value()) {
+		return std::nullopt;
+	}
+
+	const auto position = glm::vec2(object.getPosition().x, object.getPosition().y - object.getSize().y);
+	const auto worldPosition = position + levelPos;
+
+	const auto entity = createTile(tile.value(), worldPosition, layerIndex);
+
+	const auto &sprite = registry.get<SpriteComponent>(entity);
+	const auto sizeOnMap = glm::vec2(object.getSize().x != 0 ? object.getSize().x : sprite.tileSize.x,
+	                                 object.getSize().y != 0 ? object.getSize().y : sprite.tileSize.y);
+
+	if (sprite.tileSize.x != sizeOnMap.x || sprite.tileSize.y != sizeOnMap.y) {
+		registry.registerComponent(
+		    entity, TransformComponent{.scale = {sprite.tileSize.x / sizeOnMap.x, sprite.tileSize.y / sizeOnMap.y}});
+	}
+
+	return entity;
+}
+
+std::optional<tson::Tile> TileFactory::getTileFromObject(const tson::Object &object) const
 {
 	if (!map) {
 		throw std::invalid_argument("TileFactory::createFromObject: map is null)");
@@ -65,16 +90,14 @@ GameEngine::ECS::Entity TileFactory::createFromObject(const tson::Object &object
 	auto *tileset = map->getTilesetByGid(object.getGid());
 
 	if (tileset == nullptr) {
-		return registry.create();
+		return std::nullopt;
 	}
 
 	const auto tile = tileset->getTile(object.getGid() - tileset->getFirstgid() + 1);
 	if (tile == nullptr) {
-		return registry.create();
+		return std::nullopt;
 	}
-	const auto position = glm::vec2(object.getPosition().x, object.getPosition().y - object.getSize().y);
-	const auto worldPosition = position + levelPos;
-	return createTile(*tile, worldPosition, layerIndex);
+	return *tile;
 }
 void TileFactory::setMap(tson::Map &tsonMap)
 {

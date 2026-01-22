@@ -90,6 +90,13 @@
             "width": 576,
             "x": 1696,
             "y": 0
+        },
+        {
+            "fileName": "maps/Tutorial.json",
+            "height": 576,
+            "width": 1216,
+            "x": -1440,
+            "y": 576
         }
     ],
     "onlyShowAdjacentMaps": false,
