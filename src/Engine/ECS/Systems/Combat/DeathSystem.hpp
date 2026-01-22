@@ -3,6 +3,6 @@
 
 namespace GameEngine::ECS::Systems::DeathSystem {
 
-void update(Registry &registry);
+void update(Registry &registry, float deltaTime);
 
 } // namespace GameEngine::ECS::Systems::DeathSystem

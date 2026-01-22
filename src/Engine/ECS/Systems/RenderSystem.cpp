@@ -3,7 +3,6 @@
 #include "Engine/ECS/Components/Core/LevelComponent.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
-#include "Engine/ECS/Components/Gameplay/Combat/HealthComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
@@ -12,10 +11,10 @@
 #include "Engine/ECS/Components/Render/BlinkComponent.hpp"
 #include "Engine/ECS/Components/Render/CenterCameraComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
+#include "Engine/ECS/Components/Render/SimpleDeathComponent.hpp"
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
 #include "Engine/ECS/Components/Tags/InactiveTag.hpp"
 #include "Engine/ECS/View.hpp"
-#include "Engine/Utils/BlinkUtils.hpp"
 
 #include <algorithm>
 #include <stdexcept>
@@ -58,7 +57,7 @@ void RenderSystem::update(Registry &registry, float alpha)
 	for (auto view = registry.view<PositionComponent, SpriteComponent, RenderComponent>().exclude<InactiveTag>();
 	     const auto entity : view) {
 		const auto &[position, previousPosition] = view.get<PositionComponent>(entity);
-		const auto &[texture, TileSize, TileMapPosition] = view.get<SpriteComponent>(entity);
+		const auto &[texture, TileSize, TileMapPosition, spriteColorMod] = view.get<SpriteComponent>(entity);
 		const auto &[layer, flipX] = view.get<RenderComponent>(entity);
 
 		glm::vec2 scale = glm::vec2(1.0f, 1.0f);
@@ -83,18 +82,13 @@ void RenderSystem::update(Registry &registry, float alpha)
 		              .w = tile.TileSize,
 		              .h = tile.TileSize};*/
 
-		SDL_Color colorMod = {255, 255, 255, 255};
-		if (registry.has<BlinkComponent>(entity) && registry.has<HealthComponent>(entity)) {
-			colorMod = Utils::Blink::getBlinkColor(registry, entity);
-		}
-
 		renderItems.push_back(RenderItem{.layer = layer,
 		                                 .texture = texture,
 		                                 .src = src,
 		                                 .dst = dst,
 		                                 .parallax = false,
 		                                 .flipX = flipX,
-		                                 .colorMod = colorMod});
+		                                 .colorMod = spriteColorMod});
 
 		if (DebugSystem::instance().getRenderOptions().showBoundingBoxes && registry.has<CollisionComponent>(entity)) {
 			auto col = registry.get<CollisionComponent>(entity).collisionBox;
@@ -136,14 +130,13 @@ void RenderSystem::update(Registry &registry, float alpha)
 
 	for (auto &renderItem : renderItems) {
 		SDL_SetTextureColorMod(renderItem.texture, renderItem.colorMod.r, renderItem.colorMod.g, renderItem.colorMod.b);
+		SDL_SetTextureAlphaMod(renderItem.texture, renderItem.colorMod.a);
 
 		if (!renderItem.parallax) {
 			renderer.renderTexture(*renderItem.texture, renderItem.src, renderItem.dst, renderItem.flipX);
 		} else if (renderItem.dst.has_value()) {
 			renderer.renderTextureTiled(*renderItem.texture, renderItem.dst.value(), renderItem.scrollFactor);
 		}
-
-		SDL_SetTextureColorMod(renderItem.texture, 255, 255, 255);
 	}
 	renderItems.clear();
 }

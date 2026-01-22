@@ -11,7 +11,7 @@ void GameEngine::ECS::Systems::EffectSystem::update(Registry &registry, const fl
 
 	for (auto view = registry.view<EffectComponent, SpriteComponent>(); const auto entity : view) {
 		auto &effect = view.get<EffectComponent>(entity);
-		auto &[texture, tileSize, tileMapPosition] = view.get<SpriteComponent>(entity);
+		auto &[texture, tileSize, tileMapPosition, alpha] = view.get<SpriteComponent>(entity);
 
 		effect.animation.step(std::chrono::duration<float>(deltaTime));
 

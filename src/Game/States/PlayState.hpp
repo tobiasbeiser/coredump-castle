@@ -3,7 +3,6 @@
 #include "Engine/ECS/Systems/MapActivationSystem.hpp"
 #include "Engine/ECS/Systems/RenderSystem.hpp"
 #include "Engine/GameState.hpp"
-#include "Engine/Utils/LevelHistory.hpp"
 #include "Game/Factories/EffectFactory.hpp"
 namespace GameEngine {
 
@@ -23,7 +22,6 @@ class PlayState final : public GameState {
 	void render(GameEngine &game, float alpha) override;
 
   private:
-	LevelHistory history{};
 	InputManager &inputManager;
 	TextureManager &textureManager;
 	Renderer &renderer;

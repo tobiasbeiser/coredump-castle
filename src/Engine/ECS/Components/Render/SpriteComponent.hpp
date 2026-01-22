@@ -6,4 +6,5 @@ struct SpriteComponent {
 	SDL_Texture *texture{};
 	glm::ivec2 tileSize = {32, 32};
 	glm::ivec2 tileMapPosition = {0, 0};
+	SDL_Color colorMod = {255, 255, 255, 255};
 };

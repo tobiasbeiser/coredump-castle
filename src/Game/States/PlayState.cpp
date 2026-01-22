@@ -1,5 +1,6 @@
 #include "PlayState.hpp"
 #include "Engine/ECS/Systems/AnimationSystem.hpp"
+#include "Engine/ECS/Systems/BlinkSystem.hpp"
 #include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
 #include "Engine/ECS/Systems/Combat/DeathSystem.hpp"
 #include "Engine/ECS/Systems/Combat/HealthSystem.hpp"
@@ -72,9 +73,11 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 	ECS::Systems::SpikeSystem::update(game.getRegistry());
 	ECS::Systems::HealthSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::StateSystem::update(game.getRegistry());
+
 	ECS::Systems::AnimationSystem::update(game.getRegistry(), deltaTime);
+	ECS::Systems::BlinkSystem::update(game.getRegistry());
 	ECS::Systems::EffectSystem::update(game.getRegistry(), deltaTime);
-	ECS::Systems::DeathSystem::update(game.getRegistry());
+	ECS::Systems::DeathSystem::update(game.getRegistry(), deltaTime);
 
 	ECS::Systems::InteractionSystem::update(game, game.getRegistry());
 	ECS::Systems::RespawnSystem::update(game.getRegistry(), game, deltaTime);

@@ -4,6 +4,7 @@
 #include "Engine/ECS/Components/Render/AnimationComponent.hpp"
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
+#include "Engine/ECS/View.hpp"
 
 namespace GameEngine::ECS::Systems {
 
@@ -89,7 +90,7 @@ class AnimationSystem {
 	{
 		for (auto view = registry.view<AnimationComponent, SpriteComponent>(); const auto entity : view) {
 			auto &anim = view.get<AnimationComponent>(entity);
-			auto &[texture, tileSize, tileMapPosition] = view.get<SpriteComponent>(entity);
+			auto &[texture, tileSize, tileMapPosition, alpha] = view.get<SpriteComponent>(entity);
 
 			// Determine current animation from state
 			if (registry.has<StateComponent>(entity)) {
