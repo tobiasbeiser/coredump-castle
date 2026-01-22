@@ -17,7 +17,7 @@ class PlayState final : public GameState {
 	void cleanup() override;
 	void pause() override;
 	void resume() override;
-	void handleEvents(GameEngine &game) override;
+	void handleEvents(GameEngine &game, const SDL_Event &event) override;
 	void update(GameEngine &game, float deltaTime) override;
 	void render(GameEngine &game, float alpha) override;
 

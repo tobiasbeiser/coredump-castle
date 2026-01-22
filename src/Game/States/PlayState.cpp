@@ -23,12 +23,12 @@ namespace GameEngine {
 
 void PlayState::init(GameEngine &game)
 {
-	// game.PushState(std::make_unique<TransitionLevelState>("MainHub", "Player"));
 	const std::filesystem::path projectPath = "assets/tiled/CoredumpCastle.tiled-project";
 	auto factory = WorldFactory(game.getRegistry(), projectPath, game.getTextureManager());
 
 	const std::filesystem::path worldPath = "assets/tiled/coredumpCastle.world";
 	factory.createWorld(worldPath);
+	game.getSaveSystem().loadSavedGame(game.getRegistry());
 }
 
 void PlayState::cleanup() {}
@@ -43,7 +43,7 @@ void PlayState::resume()
 	paused = false;
 }
 
-void PlayState::handleEvents(GameEngine &game) {}
+void PlayState::handleEvents(GameEngine &game, const SDL_Event &event) {}
 
 void PlayState::update(GameEngine &game, const float deltaTime)
 {

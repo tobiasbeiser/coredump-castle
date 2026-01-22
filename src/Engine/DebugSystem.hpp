@@ -12,6 +12,10 @@ struct DebugRenderOptions {
 	bool showHitBoxes = false;
 };
 
+struct DebugSkipMenuOptions {
+	bool skipMainMenu = false;
+};
+
 struct DebugPlayerOptions {
 	bool showState = false;
 	bool godMode = false;
@@ -43,6 +47,7 @@ class DebugSystem {
 
 	const DebugRenderOptions &getRenderOptions() const { return render; }
 	const DebugPlayerOptions &getPlayerOptions() const { return player; }
+	const DebugSkipMenuOptions &getSkipMenuOptions() const { return skipMenu; }
 
   private:
 	bool enabled = false;
@@ -50,5 +55,6 @@ class DebugSystem {
 	std::vector<std::string> debugMessages{};
 	DebugRenderOptions render;
 	DebugPlayerOptions player;
+	DebugSkipMenuOptions skipMenu;
 	GameEngine::ECS::Registry *registry = nullptr;
 };

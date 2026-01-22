@@ -15,6 +15,7 @@ class ISaveStorage {
 	virtual void write(const nlohmann::json &data) = 0;
 	[[nodiscard]] virtual nlohmann::json read() const = 0;
 	[[nodiscard]] virtual std::vector<std::string> getSavesNames() const = 0;
+	virtual std::string getSaveName() = 0;
 	virtual void setSaveName(std::string saveName) = 0;
 
   protected:

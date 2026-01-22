@@ -2,6 +2,7 @@
 #include "ECS/Registry.hpp"
 #include "ECS/Systems/SaveSystem.hpp"
 #include "Game/Factories/EffectFactory.hpp"
+#include "Graphics/FontManager.hpp"
 #include "Graphics/Renderer.hpp"
 #include "Graphics/TextureManager.hpp"
 #include "Input/InputManager.hpp"
@@ -54,6 +55,8 @@ class GameEngine {
 	ECS::Registry &getRegistry() { return registry; }
 	InputManager &getInputManager() { return inputManager; }
 	TextureManager &getTextureManager() { return textureManager; }
+	FontManager &getFontManager() { return fontManager; }
+	EffectFactory &getEffectFactory() { return effectFactory; };
 	ECS::Systems::SaveSystem &getSaveSystem() { return saveSystem; }
 
   private:
@@ -64,6 +67,7 @@ class GameEngine {
 	Renderer renderer;
 	InputManager inputManager;
 	TextureManager textureManager;
+	FontManager fontManager;
 	ECS::Systems::SaveSystem saveSystem;
 	struct PendingAction {
 		enum class Type { Push, Pop, Change };
