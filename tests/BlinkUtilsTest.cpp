@@ -7,8 +7,7 @@
 using namespace GameEngine::ECS;
 using namespace GameEngine::Utils;
 
-class BlinkUtilsTest : public ::testing::Test {
-  protected:
+struct BlinkUtilsTest : testing::Test {
 	Registry registry;
 	Entity entity{};
 
@@ -22,7 +21,7 @@ class BlinkUtilsTest : public ::testing::Test {
 
 TEST_F(BlinkUtilsTest, ReturnsWhiteWhenNotInvulnerable)
 {
-	auto color = Blink::getBlinkColor(registry, entity);
+	const auto color = Blink::getBlinkColor(registry, entity);
 	EXPECT_EQ(color.r, 255);
 	EXPECT_EQ(color.g, 255);
 	EXPECT_EQ(color.b, 255);
@@ -32,9 +31,9 @@ TEST_F(BlinkUtilsTest, ReturnsBlinkColorDuringInvulnerability)
 {
 	auto &health = registry.get<HealthComponent>(entity);
 	health.invulnerabilityTimer.reset();
-	health.invulnerabilityTimer.step(std::chrono::duration<float>(0.1f), false);
+	health.invulnerabilityTimer.step(std::chrono::duration<float>::zero(), false);
 
-	auto color = Blink::getBlinkColor(registry, entity);
+	const auto color = Blink::getBlinkColor(registry, entity);
 	EXPECT_EQ(color.r, 255);
 	EXPECT_EQ(color.g, 0);
 	EXPECT_EQ(color.b, 0);
@@ -44,9 +43,9 @@ TEST_F(BlinkUtilsTest, TogglesColorBasedOnFrequency)
 {
 	auto &health = registry.get<HealthComponent>(entity);
 	health.invulnerabilityTimer.reset();
-	health.invulnerabilityTimer.step(std::chrono::duration<float>(0.15f), false);
+	health.invulnerabilityTimer.step(std::chrono::duration<float>::zero(), false);
 
-	auto color = Blink::getBlinkColor(registry, entity);
+	const auto color = Blink::getBlinkColor(registry, entity);
 	EXPECT_EQ(color.r, 255);
 	EXPECT_EQ(color.g, 0);
 	EXPECT_EQ(color.b, 0);

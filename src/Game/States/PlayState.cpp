@@ -60,7 +60,8 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 
 	ECS::Systems::JumpSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::MovementSystem::update(game.getRegistry(), deltaTime);
-	ECS::Systems::AttackSystem::update(game.getRegistry(), effectFactory, deltaTime);
+	ECS::Systems::AttackSystem::update(game.getRegistry(), deltaTime,
+	                                   [&](const ECS::Entity e) { effectFactory.createAttackEffect(e); });
 
 	accumulator += deltaTime;
 	while (accumulator >= stepSize) {

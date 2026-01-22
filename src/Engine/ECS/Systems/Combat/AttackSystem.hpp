@@ -5,10 +5,14 @@
 #include "Engine/ECS/View.hpp"
 #include "Game/Factories/EffectFactory.hpp"
 
+#include <functional>
+
 namespace GameEngine::ECS::Systems {
 class AttackSystem {
+	using AttackCallback = std::function<void(Entity)>;
+
   public:
-	static void update(Registry &registry, const EffectFactory &effectFactory, const float deltaTime)
+	static void update(Registry &registry, const float deltaTime, AttackCallback onAttack)
 	{
 		for (auto view = registry.view<AttackComponent, InputComponent>(); const auto entity : view) {
 			auto &attack = registry.get<AttackComponent>(entity);
@@ -18,7 +22,7 @@ class AttackSystem {
 
 			if (input.attackPressed && !isAttacking(attack) && isCoolDown(attack)) {
 				startAttack(attack, deltaTime);
-				effectFactory.createAttackEffect(entity);
+				onAttack(entity);
 			} else if (isAttacking(attack)) {
 				processAttack(attack, deltaTime);
 
