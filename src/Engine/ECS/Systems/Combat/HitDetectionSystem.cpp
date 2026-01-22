@@ -77,6 +77,7 @@ void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
 			if (isAttacking) {
 				if (SDL_HasRectIntersectionFloat(&attackerWeaponRect, &victimHurtBoxRect)) {
 					hit = true;
+					onHit(attacker, victim);
 				}
 			}
 
@@ -90,7 +91,6 @@ void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
 			if (hit) {
 				if (!registry.has<PendingDamageComponent>(victim)) {
 					registry.registerComponent<PendingDamageComponent>(victim, {10});
-					onHit(attacker, victim);
 				}
 			}
 		}

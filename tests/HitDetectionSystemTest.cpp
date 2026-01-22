@@ -59,8 +59,18 @@ TEST_F(HitDetectionTest, AttackerNotAttackingShouldNotDealDamage)
 	auto &victimPos = registry.get<PositionComponent>(enemy);
 	victimPos.position = {10.f, 0.f};
 
-	GameEngine::ECS::Systems::HitDetectionSystem::update(registry);
+	bool callbackCalled = false;
+	GameEngine::ECS::Entity calledAttacker{};
+	GameEngine::ECS::Entity calledVictim{};
+	auto mockCallback = [&](const GameEngine::ECS::Entity e1, const GameEngine::ECS::Entity e2) {
+		callbackCalled = true;
+		calledAttacker = e1;
+		calledVictim = e2;
+	};
 
+	GameEngine::ECS::Systems::HitDetectionSystem::update(registry, mockCallback);
+
+	EXPECT_FALSE(callbackCalled);
 	EXPECT_FALSE(registry.has<PendingDamageComponent>(enemy));
 }
 
@@ -73,9 +83,21 @@ TEST_F(HitDetectionTest, AttackerIsAttackingShouldDealDamage)
 	auto &victimPos = registry.get<PositionComponent>(enemy);
 	victimPos.position = {20.f, 0.f};
 
-	GameEngine::ECS::Systems::HitDetectionSystem::update(registry);
+	bool callbackCalled = false;
+	GameEngine::ECS::Entity calledAttacker{};
+	GameEngine::ECS::Entity calledVictim{};
+	auto mockCallback = [&](const GameEngine::ECS::Entity e1, const GameEngine::ECS::Entity e2) {
+		callbackCalled = true;
+		calledAttacker = e1;
+		calledVictim = e2;
+	};
+
+	GameEngine::ECS::Systems::HitDetectionSystem::update(registry, mockCallback);
 	GameEngine::ECS::Systems::AttackSystem::update(registry, 0.1f, {});
 
+	EXPECT_TRUE(callbackCalled);
+	EXPECT_EQ(calledAttacker, attacker);
+	EXPECT_EQ(calledVictim, enemy);
 	EXPECT_TRUE(registry.has<PendingDamageComponent>(enemy));
 }
 
@@ -84,8 +106,16 @@ TEST_F(HitDetectionTest, AttackerShouldNotDamageItself)
 	auto &attack = registry.get<AttackComponent>(attacker);
 	attack.attackTimer.reset();
 
-	GameEngine::ECS::Systems::HitDetectionSystem::update(registry);
-
+	bool callbackCalled = false;
+	GameEngine::ECS::Entity calledAttacker{};
+	GameEngine::ECS::Entity calledVictim{};
+	auto mockCallback = [&](const GameEngine::ECS::Entity e1, const GameEngine::ECS::Entity e2) {
+		callbackCalled = true;
+		calledAttacker = e1;
+		calledVictim = e2;
+	};
+	GameEngine::ECS::Systems::HitDetectionSystem::update(registry, mockCallback);
+	EXPECT_FALSE(callbackCalled);
 	EXPECT_FALSE(registry.has<PendingDamageComponent>(attacker));
 }
 
@@ -96,8 +126,18 @@ TEST_F(HitDetectionTest, BodyHitBoxShouldAlwaysDealDamage)
 	    enemy, {.bodyHitBox = {0.f, 0.f, 20.f, 20.f}, .weaponHitBox = {0.f, 0.f, 0.f, 0.f}});
 	passivePos.position = {0.f, 0.f};
 
-	GameEngine::ECS::Systems::HitDetectionSystem::update(registry);
+	bool callbackCalled = false;
+	GameEngine::ECS::Entity calledAttacker{};
+	GameEngine::ECS::Entity calledVictim{};
+	auto mockCallback = [&](const GameEngine::ECS::Entity e1, const GameEngine::ECS::Entity e2) {
+		callbackCalled = true;
+		calledAttacker = e1;
+		calledVictim = e2;
+	};
 
+	GameEngine::ECS::Systems::HitDetectionSystem::update(registry, mockCallback);
+
+	EXPECT_FALSE(callbackCalled);
 	EXPECT_TRUE(registry.has<PendingDamageComponent>(attacker));
 	EXPECT_FALSE(registry.has<PendingDamageComponent>(enemy));
 }
@@ -111,8 +151,17 @@ TEST_F(HitDetectionTest, VictimIsDeadShouldNotApplyDamage)
 	auto &[victimState] = registry.get<StateComponent>(enemy);
 	victimState = State::Dead;
 
-	GameEngine::ECS::Systems::HitDetectionSystem::update(registry);
+	bool callbackCalled = false;
+	GameEngine::ECS::Entity calledAttacker{};
+	GameEngine::ECS::Entity calledVictim{};
+	auto mockCallback = [&](const GameEngine::ECS::Entity e1, const GameEngine::ECS::Entity e2) {
+		callbackCalled = true;
+		calledAttacker = e1;
+		calledVictim = e2;
+	};
 
+	GameEngine::ECS::Systems::HitDetectionSystem::update(registry, mockCallback);
+	EXPECT_FALSE(callbackCalled);
 	EXPECT_FALSE(registry.has<PendingDamageComponent>(enemy));
 }
 
@@ -128,8 +177,17 @@ TEST_F(HitDetectionTest, PlayerShouldNotDamagePlayer)
 	attack.attackTimer.reset();
 	attack.attackTimer.step(std::chrono::duration<float>(0.1f), false);
 
-	GameEngine::ECS::Systems::HitDetectionSystem::update(registry);
+	bool callbackCalled = false;
+	GameEngine::ECS::Entity calledAttacker{};
+	GameEngine::ECS::Entity calledVictim{};
+	auto mockCallback = [&](const GameEngine::ECS::Entity e1, const GameEngine::ECS::Entity e2) {
+		callbackCalled = true;
+		calledAttacker = e1;
+		calledVictim = e2;
+	};
 
+	GameEngine::ECS::Systems::HitDetectionSystem::update(registry, mockCallback);
+	EXPECT_FALSE(callbackCalled);
 	EXPECT_FALSE(registry.has<PendingDamageComponent>(player2));
 }
 
@@ -146,8 +204,17 @@ TEST_F(HitDetectionTest, EnemyShouldNotDamageEnemy)
 	auto &enemyPos = registry.get<PositionComponent>(enemy);
 	enemyPos.position = {0.f, 0.f};
 
-	GameEngine::ECS::Systems::HitDetectionSystem::update(registry);
+	bool callbackCalled = false;
+	GameEngine::ECS::Entity calledAttacker{};
+	GameEngine::ECS::Entity calledVictim{};
+	auto mockCallback = [&](const GameEngine::ECS::Entity e1, const GameEngine::ECS::Entity e2) {
+		callbackCalled = true;
+		calledAttacker = e1;
+		calledVictim = e2;
+	};
 
+	GameEngine::ECS::Systems::HitDetectionSystem::update(registry, mockCallback);
+	EXPECT_FALSE(callbackCalled);
 	EXPECT_FALSE(registry.has<PendingDamageComponent>(enemy2));
 }
 
@@ -157,8 +224,16 @@ TEST_F(HitDetectionTest, NoOverlapShouldNotDealDamage)
 	attack.attackTimer.reset();
 	attack.attackTimer.step(std::chrono::duration<float>(0.1f), false);
 
-	GameEngine::ECS::Systems::HitDetectionSystem::update(registry);
-
+	bool callbackCalled = false;
+	GameEngine::ECS::Entity calledAttacker{};
+	GameEngine::ECS::Entity calledVictim{};
+	auto mockCallback = [&](const GameEngine::ECS::Entity e1, const GameEngine::ECS::Entity e2) {
+		callbackCalled = true;
+		calledAttacker = e1;
+		calledVictim = e2;
+	};
+	GameEngine::ECS::Systems::HitDetectionSystem::update(registry, mockCallback);
+	EXPECT_FALSE(callbackCalled);
 	EXPECT_FALSE(registry.has<PendingDamageComponent>(enemy));
 }
 
@@ -171,8 +246,18 @@ TEST_F(HitDetectionTest, EdgeTouchingShouldDealDamage)
 	auto &enemyPos = registry.get<PositionComponent>(enemy);
 	enemyPos.position = {20.f, 0.f};
 
-	GameEngine::ECS::Systems::HitDetectionSystem::update(registry);
-
+	bool callbackCalled = false;
+	GameEngine::ECS::Entity calledAttacker{};
+	GameEngine::ECS::Entity calledVictim{};
+	auto mockCallback = [&](const GameEngine::ECS::Entity e1, const GameEngine::ECS::Entity e2) {
+		callbackCalled = true;
+		calledAttacker = e1;
+		calledVictim = e2;
+	};
+	GameEngine::ECS::Systems::HitDetectionSystem::update(registry, mockCallback);
+	EXPECT_TRUE(callbackCalled);
+	EXPECT_EQ(calledAttacker, attacker);
+	EXPECT_EQ(calledVictim, enemy);
 	EXPECT_TRUE(registry.has<PendingDamageComponent>(enemy));
 }
 
@@ -188,12 +273,22 @@ TEST_F(HitDetectionTest, FacingLeftShouldOffsetHitboxCorrectly)
 	auto &enemyPos = registry.get<PositionComponent>(enemy);
 	enemyPos.position = {-10.f, 0.f};
 
-	GameEngine::ECS::Systems::HitDetectionSystem::update(registry);
-
+	bool callbackCalled = false;
+	GameEngine::ECS::Entity calledAttacker{};
+	GameEngine::ECS::Entity calledVictim{};
+	auto mockCallback = [&](const GameEngine::ECS::Entity e1, const GameEngine::ECS::Entity e2) {
+		callbackCalled = true;
+		calledAttacker = e1;
+		calledVictim = e2;
+	};
+	GameEngine::ECS::Systems::HitDetectionSystem::update(registry, mockCallback);
+	EXPECT_TRUE(callbackCalled);
+	EXPECT_EQ(calledAttacker, attacker);
+	EXPECT_EQ(calledVictim, enemy);
 	EXPECT_TRUE(registry.has<PendingDamageComponent>(enemy));
 }
 
-TEST_F(HitDetectionTest, HitShouldSetVictimStateToHurting)
+TEST_F(HitDetectionTest, BodyHitShouldSetVictimStateToHurting)
 {
 	registry.registerComponent<HitBoxComponent>(
 	    enemy, {.bodyHitBox = {0.f, 0.f, 20.f, 20.f}, .weaponHitBox = {0.f, 0.f, 0.f, 0.f}});
@@ -202,10 +297,17 @@ TEST_F(HitDetectionTest, HitShouldSetVictimStateToHurting)
 
 	const auto &attackerState = registry.get<StateComponent>(attacker);
 
-	GameEngine::ECS::Systems::HitDetectionSystem::update(registry);
+	bool callbackCalled = false;
+	GameEngine::ECS::Entity calledAttacker{};
+	GameEngine::ECS::Entity calledVictim{};
+	auto mockCallback = [&](const GameEngine::ECS::Entity e1, const GameEngine::ECS::Entity e2) {
+		callbackCalled = true;
+		calledAttacker = e1;
+		calledVictim = e2;
+	};
+	GameEngine::ECS::Systems::HitDetectionSystem::update(registry, mockCallback);
+	EXPECT_FALSE(callbackCalled);
 	GameEngine::ECS::Systems::HealthSystem::update(registry, 0.1f);
-	GameEngine::ECS::Systems::StateSystem::update(registry);
-
 	EXPECT_EQ(attackerState.state, State::Hurting);
 }
 
@@ -218,7 +320,16 @@ TEST_F(HitDetectionTest, PendingDamageIsRemovedAfterProcessing)
 
 	registry.registerComponent<HealthComponent>(attacker, {100, 100, 1s});
 
-	GameEngine::ECS::Systems::HitDetectionSystem::update(registry);
+	bool callbackCalled = false;
+	GameEngine::ECS::Entity calledAttacker{};
+	GameEngine::ECS::Entity calledVictim{};
+	auto mockCallback = [&](const GameEngine::ECS::Entity e1, const GameEngine::ECS::Entity e2) {
+		callbackCalled = true;
+		calledAttacker = e1;
+		calledVictim = e2;
+	};
+	GameEngine::ECS::Systems::HitDetectionSystem::update(registry, mockCallback);
+	EXPECT_FALSE(callbackCalled);
 	EXPECT_TRUE(registry.has<PendingDamageComponent>(attacker));
 
 	GameEngine::ECS::Systems::HealthSystem::update(registry, 0.1f);

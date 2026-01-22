@@ -13,8 +13,8 @@
 
 using namespace std::chrono_literals;
 
-class HitDetectionMultiTargetTest : public ::testing::Test {
-  protected:
+struct HitDetectionMultiTargetTest : testing::Test {
+
 	GameEngine::ECS::Registry registry;
 	GameEngine::ECS::Entity attacker{};
 	GameEngine::ECS::Entity enemy1{};
@@ -55,9 +55,13 @@ TEST_F(HitDetectionMultiTargetTest, AttackerShouldHitMultipleEnemies)
 	attack.attackTimer.reset();
 	attack.attackTimer.step(std::chrono::duration<float>(0.1f), false);
 
+	bool callbackCalled = false;
+	GameEngine::ECS::Entity calledEntity{};
+	auto mockCallback = [&](GameEngine::ECS::Entity e1, GameEngine::ECS::Entity e2) { callbackCalled = true; };
+
 	// Both enemies are in range.
 	// Update HitDetection
-	GameEngine::ECS::Systems::HitDetectionSystem::update(registry);
+	GameEngine::ECS::Systems::HitDetectionSystem::update(registry, mockCallback);
 
 	// Both should have PendingDamage
 	bool e1Hit = registry.has<PendingDamageComponent>(enemy1);
