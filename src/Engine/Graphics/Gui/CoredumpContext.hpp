@@ -3,12 +3,11 @@
 
 #include "Core/UiContext.hpp"
 
-namespace GameEngine
-{
-    class GameEngine;
+namespace GameEngine {
+class GameEngine;
 }
 
-namespace CoredumpContext
-{
-    std::unique_ptr<Ui::UIContext> getContext(GameEngine::GameEngine& game);
+namespace CoredumpContext {
+std::unique_ptr<Ui::UIContext> getContext(GameEngine::GameEngine &game);
+
 }

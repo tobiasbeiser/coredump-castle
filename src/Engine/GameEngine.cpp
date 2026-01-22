@@ -29,7 +29,7 @@ bool GameEngine::init()
 
 	guiManager = std::make_unique<Ui::GuiManager>(std::move(context));
 	states.emplace_back(
-		std::make_unique<MainMenuState>(getInputManager(), getTextureManager(), getGuiManager(), getRenderer()));
+	    std::make_unique<MainMenuState>(getInputManager(), getTextureManager(), getGuiManager(), getRenderer()));
 	running = true;
 
 	states.back()->init(*this);

@@ -10,6 +10,7 @@
 #include "Engine/FileIO/ISaveStorage.hpp"
 
 #include <nlohmann/json.hpp>
+#include <set>
 #include <utility>
 
 namespace GameEngine::ECS::Systems {
@@ -23,7 +24,8 @@ class SaveSystem {
 	{
 		const json saveData = buildSaveData(registry);
 
-		if (saveStorage->getSaveName().empty()) initNewGameSave();
+		if (saveStorage->getSaveName().empty())
+			initNewGameSave();
 
 		saveStorage->write(saveData);
 	}
@@ -37,7 +39,7 @@ class SaveSystem {
 		reinitializePlayerGameData(registry, savedGameData);
 	}
 
-	void setCurrentSaveName(const std::string_view saveName, const bool overwrite=false) const
+	void setCurrentSaveName(const std::string_view saveName, const bool overwrite = false) const
 	{
 		saveStorage->setSaveName(std::string(saveName));
 		if (overwrite) {
@@ -47,40 +49,35 @@ class SaveSystem {
 
 	[[nodiscard]] std::vector<SaveMetaData> getSaves() const { return saveStorage->getSavesData(); }
 
-	void deleteAllSaves() const
-	{
-		saveStorage->deleteSaves();
-	}
+	void deleteAllSaves() const { saveStorage->deleteSaves(); }
 
   private:
 	std::unique_ptr<ISaveStorage> saveStorage;
 
 	void initNewGameSave() const
 	{
+		static constexpr std::string_view kPrefix = "Saved Game ";
 		const auto saves = saveStorage->getSavesData();
 
-		std::vector<int> existingIndices;
-		existingIndices.reserve(saves.size());
+		std::set<int> usedIds;
 
-		for (const auto& [saveName, lastSaved] : saves) {
-			if (saveName.starts_with("Saved Game ")) {
-				try {
-					const std::string numberPart = saveName.substr(11); // Length of "Saved Game "
-					existingIndices.push_back(std::stoi(numberPart));
-				} catch (...) {
+		for (const auto &[name, _] : saves) {
+			if (!name.starts_with(kPrefix))
+				continue;
+
+			if (std::string_view numPart = std::string_view(name).substr(kPrefix.length());
+			    !numPart.empty() && std::ranges::all_of(numPart, [](unsigned char c) { return std::isdigit(c); })) {
+				int id = 0;
+				for (const char c : numPart) {
+					id = id * 10 + (c - '0');
 				}
+				usedIds.insert(id);
 			}
 		}
 
-		std::ranges::sort(existingIndices);
-
 		int newIndex = 1;
-		for (const int index : existingIndices) {
-			if (index == newIndex) {
-				newIndex++;
-			} else if (index > newIndex) {
-				break;
-			}
+		while (usedIds.contains(newIndex)) {
+			newIndex++;
 		}
 
 		const std::string saveName = "Saved Game " + std::to_string(newIndex);

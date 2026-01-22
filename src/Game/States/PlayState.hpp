@@ -9,8 +9,10 @@ namespace GameEngine {
 class PlayState final : public GameState {
 	// Inherited via GameState
   public:
-	PlayState(InputManager &input, TextureManager &textureManager, Ui::GuiManager &guiManager, Renderer &renderer, EffectFactory &effectFactory)
-	    : inputManager(input), textureManager(textureManager), guiManager(guiManager), renderer(renderer), effectFactory(effectFactory)
+	PlayState(InputManager &input, TextureManager &textureManager, Ui::GuiManager &guiManager, Renderer &renderer,
+	          EffectFactory &effectFactory)
+	    : inputManager(input), textureManager(textureManager), guiManager(guiManager), renderer(renderer),
+	      effectFactory(effectFactory)
 	{
 	}
 	void init(GameEngine &game) override;

@@ -4,28 +4,23 @@
 
 #include "Base/Widget.hpp"
 #include "Core/UiContext.hpp"
-#include "CoredumpContext.hpp"
 
-namespace Ui
-{
-	class GuiManager
-	{
-	public:
-		explicit GuiManager(std::unique_ptr<UIContext> context) : context(std::move(context))
-		{
-		}
+namespace Ui {
+class GuiManager {
+  public:
+	explicit GuiManager(std::unique_ptr<UIContext> context) : context(std::move(context)) {}
 
-		void setRoot(std::unique_ptr<Widget> root);
+	void setRoot(std::unique_ptr<Widget> root);
 
-		void updateLayout() const;
+	void updateLayout() const;
 
-		void handleEvent(const SDL_Event& event) const;
-		void render() const;
+	void handleEvent(const SDL_Event &event) const;
+	void render() const;
 
-		UIContext& getContext() const { return *context; };
+	UIContext &getContext() const { return *context; };
 
-	private:
-		std::unique_ptr<Widget> rootWidget;
-		std::unique_ptr<UIContext> context;
-	};
+  private:
+	std::unique_ptr<Widget> rootWidget;
+	std::unique_ptr<UIContext> context;
+};
 } // namespace Ui
