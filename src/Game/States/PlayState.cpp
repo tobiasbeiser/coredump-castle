@@ -1,8 +1,11 @@
 #include "PlayState.hpp"
 #include "Engine/ECS/Systems/AnimationSystem.hpp"
+#include "Engine/ECS/Systems/BlinkSystem.hpp"
 #include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
+#include "Engine/ECS/Systems/Combat/DeathSystem.hpp"
 #include "Engine/ECS/Systems/Combat/HealthSystem.hpp"
 #include "Engine/ECS/Systems/Combat/HitDetectionSystem.hpp"
+#include "Engine/ECS/Systems/EffectSystem.hpp"
 #include "Engine/ECS/Systems/Enemy/ChaseSystem.hpp"
 #include "Engine/ECS/Systems/Enemy/PatrolSystem.hpp"
 #include "Engine/ECS/Systems/Enemy/ProjectileSystem.hpp"
@@ -21,12 +24,12 @@ namespace GameEngine {
 
 void PlayState::init(GameEngine &game)
 {
-	// game.PushState(std::make_unique<TransitionLevelState>("MainHub", "Player"));
 	const std::filesystem::path projectPath = "assets/tiled/CoredumpCastle.tiled-project";
 	auto factory = WorldFactory(game.getRegistry(), projectPath, game.getTextureManager());
 
 	const std::filesystem::path worldPath = "assets/tiled/coredumpCastle.world";
 	factory.createWorld(worldPath);
+	game.getSaveSystem().loadSavedGame(game.getRegistry());
 }
 
 void PlayState::cleanup() {}
@@ -41,7 +44,7 @@ void PlayState::resume()
 	paused = false;
 }
 
-void PlayState::handleEvents(GameEngine &game) {}
+void PlayState::handleEvents(GameEngine &game, const SDL_Event &event) {}
 
 void PlayState::update(GameEngine &game, const float deltaTime)
 {
@@ -60,7 +63,8 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 
 	ECS::Systems::JumpSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::MovementSystem::update(game.getRegistry(), deltaTime);
-	ECS::Systems::AttackSystem::update(game.getRegistry(), deltaTime);
+	ECS::Systems::AttackSystem::update(game.getRegistry(), deltaTime,
+	                                   [&](const ECS::Entity e) { effectFactory.createAttackEffect(e); });
 
 	accumulator += deltaTime;
 	while (accumulator >= stepSize) {
@@ -71,7 +75,11 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 	ECS::Systems::SpikeSystem::update(game.getRegistry());
 	ECS::Systems::HealthSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::StateSystem::update(game.getRegistry());
+
 	ECS::Systems::AnimationSystem::update(game.getRegistry(), deltaTime);
+	ECS::Systems::BlinkSystem::update(game.getRegistry());
+	ECS::Systems::EffectSystem::update(game.getRegistry(), deltaTime);
+	ECS::Systems::DeathSystem::update(game.getRegistry(), deltaTime);
 
 	ECS::Systems::InteractionSystem::update(game, game.getRegistry());
 	ECS::Systems::RespawnSystem::update(game.getRegistry(), game, deltaTime);

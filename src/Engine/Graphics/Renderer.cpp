@@ -2,6 +2,7 @@
 #include "Engine/DebugSystem.hpp"
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
+#include <SDL3_ttf/SDL_ttf.h>
 #include <algorithm>
 #include <cmath>
 #include <imgui_impl_sdl3.h>
@@ -26,18 +27,51 @@ Renderer::Renderer(const std::string &title, const Resolution resolution) : curr
 
 	SDL_SetRenderVSync(renderer.get(), 1);
 
+	if (!TTF_Init()) {
+		throw std::runtime_error(SDL_GetError());
+	}
+
+	textEngine.reset(TTF_CreateRendererTextEngine(renderer.get()));
+
 	setupImGui();
 }
 
 Renderer::~Renderer()
 {
+	TTF_DestroyRendererTextEngine(textEngine.get());
 	SDL_Quit();
+	TTF_Quit();
 }
 
-void Renderer::resize(Resolution newResolution)
+void Renderer::resize(const Resolution newResolution)
 {
 	currentResolution = newResolution;
-	SDL_SetWindowSize(window.get(), currentResolution.width, currentResolution.height);
+}
+
+Resolution Renderer::getLogicalResolution() const
+{
+	return logicalResolution;
+}
+
+glm::vec2 Renderer::windowToLogical(const float windowX, const float windowY) const
+{
+	float logicalX = 0.0f;
+	float logicalY = 0.0f;
+
+	// SDL3 Helper: Converts window (mouse) coordinates to logical space
+	SDL_RenderCoordinatesFromWindow(renderer.get(), windowX, windowY, &logicalX, &logicalY);
+
+	return glm::vec2{logicalX, logicalY};
+}
+
+SDL_Renderer *Renderer::getNativeRenderer() const
+{
+	return renderer.get();
+}
+
+TTF_TextEngine *Renderer::getTextEngine() const
+{
+	return textEngine.get();
 }
 
 std::unique_ptr<SDL_Texture, SDLTextureDeleter> Renderer::loadTexture(const std::filesystem::path &filePath) const
@@ -46,9 +80,26 @@ std::unique_ptr<SDL_Texture, SDLTextureDeleter> Renderer::loadTexture(const std:
 	if (!tex) {
 		throw std::runtime_error(SDL_GetError());
 	}
-	SDL_SetTextureScaleMode(tex, SDL_ScaleMode::SDL_SCALEMODE_NEAREST);
+	SDL_SetTextureScaleMode(tex, SDL_SCALEMODE_NEAREST);
+	SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
 
 	return std::unique_ptr<SDL_Texture, SDLTextureDeleter>(tex);
+}
+
+std::unique_ptr<TTF_Font, TTFFontCloser> Renderer::loadFont(const std::filesystem::path &filePath, const int fontSize)
+{
+	TTF_Font *font = TTF_OpenFont(filePath.string().c_str(), fontSize);
+	if (!font) {
+		throw std::runtime_error(SDL_GetError());
+	}
+
+	return std::unique_ptr<TTF_Font, TTFFontCloser>(font);
+}
+
+std::unique_ptr<TTF_Text, TTFTextDestroyer> Renderer::createText(TTF_Font *font, const std::string &text) const
+{
+	TTF_Text *ttfText = TTF_CreateText(textEngine.get(), font, text.c_str(), 0);
+	return std::unique_ptr<TTF_Text, TTFTextDestroyer>(ttfText);
 }
 
 void Renderer::startFrame(const int red, const int green, const int blue, const int alpha) const
@@ -71,6 +122,9 @@ void Renderer::endFrame() const
 
 	ImGui::Render();
 	ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer.get());
+
+	SDL_SetRenderLogicalPresentation(renderer.get(), logicalResolution.width, logicalResolution.height,
+	                                 SDL_LOGICAL_PRESENTATION_LETTERBOX);
 	SDL_RenderPresent(renderer.get());
 }
 
@@ -179,4 +233,20 @@ void Renderer::renderTexture(SDL_Texture &texture, const std::optional<SDL_FRect
 
 	const SDL_FlipMode flipMode = flip ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
 	SDL_RenderTextureRotated(renderer.get(), &texture, srcPtr, dstPtr, angle, nullptr, flipMode);
+}
+
+void Renderer::drawRectShape(const SDL_FRect rect, const SDL_Color fillColor, const SDL_Color outlineColor) const
+{
+
+	SDL_SetRenderDrawColor(renderer.get(), fillColor.r, fillColor.g, fillColor.b, fillColor.a);
+
+	SDL_RenderFillRect(renderer.get(), &rect);
+
+	SDL_SetRenderDrawColor(renderer.get(), outlineColor.r, outlineColor.g, outlineColor.b, outlineColor.a);
+	SDL_RenderRect(renderer.get(), &rect);
+}
+
+void Renderer::drawText(TTF_Text *textObject, const float x, const float y) const
+{
+	TTF_DrawRendererText(textObject, x, y);
 }

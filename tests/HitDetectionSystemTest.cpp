@@ -19,8 +19,7 @@
 
 using namespace std::chrono_literals;
 
-class HitDetectionTest : public ::testing::Test {
-  protected:
+struct HitDetectionTest : testing::Test {
 	GameEngine::ECS::Registry registry;
 	GameEngine::ECS::Entity attacker{};
 	GameEngine::ECS::Entity enemy{};
@@ -76,7 +75,7 @@ TEST_F(HitDetectionTest, AttackerIsAttackingShouldDealDamage)
 	victimPos.position = {20.f, 0.f};
 
 	GameEngine::ECS::Systems::HitDetectionSystem::update(registry);
-	GameEngine::ECS::Systems::AttackSystem::update(registry, 0.1f);
+	GameEngine::ECS::Systems::AttackSystem::update(registry, 0.1f, {});
 
 	EXPECT_TRUE(registry.has<PendingDamageComponent>(enemy));
 }
@@ -268,4 +267,3 @@ TEST_F(HitDetectionTest, ProjectileDoesNotHitDeadVictim)
 
 	EXPECT_FALSE(registry.has<PendingDamageComponent>(attacker));
 }
-

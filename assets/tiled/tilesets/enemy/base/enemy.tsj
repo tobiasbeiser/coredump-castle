@@ -153,7 +153,14 @@
                  "duration":100,
                  "tileid":18
                 }],
-         "id":23
+         "id":23,
+         "properties":[
+                {
+                 "name":"state",
+                 "propertytype":"State",
+                 "type":"int",
+                 "value":9
+                }]
         }],
  "tilewidth":32,
  "type":"tileset",

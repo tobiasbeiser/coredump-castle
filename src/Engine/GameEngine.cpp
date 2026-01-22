@@ -2,6 +2,7 @@
 #include "../Game/States/PlayState.hpp"
 #include "DebugSystem.hpp"
 #include "FileIO/FileSaveStorage.hpp"
+#include "Game/States/MainMenuState.hpp"
 #include "GameState.hpp"
 
 #include <imgui_impl_sdl3.h>
@@ -9,7 +10,8 @@
 namespace GameEngine {
 
 GameEngine::GameEngine(const std::string &title, const Resolution resolution)
-    : renderer(title, resolution), textureManager(renderer), saveSystem(std::make_unique<ECS::FileSaveStorage>())
+    : renderer(title, resolution), textureManager(renderer), fontManager(renderer),
+      saveSystem(std::make_unique<ECS::FileSaveStorage>())
 {
 	DebugSystem::instance().setRegistry(registry);
 };
@@ -22,7 +24,7 @@ GameEngine::~GameEngine()
 bool GameEngine::init()
 {
 	// game data
-	states.emplace_back(std::make_unique<PlayState>(inputManager, textureManager, renderer));
+	states.emplace_back(std::make_unique<MainMenuState>(inputManager, textureManager, fontManager, renderer));
 	running = true;
 
 	states.back()->init(*this);
@@ -70,12 +72,11 @@ void GameEngine::handleEvents()
 			inputManager.processEvent(&event.key);
 			break;
 		default:
+			if (!states.empty())
+				states.back()->handleEvents(*this, event);
 			break;
 		};
 	}
-
-	if (!states.empty())
-		states.back()->handleEvents(*this);
 }
 
 void GameEngine::update(const float deltaTime)

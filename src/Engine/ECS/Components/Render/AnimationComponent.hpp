@@ -1,15 +1,10 @@
 ﻿#pragma once
+#include "AnimationFrame.hpp"
 #include "Engine/Graphics/Animation.hpp"
 #include <SDL3/SDL_render.h>
 #include <glm/vec2.hpp>
 #include <unordered_map>
 #include <vector>
-
-struct AnimationFrame {
-	SDL_Texture *texture{};
-	glm::ivec2 tileSize{};
-	glm::ivec2 tileMapPosition{};
-};
 
 enum class AnimationType {
 	None,
@@ -32,7 +27,8 @@ class AnimationComponent {
 	void addAnimation(const AnimationType &type, const std::vector<AnimationFrame> &animationFrames,
 	                  const std::chrono::duration<float> duration)
 	{
-		animations[type] = Animation(static_cast<int>(animationFrames.size()), duration);
+		const bool loop = type != AnimationType::Dead;
+		animations[type] = Animation(static_cast<int>(animationFrames.size()), duration, loop);
 		frames[type] = animationFrames;
 	}
 
@@ -66,7 +62,10 @@ class AnimationComponent {
 		return animations.at(type).completed();
 	}
 
-	void stepAnimation(const AnimationType &type, const std::chrono::duration<float> deltaTime) { animations.at(type).step(deltaTime); }
+	void stepAnimation(const AnimationType &type, const std::chrono::duration<float> deltaTime)
+	{
+		animations.at(type).step(deltaTime);
+	}
 
 	std::chrono::duration<float> getAnimationDuration(const AnimationType &type) const
 	{

@@ -4,8 +4,8 @@
 
 int main()
 {
-	const int windowWidth = 1920;
-	const int windowHeight = 1080;
+	constexpr int windowWidth = 1920;
+	constexpr int windowHeight = 1080;
 	GameEngine::GameEngine game("Coredump Castle", Resolution{.width = windowWidth, .height = windowHeight});
 	if (!game.init())
 		return EXIT_FAILURE;

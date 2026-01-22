@@ -23,7 +23,7 @@
             {
              "name":"chaseSpeed",
              "type":"float",
-             "value":90
+             "value":80
             }, 
             {
              "name":"collisionBox",
@@ -43,12 +43,12 @@
             {
              "name":"maxHealth",
              "type":"int",
-             "value":100
+             "value":30
             }, 
             {
              "name":"maxSpeedX",
              "type":"float",
-             "value":50
+             "value":30
             }, 
             {
              "name":"reactionDelay",

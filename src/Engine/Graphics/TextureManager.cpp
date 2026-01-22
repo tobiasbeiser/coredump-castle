@@ -3,11 +3,10 @@
 
 SDL_Texture &TextureManager::getTexture(const std::filesystem::path &filePath)
 {
-	auto iterator = textures.find(filePath);
-	if (iterator != textures.end()) {
+	if (const auto iterator = textures.find(filePath); iterator != textures.end()) {
 		return *(iterator->second); // found in cache
 	}
 
-	textures[filePath] = std::move(renderer.loadTexture(filePath));
+	textures[filePath] = renderer.loadTexture(filePath);
 	return *(textures[filePath]);
 }
