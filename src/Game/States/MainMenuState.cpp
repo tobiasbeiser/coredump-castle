@@ -6,19 +6,15 @@
 #include "GameLoadingState.hpp"
 #include "PlayState.hpp"
 
-
 namespace GameEngine {
 
 void MainMenuState::init(GameEngine &game)
 {
 	if (DebugSystem::instance().getSkipMenuOptions().skipMainMenu) {
 		game.pushState(std::make_unique<PlayState>(game.getInputManager(), game.getTextureManager(),
-		                                           game.getGuiManager(), game.getRenderer(),
-		                                           game.getEffectFactory()));
+		                                           game.getGuiManager(), game.getRenderer(), game.getEffectFactory()));
 	}
-	context = CoredumpContext::getContext(game);
 
-	guiManager = std::make_unique<Ui::GuiManager>();
 	setupUI(game);
 }
 
@@ -43,7 +39,6 @@ void MainMenuState::update(GameEngine &game, const float deltaTime) {}
 
 void MainMenuState::render(GameEngine &game, const float alpha)
 {
-
 	guiManager.render();
 }
 
@@ -55,18 +50,14 @@ void MainMenuState::setupUI(GameEngine &game)
 	actions.onStartNewGame = [&game]() { transitionToPlayState(game); };
 
 	if (!game.getSaveSystem().getSaves().empty()) {
-		actions.onShowContinue = [this, &game]() {
-			showContinueMenu(game);
-		};
+		actions.onShowContinue = [this, &game]() { showContinueMenu(game); };
 	}
 
 	// switch the UI, but remain in MainMenuState
-	actions.onShowOptions = [this, &game]() {
-		showOptionsMenu(game);
-	};
+	actions.onShowSettings = [this, &game]() { showSettingsMenu(game); };
 
 	actions.onQuit = []() {
-		SDL_Event quit = { SDL_EVENT_QUIT };
+		SDL_Event quit = {SDL_EVENT_QUIT};
 		SDL_PushEvent(&quit);
 	};
 
@@ -95,20 +86,18 @@ void MainMenuState::showContinueMenu(GameEngine &game)
 	guiManager.updateLayout();
 }
 
-void MainMenuState::showOptionsMenu(GameEngine &game)
+void MainMenuState::showSettingsMenu(GameEngine &game)
 {
-	OptionsMenuActions optActions;
+	SettingsMenuActions optActions;
 	optActions.onBack = [this, &game]() { setupUI(game); }; // Recursive call to rebuild MainMenu
-	if (!game.getSaveSystem().getSaves().empty())
-	{
-		optActions.onDelete = [this, &game]
-		{
+	if (!game.getSaveSystem().getSaves().empty()) {
+		optActions.onDelete = [this, &game] {
 			game.getSaveSystem().deleteAllSaves();
-			showOptionsMenu(game); // reload to disable delete button
+			showSettingsMenu(game); // reload to disable delete button
 		};
 	}
 
-	auto optionsView = UiViewFactory::createOptionsMenu(guiManager.getContext(), optActions);
+	auto optionsView = UiViewFactory::createSettingsMenu(guiManager.getContext(), optActions);
 	guiManager.setRoot(std::move(optionsView));
 	guiManager.updateLayout();
 }
@@ -116,8 +105,8 @@ void MainMenuState::showOptionsMenu(GameEngine &game)
 void MainMenuState::transitionToPlayState(GameEngine &game)
 {
 	auto playStateFactory = [&game]() {
-		return std::make_unique<PlayState>(game.getInputManager(), game.getTextureManager(),
-		game.getGuiManager(),game.getRenderer(), game.getEffectFactory());
+		return std::make_unique<PlayState>(game.getInputManager(), game.getTextureManager(), game.getGuiManager(),
+		                                   game.getRenderer(), game.getEffectFactory());
 	};
 	game.changeState(std::make_unique<GameLoadingState>(std::move(playStateFactory), game.getGuiManager()));
 }

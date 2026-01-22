@@ -25,7 +25,7 @@ class MainMenuState final : public GameState {
   private:
 	void setupUI(GameEngine &game);
 	void showContinueMenu(GameEngine &game);
-	void showOptionsMenu(GameEngine &game);
+	void showSettingsMenu(GameEngine &game);
 	static void transitionToPlayState(GameEngine &game);
 	InputManager &inputManager;
 	TextureManager &textureManager;
