@@ -1,20 +1,25 @@
 #include "LevelFactory.hpp"
 #include "EnemyFactory.hpp"
 #include "Engine/ECS/Components/Core/LevelComponent.hpp"
+#include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/LockComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Render/BackgroundComponent.hpp"
+#include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Tags/InactiveTag.hpp"
 #include "Game/Factories/PlayerFactory.hpp"
 #include "Parsers/EnemyParser.hpp"
 #include "Parsers/KeyParser.hpp"
 #include "Parsers/PlayerParser.hpp"
+#include "Parsers/TooltipParser.hpp"
 
 #include <glm/vec2.hpp>
 
-LevelFactory::LevelFactory(GameEngine::ECS::Registry &registry, TextureManager &textureManager)
-    : registry(registry), textureManager(textureManager), tileFactory(registry, textureManager, animationFactory),
-      enemyFactory(registry, animationFactory), playerFactory(registry, textureManager, animationFactory)
+LevelFactory::LevelFactory(GameEngine::ECS::Registry &registry, TextureManager &textureManager,
+                           InputManager &inputManager)
+    : registry(registry), textureManager(textureManager), inputManager(inputManager),
+      tileFactory(registry, textureManager, animationFactory), enemyFactory(registry, animationFactory),
+      playerFactory(registry, textureManager, animationFactory)
 {
 	registerParsers();
 };
@@ -149,6 +154,7 @@ void LevelFactory::registerParsers()
 	parsers.push_back(std::make_unique<EnemyParser>(enemyFactory));
 	parsers.push_back(std::make_unique<SavePointParser>(registry, tileFactory));
 	parsers.push_back(std::make_unique<KeyParser>(registry, tileFactory));
+	parsers.push_back(std::make_unique<TooltipParser>(registry, inputManager));
 }
 
 void LevelFactory::processLayerModifications(tson::Layer &layer, GameEngine::ECS::Entity entity,

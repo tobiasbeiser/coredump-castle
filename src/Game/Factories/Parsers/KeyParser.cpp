@@ -13,8 +13,11 @@ bool KeyParser::canParse(tson::Object &obj) const
 void KeyParser::parse(tson::Object &obj, const glm::vec2 &levelPos, const int layerIndex) const
 {
 	const auto entity = tileFactory.createFromObject(obj, levelPos, layerIndex);
+	if (!entity.has_value()) {
+		return;
+	}
 	const auto key = obj.get<int>("key");
-	registry.registerComponent(entity, KeyComponent{key});
-	registry.registerComponent(
-	    entity, InteractionComponent{0, 0, static_cast<float>(obj.getSize().x), static_cast<float>(obj.getSize().y)});
+	registry.registerComponent(entity.value(), KeyComponent{key});
+	registry.registerComponent(entity.value(), InteractionComponent{0, 0, static_cast<float>(obj.getSize().x),
+	                                                                static_cast<float>(obj.getSize().y)});
 }

@@ -1,4 +1,6 @@
 #include "RenderSystem.hpp"
+#include "../../Debug/DebugSystem.hpp"
+#include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Core/LevelComponent.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
@@ -21,13 +23,22 @@ RenderSystem::RenderSystem(Renderer &renderer) : renderer(renderer) {}
 
 void RenderSystem::update(Registry &registry, float alpha)
 {
+	PROFILE_SCOPE("RenderSystem");
+
+	static int renderItemsCapacity = 0;
+
 	renderItems.clear();
 	centerCamera(registry);
+	auto bgView = registry.view<RenderComponent, BackgroundComponent, PositionComponent>().exclude<InactiveTag>();
+	auto view = registry.view<RenderComponent, PositionComponent, SpriteComponent>().exclude<InactiveTag>();
 
+	if (const int requiredCapacity = bgView.size() + view.size(); requiredCapacity > renderItemsCapacity) {
+		renderItemsCapacity = static_cast<int>(requiredCapacity * 1.5f);
+		renderItems.reserve(renderItemsCapacity);
+	}
 	// Backgrounds
 
-	for (auto bgView = registry.view<RenderComponent, BackgroundComponent, PositionComponent>().exclude<InactiveTag>();
-	     const auto entity : bgView) {
+	for (const auto entity : bgView) {
 		const auto &[layer, flipX] = bgView.get<RenderComponent>(entity);
 		const auto &[position, previousPosition] = bgView.get<PositionComponent>(entity);
 		const auto &bg = bgView.get<BackgroundComponent>(entity);
@@ -39,18 +50,17 @@ void RenderSystem::update(Registry &registry, float alpha)
 			dstOpt = SDL_FRect{.x = position.x, .y = bg.yOffset + position.y, .h = static_cast<float>(bg.texture->h)};
 		}
 
-		renderItems.push_back(RenderItem{.layer = layer,
-		                                 .texture = bg.texture,
-		                                 .src = srcOpt,
-		                                 .dst = dstOpt,
-		                                 .parallax = bg.repeatX,
-		                                 .scrollFactor = bg.scrollingSpeed,
-		                                 .flipX = flipX});
+		renderItems.emplace_back(RenderItem{.layer = layer,
+		                                    .texture = bg.texture,
+		                                    .src = srcOpt,
+		                                    .dst = dstOpt,
+		                                    .parallax = bg.repeatX,
+		                                    .scrollFactor = bg.scrollingSpeed,
+		                                    .flipX = flipX});
 	}
 
 	// Tiles, Player
-	for (auto view = registry.view<PositionComponent, SpriteComponent, RenderComponent>().exclude<InactiveTag>();
-	     const auto entity : view) {
+	for (const auto entity : view) {
 		const auto &[position, previousPosition] = view.get<PositionComponent>(entity);
 		const auto &[texture, TileSize, TileMapPosition, spriteColorMod] = view.get<SpriteComponent>(entity);
 		const auto &[layer, flipX] = view.get<RenderComponent>(entity);
@@ -110,7 +120,7 @@ void RenderSystem::centerCamera(Registry &registry) const
 {
 
 	if (auto centerCameraView =
-	        registry.view<PositionComponent, CenterCameraComponent, SpriteComponent>().exclude<InactiveTag>();
+	        registry.view<CenterCameraComponent, PositionComponent, SpriteComponent>().exclude<InactiveTag>();
 	    centerCameraView.size() == 1) {
 		const auto &centerCameraEntity = centerCameraView.at(0);
 		auto &[position, previousPosition] = centerCameraView.get<PositionComponent>(centerCameraEntity);

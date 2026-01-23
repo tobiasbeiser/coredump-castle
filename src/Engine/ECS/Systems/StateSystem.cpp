@@ -2,7 +2,7 @@
 
 #include "Combat/AttackSystem.hpp"
 #include "Combat/HealthSystem.hpp"
-#include "Engine/DebugSystem.hpp"
+#include "Engine/Debug/DebugSystem.hpp"
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
@@ -11,6 +11,10 @@
 #include "Engine/ECS/Components/Render/AnimationComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
+namespace {
+const std::unordered_map<State, AnimationType> blockingStateAnimations = {
+    {State::Hurting, AnimationType::Hurting}, {State::Interacting, AnimationType::Interacting}};
+} // namespace
 
 void GameEngine::ECS::Systems::StateSystem::update(Registry &registry)
 {
@@ -27,14 +31,14 @@ void GameEngine::ECS::Systems::StateSystem::update(Registry &registry)
 				state.state = State::Dead;
 				continue;
 			}
+		}
 
-			if (HealthSystem::isHurting(health)) {
-				if (registry.has<AnimationComponent>(entity)) {
-					if (const auto &anim = registry.get<AnimationComponent>(entity);
-					    anim.hasAnimation(AnimationType::Hurting)) {
-						state.state = State::Hurting;
-						continue;
-					}
+		if (auto it = blockingStateAnimations.find(state.state); it != blockingStateAnimations.end()) {
+			if (registry.has<AnimationComponent>(entity)) {
+				if (const auto &anim = registry.get<AnimationComponent>(entity);
+				    anim.hasAnimation(it->second)
+				    && (anim.getAnimation() != it->second || !anim.hasFinished(it->second))) {
+					continue;
 				}
 			}
 		}

@@ -1,4 +1,4 @@
-#include "Engine/DebugSystem.hpp"
+#include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
@@ -18,6 +18,7 @@
 #include "Engine/ECS/Systems/CollisionSystem.hpp"
 #include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
 #include "Engine/ECS/View.hpp"
+#include "Engine/Utils/DetectionRangeUtils.hpp"
 #include "Engine/Utils/SpatialHash.hpp"
 
 namespace GameEngine::ECS::Systems::ChaseSystem {
@@ -55,13 +56,10 @@ void resetChaseState(const EnemyContext &enemy)
 	enemy.chase.lastKnownPlayerX = std::nullopt;
 }
 
-glm::vec2 calculateCenter(const glm::vec2 &pos, const SDL_FRect &box, const glm::vec2 &scale)
-{
-	return {pos.x + (box.x * scale.x) + (box.w * scale.x) * 0.5f, pos.y + (box.y * scale.y) + (box.h * scale.y) * 0.5f};
-}
-
 std::optional<PlayerContext> getPlayerContext(Registry &registry)
 {
+	auto playerView =
+	    registry.view<PlayerTag, PositionComponent, HurtBoxComponent, TransformComponent, GroundedComponent>();
 	for (auto view =
 	         registry.view<PlayerTag, PositionComponent, HurtBoxComponent, TransformComponent, GroundedComponent>();
 	     const auto entity : view) {
@@ -71,7 +69,8 @@ std::optional<PlayerContext> getPlayerContext(Registry &registry)
 		const auto &transform = registry.get<TransformComponent>(entity);
 		const auto &ground = registry.get<GroundedComponent>(entity);
 
-		return PlayerContext{calculateCenter(pos, hurtBox, transform.scale), hurtBox, transform.scale, ground.grounded};
+		return PlayerContext{Utils::DetectionRangeUtils::calculateCenter(pos, hurtBox, transform.scale), hurtBox,
+		                     transform.scale, ground.grounded};
 	}
 	return std::nullopt;
 }
@@ -110,12 +109,8 @@ void handleRangeAttack(const EnemyContext &enemy, const PlayerContext &player, c
 	auto &ranged = registry.get<RangedAttackComponent>(enemy.entity);
 
 	const float directionToPlayer = player.center.x > enemy.center.x ? 1.0f : -1.0f;
-	const float xDistance = std::abs(player.center.x - enemy.center.x);
-	const float yDistance = std::abs(player.center.y - enemy.center.y);
-
 	const bool withinRange =
-	    (!enemy.chase.detectionWidthRange.has_value() || xDistance <= enemy.chase.detectionWidthRange.value())
-	    && yDistance <= enemy.chase.detectionHeightRange;
+	    Utils::DetectionRangeUtils::isWithinDetectionRange(enemy.center, player.center, enemy.chase);
 
 	if (!withinRange && !AttackSystem::isAttacking(enemy.attack)) {
 		resetChaseState(enemy);
@@ -161,8 +156,7 @@ void handleMeleeAttack(const EnemyContext &enemy, const PlayerContext &player)
 		return;
 	}
 
-	const float verticalThreshold =
-	    player.isGrounded ? enemy.chase.detectionHeightRange : enemy.chase.detectionHeightRange * 2.0f;
+	const float verticalThreshold = Utils::DetectionRangeUtils::getVerticalThreshold(enemy.chase, player.isGrounded);
 
 	if (std::abs(player.center.y - enemy.center.y) > verticalThreshold) {
 		resetChaseState(enemy);
@@ -197,6 +191,7 @@ void handleMeleeAttack(const EnemyContext &enemy, const PlayerContext &player)
 
 void update(Registry &registry, const float deltaTime)
 {
+	PROFILE_SCOPE("ChaseSystem");
 
 	const auto playerCtxOpt = getPlayerContext(registry);
 
@@ -229,7 +224,7 @@ void update(Registry &registry, const float deltaTime)
 		                      registry.get<AttackComponent>(entity),
 		                      registry.get<PatrolComponent>(entity),
 		                      enemyHurtBox,
-		                      calculateCenter(pos.position, enemyHurtBox, enemyScale),
+		                      Utils::DetectionRangeUtils::calculateCenter(pos.position, enemyHurtBox, enemyScale),
 		                      enemyScale,
 		                      pos.position};
 

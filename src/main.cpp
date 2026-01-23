@@ -1,6 +1,4 @@
-#include "Engine/DebugSystem.hpp"
 #include "Engine/GameEngine.hpp"
-#include "math.h"
 
 int main()
 {

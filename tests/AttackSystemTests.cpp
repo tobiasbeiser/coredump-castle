@@ -123,7 +123,7 @@ TEST_F(AttackSystemTest, CoolDownDoesNotDecreaseWhileAttacking)
 	EXPECT_EQ(attack.attackCoolDownTimer.getTime(), initialCooldown);
 }
 
-TEST_F(AttackSystemTest, ZeroDeltaTimeDoesNotAffectState)
+TEST_F(AttackSystemTest, ZeroDeltaTimeDoesAffectState)
 {
 	const auto &attack = getAttack();
 
@@ -132,6 +132,6 @@ TEST_F(AttackSystemTest, ZeroDeltaTimeDoesNotAffectState)
 
 	GameEngine::ECS::Systems::AttackSystem::update(registry, 0.0f, noopCallback);
 
-	EXPECT_FALSE(GameEngine::ECS::Systems::AttackSystem::isAttacking(attack));
+	EXPECT_TRUE(GameEngine::ECS::Systems::AttackSystem::isAttacking(attack));
 	EXPECT_EQ(attack.attackTimer.getTime(), std::chrono::duration<float>::zero());
 }

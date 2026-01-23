@@ -1,9 +1,6 @@
-﻿
-
-#include "EnemyFactory.hpp"
-
+﻿#include "EnemyFactory.hpp"
 #include "AnimationFactory.hpp"
-#include "Engine/DebugSystem.hpp"
+#include "Engine/Debug/DebugSystem.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
@@ -255,8 +252,8 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 	animationFactory.loadAnimationsFromTileset(enemyObj, entity);
 
 	using namespace std::chrono_literals;
-	std::chrono::duration<float> attackDuration = 1s;
-	std::chrono::duration<float> invulnerabilityTime = 1s;
+	std::chrono::duration<float> attackDuration = 100ms;
+	std::chrono::duration<float> invulnerabilityTime = 300ms;
 
 	if (registry.has<AnimationComponent>(entity)) {
 		auto &animComp = registry.get<AnimationComponent>(entity);

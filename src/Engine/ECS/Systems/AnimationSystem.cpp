@@ -1,4 +1,5 @@
 ﻿#include "AnimationSystem.hpp"
+#include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Render/AnimationComponent.hpp"
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
@@ -12,10 +13,6 @@ void handleJumping(AnimationComponent &anim)
 		return;
 	}
 	switch (anim.getAnimation()) {
-	case AnimationType::None:
-	case AnimationType::Idle:
-	case AnimationType::Walking:
-	case AnimationType::Landing:
 	case AnimationType::Attacking:
 		anim.setAnimation(AnimationType::JumpStart);
 		break;
@@ -71,6 +68,7 @@ void handleFalling(AnimationComponent &anim)
 	case AnimationType::Falling:
 		anim.setAnimation(AnimationType::Falling);
 		break;
+	default:;
 	}
 	anim.setAnimation(AnimationType::Falling);
 }
@@ -88,6 +86,7 @@ void handleLanding(AnimationComponent &anim, const AnimationType fallback)
 
 void GameEngine::ECS::Systems::AnimationSystem::update(Registry &registry, const float deltaTime)
 {
+	PROFILE_SCOPE("AnimationSystem");
 	for (auto view = registry.view<AnimationComponent, SpriteComponent>(); const auto entity : view) {
 		auto &anim = view.get<AnimationComponent>(entity);
 		auto &[texture, tileSize, tileMapPosition, alpha] = view.get<SpriteComponent>(entity);
@@ -130,6 +129,11 @@ void GameEngine::ECS::Systems::AnimationSystem::update(Registry &registry, const
 			case State::Dead:
 				if (anim.hasAnimation(AnimationType::Dead)) {
 					anim.setAnimation(AnimationType::Dead);
+				}
+				break;
+			case State::Interacting:
+				if (anim.hasAnimation(AnimationType::Interacting)) {
+					anim.setAnimation(AnimationType::Interacting);
 				}
 				break;
 			}

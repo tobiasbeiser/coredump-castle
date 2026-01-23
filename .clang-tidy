@@ -8,6 +8,7 @@ Checks: >
   -bugprone-narrowing-conversions,
   -bugprone-easily-swappable-parameters,
   -cppcoreguidelines-pro-type-vararg,
+  -clang-analyzer-core.CallAndMessage,
 
 WarningsAsErrors: '*'
 

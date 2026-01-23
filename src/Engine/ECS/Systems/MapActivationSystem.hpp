@@ -1,4 +1,5 @@
 #pragma once
+#include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Core/LevelComponent.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
@@ -16,6 +17,8 @@ class MapActivationSystem {
   public:
 	void update(Registry &registry)
 	{
+		PROFILE_SCOPE("MapActivationSystem");
+
 		if (const auto referenceFrame = getReferenceFrame(registry); referenceFrame != previousReferenceFrame) {
 
 			const bool transitionFromBottomToTop =
@@ -65,7 +68,7 @@ class MapActivationSystem {
 
 	static ReferenceFrame getReferenceFrame(Registry &registry)
 	{
-		if (auto centerCameraView = registry.view<PositionComponent, CenterCameraComponent, SpriteComponent>();
+		if (auto centerCameraView = registry.view<CenterCameraComponent, PositionComponent, SpriteComponent>();
 		    centerCameraView.size() == 1) {
 			const auto &centerCameraEntity = centerCameraView.at(0);
 			const auto &[position, previousPosition] = centerCameraView.get<PositionComponent>(centerCameraEntity);

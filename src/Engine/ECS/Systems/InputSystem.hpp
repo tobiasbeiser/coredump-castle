@@ -1,10 +1,12 @@
 #pragma once
+#include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Gameplay/Hazard/PendingRespawnComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
 #include "Engine/Input/InputManager.hpp"
+#include <string>
 
 namespace GameEngine::ECS::Systems {
 class InputSystem {
@@ -18,6 +20,7 @@ class InputSystem {
 
 	void update(Registry &registry) const
 	{
+		PROFILE_SCOPE("InputSystem");
 
 		float horizontalDirection = 0;
 		if (inputManager.isKeyDown(Key::Left)) {

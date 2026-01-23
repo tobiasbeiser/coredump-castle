@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Registry.hpp"
+#include <algorithm>
 #include <tuple>
 #include <vector>
 namespace GameEngine::ECS {
@@ -11,20 +12,18 @@ class View {
 	std::vector<Entity> entities;
 
   public:
-	View(Registry &reg) : registry(&reg)
+	explicit View(Registry &reg) : registry(&reg)
 	{
-		using Tuple = std::tuple<Components...>;
-		auto &firstStorage = registry->getStorage<std::tuple_element_t<0, Tuple>>();
-
-		// Cache all storages once
-		auto storages = std::make_tuple(&registry->getStorage<Components>()...);
-
-		for (const auto &[entity, _] : firstStorage.components) {
-			if ((std::get<ComponentStorage<Components> *>(storages)->components.contains(entity) && ...)) {
+		auto storages = std::make_tuple(&reg.getStorage<Components>()...);
+		auto &driverStorage = *std::get<0>(storages);
+		entities.reserve(driverStorage.components.size());
+		for (auto const &[entity, val] : driverStorage.components) {
+			if ((std::get<ComponentStorage<Components> *>(storages)->contains(entity) && ...)) {
 				entities.push_back(entity);
 			}
 		}
 	}
+
 	View(const View &) = delete;
 	View &operator=(const View &) = delete;
 	View(View &&) = default;
@@ -48,12 +47,12 @@ class View {
 	auto end() { return entities.end(); }
 	auto at(const int index) { return entities.at(index); }
 
-	int size() const { return entities.size(); }
+	[[nodiscard]] int size() const { return entities.size(); }
 
 	template <typename T>
 	T &get(Entity e)
 	{
-		return registry->getStorage<T>().getComponent(e);
+		return registry->getStorage<T>().get(e);
 	}
 };
 } // namespace GameEngine::ECS

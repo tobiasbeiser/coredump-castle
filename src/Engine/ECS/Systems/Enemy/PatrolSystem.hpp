@@ -1,6 +1,7 @@
 #pragma once
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/ChaseComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
@@ -16,6 +17,20 @@ struct PatrolSystem {
 
 		for (auto view = registry.view<PositionComponent, PatrolComponent, InputComponent, CollisionComponent>();
 		     const auto entity : view) {
+			if (registry.has<ChaseComponent>(entity)) {
+				const auto &chase = registry.get<ChaseComponent>(entity);
+				if (chase.lastKnownPlayerX.has_value()) {
+					continue;
+				}
+			}
+			if (registry.has<AttackComponent>(entity)) {
+				auto &attack = registry.get<AttackComponent>(entity);
+				if (attack.attackTimer.isRunning() && !attack.attackTimer.isTimeout()) {
+					auto &input = registry.get<InputComponent>(entity);
+					input.horizontalDirection = 0.0f;
+					continue;
+				}
+			}
 			const auto &[position, previousPosition] = registry.get<PositionComponent>(entity);
 			const auto &[minBounds, maxBounds] = registry.get<PatrolComponent>(entity);
 			auto &input = registry.get<InputComponent>(entity);

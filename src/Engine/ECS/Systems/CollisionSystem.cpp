@@ -1,6 +1,6 @@
 #include "CollisionSystem.hpp"
 
-#include "Engine/DebugSystem.hpp"
+#include "Engine/Debug/DebugSystem.hpp"
 
 #include <algorithm>
 #include <vector>
@@ -21,6 +21,8 @@
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
 #include "Engine/Utils/SpatialHash.hpp"
+
+#include <SDL3/SDL_pixels.h>
 
 namespace GameEngine::ECS::Systems::CollisionSystem {
 
@@ -92,7 +94,7 @@ Utils::SpatialHash buildStaticColliderGrid(Registry &registry)
 {
 	Utils::SpatialHash grid;
 
-	for (auto staticView = registry.view<PositionComponent, CollisionComponent>()
+	for (auto staticView = registry.view<CollisionComponent, PositionComponent>()
 	                           .exclude<InactiveTag>()
 	                           .exclude<PlayerTag>()
 	                           .exclude<EnemyTag>();
@@ -117,6 +119,10 @@ Utils::SpatialHash buildStaticColliderGrid(Registry &registry)
 
 void resolveHorizontalCollisions(const Entity entity, Registry &registry, const Utils::SpatialHash &grid)
 {
+	if (!registry.hasAll<PositionComponent, VelocityComponent, AccelerationComponent>(entity)) {
+		return;
+	}
+
 	auto &[position, previousPosition] = registry.get<PositionComponent>(entity);
 	auto &[velocity] = registry.get<VelocityComponent>(entity);
 	auto &[acceleration] = registry.get<AccelerationComponent>(entity);
@@ -133,6 +139,10 @@ void resolveHorizontalCollisions(const Entity entity, Registry &registry, const 
 
 void resolveVerticalCollisions(const Entity entity, Registry &registry, const Utils::SpatialHash &grid)
 {
+	if (!registry.hasAll<PositionComponent, VelocityComponent, AccelerationComponent>(entity)) {
+		return;
+	}
+
 	auto &[position, previousPosition] = registry.get<PositionComponent>(entity);
 	auto &[velocity] = registry.get<VelocityComponent>(entity);
 	auto &[acceleration] = registry.get<AccelerationComponent>(entity);

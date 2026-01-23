@@ -1,0 +1,23 @@
+#pragma once
+
+#include "Engine/ECS/Components/Gameplay/Enemy/ChaseComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp"
+
+#include <SDL3/SDL_rect.h>
+#include <glm/vec2.hpp>
+
+namespace GameEngine::Utils::DetectionRangeUtils {
+
+glm::vec2 calculateCenter(const glm::vec2 &position, const SDL_FRect &box, const glm::vec2 &scale);
+
+glm::vec2 getRectCenter(const SDL_FRect &rect);
+
+bool isWithinDetectionRange(const glm::vec2 &enemyCenter, const glm::vec2 &playerCenter, const ChaseComponent &chase);
+
+float getVerticalThreshold(const ChaseComponent &chase, bool playerGrounded);
+
+SDL_FRect getMeleeDetectionRect(const PatrolComponent &patrol, const ChaseComponent &chase);
+
+SDL_FRect getRangedDetectionRect(const ChaseComponent &chase, const glm::vec2 &center);
+
+} // namespace GameEngine::Utils::DetectionRangeUtils

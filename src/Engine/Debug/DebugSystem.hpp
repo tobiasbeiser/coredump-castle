@@ -1,6 +1,5 @@
 #pragma once
-#include "ECS/Registry.hpp"
-
+#include "Engine/ECS/Registry.hpp"
 #include <SDL3/SDL_pixels.h>
 #include <SDL3/SDL_rect.h>
 #include <SDL3/SDL_render.h>
@@ -12,6 +11,7 @@ struct DebugRenderOptions {
 	bool showBoundingBoxes = false;
 	bool showHitBoxes = false;
 	bool showRaycasts = false;
+	bool showTooltipBoxes = false;
 };
 
 struct DebugSkipMenuOptions {
@@ -20,6 +20,7 @@ struct DebugSkipMenuOptions {
 
 struct DebugPlayerOptions {
 	bool showState = false;
+	bool showPosition = true;
 	bool godMode = false;
 	bool noClip = false;
 };
@@ -69,4 +70,10 @@ class DebugSystem {
 	GameEngine::ECS::Registry *registry = nullptr;
 	void drawCollisionBoxes() const;
 	void drawHitBoxes() const;
+	void drawTooltopBoxes() const;
+	void updateFPS();
+
+	static constexpr int fpsHistorySize = 400;
+	std::array<float, fpsHistorySize> fpsHistory{};
+	int fpsOffset = 0;
 };

@@ -1,6 +1,7 @@
 #include "PhysicsSystem.hpp"
 
 #include "CollisionSystem.hpp"
+#include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
@@ -15,8 +16,10 @@
 
 namespace GameEngine::ECS::Systems::PhysicsSystem {
 
-void update(Registry &registry, float timeStep)
+void update(Registry &registry, const float timeStep)
 {
+	PROFILE_SCOPE("PhysicsSystem");
+
 	const auto staticColliderGrid = CollisionSystem::buildStaticColliderGrid(registry);
 
 	for (auto viewGravity = registry.view<VelocityComponent, GravityComponent>().exclude<InactiveTag>();
@@ -26,7 +29,7 @@ void update(Registry &registry, float timeStep)
 		velocity += glm::vec2(0, gravity) * timeStep;
 	}
 
-	for (auto view = registry.view<PositionComponent, VelocityComponent, AccelerationComponent, MovementComponent>()
+	for (auto view = registry.view<MovementComponent, PositionComponent, VelocityComponent, AccelerationComponent>()
 	                     .exclude<InactiveTag>();
 	     const auto entity : view) {
 		auto &[position, previousPosition] = view.get<PositionComponent>(entity);
@@ -38,7 +41,6 @@ void update(Registry &registry, float timeStep)
 		if (std::abs(velocity.x) > maxSpeedX) {
 			velocity.x = maxSpeedX * (velocity.x > 0 ? 1 : -1);
 		}
-
 		position.x += velocity.x * timeStep;
 		if (registry.has<CollisionComponent>(entity)) {
 			CollisionSystem::resolveHorizontalCollisions(entity, registry, staticColliderGrid);

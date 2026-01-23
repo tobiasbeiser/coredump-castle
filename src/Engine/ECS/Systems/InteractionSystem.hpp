@@ -1,7 +1,8 @@
 #pragma once
-#include "Engine/ECS/Components/Core/PortalComponent.hpp"
+#include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/SavePointComponent.hpp"
+#include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InteractionComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InventoryComponent.hpp"
@@ -17,16 +18,18 @@ class InteractionSystem {
   public:
 	static void update(GameEngine &game, Registry &registry)
 	{
+		PROFILE_SCOPE("InteractionSystem");
 
-		for (auto playerView =
-		         registry.view<InputComponent, PositionComponent, InteractionComponent, InventoryComponent>();
+		for (auto playerView = registry.view<InteractionComponent, InputComponent, PositionComponent,
+		                                     InventoryComponent, StateComponent>();
 		     const auto &entity : playerView) {
 			const auto &pInput = playerView.get<InputComponent>(entity);
 			const auto &[playerPosition, _] = playerView.get<PositionComponent>(entity);
 			const auto &[interactionBox] = playerView.get<InteractionComponent>(entity);
 			auto &[inventory] = playerView.get<InventoryComponent>(entity);
+			auto &[state] = playerView.get<StateComponent>(entity);
 
-			if (!pInput.interactPressed) {
+			if (!pInput.interactPressed || state == State::Interacting) {
 				return;
 			}
 			SDL_FRect playerInteractionBox{playerPosition.x + interactionBox.x, playerPosition.y + interactionBox.y,
@@ -45,9 +48,7 @@ class InteractionSystem {
 				                            objInt.interactionBox.h};
 
 				if (SDL_HasRectIntersectionFloat(&playerInteractionBox, &objInteractionBox)) {
-					if (registry.has<PortalComponent>(interactableObject)) {
-						// TransitionLevel(registry, interactableObject, transitionData, game);
-					}
+					state = State::Interacting;
 					if (registry.has<KeyComponent>(interactableObject)) {
 						const auto [id] = registry.get<KeyComponent>(interactableObject);
 						inventory.emplace_back(id);

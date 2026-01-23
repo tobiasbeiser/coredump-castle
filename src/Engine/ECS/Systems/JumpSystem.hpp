@@ -1,4 +1,5 @@
 #pragma once
+#include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/JumpComponent.hpp"
@@ -10,7 +11,7 @@ namespace GameEngine::ECS::Systems {
 struct JumpSystem {
 	static void update(Registry &registry, const float deltaTime)
 	{
-
+		PROFILE_SCOPE("JumpSystem");
 		for (auto view = registry.view<JumpComponent, GroundedComponent, VelocityComponent, InputComponent>();
 		     const auto entity : view) {
 

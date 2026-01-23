@@ -1,5 +1,5 @@
 #include "Renderer.hpp"
-#include "Engine/DebugSystem.hpp"
+#include "../Debug/DebugSystem.hpp"
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
 #include <SDL3_ttf/SDL_ttf.h>
@@ -216,14 +216,22 @@ void Renderer::startImGuiFrame()
 	ImGui_ImplSDL3_NewFrame();
 	ImGui::NewFrame();
 }
-
-void Renderer::renderTexture(SDL_Texture &texture, const std::optional<SDL_FRect> srcRect,
-                             std::optional<SDL_FRect> dstRect, const bool flip, const double angle) const
+bool Renderer::isInViewport(const SDL_FRect &rect) const
 {
+	return SDL_HasRectIntersectionFloat(&rect, &viewport);
+}
+
+void Renderer::renderTexture(SDL_Texture &texture, const std::optional<SDL_FRect> &srcRect,
+                             const std::optional<SDL_FRect> &dstRect, const bool flip, const double angle) const
+{
+	if (dstRect && !isInViewport(dstRect.value()))
+		return;
+
 	const SDL_FRect *srcPtr = srcRect ? &srcRect.value() : nullptr;
 	SDL_FRect localDst;
 
-	SDL_FRect *dstPtr = nullptr;
+	const SDL_FRect *dstPtr = nullptr;
+
 	if (dstRect) {
 		localDst = dstRect.value();
 		localDst.x -= viewport.x;

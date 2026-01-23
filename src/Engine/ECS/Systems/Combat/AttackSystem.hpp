@@ -1,4 +1,5 @@
 #pragma once
+#include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
@@ -12,8 +13,9 @@ class AttackSystem {
 	using AttackCallback = std::function<void(Entity)>;
 
   public:
-	static void update(Registry &registry, const float deltaTime, AttackCallback onAttack)
+	static void update(Registry &registry, const float deltaTime, const AttackCallback &onAttack)
 	{
+		PROFILE_SCOPE("AttackSystem");
 		for (auto view = registry.view<AttackComponent, InputComponent>(); const auto entity : view) {
 			auto &attack = registry.get<AttackComponent>(entity);
 			const auto &input = registry.get<InputComponent>(entity);
@@ -35,7 +37,7 @@ class AttackSystem {
 
 	static bool isAttacking(const AttackComponent &attack)
 	{
-		return attack.attackTimer.getTime() > std::chrono::duration<float>::zero() && !attack.attackTimer.isTimeout();
+		return attack.attackTimer.isRunning() && !attack.attackTimer.isTimeout();
 	}
 
   private:
