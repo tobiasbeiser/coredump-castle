@@ -20,6 +20,28 @@
 #include "Engine/ECS/Components/Render/CenterCameraComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
+#include "PlayerFactory.hpp"
+#include "Engine/ECS/Components/Core/PositionComponent.hpp"
+#include "Engine/ECS/Components/Core/StateComponent.hpp"
+#include "Engine/ECS/Components/Core/TransformComponent.hpp"
+#include "Engine/ECS/Components/Core/VelocityComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/HealthComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/InteractionComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/InventoryComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/JumpComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
+#include "Engine/ECS/Components/Physics/AccelerationComponent.hpp"
+#include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
+#include "Engine/ECS/Components/Physics/GravityComponent.hpp"
+#include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
+#include "Engine/ECS/Components/Render/BlinkComponent.hpp"
+#include "Engine/ECS/Components/Render/CenterCameraComponent.hpp"
+#include "Engine/ECS/Components/Render/RenderComponent.hpp"
+#include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 
 PlayerFactory::PlayerFactory(GameEngine::ECS::Registry &registry, TextureManager &tex_mgr,
                              AnimationFactory &animation_factory)
@@ -69,7 +91,7 @@ GameEngine::ECS::Entity PlayerFactory::createPlayer(tson::Object &player, const 
 		registry.registerComponent(e, InputComponent{});
 		registry.registerComponent(e, MovementComponent{});
 
-		registry.registerComponent(e, JumpComponent{.maxJumps = 1, .coyoteTimer = Timer{0.08s}});
+		registry.registerComponent(e, JumpComponent{.maxJumps = 5, .coyoteTimer = Timer{0.08s}});
 		registry.registerComponent(e, BlinkComponent{.color = {50, 50, 50, 150}});
 
 		registry.registerComponent(e, InteractionComponent{19, 25, 21, 32});

@@ -15,9 +15,17 @@ class View {
 	explicit View(Registry &reg) : registry(&reg)
 	{
 		auto storages = std::make_tuple(&reg.getStorage<Components>()...);
+
+		// Get the storage of the first component type (The "Driver")
 		auto &driverStorage = *std::get<0>(storages);
-		entities.reserve(driverStorage.components.size());
-		for (auto const &[entity, val] : driverStorage.components) {
+		const auto &driverEntities = driverStorage.getEntities(); // <--- Get Vector, not Map
+
+		entities.reserve(driverEntities.size());
+
+		// Linear iteration over a vector!
+		for (const auto entity : driverEntities) {
+			// Check if this entity exists in all other component pools
+			// This is now an array lookup (fast) instead of a hash lookup (slow)
 			if ((std::get<ComponentStorage<Components> *>(storages)->contains(entity) && ...)) {
 				entities.push_back(entity);
 			}

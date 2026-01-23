@@ -1,23 +1,19 @@
 #include "RenderSystem.hpp"
-#include "../../Debug/DebugSystem.hpp"
 #include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Core/LevelComponent.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
-#include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
-#include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
-#include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Render/BackgroundComponent.hpp"
 #include "Engine/ECS/Components/Render/BlinkComponent.hpp"
 #include "Engine/ECS/Components/Render/CenterCameraComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
-#include "Engine/ECS/Components/Render/SimpleDeathComponent.hpp"
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
 #include "Engine/ECS/Components/Tags/InactiveTag.hpp"
 #include "Engine/ECS/View.hpp"
 
 #include <algorithm>
+#include <execution>
 #include <stdexcept>
 #include <vector>
 
@@ -25,9 +21,15 @@ using namespace GameEngine::ECS::Systems;
 
 RenderSystem::RenderSystem(Renderer &renderer) : renderer(renderer) {}
 
+auto RenderSystem::getRenderRank(const RenderSystem::RenderItem &item)
+{
+	return std::tie(item.layer, item.texture, item.colorMod.r, item.colorMod.g, item.colorMod.b, item.colorMod.a,
+	                item.flipX);
+}
+
 void RenderSystem::update(Registry &registry, float alpha)
 {
-	PROFILE_SCOPE("RenderSystem");
+	PROFILE_SCOPE("RenderSystem::Collect");
 
 	static int renderItemsCapacity = 0;
 
@@ -100,7 +102,18 @@ void RenderSystem::update(Registry &registry, float alpha)
 		                                 .colorMod = spriteColorMod});
 	}
 
-	std::ranges::sort(renderItems, [](const RenderItem &a, const RenderItem &b) { return a.layer < b.layer; });
+	PROFILE_SCOPE("RenderSystem::Sort");
+
+#if defined(__cpp_lib_execution) && !defined(__APPLE__)
+	std::ranges::sort(std::execution::par, renderItems.begin(), renderItems.end(),
+	                  [](const RenderItem &a, const RenderItem &b) { return getRenderRank(a) < getRenderRank(b); });
+#else
+	// apple libc++ does not implement parallel algorithms
+	std::ranges::sort(renderItems,
+	                  [](const RenderItem &a, const RenderItem &b) { return getRenderRank(a) < getRenderRank(b); });
+#endif
+
+	PROFILE_SCOPE("RenderSystem::Submit");
 
 	for (auto &renderItem : renderItems) {
 		SDL_SetTextureColorMod(renderItem.texture, renderItem.colorMod.r, renderItem.colorMod.g, renderItem.colorMod.b);

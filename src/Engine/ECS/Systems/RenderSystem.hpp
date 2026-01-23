@@ -28,6 +28,8 @@ class RenderSystem {
 		bool flipX = false;
 		SDL_Color colorMod = {255, 255, 255, 255};
 	};
+
+	static auto getRenderRank(const RenderItem &item);
 	std::vector<RenderItem> renderItems{};
 
 	Renderer &renderer;
