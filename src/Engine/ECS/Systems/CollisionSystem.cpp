@@ -110,7 +110,7 @@ Utils::SpatialHash buildStaticColliderGrid(Registry &registry)
 
 void resolveHorizontalCollisions(const Entity entity, Registry &registry, const Utils::SpatialHash &grid)
 {
-	if (!registry.hasAll<PositionComponent, VelocityComponent, AccelerationComponent>(entity)) {
+	if (!registry.has<PositionComponent, VelocityComponent, AccelerationComponent>(entity)) {
 		return;
 	}
 
@@ -130,7 +130,7 @@ void resolveHorizontalCollisions(const Entity entity, Registry &registry, const 
 
 void resolveVerticalCollisions(const Entity entity, Registry &registry, const Utils::SpatialHash &grid)
 {
-	if (!registry.hasAll<PositionComponent, VelocityComponent, AccelerationComponent>(entity)) {
+	if (!registry.has<PositionComponent, VelocityComponent, AccelerationComponent>(entity)) {
 		return;
 	}
 

@@ -196,6 +196,11 @@ void Renderer::renderCircularFade(float progress, SDL_FColor color)
 
 	SDL_RenderGeometry(renderer.get(), nullptr, vertices.data(), vertices.size(), indices.data(), indices.size());
 }
+SDL_FRect Renderer::getViewport() const
+{
+	return viewport;
+}
+
 void Renderer::setupImGui() const
 {
 	IMGUI_CHECKVERSION();
@@ -216,17 +221,10 @@ void Renderer::startImGuiFrame()
 	ImGui_ImplSDL3_NewFrame();
 	ImGui::NewFrame();
 }
-bool Renderer::isInViewport(const SDL_FRect &rect) const
-{
-	return SDL_HasRectIntersectionFloat(&rect, &viewport);
-}
 
 void Renderer::renderTexture(SDL_Texture &texture, const std::optional<SDL_FRect> &srcRect,
                              const std::optional<SDL_FRect> &dstRect, const bool flip) const
 {
-	if (dstRect && !isInViewport(dstRect.value()))
-		return;
-
 	const SDL_FRect *srcPtr = srcRect ? &srcRect.value() : nullptr;
 	SDL_FRect localDst;
 

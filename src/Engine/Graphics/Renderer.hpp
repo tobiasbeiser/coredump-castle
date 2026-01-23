@@ -74,10 +74,11 @@ class Renderer {
 	void renderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, float scrollFactor) const;
 	void renderCircularFade(float progress, SDL_FColor color = {0, 0, 0, 255});
 
+	SDL_FRect getViewport() const;
+
   private:
 	void setupImGui() const;
 	static void startImGuiFrame();
-	bool isInViewport(const SDL_FRect &rect) const;
 	Resolution currentResolution{1920, 1080};
 	Resolution logicalResolution{768, 432};
 

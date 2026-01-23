@@ -23,7 +23,8 @@ class SaveSystem {
 	{
 		const json saveData = buildSaveData(registry);
 
-		if (saveStorage->getSaveName().empty()) initNewGameSave();
+		if (saveStorage->getSaveName().empty())
+			initNewGameSave();
 
 		saveStorage->write(saveData);
 	}
@@ -37,7 +38,7 @@ class SaveSystem {
 		reinitializePlayerGameData(registry, savedGameData);
 	}
 
-	void setCurrentSaveName(const std::string_view saveName, const bool overwrite=false) const
+	void setCurrentSaveName(const std::string_view saveName, const bool overwrite = false) const
 	{
 		saveStorage->setSaveName(std::string(saveName));
 		if (overwrite) {
@@ -66,7 +67,7 @@ class SaveSystem {
 
 	[[nodiscard]] static json buildSaveData(Registry &registry)
 	{
-		auto playerView = registry.view<PlayerTag>();
+		auto playerView = registry.view<PlayerTag, InventoryComponent, JumpComponent, PositionComponent>();
 		if (playerView.size() > 1U) {
 			throw std::runtime_error("Multiple entities with PlayerTag component");
 		}
@@ -87,7 +88,7 @@ class SaveSystem {
 
 	static void reinitializePlayerGameData(Registry &registry, json gameData)
 	{
-		auto playerView = registry.view<PlayerTag>();
+		auto playerView = registry.view<PlayerTag, InventoryComponent, JumpComponent, PositionComponent>();
 		if (playerView.size() > 1U) {
 			throw std::runtime_error("Multiple entities with PlayerTag component");
 		}
