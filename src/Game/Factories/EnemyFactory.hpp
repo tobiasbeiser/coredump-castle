@@ -108,13 +108,12 @@ class EnemyFactory {
 		std::chrono::duration<float> attackDuration = 100ms;
 		std::chrono::duration<float> invulnerabilityTime = 300ms;
 
-		if (registry.has<AnimationComponent>(entity)) {
-			auto &animComp = registry.get<AnimationComponent>(entity);
-			if (animComp.hasAnimation(AnimationType::Attacking)) {
-				attackDuration = animComp.getAnimationDuration(AnimationType::Attacking);
+		if (const auto animComp = registry.tryGet<AnimationComponent>(entity)) {
+			if (animComp->get().hasAnimation(AnimationType::Attacking)) {
+				attackDuration = animComp->get().getAnimationDuration(AnimationType::Attacking);
 			}
-			if (animComp.hasAnimation(AnimationType::Hurting)) {
-				invulnerabilityTime = animComp.getAnimationDuration(AnimationType::Hurting);
+			if (animComp->get().hasAnimation(AnimationType::Hurting)) {
+				invulnerabilityTime = animComp->get().getAnimationDuration(AnimationType::Hurting);
 			}
 		}
 

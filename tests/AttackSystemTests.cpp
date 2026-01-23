@@ -26,8 +26,8 @@ struct AttackSystemTest : testing::Test {
 		registry.registerComponent<InputComponent>(entity, InputComponent{});
 	}
 
-	AttackComponent &getAttack() { return registry.get<AttackComponent>(entity); }
-	InputComponent &getInput() { return registry.get<InputComponent>(entity); }
+	AttackComponent &getAttack() { return registry.view<AttackComponent>().get<AttackComponent>(entity); }
+	InputComponent &getInput() { return registry.view<InputComponent>().get<InputComponent>(entity); }
 
 	void triggerAttackInput() { getInput().attackPressed = true; }
 };
@@ -93,7 +93,7 @@ TEST_F(AttackSystemTest, AttackWithoutStateComponentDoesNotCrash)
 	registry.registerComponent<AttackComponent>(entity, AttackComponent{});
 	registry.registerComponent<InputComponent>(entity, InputComponent{});
 
-	auto &input = registry.get<InputComponent>(entity);
+	auto &input = getInput();
 	input.attackPressed = true;
 	auto noopCallback = [](GameEngine::ECS::Entity) {};
 	EXPECT_NO_THROW(GameEngine::ECS::Systems::AttackSystem::update(registry, 0.1f, noopCallback));

@@ -71,9 +71,19 @@ class Registry {
 	}
 
 	template <typename T>
-	T &get(Entity entity)
+	std::optional<std::reference_wrapper<T>> tryGet(Entity entity)
 	{
-		return getStorage<T>().get(entity);
+		const size_t id = ComponentId<T>::value;
+		if (id >= storagePools.size() || !storagePools[id]) {
+			return std::nullopt;
+		}
+		auto *storage = static_cast<ComponentStorage<T> *>(storagePools[id].get());
+
+		if (!storage->contains(entity)) {
+			return std::nullopt;
+		}
+
+		return storage->get(entity);
 	}
 
 	template <typename... Components>

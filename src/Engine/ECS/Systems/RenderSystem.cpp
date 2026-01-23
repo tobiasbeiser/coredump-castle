@@ -75,10 +75,8 @@ void RenderSystem::update(Registry &registry, float alpha)
 			const auto &[texture, TileSize, TileMapPosition, spriteColorMod] = view.get<SpriteComponent>(entity);
 			const auto &[layer, flipX] = view.get<RenderComponent>(entity);
 
-			glm::vec2 scale = glm::vec2(1.0f, 1.0f);
-			if (registry.has<TransformComponent>(entity)) {
-				scale = registry.get<TransformComponent>(entity).scale;
-			}
+			const auto transform = registry.tryGet<TransformComponent>(entity);
+			const glm::vec2 scale = transform ? transform->get().scale : glm::vec2{1.0f, 1.0f};
 
 			const SDL_FRect src{.x = static_cast<float>(TileMapPosition.x),
 			                    .y = static_cast<float>(TileMapPosition.y),
@@ -189,8 +187,8 @@ void RenderSystem::centerCamera(Registry &registry) const
 			renderer.centerCameraOn((position + static_cast<glm::vec2>(tile.tileSize / 2)), posLvl.position,
 			                        level.levelSize);
 
-			if (registry.has<RenderComponent>(levelEntity)) {
-				auto &[layer, flipX] = registry.get<RenderComponent>(levelEntity);
+			if (const auto render = registry.tryGet<RenderComponent>(levelEntity)) {
+				auto &[layer, flipX] = render->get();
 				layer = level.playerLayer;
 			}
 

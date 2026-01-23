@@ -8,6 +8,7 @@
 #include "Engine/ECS/Entity.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/Systems/StateSystem.hpp"
+#include "Engine/ECS/View.hpp"
 #include <gtest/gtest.h>
 
 using namespace std::chrono_literals;
@@ -33,7 +34,8 @@ struct HealthSystemTest : testing::Test {
 
 TEST_F(HealthSystemTest, NoDamageRecivedShouldRemainInIdleState)
 {
-	const auto &state = registry.get<StateComponent>(entity);
+	auto view = registry.view<StateComponent>();
+	const auto &state = view.get<StateComponent>(entity);
 
 	GameEngine::ECS::Systems::HealthSystem::update(registry, 0.1);
 
@@ -43,8 +45,9 @@ TEST_F(HealthSystemTest, NoDamageRecivedShouldRemainInIdleState)
 
 TEST_F(HealthSystemTest, ReceivedDamageShouldApplyDamage)
 {
-	const auto &health = registry.get<HealthComponent>(entity);
-	const auto &state = registry.get<StateComponent>(entity);
+	auto view = registry.view<StateComponent, HealthComponent>();
+	const auto &health = view.get<HealthComponent>(entity);
+	const auto &state = view.get<StateComponent>(entity);
 	registry.registerComponent(entity, PendingDamageComponent{10});
 
 	GameEngine::ECS::Systems::HealthSystem::update(registry, 0.1);
@@ -56,7 +59,8 @@ TEST_F(HealthSystemTest, ReceivedDamageShouldApplyDamage)
 
 TEST_F(HealthSystemTest, DamageIsOnlyProcessedOnce)
 {
-	const auto &health = registry.get<HealthComponent>(entity);
+	auto view = registry.view<HealthComponent>();
+	const auto &health = view.get<HealthComponent>(entity);
 	registry.registerComponent(entity, PendingDamageComponent{10});
 
 	GameEngine::ECS::Systems::HealthSystem::update(registry, 0.1);
@@ -66,7 +70,8 @@ TEST_F(HealthSystemTest, DamageIsOnlyProcessedOnce)
 
 TEST_F(HealthSystemTest, ZeroDamageShouldNotChangeState)
 {
-	const auto &health = registry.get<HealthComponent>(entity);
+	auto view = registry.view<HealthComponent>();
+	const auto &health = view.get<HealthComponent>(entity);
 
 	registry.registerComponent(entity, PendingDamageComponent{});
 	GameEngine::ECS::Systems::HealthSystem::update(registry, 0.1);
@@ -76,8 +81,9 @@ TEST_F(HealthSystemTest, ZeroDamageShouldNotChangeState)
 
 TEST_F(HealthSystemTest, NoHealthRemainShouldDie)
 {
-	const auto &health = registry.get<HealthComponent>(entity);
-	const auto &state = registry.get<StateComponent>(entity);
+	auto view = registry.view<HealthComponent, StateComponent>();
+	const auto &state = view.get<StateComponent>(entity);
+	const auto &health = view.get<HealthComponent>(entity);
 
 	registry.registerComponent(entity, PendingDamageComponent{20});
 
@@ -90,8 +96,9 @@ TEST_F(HealthSystemTest, NoHealthRemainShouldDie)
 
 TEST_F(HealthSystemTest, DamageWhileInvulnerableShouldNotApply)
 {
-	const auto &health = registry.get<HealthComponent>(entity);
-	const auto &state = registry.get<StateComponent>(entity);
+	auto view = registry.view<HealthComponent, StateComponent>();
+	const auto &state = view.get<StateComponent>(entity);
+	const auto &health = view.get<HealthComponent>(entity);
 
 	registry.registerComponent(entity, PendingDamageComponent{10});
 
@@ -110,8 +117,9 @@ TEST_F(HealthSystemTest, DamageWhileInvulnerableShouldNotApply)
 
 TEST_F(HealthSystemTest, DamageExceedingHealthShouldClampToZero)
 {
-	const auto &health = registry.get<HealthComponent>(entity);
-	const auto &state = registry.get<StateComponent>(entity);
+	auto view = registry.view<HealthComponent, StateComponent>();
+	const auto &state = view.get<StateComponent>(entity);
+	const auto &health = view.get<HealthComponent>(entity);
 
 	registry.registerComponent(entity, PendingDamageComponent{30});
 
@@ -124,7 +132,8 @@ TEST_F(HealthSystemTest, DamageExceedingHealthShouldClampToZero)
 
 TEST_F(HealthSystemTest, InvulnerabilityTimerShouldResetAfterInitialDamage)
 {
-	const auto &health = registry.get<HealthComponent>(entity);
+	auto view = registry.view<HealthComponent>();
+	const auto &health = view.get<HealthComponent>(entity);
 
 	registry.registerComponent(entity, PendingDamageComponent{10});
 
@@ -135,7 +144,8 @@ TEST_F(HealthSystemTest, InvulnerabilityTimerShouldResetAfterInitialDamage)
 
 TEST_F(HealthSystemTest, EntityWithoutAnimationShouldStillTakeDamage)
 {
-	const auto &health = registry.get<HealthComponent>(entity);
+	auto view = registry.view<HealthComponent>();
+	const auto &health = view.get<HealthComponent>(entity);
 
 	registry.registerComponent(entity, PendingDamageComponent{10});
 	registry.remove<AnimationComponent>(entity);
@@ -147,7 +157,8 @@ TEST_F(HealthSystemTest, EntityWithoutAnimationShouldStillTakeDamage)
 
 TEST_F(HealthSystemTest, InvulnerabilityTimerShouldExpireAfterDuration)
 {
-	const auto &health = registry.get<HealthComponent>(entity);
+	auto view = registry.view<HealthComponent>();
+	const auto &health = view.get<HealthComponent>(entity);
 
 	registry.registerComponent(entity, PendingDamageComponent{10});
 	GameEngine::ECS::Systems::HealthSystem::update(registry, 0.1f);

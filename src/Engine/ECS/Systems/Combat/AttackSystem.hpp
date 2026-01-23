@@ -17,8 +17,8 @@ class AttackSystem {
 	{
 		PROFILE_SCOPE("AttackSystem");
 		for (auto view = registry.view<AttackComponent, InputComponent>(); const auto entity : view) {
-			auto &attack = registry.get<AttackComponent>(entity);
-			const auto &input = registry.get<InputComponent>(entity);
+			auto &attack = view.get<AttackComponent>(entity);
+			const auto &input = view.get<InputComponent>(entity);
 
 			updateCoolDown(attack, deltaTime);
 

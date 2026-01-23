@@ -15,10 +15,10 @@ struct JumpSystem {
 		for (auto view = registry.view<JumpComponent, GroundedComponent, VelocityComponent, InputComponent>();
 		     const auto entity : view) {
 
-			auto &[jumpStrength, jumpsLeft, maxJumps, coyoteTimer] = registry.get<JumpComponent>(entity);
-			const auto &[grounded] = registry.get<GroundedComponent>(entity);
-			auto &[velocity] = registry.get<VelocityComponent>(entity);
-			const auto &input = registry.get<InputComponent>(entity);
+			auto &[jumpStrength, jumpsLeft, maxJumps, coyoteTimer] = view.get<JumpComponent>(entity);
+			const auto &[grounded] = view.get<GroundedComponent>(entity);
+			auto &[velocity] = view.get<VelocityComponent>(entity);
+			const auto &input = view.get<InputComponent>(entity);
 
 			coyoteTimer.step(std::chrono::duration<float>(deltaTime), false);
 			if (grounded) {

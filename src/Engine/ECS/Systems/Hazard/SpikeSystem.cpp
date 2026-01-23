@@ -19,10 +19,10 @@ void GameEngine::ECS::Systems::SpikeSystem::update(Registry &registry)
 				continue;
 			}
 
-			auto &[collisionBoxDynamic] = registry.get<CollisionComponent>(entity);
-			auto &[collisionBoxSpike] = registry.get<CollisionComponent>(spikeEntity);
-			const auto &[position, previousPosition] = registry.get<PositionComponent>(entity);
-			const auto &[spikePosition, previousSpikePosition] = registry.get<PositionComponent>(spikeEntity);
+			auto &[collisionBoxDynamic] = view.get<CollisionComponent>(entity);
+			auto &[collisionBoxSpike] = view.get<CollisionComponent>(spikeEntity);
+			const auto &[position, previousPosition] = view.get<PositionComponent>(entity);
+			const auto &[spikePosition, previousSpikePosition] = view.get<PositionComponent>(spikeEntity);
 
 			auto scaledDynamicBox = SDL_FRect{position.x + collisionBoxDynamic.x, position.y + collisionBoxDynamic.y,
 			                                  collisionBoxDynamic.w, collisionBoxDynamic.h};
@@ -34,11 +34,13 @@ void GameEngine::ECS::Systems::SpikeSystem::update(Registry &registry)
 			if (SDL_HasRectIntersectionFloat(&scaledDynamicBox, &scaledSpikeBox)) {
 				constexpr int spikeDamage = 10;
 
-				if (!registry.has<PendingDamageComponent>(entity)) {
+				const auto pendingDamage = registry.tryGet<PendingDamageComponent>(entity);
+
+				if (!pendingDamage) {
 					registry.registerComponent(entity, PendingDamageComponent{spikeDamage, DamageSource::Hazard});
 				} else {
 					// override existing damage sources as spikes have priority
-					auto &[damage, source] = registry.get<PendingDamageComponent>(entity);
+					auto &[damage, source] = pendingDamage->get();
 					damage = spikeDamage;
 					source = DamageSource::Hazard;
 				}

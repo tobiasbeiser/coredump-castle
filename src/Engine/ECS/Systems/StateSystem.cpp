@@ -25,43 +25,42 @@ void GameEngine::ECS::Systems::StateSystem::update(Registry &registry)
 			DebugSystem::debug("Entity " + std::to_string(entity) + " State: " + toString(state.state));
 		}
 
-		if (registry.has<HealthComponent>(entity)) {
-			const auto &health = registry.get<HealthComponent>(entity);
-			if (HealthSystem::isDead(health)) {
+		if (const auto health = registry.tryGet<HealthComponent>(entity)) {
+			if (HealthSystem::isDead(health->get())) {
 				state.state = State::Dead;
 				continue;
 			}
 		}
 
 		if (auto it = blockingStateAnimations.find(state.state); it != blockingStateAnimations.end()) {
-			if (registry.has<AnimationComponent>(entity)) {
-				if (const auto &anim = registry.get<AnimationComponent>(entity);
-				    anim.hasAnimation(it->second)
-				    && (anim.getAnimation() != it->second || !anim.hasFinished(it->second))) {
+			if (const auto anim = registry.tryGet<AnimationComponent>(entity)) {
+				if (anim->get().hasAnimation(it->second)
+				    && (anim->get().getAnimation() != it->second || !anim->get().hasFinished(it->second))) {
 					continue;
 				}
 			}
 		}
 
 		if (registry.has<AttackComponent>(entity)) {
-			if (const auto &attack = registry.get<AttackComponent>(entity); AttackSystem::isAttacking(attack)) {
+			if (const auto &attack = registry.tryGet<AttackComponent>(entity);
+			    attack && AttackSystem::isAttacking(attack->get())) {
 				state.state = State::Attacking;
 				continue;
 			}
 		}
 
-		if (registry.has<VelocityComponent>(entity) && registry.has<GroundedComponent>(entity)) {
-			const auto &vel = registry.get<VelocityComponent>(entity);
-			const auto &ground = registry.get<GroundedComponent>(entity);
+		const auto vel = registry.tryGet<VelocityComponent>(entity);
+		const auto ground = registry.tryGet<GroundedComponent>(entity);
 
-			if (!ground.grounded) {
-				if (vel.velocity.y < 0) {
+		if (vel && ground) {
+			if (!ground->get().grounded) {
+				if (vel->get().velocity.y < 0) {
 					state.state = State::Jumping;
 				} else {
 					state.state = State::Falling;
 				}
 			} else {
-				if (std::abs(vel.velocity.x) > 0.1f) {
+				if (std::abs(vel->get().velocity.x) > 0.1f) {
 					state.state = State::Walking;
 				} else {
 					state.state = State::Idle;

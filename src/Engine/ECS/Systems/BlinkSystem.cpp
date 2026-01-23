@@ -9,8 +9,8 @@
 void GameEngine::ECS::Systems::BlinkSystem::update(Registry &registry)
 {
 	for (auto view = registry.view<BlinkComponent, HealthComponent, SpriteComponent>(); const auto entity : view) {
-		const auto &health = registry.get<HealthComponent>(entity);
-		auto &[color, blinkFrequency] = registry.get<BlinkComponent>(entity);
+		const auto &health = view.get<HealthComponent>(entity);
+		auto &[color, blinkFrequency] = view.get<BlinkComponent>(entity);
 		auto &sprite = view.get<SpriteComponent>(entity);
 
 		const auto elapsed =

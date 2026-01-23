@@ -41,22 +41,29 @@ bool isHostile(Registry &registry, const Entity attacker, const Entity victim)
 
 void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
 {
-	auto attackerView = registry.view<AttackComponent, HitBoxComponent, PositionComponent>();
+	auto attackerView =
+	    registry.view<AttackComponent, HitBoxComponent, PositionComponent, HurtBoxComponent, RenderComponent>();
 	auto victimView = registry.view<HurtBoxComponent, PositionComponent, HealthComponent>();
 
 	for (const auto attacker : attackerView) {
-		const auto &attackComponent = registry.get<AttackComponent>(attacker);
-		const auto &[attackerBodyHitBox, attackerWeaponHitBox] = registry.get<HitBoxComponent>(attacker);
+		const auto &attackComponent = attackerView.get<AttackComponent>(attacker);
+		const auto &attackerHitBox = attackerView.get<HitBoxComponent>(attacker);
+		const auto &[position, previousPosition] = attackerView.get<PositionComponent>(attacker);
+		const auto &[attackerHurtBoxRect] = attackerView.get<HurtBoxComponent>(attacker);
+		const auto facingLeft = attackerView.get<RenderComponent>(attacker).flipX;
+
+		const auto attackerTransform = registry.tryGet<TransformComponent>(attacker);
+		const glm::vec2 attackerScale = attackerTransform ? attackerTransform->get().scale : glm::vec2{1.0f, 1.0f};
 
 		const bool isAttacking = AttackSystem::isAttacking(attackComponent);
 
 		SDL_FRect attackerWeaponRect = {0, 0, 0, 0};
 		if (isAttacking) {
-			attackerWeaponRect = Utils::HitBoxUtils::getWeaponHitBoxRect(registry, attacker);
+			attackerWeaponRect = Utils::HitBoxUtils::getWeaponHitBoxRect(position, attackerHitBox, attackerHurtBoxRect,
+			                                                             attackerScale, facingLeft);
 		}
 
-		SDL_FRect attackerBodyRect = Utils::HitBoxUtils::getHurtBoxRect(registry, attacker);
-
+		SDL_FRect attackerBodyRect = Utils::HitBoxUtils::getHitBox(position, attackerHurtBoxRect, attackerScale);
 		for (const auto victim : victimView) {
 			if (victim == attacker) {
 				continue;
@@ -66,12 +73,17 @@ void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
 				continue;
 			}
 
-			const auto &victimHealth = registry.get<HealthComponent>(victim);
+			const auto &victimHealth = victimView.get<HealthComponent>(victim);
 			if (HealthSystem::isDead(victimHealth) || HealthSystem::isInvulnerable(victimHealth)) {
 				continue;
 			}
 
-			SDL_FRect victimHurtBoxRect = Utils::HitBoxUtils::getHurtBoxRect(registry, victim);
+			const auto &[victimPos, victimPPos] = victimView.get<PositionComponent>(victim);
+			const auto &[victimHurtBox] = victimView.get<HurtBoxComponent>(victim);
+			const auto victimTransform = registry.tryGet<TransformComponent>(victim);
+			const glm::vec2 victimScale = victimTransform ? victimTransform->get().scale : glm::vec2{1.0f, 1.0f};
+			SDL_FRect victimHurtBoxRect = Utils::HitBoxUtils::getHitBox(victimPos, victimHurtBox, victimScale);
+
 			bool hit = false;
 
 			if (isAttacking) {

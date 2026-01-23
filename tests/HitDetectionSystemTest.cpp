@@ -47,6 +47,8 @@ struct HitDetectionTest : testing::Test {
 		registry.registerComponent<HealthComponent>(enemy, {100, 100});
 		registry.registerComponent<HurtBoxComponent>(enemy, {.hurtBox = {0.f, 0.f, 20.f, 20.f}});
 		registry.registerComponent<StateComponent>(enemy, {});
+		registry.registerComponent<HitBoxComponent>(enemy, {});
+		registry.registerComponent<RenderComponent>(enemy, {});
 
 		AnimationComponent enemyAnim;
 		enemyAnim.addAnimation(AnimationType::Hurting, {}, std::chrono::duration<float>(1.0f));
@@ -56,7 +58,8 @@ struct HitDetectionTest : testing::Test {
 
 TEST_F(HitDetectionTest, AttackerNotAttackingShouldNotDealDamage)
 {
-	auto &victimPos = registry.get<PositionComponent>(enemy);
+	auto view = registry.view<PositionComponent>();
+	auto &victimPos = view.get<PositionComponent>(enemy);
 	victimPos.position = {10.f, 0.f};
 
 	bool callbackCalled = false;
@@ -76,11 +79,12 @@ TEST_F(HitDetectionTest, AttackerNotAttackingShouldNotDealDamage)
 
 TEST_F(HitDetectionTest, AttackerIsAttackingShouldDealDamage)
 {
-	auto &attack = registry.get<AttackComponent>(attacker);
+	auto view = registry.view<PositionComponent, AttackComponent>();
+	auto &attack = view.get<AttackComponent>(attacker);
 	attack.attackTimer.reset();
 	attack.attackTimer.step(std::chrono::duration<float>(0.1f), false);
 
-	auto &victimPos = registry.get<PositionComponent>(enemy);
+	auto &victimPos = view.get<PositionComponent>(enemy);
 	victimPos.position = {20.f, 0.f};
 
 	bool callbackCalled = false;
@@ -103,7 +107,8 @@ TEST_F(HitDetectionTest, AttackerIsAttackingShouldDealDamage)
 
 TEST_F(HitDetectionTest, AttackerShouldNotDamageItself)
 {
-	auto &attack = registry.get<AttackComponent>(attacker);
+	auto view = registry.view<AttackComponent>();
+	auto &attack = view.get<AttackComponent>(attacker);
 	attack.attackTimer.reset();
 
 	bool callbackCalled = false;
@@ -121,7 +126,8 @@ TEST_F(HitDetectionTest, AttackerShouldNotDamageItself)
 
 TEST_F(HitDetectionTest, BodyHitBoxShouldAlwaysDealDamage)
 {
-	auto &passivePos = registry.get<PositionComponent>(enemy);
+	auto view = registry.view<PositionComponent>();
+	auto &passivePos = view.get<PositionComponent>(enemy);
 	registry.registerComponent<HitBoxComponent>(
 	    enemy, {.bodyHitBox = {0.f, 0.f, 20.f, 20.f}, .weaponHitBox = {0.f, 0.f, 0.f, 0.f}});
 	passivePos.position = {0.f, 0.f};
@@ -144,11 +150,12 @@ TEST_F(HitDetectionTest, BodyHitBoxShouldAlwaysDealDamage)
 
 TEST_F(HitDetectionTest, VictimIsDeadShouldNotApplyDamage)
 {
-	auto &passivePos = registry.get<PositionComponent>(enemy);
+	auto view = registry.view<PositionComponent, StateComponent>();
+	auto &passivePos = view.get<PositionComponent>(enemy);
 	registry.registerComponent<HitBoxComponent>(
 	    enemy, {.bodyHitBox = {0.f, 0.f, 20.f, 20.f}, .weaponHitBox = {0.f, 0.f, 0.f, 0.f}});
 	passivePos.position = {0.f, 0.f};
-	auto &[victimState] = registry.get<StateComponent>(enemy);
+	auto &[victimState] = view.get<StateComponent>(enemy);
 	victimState = State::Dead;
 
 	bool callbackCalled = false;
@@ -173,7 +180,8 @@ TEST_F(HitDetectionTest, PlayerShouldNotDamagePlayer)
 	registry.registerComponent<HurtBoxComponent>(player2, {.hurtBox = {0.f, 0.f, 20.f, 20.f}});
 	registry.registerComponent<StateComponent>(player2, {});
 
-	auto &attack = registry.get<AttackComponent>(attacker);
+	auto view = registry.view<AttackComponent>();
+	auto &attack = view.get<AttackComponent>(attacker);
 	attack.attackTimer.reset();
 	attack.attackTimer.step(std::chrono::duration<float>(0.1f), false);
 
@@ -201,7 +209,8 @@ TEST_F(HitDetectionTest, EnemyShouldNotDamageEnemy)
 
 	registry.registerComponent<HitBoxComponent>(
 	    enemy, {.bodyHitBox = {0.f, 0.f, 20.f, 20.f}, .weaponHitBox = {0.f, 0.f, 0.f, 0.f}});
-	auto &enemyPos = registry.get<PositionComponent>(enemy);
+	auto view = registry.view<PositionComponent>();
+	auto &enemyPos = view.get<PositionComponent>(enemy);
 	enemyPos.position = {0.f, 0.f};
 
 	bool callbackCalled = false;
@@ -220,7 +229,8 @@ TEST_F(HitDetectionTest, EnemyShouldNotDamageEnemy)
 
 TEST_F(HitDetectionTest, NoOverlapShouldNotDealDamage)
 {
-	auto &attack = registry.get<AttackComponent>(attacker);
+	auto view = registry.view<AttackComponent>();
+	auto &attack = view.get<AttackComponent>(attacker);
 	attack.attackTimer.reset();
 	attack.attackTimer.step(std::chrono::duration<float>(0.1f), false);
 
@@ -239,11 +249,12 @@ TEST_F(HitDetectionTest, NoOverlapShouldNotDealDamage)
 
 TEST_F(HitDetectionTest, EdgeTouchingShouldDealDamage)
 {
-	auto &attack = registry.get<AttackComponent>(attacker);
+	auto view = registry.view<AttackComponent, PositionComponent>();
+	auto &attack = view.get<AttackComponent>(attacker);
 	attack.attackTimer.reset();
 	attack.attackTimer.step(std::chrono::duration<float>(0.1f), false);
 
-	auto &enemyPos = registry.get<PositionComponent>(enemy);
+	auto &enemyPos = view.get<PositionComponent>(enemy);
 	enemyPos.position = {20.f, 0.f};
 
 	bool callbackCalled = false;
@@ -263,14 +274,16 @@ TEST_F(HitDetectionTest, EdgeTouchingShouldDealDamage)
 
 TEST_F(HitDetectionTest, FacingLeftShouldOffsetHitboxCorrectly)
 {
-	auto &render = registry.get<RenderComponent>(attacker);
+	auto view = registry.view<AttackComponent, PositionComponent, RenderComponent>();
+
+	auto &render = view.get<RenderComponent>(attacker);
 	render.flipX = true;
 
-	auto &attack = registry.get<AttackComponent>(attacker);
+	auto &attack = view.get<AttackComponent>(attacker);
 	attack.attackTimer.reset();
 	attack.attackTimer.step(std::chrono::duration<float>(0.1f), false);
 
-	auto &enemyPos = registry.get<PositionComponent>(enemy);
+	auto &enemyPos = view.get<PositionComponent>(enemy);
 	enemyPos.position = {-10.f, 0.f};
 
 	bool callbackCalled = false;
@@ -292,10 +305,11 @@ TEST_F(HitDetectionTest, BodyHitShouldSetVictimStateToHurting)
 {
 	registry.registerComponent<HitBoxComponent>(
 	    enemy, {.bodyHitBox = {0.f, 0.f, 20.f, 20.f}, .weaponHitBox = {0.f, 0.f, 0.f, 0.f}});
-	auto &enemyPos = registry.get<PositionComponent>(enemy);
+	auto view = registry.view<PositionComponent, StateComponent>();
+	auto &enemyPos = view.get<PositionComponent>(enemy);
 	enemyPos.position = {0.f, 0.f};
 
-	const auto &attackerState = registry.get<StateComponent>(attacker);
+	const auto &attackerState = view.get<StateComponent>(attacker);
 
 	bool callbackCalled = false;
 	GameEngine::ECS::Entity calledAttacker{};
@@ -315,7 +329,8 @@ TEST_F(HitDetectionTest, PendingDamageIsRemovedAfterProcessing)
 {
 	registry.registerComponent<HitBoxComponent>(
 	    enemy, {.bodyHitBox = {0.f, 0.f, 20.f, 20.f}, .weaponHitBox = {0.f, 0.f, 0.f, 0.f}});
-	auto &enemyPos = registry.get<PositionComponent>(enemy);
+	auto view = registry.view<PositionComponent>();
+	auto &enemyPos = view.get<PositionComponent>(enemy);
 	enemyPos.position = {0.f, 0.f};
 
 	registry.registerComponent<HealthComponent>(attacker, {100, 100, 1s});

@@ -16,15 +16,13 @@ struct PatrolSystem {
 
 		for (auto view = registry.view<PositionComponent, PatrolComponent, InputComponent, CollisionComponent>();
 		     const auto entity : view) {
-			const auto &[position, previousPosition] = registry.get<PositionComponent>(entity);
-			const auto &[minBounds, maxBounds] = registry.get<PatrolComponent>(entity);
-			auto &input = registry.get<InputComponent>(entity);
-			const auto &[collisionBox] = registry.get<CollisionComponent>(entity);
+			const auto &[position, previousPosition] = view.get<PositionComponent>(entity);
+			const auto &[minBounds, maxBounds] = view.get<PatrolComponent>(entity);
+			auto &input = view.get<InputComponent>(entity);
+			const auto &[collisionBox] = view.get<CollisionComponent>(entity);
 
-			auto scale = glm::vec2(1.0f, 1.0f);
-			if (registry.has<TransformComponent>(entity)) {
-				scale = registry.get<TransformComponent>(entity).scale;
-			}
+			const auto transform = registry.tryGet<TransformComponent>(entity);
+			const glm::vec2 scale = transform ? transform->get().scale : glm::vec2{1.0f, 1.0f};
 
 			const float enemyRight = position.x + (collisionBox.x + collisionBox.w) * scale.x;
 			const float enemyLeft = position.x + collisionBox.x * scale.x;

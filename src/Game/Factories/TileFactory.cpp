@@ -69,13 +69,17 @@ TileFactory::createFromObject(const tson::Object &object, const glm::vec2 &level
 
 	const auto entity = createTile(tile.value(), worldPosition, layerIndex);
 
-	const auto &sprite = registry.get<SpriteComponent>(entity);
-	const auto sizeOnMap = glm::vec2(object.getSize().x != 0 ? object.getSize().x : sprite.tileSize.x,
-	                                 object.getSize().y != 0 ? object.getSize().y : sprite.tileSize.y);
+	const auto &sprite = registry.tryGet<SpriteComponent>(entity);
+	if (!sprite) {
+		throw std::runtime_error("Tile does not exist");
+	}
 
-	if (sprite.tileSize.x != sizeOnMap.x || sprite.tileSize.y != sizeOnMap.y) {
-		registry.registerComponent(
-		    entity, TransformComponent{.scale = {sprite.tileSize.x / sizeOnMap.x, sprite.tileSize.y / sizeOnMap.y}});
+	const auto sizeOnMap = glm::vec2(object.getSize().x != 0 ? object.getSize().x : sprite->get().tileSize.x,
+	                                 object.getSize().y != 0 ? object.getSize().y : sprite->get().tileSize.y);
+
+	if (sprite->get().tileSize.x != sizeOnMap.x || sprite->get().tileSize.y != sizeOnMap.y) {
+		registry.registerComponent(entity, TransformComponent{.scale = {sprite->get().tileSize.x / sizeOnMap.x,
+		                                                                sprite->get().tileSize.y / sizeOnMap.y}});
 	}
 
 	return entity;

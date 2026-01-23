@@ -10,6 +10,8 @@
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
 
+#include <SDL3/SDL_log.h>
+
 namespace GameEngine::ECS::Systems::HealthSystem {
 
 void update(Registry &registry, const float deltaTime)
@@ -17,7 +19,7 @@ void update(Registry &registry, const float deltaTime)
 	PROFILE_SCOPE("AttackSystem");
 
 	for (auto entityView = registry.view<HealthComponent>(); const auto entity : entityView) {
-		if (auto &health = registry.get<HealthComponent>(entity); isInvulnerable(health)) {
+		if (auto &health = entityView.get<HealthComponent>(entity); isInvulnerable(health)) {
 			health.invulnerabilityTimer.step(std::chrono::duration<float>(deltaTime), false);
 		}
 	}
@@ -32,9 +34,8 @@ void update(Registry &registry, const float deltaTime)
 			continue;
 		}
 
-		if (registry.has<StateComponent>(entity)) {
-			auto &[state] = registry.get<StateComponent>(entity);
-			state = State::Hurting;
+		if (const auto state = registry.tryGet<StateComponent>(entity)) {
+			state->get().state = State::Hurting;
 		}
 
 		health.health -= damage;
@@ -48,9 +49,8 @@ void update(Registry &registry, const float deltaTime)
 			}
 		}
 
-		if (registry.has<ChaseComponent>(entity)) {
-			auto &chase = registry.get<ChaseComponent>(entity);
-			chase.reactionDelay.reset();
+		if (const auto chase = registry.tryGet<ChaseComponent>(entity)) {
+			chase->get().reactionDelay.reset();
 		}
 
 		registry.remove<PendingDamageComponent>(entity);

@@ -82,9 +82,9 @@ void GameEngine::ECS::Systems::AnimationSystem::update(Registry &registry, const
 		auto &[texture, tileSize, tileMapPosition, alpha] = view.get<SpriteComponent>(entity);
 
 		// Determine current animation from state
-		if (registry.has<StateComponent>(entity)) {
-			const auto &[state] = registry.get<StateComponent>(entity);
-			switch (state) {
+
+		if (auto state = registry.tryGet<StateComponent>(entity); state.has_value()) {
+			switch (state->get().state) {
 			case State::Idle:
 				handleLanding(anim, AnimationType::Idle);
 				break;

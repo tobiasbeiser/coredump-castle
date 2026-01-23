@@ -48,8 +48,8 @@ void GameEngine::ECS::Systems::InteractionSystem::update(GameEngine &game, Regis
 
 			if (SDL_HasRectIntersectionFloat(&playerInteractionBox, &objInteractionBox)) {
 				state = State::Interacting;
-				if (registry.has<KeyComponent>(interactableObject)) {
-					const auto [id] = registry.get<KeyComponent>(interactableObject);
+				if (const auto key = registry.tryGet<KeyComponent>(interactableObject)) {
+					const auto [id] = key->get();
 					inventory.emplace_back(id);
 					registry.deleteEntity(interactableObject);
 

@@ -84,16 +84,20 @@ void AnimationFactory::loadAnimation(tson::Tile *const &tile, const GameEngine::
 		animFrame.tileSize = imageSize;
 		frames.push_back(animFrame);
 	}
-	auto &animComp = registry.get<AnimationComponent>(entity);
+	auto animComp = registry.tryGet<AnimationComponent>(entity);
+
+	if (!animComp) {
+		throw std::runtime_error("Animation component does not exist");
+	}
 
 	if (const tson::Property *prop = tile->getProp("state"); prop && prop->getType() == tson::Type::Enum) {
 
 		const tson::EnumValue &enumValue = prop->getValue<tson::EnumValue>();
 		const AnimationType state = getAnimationType(enumValue.getValueName());
 
-		animComp.addAnimation(state, frames, duration);
+		animComp->get().addAnimation(state, frames, duration);
 	} else {
-		animComp.addAnimation(AnimationType::None, frames, duration);
+		animComp->get().addAnimation(AnimationType::None, frames, duration);
 	}
 
 	if (!registry.has<SpriteComponent>(entity)) {

@@ -11,19 +11,21 @@
 
 void GameEngine::ECS::Systems::RespawnSystem::update(Registry &registry, GameEngine &game, const float deltaTime)
 {
-	for (auto view = registry.view<PendingRespawnComponent, HealthComponent, PositionComponent,
-	                               LastGroundedPositionComponent, VelocityComponent, AccelerationComponent>();
-	     const auto entity : view) {
-		auto &[delay] = registry.get<PendingRespawnComponent>(entity);
+	for (auto view = registry.view<PendingRespawnComponent>(); const auto entity : view) {
+		auto &[delay] = view.get<PendingRespawnComponent>(entity);
 
 		delay.step(std::chrono::duration<float>(deltaTime), false);
 		if (delay.isTimeout()) {
 
 			auto respawnLogic = [&registry, entity]() {
-				auto &healthComp = registry.get<HealthComponent>(entity);
-				auto &[position, previousPosition] = registry.get<PositionComponent>(entity);
-				const auto &[lastGroundedPosition] = registry.get<LastGroundedPositionComponent>(entity);
-				auto & [velocity] = registry.get<VelocityComponent>(entity);
+				auto lambdaView = registry.view<HealthComponent, PositionComponent, LastGroundedPositionComponent,
+				                                VelocityComponent, PendingRespawnComponent>();
+				auto &healthComp = lambdaView.get<HealthComponent>(entity);
+				auto &[position, previousPosition] = lambdaView.get<PositionComponent>(entity);
+				const auto &[lastGroundedPosition] = lambdaView.get<LastGroundedPositionComponent>(entity);
+				auto &[velocity] = lambdaView.get<VelocityComponent>(entity);
+
+				registry.remove<PendingRespawnComponent>(entity);
 
 				position = lastGroundedPosition;
 				healthComp.invulnerabilityTimer.reset();
@@ -31,8 +33,6 @@ void GameEngine::ECS::Systems::RespawnSystem::update(Registry &registry, GameEng
 			};
 
 			game.pushState(std::make_unique<FadeTransitionState>(respawnLogic));
-
-			registry.remove<PendingRespawnComponent>(entity);
 		}
 	}
 }

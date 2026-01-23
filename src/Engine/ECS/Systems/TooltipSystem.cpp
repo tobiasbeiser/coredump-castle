@@ -16,9 +16,9 @@ void GameEngine::ECS::Systems::TooltipSystem::update(Registry &registry)
 	for (auto view = registry.view<TooltipComponent>(); const auto entity : view) {
 		auto &[text, box] = view.get<TooltipComponent>(entity);
 
-		const auto player = registry.view<PlayerTag>().at(0);
-		const auto &playerHitbox = registry.get<InteractionComponent>(player).interactionBox;
-		const auto &playerPosition = registry.get<PositionComponent>(player).position;
+		auto playerView = registry.view<PlayerTag, InteractionComponent, PositionComponent>();
+		const auto &playerHitbox = playerView.get<InteractionComponent>(playerView.at(0)).interactionBox;
+		const auto &playerPosition = playerView.get<PositionComponent>(playerView.at(0)).position;
 
 		SDL_FRect playerInteractionBox{playerPosition.x + playerHitbox.x, playerPosition.y + playerHitbox.y,
 		                               playerHitbox.w, playerHitbox.h};

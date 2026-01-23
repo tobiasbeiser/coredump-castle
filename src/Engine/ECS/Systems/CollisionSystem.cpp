@@ -19,18 +19,18 @@ namespace GameEngine::ECS::Systems::CollisionSystem {
 
 namespace {
 
-SDL_FRect buildEntityCollisionBox(const Entity entity, Registry &registry)
+SDL_FRect buildEntityCollisionBox(const PositionComponent &positionComponent, const CollisionComponent &collision,
+                                  const TransformComponent *transform)
 {
-	const auto &positionComponent = registry.get<PositionComponent>(entity);
-	const auto &[collisionBox] = registry.get<CollisionComponent>(entity);
 	glm::vec2 scale{1.0f, 1.0f};
-	if (registry.has<TransformComponent>(entity)) {
-		scale = registry.get<TransformComponent>(entity).scale;
+
+	if (transform) {
+		scale = transform->scale;
 	}
 
-	return SDL_FRect{positionComponent.position.x + collisionBox.x * scale.x,
-	                 positionComponent.position.y + collisionBox.y * scale.y, collisionBox.w * scale.x,
-	                 collisionBox.h * scale.y};
+	return SDL_FRect{positionComponent.position.x + collision.collisionBox.x * scale.x,
+	                 positionComponent.position.y + collision.collisionBox.y * scale.y,
+	                 collision.collisionBox.w * scale.x, collision.collisionBox.h * scale.y};
 }
 
 bool resolveHorizontalCollision(const SDL_FRect &tileBox, glm::vec2 &pos, glm::vec2 &vel, glm::vec2 &acc,
@@ -85,105 +85,86 @@ Utils::SpatialHash buildStaticColliderGrid(Registry &registry)
 {
 	Utils::SpatialHash grid;
 
-	for (auto staticView = registry.view<CollisionComponent, PositionComponent>()
-	                           .exclude<InactiveTag>()
-	                           .exclude<PlayerTag>()
-	                           .exclude<EnemyTag>();
-	     const auto staticEntity : staticView) {
-		const auto &[staticPosition, staticPreviousPosition] = staticView.get<PositionComponent>(staticEntity);
-		const auto &[staticCollisionBox] = staticView.get<CollisionComponent>(staticEntity);
+	for (auto view = registry.view<CollisionComponent, PositionComponent>().exclude<InactiveTag, PlayerTag, EnemyTag>();
+	     const auto entity : view) {
+		const auto &[collisionBox] = view.get<CollisionComponent>(entity);
+		const auto &[position, previousPosition] = view.get<PositionComponent>(entity);
 
-		auto staticScale = glm::vec2(1.0f, 1.0f);
-		if (registry.has<TransformComponent>(staticEntity)) {
-			staticScale = registry.get<TransformComponent>(staticEntity).scale;
+		glm::vec2 scale{1.0f, 1.0f};
+		if (const auto transform = registry.tryGet<TransformComponent>(entity)) {
+			scale = transform->get().scale;
 		}
 
-		SDL_FRect tileBox{staticPosition.x + staticCollisionBox.x * staticScale.x,
-		                  staticPosition.y + staticCollisionBox.y * staticScale.y, staticCollisionBox.w * staticScale.x,
-		                  staticCollisionBox.h * staticScale.y};
+		SDL_FRect tileBox{position.x + collisionBox.x * scale.x, position.y + collisionBox.y * scale.y,
+		                  collisionBox.w * scale.x, collisionBox.h * scale.y};
 
-		grid.insert(staticEntity, tileBox);
+		const bool isHazard = registry.has<SpikeComponent>(entity);
+		grid.insert(entity, tileBox, isHazard ? Utils::ColliderType::Hazard : Utils::ColliderType::Normal);
 	}
-
 	return grid;
 }
 
-void resolveHorizontalCollisions(const Entity entity, Registry &registry, const Utils::SpatialHash &grid)
+void resolveHorizontalCollisions(const EntityPhysicsState &state, const Utils::SpatialHash &grid)
 {
-	if (!registry.has<PositionComponent, VelocityComponent, AccelerationComponent>(entity)) {
-		return;
-	}
+	auto entityBox = buildEntityCollisionBox(state.pos, state.col, state.transform);
 
-	auto &[position, previousPosition] = registry.get<PositionComponent>(entity);
-	auto &[velocity] = registry.get<VelocityComponent>(entity);
-	auto &[acceleration] = registry.get<AccelerationComponent>(entity);
+	grid.queryExcluding(entityBox, state.entity,
+	                    [&](Entity tileEntity, const SDL_FRect &tileBox, Utils::ColliderType type) {
+		                    if (resolveHorizontalCollision(tileBox, state.pos.position, state.vel.velocity,
+		                                                   state.acc.acceleration, entityBox)) {
+			                    entityBox = buildEntityCollisionBox(state.pos, state.col, state.transform);
+		                    }
+	                    });
+}
 
-	auto currentEntityCollisionBox = buildEntityCollisionBox(entity, registry);
+void resolveVerticalCollisions(const EntityPhysicsState &state, const Utils::SpatialHash &grid)
+{
+	auto entityBox = buildEntityCollisionBox(state.pos, state.col, state.transform);
 
-	grid.queryExcluding(currentEntityCollisionBox, entity, [&](const Entity tileEntity, const SDL_FRect &tileBox) {
-		if (resolveHorizontalCollision(tileBox, position, velocity, acceleration, currentEntityCollisionBox)) {
-			// We must update the collision box so subsequent checks use the new position
-			currentEntityCollisionBox = buildEntityCollisionBox(entity, registry);
+	grid.queryExcluding(entityBox, state.entity, [&](const Entity, const SDL_FRect &tileBox, Utils::ColliderType type) {
+		if (resolveVerticalCollision(tileBox, state.pos.position, state.vel.velocity, state.acc.acceleration,
+		                             entityBox)) {
+			entityBox = buildEntityCollisionBox(state.pos, state.col, state.transform);
 		}
 	});
 }
 
-void resolveVerticalCollisions(const Entity entity, Registry &registry, const Utils::SpatialHash &grid)
+void updateGroundedState(const EntityPhysicsState &state, GroundedComponent &groundedComp,
+                         LastGroundedPositionComponent *lastGroundedComp, const Utils::SpatialHash &grid)
 {
-	if (!registry.has<PositionComponent, VelocityComponent, AccelerationComponent>(entity)) {
-		return;
-	}
+	groundedComp.grounded = false;
+	const auto entityBox = buildEntityCollisionBox(state.pos, state.col, state.transform);
 
-	auto &[position, previousPosition] = registry.get<PositionComponent>(entity);
-	auto &[velocity] = registry.get<VelocityComponent>(entity);
-	auto &[acceleration] = registry.get<AccelerationComponent>(entity);
+	SDL_FRect sensorBox = entityBox;
+	sensorBox.y += sensorBox.h;
+	sensorBox.h = 2.0f;
 
-	bool grounded = false;
-	auto currentEntityCollisionBox = buildEntityCollisionBox(entity, registry);
+	grid.queryExcluding(
+	    sensorBox, state.entity, [&](const Entity, const SDL_FRect &tileBox, const Utils::ColliderType type) {
+		    SDL_FRect intersection;
+		    if (SDL_GetRectIntersectionFloat(&sensorBox, &tileBox, &intersection)) {
 
-	SDL_FRect queryBox = currentEntityCollisionBox;
-	queryBox.h += 1.0f;
+			    if (intersection.w > intersection.h) {
+				    groundedComp.grounded = true;
 
-	grid.queryExcluding(queryBox, entity, [&](const Entity tileEntity, const SDL_FRect &tileBox) {
-		if (resolveVerticalCollision(tileBox, position, velocity, acceleration, currentEntityCollisionBox)) {
-			currentEntityCollisionBox = buildEntityCollisionBox(entity, registry);
-		}
+				    if (lastGroundedComp && type != Utils::ColliderType::Hazard) {
+					    constexpr float overlapRatioThreshold = 0.7f;
+					    const float overlapRatio = intersection.w / entityBox.w;
 
-		if (registry.has<GroundedComponent>(entity)) {
-			const SDL_FRect sensorBox{currentEntityCollisionBox.x,
-			                          currentEntityCollisionBox.y + currentEntityCollisionBox.h,
-			                          currentEntityCollisionBox.w, 1};
+					    if (overlapRatio > overlapRatioThreshold) {
+						    const float tileCenterX = tileBox.x + (tileBox.w * 0.5f);
+						    const float targetX = tileCenterX - (entityBox.w * 0.5f);
+						    const float targetY = tileBox.y - entityBox.h;
 
-			SDL_FRect sensorIntersection;
-			if (SDL_GetRectIntersectionFloat(&sensorBox, &tileBox, &sensorIntersection)) {
-				if (sensorIntersection.w > sensorIntersection.h) {
-					grounded = true;
+						    const float offsetX = entityBox.x - state.pos.position.x;
+						    const float offsetY = entityBox.y - state.pos.position.y;
 
-					constexpr float overlapRatioThreshold = 0.7f;
-					if (const float overlapRatio = sensorIntersection.w / currentEntityCollisionBox.w;
-					    overlapRatio > overlapRatioThreshold) {
-
-						// Store grounded position as center of last secure tile
-						if (const bool isHazard = registry.has<SpikeComponent>(tileEntity);
-						    registry.has<LastGroundedPositionComponent>(entity) && !isHazard) {
-							auto &[lastGroundedPosition] = registry.get<LastGroundedPositionComponent>(entity);
-							const float offsetX = currentEntityCollisionBox.x - position.x;
-							const float offsetY = currentEntityCollisionBox.y - position.y;
-							const float tileCenterX = tileBox.x + (tileBox.w * 0.5f);
-							const float targetHitboxX = tileCenterX - (currentEntityCollisionBox.w * 0.5f);
-							const float targetHitboxY = tileBox.y - currentEntityCollisionBox.h;
-							lastGroundedPosition = glm::vec2(targetHitboxX - offsetX, targetHitboxY - offsetY);
-						}
-					}
-				}
-			}
-		}
-	});
-
-	if (registry.has<GroundedComponent>(entity)) {
-		auto &[cGrounded] = registry.get<GroundedComponent>(entity);
-		cGrounded = grounded;
-	}
+						    lastGroundedComp->position = glm::vec2(targetX - offsetX, targetY - offsetY);
+					    }
+				    }
+			    }
+		    }
+	    });
 }
 
 } // namespace GameEngine::ECS::Systems::CollisionSystem

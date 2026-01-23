@@ -45,8 +45,8 @@ class MovementSystem {
 				}
 			}
 
-			if (registry.has<RenderComponent>(entity) && velocity.x) {
-				registry.get<RenderComponent>(entity).flipX = velocity.x < 0;
+			if (const auto renderComp = registry.tryGet<RenderComponent>(entity); renderComp && velocity.x) {
+				renderComp->get().flipX = velocity.x < 0;
 			}
 		}
 	}

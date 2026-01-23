@@ -22,23 +22,21 @@ void removeComponents(GameEngine::ECS::Registry &registry, const std::vector<uns
 	registry.remove<BlinkComponent>(entity);
 }
 
-void processSimpleDeathAnimation(GameEngine::ECS::Registry &registry, const float deltaTime,
-                                 const std::vector<unsigned>::value_type entity)
+bool processSimpleDeathAnimation(SimpleDeathComponent &death, SpriteComponent &sprite, const float deltaTime)
 {
-	auto &[deathTimer] = registry.get<SimpleDeathComponent>(entity);
-	auto &sprite = registry.get<SpriteComponent>(entity);
-	deathTimer.step(std::chrono::duration<float>(deltaTime), false);
+	death.deathTimer.step(std::chrono::duration<float>(deltaTime), false);
 
-	const float timeRatio = deathTimer.getTime() / deathTimer.getLength();
+	const float timeRatio = death.deathTimer.getTime() / death.deathTimer.getLength();
 	float alphaVal = 255.0f * (1.0f - timeRatio);
 
 	if (alphaVal < 0)
 		alphaVal = 0;
 	sprite.colorMod.a = static_cast<uint8_t>(alphaVal);
 
-	if (deathTimer.isTimeout()) {
-		registry.deleteEntity(entity);
+	if (death.deathTimer.isTimeout()) {
+		return true;
 	}
+	return false;
 }
 
 } // namespace
@@ -50,17 +48,21 @@ void GameEngine::ECS::Systems::DeathSystem::update(Registry &registry, const flo
 		if (auto &health = view.get<HealthComponent>(entity); HealthSystem::isDead(health)) {
 
 			removeComponents(registry, entity);
+			const auto simpleDeathComp = registry.tryGet<SimpleDeathComponent>(entity);
+			const auto spriteComp = registry.tryGet<SpriteComponent>(entity);
 
-			if (registry.has<SimpleDeathComponent>(entity)) {
-				processSimpleDeathAnimation(registry, deltaTime, entity);
+			if (simpleDeathComp && spriteComp) {
+				if (processSimpleDeathAnimation(simpleDeathComp->get(), spriteComp->get(), deltaTime)) {
+					registry.deleteEntity(entity);
+				}
 				continue;
 			}
 
-			if (registry.has<AnimationComponent>(entity)) {
-				if (auto &anim = registry.get<AnimationComponent>(entity);
-				    anim.hasAnimation(AnimationType::Dead) && !anim.hasFinished(AnimationType::Dead)) {
+			if (const auto anim = registry.tryGet<AnimationComponent>(entity)) {
+				if (anim->get().hasAnimation(AnimationType::Dead) && !anim->get().hasFinished(AnimationType::Dead)) {
 					continue;
-				} else if (!anim.hasAnimation(AnimationType::Dead)) {
+				}
+				if (!anim->get().hasAnimation(AnimationType::Dead)) {
 					registry.registerComponent<SimpleDeathComponent>(entity, {});
 					registry.remove<AnimationComponent>(entity); // freeze current frame
 					continue;

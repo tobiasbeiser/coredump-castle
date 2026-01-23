@@ -3,6 +3,7 @@
 #include "Engine/ECS/Components/Render/BlinkComponent.hpp"
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
+#include "Engine/ECS/View.hpp"
 
 #include <gtest/gtest.h>
 
@@ -23,7 +24,8 @@ struct BlinkSystemTest : testing::Test {
 
 TEST_F(BlinkSystemTest, ReturnsWhiteWhenNotInvulnerable)
 {
-	auto &color = registry.get<SpriteComponent>(entity).colorMod;
+	auto view = registry.view<SpriteComponent>();
+	const auto &color = view.get<SpriteComponent>(entity).colorMod;
 
 	EXPECT_EQ(color.r, 255);
 	EXPECT_EQ(color.g, 255);
@@ -38,11 +40,12 @@ TEST_F(BlinkSystemTest, ReturnsWhiteWhenNotInvulnerable)
 
 TEST_F(BlinkSystemTest, ReturnsBlinkColorDuringInvulnerability)
 {
-	auto &health = registry.get<HealthComponent>(entity);
+	auto view = registry.view<SpriteComponent, HealthComponent>();
+	auto &health = view.get<HealthComponent>(entity);
 	health.invulnerabilityTimer.reset();
 	health.invulnerabilityTimer.step(std::chrono::duration<float>::zero(), false);
 
-	auto &color = registry.get<SpriteComponent>(entity).colorMod;
+	auto &color = view.get<SpriteComponent>(entity).colorMod;
 
 	EXPECT_EQ(color.r, 255);
 	EXPECT_EQ(color.g, 255);
@@ -57,11 +60,13 @@ TEST_F(BlinkSystemTest, ReturnsBlinkColorDuringInvulnerability)
 
 TEST_F(BlinkSystemTest, TogglesColorBasedOnFrequency)
 {
-	auto &health = registry.get<HealthComponent>(entity);
+	auto view = registry.view<SpriteComponent, HealthComponent>();
+
+	auto &health = view.get<HealthComponent>(entity);
 	health.invulnerabilityTimer.reset();
 	health.invulnerabilityTimer.step(std::chrono::duration<float>::zero(), false);
 
-	auto &color = registry.get<SpriteComponent>(entity).colorMod;
+	auto &color = view.get<SpriteComponent>(entity).colorMod;
 
 	EXPECT_EQ(color.r, 255);
 	EXPECT_EQ(color.g, 255);

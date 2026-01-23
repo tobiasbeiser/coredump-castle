@@ -48,7 +48,10 @@ void EffectFactory::createIsHitEffect(GameEngine::ECS::Entity attacker, GameEngi
 		return;
 	}
 
-	const auto &victimHitBox = registry.get<HitBoxComponent>(victim);
+	const auto &victimHitBox = registry.tryGet<HitBoxComponent>(victim);
+	if (!victimHitBox) {
+		return;
+	}
 
 	const auto attackerCenter = getEntityCenter(attacker);
 
@@ -58,7 +61,7 @@ void EffectFactory::createIsHitEffect(GameEngine::ECS::Entity attacker, GameEngi
 	const auto &data = effects.at(EffectType::IsHit);
 
 	const float dirMult = attackerIsLeftOfVictim ? -1.0f : 1.0f;
-	const glm::vec2 finalOffset = {victimHitBox.bodyHitBox.w / 2 + data.offset.x * dirMult, data.offset.y};
+	const glm::vec2 finalOffset = {victimHitBox->get().bodyHitBox.w / 2 + data.offset.x * dirMult, data.offset.y};
 
 	createEffect(EffectType::IsHit, victimCenter + finalOffset, !attackerIsLeftOfVictim);
 }
@@ -73,9 +76,8 @@ void EffectFactory::createEffectOnEntity(const GameEngine::ECS::Entity entity, c
 
 	bool isTargetFlipped = false;
 
-	if (registry.has<RenderComponent>(entity)) {
-		const auto &render = registry.get<RenderComponent>(entity);
-		isTargetFlipped = render.flipX;
+	if (const auto render = registry.tryGet<RenderComponent>(entity)) {
+		isTargetFlipped = render->get().flipX;
 	}
 
 	const float dirMult = isTargetFlipped ? -1.0f : 1.0f;
@@ -105,13 +107,18 @@ void EffectFactory::loadEffect(const LoadEffectData &data)
 
 glm::vec2 EffectFactory::getEntityCenter(const GameEngine::ECS::Entity entity) const
 {
-	const auto &[position, prev] = registry.get<PositionComponent>(entity);
-	const auto &sprite = registry.get<SpriteComponent>(entity);
-
-	glm::vec2 scale(1.0f);
-	if (registry.has<TransformComponent>(entity)) {
-		scale = registry.get<TransformComponent>(entity).scale;
+	const auto position = registry.tryGet<PositionComponent>(entity);
+	if (!position) {
+		throw std::runtime_error("Entity does not have a PositionComponent");
+	}
+	const auto sprite = registry.tryGet<SpriteComponent>(entity);
+	if (!sprite) {
+		throw std::runtime_error("Entity does not have a SpriteComponent");
 	}
 
-	return position + glm::vec2(sprite.tileSize.x * scale.x * 0.5f, sprite.tileSize.y * scale.y * 0.5f);
+	const auto transform = registry.tryGet<TransformComponent>(entity);
+	const glm::vec2 scale = transform ? transform->get().scale : glm::vec2{1.0f, 1.0f};
+
+	return position->get().position
+	       + glm::vec2(sprite->get().tileSize.x * scale.x * 0.5f, sprite->get().tileSize.y * scale.y * 0.5f);
 }

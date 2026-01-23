@@ -17,6 +17,7 @@
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Entity.hpp"
 #include "Engine/ECS/Registry.hpp"
+#include "Engine/ECS/View.hpp"
 
 #include <gtest/gtest.h>
 
@@ -56,15 +57,17 @@ class ChaseSystemTest : public ::testing::Test {
 		registry.registerComponent<TransformComponent>(player, {});
 		registry.registerComponent<HurtBoxComponent>(player, {{0.0f, 0.0f, 20.0f, 20.0f}});
 		registry.registerComponent<GroundedComponent>(player, {.grounded = true});
+		registry.registerComponent<RenderComponent>(player, {});
 	}
 };
 
 TEST_F(ChaseSystemTest, IgnoresPlayerWhenOutsidePatrolRange)
 {
-	const auto &enemyInput = registry.get<InputComponent>(enemy);
-	auto &enemyMovement = registry.get<MovementComponent>(enemy);
-	const auto &enemyChase = registry.get<ChaseComponent>(enemy);
-	auto &playerPosition = registry.get<PositionComponent>(player);
+	auto view = registry.view<InputComponent, MovementComponent, ChaseComponent, PositionComponent>();
+	const auto &enemyInput = view.get<InputComponent>(enemy);
+	auto &enemyMovement = view.get<MovementComponent>(enemy);
+	const auto &enemyChase = view.get<ChaseComponent>(enemy);
+	auto &playerPosition = view.get<PositionComponent>(player);
 
 	playerPosition.position = {500.0f, 0.0f};
 	// set maxspeed to a trap value to see if it gets reseted
@@ -78,10 +81,11 @@ TEST_F(ChaseSystemTest, IgnoresPlayerWhenOutsidePatrolRange)
 
 TEST_F(ChaseSystemTest, IgnoresPlayerWhenVerticalDistanceTooHigh)
 {
-	const auto &enemyInput = registry.get<InputComponent>(enemy);
-	auto &enemyMovement = registry.get<MovementComponent>(enemy);
-	const auto &enemyChase = registry.get<ChaseComponent>(enemy);
-	auto &playerPosition = registry.get<PositionComponent>(player);
+	auto view = registry.view<InputComponent, MovementComponent, ChaseComponent, PositionComponent>();
+	const auto &enemyInput = view.get<InputComponent>(enemy);
+	auto &enemyMovement = view.get<MovementComponent>(enemy);
+	const auto &enemyChase = view.get<ChaseComponent>(enemy);
+	auto &playerPosition = view.get<PositionComponent>(player);
 
 	playerPosition.position = {100.0f, 200.0f};
 
@@ -95,11 +99,12 @@ TEST_F(ChaseSystemTest, IgnoresPlayerWhenVerticalDistanceTooHigh)
 
 TEST_F(ChaseSystemTest, ChasesPlayerRightWhenInPatrolAndOutOfAttackRange)
 {
-	auto &enemyInput = registry.get<InputComponent>(enemy);
-	const auto &enemyMovement = registry.get<MovementComponent>(enemy);
-	const auto &enemyChase = registry.get<ChaseComponent>(enemy);
-	auto &playerPosition = registry.get<PositionComponent>(player);
-	const auto &enemyRender = registry.get<RenderComponent>(enemy);
+	auto view = registry.view<InputComponent, MovementComponent, ChaseComponent, PositionComponent, RenderComponent>();
+	const auto &enemyInput = view.get<InputComponent>(enemy);
+	auto &enemyMovement = view.get<MovementComponent>(enemy);
+	const auto &enemyChase = view.get<ChaseComponent>(enemy);
+	auto &playerPosition = view.get<PositionComponent>(player);
+	const auto &enemyRender = view.get<RenderComponent>(enemy);
 
 	playerPosition.position = {150.0f, 0.0f};
 
@@ -113,11 +118,12 @@ TEST_F(ChaseSystemTest, ChasesPlayerRightWhenInPatrolAndOutOfAttackRange)
 
 TEST_F(ChaseSystemTest, ChasesPlayerLeftWhenInPatrolAndOutOfAttackRange)
 {
-	auto &enemyInput = registry.get<InputComponent>(enemy);
-	const auto &enemyMovement = registry.get<MovementComponent>(enemy);
-	const auto &enemyChase = registry.get<ChaseComponent>(enemy);
-	auto &playerPosition = registry.get<PositionComponent>(player);
-	const auto &enemyRender = registry.get<RenderComponent>(enemy);
+	auto view = registry.view<InputComponent, MovementComponent, ChaseComponent, PositionComponent, RenderComponent>();
+	const auto &enemyInput = view.get<InputComponent>(enemy);
+	auto &enemyMovement = view.get<MovementComponent>(enemy);
+	const auto &enemyChase = view.get<ChaseComponent>(enemy);
+	auto &playerPosition = view.get<PositionComponent>(player);
+	const auto &enemyRender = view.get<RenderComponent>(enemy);
 
 	playerPosition.position = {40.0f, 0.0f};
 
@@ -131,9 +137,9 @@ TEST_F(ChaseSystemTest, ChasesPlayerLeftWhenInPatrolAndOutOfAttackRange)
 
 TEST_F(ChaseSystemTest, StopsAndAttacksWhenInRange)
 {
-	const auto &enemyInput = registry.get<InputComponent>(enemy);
-	const auto &enemyMovement = registry.get<MovementComponent>(enemy);
-	auto &playerPosition = registry.get<PositionComponent>(player);
+	auto view = registry.view<InputComponent, PositionComponent>();
+	const auto &enemyInput = view.get<InputComponent>(enemy);
+	auto &playerPosition = view.get<PositionComponent>(player);
 
 	playerPosition.position = {120.0f, 0.0f};
 
@@ -146,8 +152,9 @@ TEST_F(ChaseSystemTest, StopsAndAttacksWhenInRange)
 
 TEST_F(ChaseSystemTest, AttacksAfterReactionDelay)
 {
-	const auto &enemyInput = registry.get<InputComponent>(enemy);
-	auto &playerPosition = registry.get<PositionComponent>(player);
+	auto view = registry.view<InputComponent, PositionComponent>();
+	const auto &enemyInput = view.get<InputComponent>(enemy);
+	auto &playerPosition = view.get<PositionComponent>(player);
 
 	playerPosition.position = {120.0f, 0.0f};
 
@@ -161,8 +168,9 @@ TEST_F(ChaseSystemTest, AttacksAfterReactionDelay)
 
 TEST_F(ChaseSystemTest, StopsMovementAndInputWhileAttacking)
 {
-	auto &enemyInput = registry.get<InputComponent>(enemy);
-	auto &playerPosition = registry.get<PositionComponent>(player);
+	auto view = registry.view<InputComponent, PositionComponent>();
+	auto &enemyInput = view.get<InputComponent>(enemy);
+	auto &playerPosition = view.get<PositionComponent>(player);
 
 	playerPosition.position = {120.0f, 0.0f};
 
@@ -178,8 +186,9 @@ TEST_F(ChaseSystemTest, StopsMovementAndInputWhileAttacking)
 
 TEST_F(ChaseSystemTest, ResetsReactionTimerWhenPlayerLeavesRange)
 {
-	const auto &enemyInput = registry.get<InputComponent>(enemy);
-	auto &playerPosition = registry.get<PositionComponent>(player);
+	auto view = registry.view<InputComponent, PositionComponent>();
+	auto &enemyInput = view.get<InputComponent>(enemy);
+	auto &playerPosition = view.get<PositionComponent>(player);
 
 	GameEngine::ECS::Systems::ChaseSystem::update(registry, 0.3f);
 	ASSERT_FALSE(enemyInput.attackPressed);
@@ -201,12 +210,14 @@ TEST_F(ChaseSystemTest, ResetsReactionTimerWhenPlayerLeavesRange)
 
 TEST_F(ChaseSystemTest, ChasesPlayerWhenJumpingHigh)
 {
-	const auto &enemyInput = registry.get<InputComponent>(enemy);
-	const auto &enemyMovement = registry.get<MovementComponent>(enemy);
-	const auto &enemyChase = registry.get<ChaseComponent>(enemy);
-	auto &playerPosition = registry.get<PositionComponent>(player);
-	auto &playerGrounded = registry.get<GroundedComponent>(player);
-	const auto &enemyRender = registry.get<RenderComponent>(enemy);
+	auto view = registry.view<InputComponent, MovementComponent, ChaseComponent, PositionComponent, GroundedComponent,
+	                          RenderComponent>();
+	const auto &enemyInput = view.get<InputComponent>(enemy);
+	const auto &enemyMovement = view.get<MovementComponent>(enemy);
+	const auto &enemyChase = view.get<ChaseComponent>(enemy);
+	auto &playerPosition = view.get<PositionComponent>(player);
+	auto &playerGrounded = view.get<GroundedComponent>(player);
+	const auto &enemyRender = view.get<RenderComponent>(enemy);
 
 	playerGrounded.grounded = false;
 

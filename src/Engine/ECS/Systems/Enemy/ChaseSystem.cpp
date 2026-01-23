@@ -15,6 +15,7 @@
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
 #include "Engine/ECS/View.hpp"
+#include "Engine/Utils/HitBoxUtils.hpp"
 
 namespace GameEngine::ECS::Systems::ChaseSystem {
 
@@ -42,10 +43,10 @@ void update(Registry &registry, float deltaTime)
 	bool playerGrounded = false;
 
 	for (const auto entity : playerView) {
-		const auto &pos = registry.get<PositionComponent>(entity).position;
-		playerHurtBox = registry.get<HurtBoxComponent>(entity).hurtBox;
-		playerScale = registry.get<TransformComponent>(entity).scale;
-		playerGrounded = registry.get<GroundedComponent>(entity).grounded;
+		const auto &pos = playerView.get<PositionComponent>(entity).position;
+		playerHurtBox = playerView.get<HurtBoxComponent>(entity).hurtBox;
+		playerScale = playerView.get<TransformComponent>(entity).scale;
+		playerGrounded = playerView.get<GroundedComponent>(entity).grounded;
 
 		playerCenterPos =
 		    glm::vec2(pos.x + (playerHurtBox.x * playerScale.x) + (playerHurtBox.w * playerScale.x) * 0.5f,
@@ -58,20 +59,20 @@ void update(Registry &registry, float deltaTime)
 	                               GroundedComponent, AttackComponent, RenderComponent>();
 
 	for (const auto entity : enemyView) {
-		const auto &pos = registry.get<PositionComponent>(entity);
-		const auto &hurtBox = registry.get<HurtBoxComponent>(entity).hurtBox;
-		const auto &patrol = registry.get<PatrolComponent>(entity);
-		const auto &attack = registry.get<AttackComponent>(entity);
+		const auto &pos = enemyView.get<PositionComponent>(entity);
+		const auto &hurtBox = enemyView.get<HurtBoxComponent>(entity).hurtBox;
+		const auto &patrol = enemyView.get<PatrolComponent>(entity);
+		const auto &attack = enemyView.get<AttackComponent>(entity);
 
-		auto &input = registry.get<InputComponent>(entity);
-		auto &chase = registry.get<ChaseComponent>(entity);
-		auto &movement = registry.get<MovementComponent>(entity);
-		auto &render = registry.get<RenderComponent>(entity);
+		auto &input = enemyView.get<InputComponent>(entity);
+		auto &chase = enemyView.get<ChaseComponent>(entity);
+		auto &movement = enemyView.get<MovementComponent>(entity);
+		auto &render = enemyView.get<RenderComponent>(entity);
 
-		glm::vec2 scale = {1.0f, 1.0f};
-		if (registry.has<TransformComponent>(entity)) {
-			scale = registry.get<TransformComponent>(entity).scale;
-		}
+		auto transform = registry.tryGet<TransformComponent>(entity);
+
+		// Check if component exists ? use its scale : use default
+		glm::vec2 scale = transform ? transform->get().scale : glm::vec2{1.0f, 1.0f};
 
 		chase.reactionDelay.step(std::chrono::duration<float>(deltaTime), false);
 
@@ -80,8 +81,8 @@ void update(Registry &registry, float deltaTime)
 			continue;
 		}
 
-		const glm::vec2 enemyCenter = {pos.position.x + (hurtBox.x * scale.x) + (hurtBox.w * scale.x) * 0.5f,
-		                               pos.position.y + (hurtBox.y * scale.y) + (hurtBox.h * scale.y) * 0.5f};
+		const auto enemyHitbox = Utils::HitBoxUtils::getHitBox(pos.position, hurtBox, scale);
+		const glm::vec2 enemyCenter = {enemyHitbox.x + (enemyHitbox.w * 0.5f), enemyHitbox.y + (enemyHitbox.h * 0.5f)};
 
 		const float verticalThreshold =
 		    playerGrounded ? chase.verticalDetectionHeight : chase.verticalDetectionHeight * 2.0f;

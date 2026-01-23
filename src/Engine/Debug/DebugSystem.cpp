@@ -119,8 +119,8 @@ void DebugSystem::drawUI()
 		}
 		if (sys.player.showPosition) {
 			ImGui::SeparatorText("PlayerPosition");
-			const auto player = sys.registry->view<PlayerTag>().at(0);
-			const auto &pos = sys.registry->get<PositionComponent>(player).position;
+			auto playerView = sys.registry->view<PlayerTag, PositionComponent>();
+			const auto &pos = playerView.get<PositionComponent>(playerView.at(0)).position;
 			ImGui::Text("X: %.2f Y: %.2f", pos.x, pos.y);
 		}
 	}
@@ -135,9 +135,10 @@ void DebugSystem::drawCollisionBoxes() const
 		const auto &[position, previousPosition] = view.get<PositionComponent>(entity);
 		const auto &[collision] = view.get<CollisionComponent>(entity);
 
-		SDL_FRect col = collision;
-		col.x = position.x + col.x;
-		col.y = position.y + col.y;
+		const auto transform = registry->tryGet<TransformComponent>(entity);
+		const glm::vec2 scale = transform ? transform->get().scale : glm::vec2{1.0f, 1.0f};
+
+		SDL_FRect col = GameEngine::Utils::HitBoxUtils::getHitBox(position, collision, scale);
 
 		const SDL_Color color =
 		    registry->has<MovementComponent>(entity) ? SDL_Color{0, 0, 255, 255} : SDL_Color{255, 0, 0, 255};
@@ -150,18 +151,24 @@ void DebugSystem::drawHitBoxes() const
 		return;
 	}
 
-	for (auto view =
-	         registry
-	             ->view<HitBoxComponent, HurtBoxComponent, RenderComponent, TransformComponent, PositionComponent>();
+	for (auto view = registry->view<HitBoxComponent, HurtBoxComponent, RenderComponent, PositionComponent>();
 	     const auto entity : view) {
 
-		if (const auto hitBoxRect = GameEngine::Utils::HitBoxUtils::getWeaponHitBoxRect(*registry, entity);
-		    hitBoxRect.w > 0.0f && hitBoxRect.h > 0.0f) {
-			constexpr SDL_Color hitboxColor = {0, 255, 0, 255};
-			addRect(hitBoxRect, hitboxColor);
-		}
+		const auto &[position, previousPosition] = view.get<PositionComponent>(entity);
+		const auto &hitbox = view.get<HitBoxComponent>(entity);
+		const auto &hurtbox = view.get<HurtBoxComponent>(entity);
+		const auto &[renderLayer, flipX] = view.get<RenderComponent>(entity);
 
-		SDL_FRect hurtBoxRect = GameEngine::Utils::HitBoxUtils::getHurtBoxRect(*registry, entity);
+		const auto transform = registry->tryGet<TransformComponent>(entity);
+		const glm::vec2 scale = transform ? transform->get().scale : glm::vec2{1.0f, 1.0f};
+
+		const auto hitBoxRect =
+		    GameEngine::Utils::HitBoxUtils::getWeaponHitBoxRect(position, hitbox, hurtbox.hurtBox, scale, flipX);
+
+		constexpr SDL_Color hitboxColor = {0, 255, 0, 255};
+		addRect(hitBoxRect, hitboxColor);
+
+		SDL_FRect hurtBoxRect = GameEngine::Utils::HitBoxUtils::getHitBox(position, hurtbox.hurtBox, scale);
 		constexpr SDL_Color hurtBoxColor = {255, 0, 255, 255};
 		addRect(hurtBoxRect, hurtBoxColor);
 	}

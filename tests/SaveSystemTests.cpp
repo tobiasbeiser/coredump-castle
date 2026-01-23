@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/HealthComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InventoryComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/JumpComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/KeyComponent.hpp"
@@ -33,7 +34,11 @@ class FakeSaveStorage final : public ISaveStorage {
 	// Test helpers
 	[[nodiscard]] const json &getStoredData() const { return store; }
 	void setExistingSaveNames(std::vector<std::string> names) { existingSaveNames = std::move(names); }
-	void syncCreatedFile() { if (!currentSaveName.empty()) existingSaveNames.push_back(currentSaveName); }
+	void syncCreatedFile()
+	{
+		if (!currentSaveName.empty())
+			existingSaveNames.push_back(currentSaveName);
+	}
 
   private:
 	json store{};
@@ -99,9 +104,8 @@ TEST_F(SaveSystemTest, LoadSavedGame_RestoresPlayerStateFromJson)
 	saved["keys"] = std::vector{1, 2, 3};
 	storagePtr->write(saved);
 
-
 	// Reset components to defaults to ensure they are actually changed by load
-	auto playerView = registry.view<PlayerTag>();
+	auto playerView = registry.view<PlayerTag, JumpComponent, PositionComponent, InventoryComponent>();
 	const Entity entity = playerView.at(0U);
 
 	auto &jumpComponent = playerView.get<JumpComponent>(entity);
@@ -125,7 +129,6 @@ TEST_F(SaveSystemTest, LoadSavedGame_RestoresPlayerStateFromJson)
 	const auto &inventoryComponentAfter = playerView.get<InventoryComponent>(entity);
 	const std::vector expectedKeys{1, 2, 3};
 	EXPECT_EQ(expectedKeys, inventoryComponentAfter.keys);
-
 }
 
 TEST_F(SaveSystemTest, LoadSavedGame_RemovesCollectedLocksAndKeys)
@@ -140,7 +143,6 @@ TEST_F(SaveSystemTest, LoadSavedGame_RemovesCollectedLocksAndKeys)
 	saved["positionY"] = 3.3F;
 	saved["keys"] = std::vector<int>{9, 4, 5, 2, 1, 8};
 	storagePtr->write(saved);
-
 
 	const Entity lock1 = registry.create();
 	registry.registerComponent<LockComponent>(lock1, LockComponent{.lockId = 4}); // In keys
@@ -207,6 +209,9 @@ TEST_F(SaveSystemTest, SaveGame_ThrowsIfMultiplePlayerEntitiesExist)
 {
 	const Entity secondPlayer = registry.create();
 	registry.registerComponent<PlayerTag>(secondPlayer, PlayerTag{});
+	registry.registerComponent<InventoryComponent>(secondPlayer, {});
+	registry.registerComponent<JumpComponent>(secondPlayer, {});
+	registry.registerComponent<PositionComponent>(secondPlayer, {});
 
 	auto storage = std::make_unique<FakeSaveStorage>();
 	const SaveSystem saveSystem{std::move(storage)};
@@ -229,6 +234,9 @@ TEST_F(SaveSystemTest, LoadSavedGame_ThrowsIfMultiplePlayerEntitiesExist)
 
 	const Entity secondPlayer = registry.create();
 	registry.registerComponent<PlayerTag>(secondPlayer, PlayerTag{});
+	registry.registerComponent<InventoryComponent>(secondPlayer, {});
+	registry.registerComponent<JumpComponent>(secondPlayer, {});
+	registry.registerComponent<PositionComponent>(secondPlayer, {});
 
 	EXPECT_THROW(saveSystem.loadSavedGame(registry), std::runtime_error);
 }
@@ -248,60 +256,60 @@ TEST_F(SaveSystemTest, GetSaves_ReturnsStorageList)
 }
 TEST_F(SaveSystemTest, RoundTrip_SaveThenLoad_PreservesState)
 {
-    // This test ensures that the keys written by SaveGame match the keys read by LoadGame
-    auto storage = std::make_unique<FakeSaveStorage>();
-    auto *storagePtr = storage.get();
-    const SaveSystem saveSystem{std::move(storage)};
+	// This test ensures that the keys written by SaveGame match the keys read by LoadGame
+	auto storage = std::make_unique<FakeSaveStorage>();
+	auto *storagePtr = storage.get();
+	const SaveSystem saveSystem{std::move(storage)};
 
-    // 1. Modify initial state to be distinct from defaults
-    auto playerView = registry.view<PlayerTag>();
-    const Entity entity = playerView.at(0U);
+	// 1. Modify initial state to be distinct from defaults
+	auto playerView = registry.view<PlayerTag, JumpComponent, PositionComponent>();
+	const Entity entity = playerView.at(0U);
 
-    auto& jump = playerView.get<JumpComponent>(entity);
-    jump.maxJumps = 99;
+	auto &jump = playerView.get<JumpComponent>(entity);
+	jump.maxJumps = 99;
 
-    auto& pos = playerView.get<PositionComponent>(entity);
-    pos.position = glm::vec2{500.0F, 500.0F};
+	auto &pos = playerView.get<PositionComponent>(entity);
+	pos.position = glm::vec2{500.0F, 500.0F};
 
-    // 2. Save
-    const std::string saveName = "RoundTripSave";
-    storagePtr->setSaveName(saveName); // FileStorage requires name
-    saveSystem.saveGame(registry);
+	// 2. Save
+	const std::string saveName = "RoundTripSave";
+	storagePtr->setSaveName(saveName); // FileStorage requires name
+	saveSystem.saveGame(registry);
 
-    // Simulate file existing now
-    storagePtr->setExistingSaveNames({saveName});
+	// Simulate file existing now
+	storagePtr->setExistingSaveNames({saveName});
 
-    // 3. Corrupt the registry (reset to zero)
-    jump.maxJumps = 0;
-    pos.position = glm::vec2{0.0F, 0.0F};
+	// 3. Corrupt the registry (reset to zero)
+	jump.maxJumps = 0;
+	pos.position = glm::vec2{0.0F, 0.0F};
 
-    // 4. Load back
-    saveSystem.loadSavedGame(registry);
+	// 4. Load back
+	saveSystem.loadSavedGame(registry);
 
-    // 5. Verify restoration
-    EXPECT_EQ(99, jump.maxJumps);
-    EXPECT_FLOAT_EQ(500.0F, pos.position.x);
-    EXPECT_FLOAT_EQ(500.0F, pos.position.y);
+	// 5. Verify restoration
+	EXPECT_EQ(99, jump.maxJumps);
+	EXPECT_FLOAT_EQ(500.0F, pos.position.x);
+	EXPECT_FLOAT_EQ(500.0F, pos.position.y);
 }
 
 TEST_F(SaveSystemTest, LoadSavedGame_Throws_WhenSaveDataIsCorrupt)
 {
-    // .at("key") throws nlohmann::json::out_of_range
-    // if the key is missing. This test ensures we catch regressions if
-    // validation logic changes.
-    auto storage = std::make_unique<FakeSaveStorage>();
-    auto *storagePtr = storage.get();
-    const SaveSystem saveSystem{std::move(storage)};
+	// .at("key") throws nlohmann::json::out_of_range
+	// if the key is missing. This test ensures we catch regressions if
+	// validation logic changes.
+	auto storage = std::make_unique<FakeSaveStorage>();
+	auto *storagePtr = storage.get();
+	const SaveSystem saveSystem{std::move(storage)};
 
-    // Create incomplete JSON (missing 'maxJumps')
-    json corruptData;
-    corruptData["positionX"] = 10.0F;
-    corruptData["positionY"] = 10.0F;
-    corruptData["keys"] = std::vector<int>{};
+	// Create incomplete JSON (missing 'maxJumps')
+	json corruptData;
+	corruptData["positionX"] = 10.0F;
+	corruptData["positionY"] = 10.0F;
+	corruptData["keys"] = std::vector<int>{};
 
-    storagePtr->write(corruptData);
-    storagePtr->setExistingSaveNames({"CorruptFile"});
+	storagePtr->write(corruptData);
+	storagePtr->setExistingSaveNames({"CorruptFile"});
 
-    EXPECT_THROW(saveSystem.loadSavedGame(registry), json::out_of_range);
+	EXPECT_THROW(saveSystem.loadSavedGame(registry), json::out_of_range);
 }
 } // namespace
