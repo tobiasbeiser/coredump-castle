@@ -22,6 +22,7 @@ find_package(glm CONFIG REQUIRED)
 find_package(GTest CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
+find_package(TBB CONFIG REQUIRED)
 
 add_subdirectory(vendor)
 add_subdirectory(src)

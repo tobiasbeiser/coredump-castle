@@ -13,6 +13,7 @@ target_link_libraries(GameLib PUBLIC
     nlohmann_json::nlohmann_json
     imgui::imgui
     SDL3_ttf::SDL3_ttf
+    TBB::tbb
     vendor
 )
 

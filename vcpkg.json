@@ -11,6 +11,7 @@
     "glm",
     "nlohmann-json",
     "gtest",
+    "tbb",
     {
       "name": "imgui",
       "features": [

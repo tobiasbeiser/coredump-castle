@@ -5,6 +5,7 @@
 #include <SDL3/SDL_render.h>
 #include <string>
 #include <vector>
+#include <array>
 
 struct DebugRenderOptions {
 	bool showBoundingBoxes = false;

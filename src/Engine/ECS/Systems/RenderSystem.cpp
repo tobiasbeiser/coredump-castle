@@ -105,8 +105,8 @@ void RenderSystem::update(Registry &registry, float alpha)
 	PROFILE_SCOPE("RenderSystem::Sort");
 
 #if defined(__cpp_lib_execution) && !defined(__APPLE__)
-	std::ranges::sort(std::execution::par, renderItems.begin(), renderItems.end(),
-	                  [](const RenderItem &a, const RenderItem &b) { return getRenderRank(a) < getRenderRank(b); });
+	std::sort(std::execution::par, renderItems.begin(), renderItems.end(),
+	          [](const RenderItem &a, const RenderItem &b) { return getRenderRank(a) < getRenderRank(b); });
 #else
 	// apple libc++ does not implement parallel algorithms
 	std::ranges::sort(renderItems,
