@@ -36,6 +36,16 @@ void DebugSystem::addLine(const glm::vec2 &start, const glm::vec2 &end, const SD
 	instance().debugLines.push_back({start, end, color});
 }
 
+void DebugSystem::addRaycast(const glm::vec2 &start, const glm::vec2 &end, bool obstructed)
+{
+	DebugSystem &sys = instance();
+	if (!sys.enabled || !sys.render.showRaycasts)
+		return;
+
+	const SDL_Color color = obstructed ? SDL_Color{255, 0, 0, 255} : SDL_Color{0, 255, 0, 255};
+	addLine(start, end, color);
+}
+
 void DebugSystem::clear()
 {
 	instance().debugRects.clear();

@@ -1,5 +1,5 @@
 #include "Engine/ECS/Systems/Combat/HitDetectionSystem.hpp"
-
+#include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
@@ -345,7 +345,7 @@ TEST_F(HitDetectionTest, ProjectileHitsPlayer)
 	registry.registerComponent<PositionComponent>(projectile, {{0.f, 0.f}});
 	registry.registerComponent<HurtBoxComponent>(projectile, {{0.f, 0.f, 10.f, 10.f}});
 
-	GameEngine::ECS::Systems::HitDetectionSystem::update(registry);
+	GameEngine::ECS::Systems::HitDetectionSystem::update(registry, [](GameEngine::ECS::Entity, GameEngine::ECS::Entity) {});
 
 	EXPECT_TRUE(registry.has<PendingDamageComponent>(attacker));
 }
@@ -358,7 +358,7 @@ TEST_F(HitDetectionTest, ProjectileDoesNotHitWhenNoOverlap)
 	registry.registerComponent<PositionComponent>(projectile, {{500.f, 500.f}});
 	registry.registerComponent<HurtBoxComponent>(projectile, {{0.f, 0.f, 10.f, 10.f}});
 
-	GameEngine::ECS::Systems::HitDetectionSystem::update(registry);
+	GameEngine::ECS::Systems::HitDetectionSystem::update(registry, [](GameEngine::ECS::Entity, GameEngine::ECS::Entity) {});
 
 	EXPECT_FALSE(registry.has<PendingDamageComponent>(attacker));
 }
@@ -374,7 +374,7 @@ TEST_F(HitDetectionTest, ProjectileDoesNotHitDeadVictim)
 	auto &attackerState = registry.get<StateComponent>(attacker);
 	attackerState.state = State::Dead;
 
-	GameEngine::ECS::Systems::HitDetectionSystem::update(registry);
+	GameEngine::ECS::Systems::HitDetectionSystem::update(registry, [](GameEngine::ECS::Entity, GameEngine::ECS::Entity) {});
 
 	EXPECT_FALSE(registry.has<PendingDamageComponent>(attacker));
 }

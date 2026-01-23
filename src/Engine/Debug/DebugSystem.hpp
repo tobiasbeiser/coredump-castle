@@ -9,8 +9,8 @@
 
 struct DebugRenderOptions {
 	bool showBoundingBoxes = false;
-	bool showHitBoxes = true;
-	bool showRaycasts = true;
+	bool showHitBoxes = false;
+	bool showRaycasts = false;
 	bool showTooltipBoxes = false;
 };
 
@@ -47,6 +47,7 @@ class DebugSystem {
 	static void debug(const std::string &message);
 	static void addRect(const SDL_FRect &rect, const SDL_Color &color);
 	static void addLine(const glm::vec2 &start, const glm::vec2 &end, const SDL_Color &color);
+	static void addRaycast(const glm::vec2 &start, const glm::vec2 &end, bool obstructed);
 	static void clear();
 
 	static void renderGameOverlay(SDL_Renderer *renderer, const SDL_FRect &viewport);

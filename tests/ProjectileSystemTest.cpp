@@ -1,6 +1,7 @@
 #include "Engine/ECS/Systems/Enemy/ProjectileSystem.hpp"
 
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
+#include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
@@ -47,6 +48,7 @@ class ProjectileSystemTest : public ::testing::Test {
 		registry.registerComponent<CollisionComponent>(player, {{0.0f, 0.0f, 20.0f, 20.0f}});
 		registry.registerComponent<TransformComponent>(player, {.scale = {1.0f, 1.0f}});
 		registry.registerComponent<GroundedComponent>(player, {.grounded = true});
+		registry.registerComponent<StateComponent>(player, {.state = State::Idle});
 	}
 };
 

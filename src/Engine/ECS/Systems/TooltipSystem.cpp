@@ -13,10 +13,9 @@
 
 void GameEngine::ECS::Systems::TooltipSystem::update(Registry &registry)
 {
-	// Check if player exists before processing tooltips
 	auto playerView = registry.view<PlayerTag>();
 	if (playerView.size() == 0) {
-		return; // No player exists (e.g., player is dead)
+		return; // player is dead
 	}
 
 	for (auto view = registry.view<TooltipComponent>(); const auto entity : view) {

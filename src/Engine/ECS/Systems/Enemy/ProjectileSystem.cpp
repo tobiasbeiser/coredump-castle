@@ -1,4 +1,5 @@
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
+#include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
@@ -7,6 +8,7 @@
 #include "Engine/ECS/Components/Render/AnimationComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
+#include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
 #include "Engine/ECS/View.hpp"
@@ -77,6 +79,26 @@ void cleanUpOldProjectiles(Registry &registry)
 	}
 }
 
+bool isPlayerAlive(Registry &registry)
+{
+	auto playerView = registry.view<PlayerTag, StateComponent>();
+	for (const auto entity : playerView) {
+		const auto &state = registry.get<StateComponent>(entity);
+		return state.state != State::Dead;
+	}
+	return false;
+}
+
+void cleanUpAllProjectiles(Registry &registry)
+{
+	auto projectileView =
+	    registry.view<EnemyTag, ProjectileComponent>().exclude<RangedAttackComponent>();
+	for (auto entity : projectileView) {
+		registry.deleteEntity(entity);
+	}
+}
+
+
 void handleEnemySpawning(Registry &registry, float deltaTime, const ProjectileFactory &factory)
 {
 	for (auto view =
@@ -130,6 +152,11 @@ void handleEnemySpawning(Registry &registry, float deltaTime, const ProjectileFa
 
 void update(Registry &registry, const float deltaTime, TextureManager &textureManager)
 {
+	if (!isPlayerAlive(registry)) {
+		cleanUpAllProjectiles(registry);
+		return;
+	}
+
 	updateProjectileMovement(registry, deltaTime);
 
 	const ProjectileFactory factory(registry, textureManager);

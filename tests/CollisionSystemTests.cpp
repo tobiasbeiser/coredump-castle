@@ -5,6 +5,7 @@
 #include "Engine/ECS/Components/Physics/AccelerationComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
+#include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 
 #include <glm/glm.hpp>
@@ -25,6 +26,7 @@ class CollisionSystemTest : public ::testing::Test {
 		registry.registerComponent(dynamicEntity, AccelerationComponent{});
 		registry.registerComponent(dynamicEntity, CollisionComponent{0, 0, collisionBoxSize, collisionBoxSize});
 		registry.registerComponent(dynamicEntity, GroundedComponent{});
+		registry.registerComponent<PlayerTag>(dynamicEntity, {});
 	}
 
 	GameEngine::ECS::Entity createTileAtPosition(const glm::vec2 &position)

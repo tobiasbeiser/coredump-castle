@@ -1,3 +1,5 @@
+#include "Engine/ECS/Registry.hpp"
+#include "Engine/ECS/Entity.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"

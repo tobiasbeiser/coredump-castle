@@ -237,49 +237,34 @@ void handleEnemyProjectileCollisions(Registry &registry, const Utils::SpatialHas
 bool isPathObstructed(const glm::vec2 &start, const glm::vec2 &end, const Utils::SpatialHash &grid,
                       const glm::vec2 &projectileSize)
 {
-
-	SDL_FRect pathQuery;
-
-	const float minX = std::min(start.x, end.x) - projectileSize.x;
-	const float maxX = std::max(start.x, end.x) + projectileSize.x;
-	const float minY = std::min(start.y, end.y) - projectileSize.y;
-	const float maxY = std::max(start.y, end.y) + projectileSize.y;
-
-	pathQuery.x = minX;
-	pathQuery.y = minY;
-	pathQuery.w = maxX - minX;
-	pathQuery.h = maxY - minY;
-
-	std::vector<std::pair<glm::vec2, glm::vec2>> lines;
-	lines.push_back({start, end});
-
 	const float halfW = projectileSize.x * 0.5f;
 	const float halfH = projectileSize.y * 0.5f;
 
-	lines.push_back({{start.x - halfW, start.y - halfH}, {end.x - halfW, end.y - halfH}}); // Top-Left
-	lines.push_back({{start.x + halfW, start.y - halfH}, {end.x + halfW, end.y - halfH}}); // Top-Right
-	lines.push_back({{start.x - halfW, start.y + halfH}, {end.x - halfW, end.y + halfH}}); // Bottom-Left
-	lines.push_back({{start.x + halfW, start.y + halfH}, {end.x + halfW, end.y + halfH}}); // Bottom-Right
+	const float minX = std::min(start.x, end.x) - halfW;
+	const float maxX = std::max(start.x, end.x) + halfW;
+	const float minY = std::min(start.y, end.y) - halfH;
+	const float maxY = std::max(start.y, end.y) + halfH;
+
+	const SDL_FRect pathQuery = {minX, minY, maxX - minX, maxY - minY};
 
 	bool obstructed = false;
 	grid.query(pathQuery, [&](const Entity, const SDL_FRect &tileBox) {
 		if (obstructed)
 			return;
 
-		for (const auto &line : lines) {
-			float x1 = line.first.x, y1 = line.first.y;
-			float x2 = line.second.x, y2 = line.second.y;
+		// Minkowski Sum
+		const SDL_FRect expandedTile = {tileBox.x - halfW, tileBox.y - halfH, tileBox.w + projectileSize.x,
+		                                tileBox.h + projectileSize.y};
 
-			if (SDL_GetRectAndLineIntersectionFloat(&tileBox, &x1, &y1, &x2, &y2)) {
-				obstructed = true;
-				return;
-			}
+		float x1 = start.x, y1 = start.y;
+		float x2 = end.x, y2 = end.y;
+
+		if (SDL_GetRectAndLineIntersectionFloat(&expandedTile, &x1, &y1, &x2, &y2)) {
+			obstructed = true;
 		}
 	});
 
-	// Done here since it could be demanding to recalculate the path lines inside debugsystem
-	const SDL_Color color = obstructed ? SDL_Color{255, 0, 0, 255} : SDL_Color{0, 255, 0, 255};
-	DebugSystem::addLine(start, end, color);
+	DebugSystem::addRaycast(start, end, obstructed);
 
 	return obstructed;
 }
