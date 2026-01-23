@@ -218,7 +218,6 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 			projectileTilesetPath = (basePath / tilesetPathOpt.value()).string();
 		}
 
-		// Retrieve projectile data to get correct sprite size
 		const auto &projectileData = ProjectileFactory::getCachedProjectileData(projectileTilesetPath);
 
 		registry.registerComponent(entity, ChaseComponent{

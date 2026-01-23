@@ -66,7 +66,9 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 	ECS::Systems::ProjectileSystem::update(game.getRegistry(), deltaTime, game.getTextureManager());
 	ECS::Systems::JumpSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::AttackSystem::update(game.getRegistry(), deltaTime, [&](const ECS::Entity e) {
-		effectFactory.createEffectOnEntity(e, EffectType::PlayerSwoosh);
+		if (game.getRegistry().has<PlayerTag>(e)) {
+			effectFactory.createEffectOnEntity(e, EffectType::PlayerSwoosh);
+		}
 	});
 
 	accumulator += deltaTime;

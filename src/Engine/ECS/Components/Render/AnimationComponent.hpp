@@ -17,11 +17,11 @@ enum class AnimationType {
 	Falling,
 	Landing,
 	Attacking,
+	Hurting,
+	Dead,
 	Charge,
 	Fire,
-	Hurting,
-	Interacting,
-	Dead
+	Interacting
 };
 
 class AnimationComponent {
@@ -52,7 +52,27 @@ class AnimationComponent {
 
 	AnimationFrame &currentFrame(const AnimationType &type)
 	{
-		return frames.at(type).at(animations.at(type).currentFrame());
+		// Safety check: ensure both animations and frames exist for this type
+		if (!animations.contains(type) || !frames.contains(type) || frames.at(type).empty()) {
+			// Try to find any non-empty frame set as fallback
+			for (auto &[animType, frameList] : frames) {
+				if (!frameList.empty()) {
+					return frameList[0];
+				}
+			}
+			// This should never happen if the component is properly initialized
+			throw std::runtime_error("AnimationComponent has no frames loaded");
+		}
+		
+		const int frameIndex = animations.at(type).currentFrame();
+		auto &frameList = frames.at(type);
+		
+		// Additional safety: ensure frame index is within bounds
+		if (frameIndex < 0 || frameIndex >= static_cast<int>(frameList.size())) {
+			return frameList[0];
+		}
+		
+		return frameList[frameIndex];
 	}
 
 	bool hasFinished(const AnimationType &type) const
@@ -66,7 +86,9 @@ class AnimationComponent {
 
 	void stepAnimation(const AnimationType &type, const std::chrono::duration<float> deltaTime)
 	{
-		animations.at(type).step(deltaTime);
+		if (animations.contains(type)) {
+			animations.at(type).step(deltaTime);
+		}
 	}
 
 	std::chrono::duration<float> getAnimationDuration(const AnimationType &type) const
@@ -87,7 +109,12 @@ class AnimationComponent {
 	}
 
   private:
-	void startAnimation(const AnimationType &type) { animations.at(type).start(); }
+	void startAnimation(const AnimationType &type)
+	{
+		if (animations.contains(type)) {
+			animations.at(type).start();
+		}
+	}
 	std::unordered_map<AnimationType, Animation> animations{};
 	std::unordered_map<AnimationType, std::vector<AnimationFrame>> frames{};
 	AnimationType currentAnimation = AnimationType::None;

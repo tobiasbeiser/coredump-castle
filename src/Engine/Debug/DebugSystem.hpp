@@ -9,8 +9,8 @@
 
 struct DebugRenderOptions {
 	bool showBoundingBoxes = false;
-	bool showHitBoxes = false;
-	bool showRaycasts = false;
+	bool showHitBoxes = true;
+	bool showRaycasts = true;
 	bool showTooltipBoxes = false;
 };
 

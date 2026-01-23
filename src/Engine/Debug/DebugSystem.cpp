@@ -4,6 +4,7 @@
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/RangedAttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/TooltipComponent.hpp"
@@ -94,6 +95,7 @@ void DebugSystem::drawUI()
 			ImGui::Checkbox("Show Bounding Boxes", &sys.render.showBoundingBoxes);
 			ImGui::Checkbox("Show Hit Boxes", &sys.render.showHitBoxes);
 			ImGui::Checkbox("Show Tooltip Boxes", &sys.render.showTooltipBoxes);
+			ImGui::Checkbox("Show Raycasts", &sys.render.showRaycasts);
 		}
 
 		if (ImGui::CollapsingHeader("Player Cheats", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -169,6 +171,13 @@ void DebugSystem::drawHitBoxes() const
 {
 	if (!instance().getRenderOptions().showHitBoxes || registry == nullptr) {
 		return;
+	}
+
+	for (auto view = registry->view<ProjectileComponent, HurtBoxComponent, PositionComponent>();
+	     const auto entity : view) {
+		SDL_FRect hurtBoxRect = GameEngine::Utils::HitBoxUtils::getHurtBoxRect(*registry, entity);
+		constexpr SDL_Color projectileHurtBoxColor = {0, 255, 255, 255};
+		addRect(hurtBoxRect, projectileHurtBoxColor);
 	}
 
 	for (auto view =

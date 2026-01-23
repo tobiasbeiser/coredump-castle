@@ -8,6 +8,7 @@
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/PendingDamageComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/RangedAttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Hazard/LastGroundedPositionComponent.hpp"
@@ -197,6 +198,7 @@ void resolveVerticalCollisions(const Entity entity, Registry &registry, const Ut
 
 void handleEnemyProjectileCollisions(Registry &registry, const Utils::SpatialHash &grid)
 {
+	constexpr int projectileDamage = 10;
 
 	for (auto projectileView = registry.view<EnemyTag, ProjectileComponent>().exclude<RangedAttackComponent>();
 	     const auto projectileEntity : projectileView) {
@@ -222,6 +224,9 @@ void handleEnemyProjectileCollisions(Registry &registry, const Utils::SpatialHas
 		     const auto playerEntity : playerView) {
 			const auto playerBox = buildEntityCollisionBox(playerEntity, registry);
 			if (SDL_HasRectIntersectionFloat(&projectileBox, &playerBox)) {
+				if (!registry.has<PendingDamageComponent>(playerEntity)) {
+					registry.registerComponent(playerEntity, PendingDamageComponent{projectileDamage});
+				}
 				registry.deleteEntity(projectileEntity);
 				break;
 			}

@@ -117,6 +117,12 @@ void handleRangeAttack(const EnemyContext &enemy, const PlayerContext &player, c
 		return;
 	}
 
+	if (withinRange) {
+		enemy.chase.lastKnownPlayerX = player.center.x;
+		enemy.input.horizontalDirection = 0.0f;
+		enemy.render.flipX = directionToPlayer < 0;
+	}
+
 	float progress = 0.0f;
 	if (AttackSystem::isAttacking(enemy.attack) && enemy.attack.attackTimer.getLength().count() > 0.0f) {
 		progress = enemy.attack.attackTimer.getTime().count() / enemy.attack.attackTimer.getLength().count();
@@ -143,9 +149,6 @@ void handleRangeAttack(const EnemyContext &enemy, const PlayerContext &player, c
 	}
 
 	// player is close enough
-	enemy.chase.lastKnownPlayerX = player.center.x;
-	enemy.input.horizontalDirection = 0.0f;
-	enemy.render.flipX = directionToPlayer < 0;
 	enemy.input.attackPressed = enemy.chase.reactionDelay.isTimeout();
 }
 

@@ -15,12 +15,6 @@ AnimationType AnimationFactory::getAnimationType(const std::string &string)
 	if (string == "Attacking") {
 		return AnimationType::Attacking;
 	}
-	if (string == "Charge") {
-		return AnimationType::Charge;
-	}
-	if (string == "Fire") {
-		return AnimationType::Fire;
-	}
 	if (string == "JumpStart") {
 		return AnimationType::JumpStart;
 	}
@@ -44,6 +38,12 @@ AnimationType AnimationFactory::getAnimationType(const std::string &string)
 	}
 	if (string == "Dead") {
 		return AnimationType::Dead;
+	}
+	if (string == "Charge") {
+		return AnimationType::Charge;
+	}
+	if (string == "Fire") {
+		return AnimationType::Fire;
 	}
 	throw std::runtime_error("Unknown state: " + string);
 }
