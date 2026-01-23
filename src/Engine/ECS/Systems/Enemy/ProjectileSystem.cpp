@@ -10,11 +10,11 @@
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Registry.hpp"
+#include "Engine/ECS/Systems/CollisionSystem.hpp"
 #include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
 #include "Engine/ECS/View.hpp"
 #include "Engine/Graphics/TextureManager.hpp"
 #include "Game/Factories/ProjectileFactory.hpp"
-
 #include <cmath>
 #include <numbers>
 
@@ -61,7 +61,21 @@ void updateProjectileMovement(Registry &registry, const float deltaTime)
 	     const auto entity : projectileView) {
 		const auto &velocity = projectileView.get<VelocityComponent>(entity);
 		auto &position = projectileView.get<PositionComponent>(entity);
+		position.previousPosition = position.position;
 		position.position += velocity.velocity * deltaTime;
+	}
+}
+
+void resolveProjectileWallCollisions(Registry &registry, const Utils::SpatialHash &grid)
+{
+	auto projectileView = registry.view<EnemyTag, PositionComponent, ProjectileComponent>();
+	for (const auto entity : projectileView) {
+		const auto &pos = registry.get<PositionComponent>(entity);
+		const auto &projectile = registry.get<ProjectileComponent>(entity);
+
+		if (CollisionSystem::isPathObstructed(pos.previousPosition, pos.position, grid, projectile.projectileSize)) {
+			registry.deleteEntity(entity);
+		}
 	}
 }
 
@@ -91,13 +105,11 @@ bool isPlayerAlive(Registry &registry)
 
 void cleanUpAllProjectiles(Registry &registry)
 {
-	auto projectileView =
-	    registry.view<EnemyTag, ProjectileComponent>().exclude<RangedAttackComponent>();
+	auto projectileView = registry.view<EnemyTag, ProjectileComponent>().exclude<RangedAttackComponent>();
 	for (auto entity : projectileView) {
 		registry.deleteEntity(entity);
 	}
 }
-
 
 void handleEnemySpawning(Registry &registry, float deltaTime, const ProjectileFactory &factory)
 {
@@ -149,6 +161,11 @@ void handleEnemySpawning(Registry &registry, float deltaTime, const ProjectileFa
 	}
 }
 } // anonymous namespace
+
+void handleEnemyProjectileCollisions(Registry &registry, const Utils::SpatialHash &grid)
+{
+	resolveProjectileWallCollisions(registry, grid);
+}
 
 void update(Registry &registry, const float deltaTime, TextureManager &textureManager)
 {

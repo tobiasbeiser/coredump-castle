@@ -1,6 +1,5 @@
 #include "WorldFactory.hpp"
 #include "EnemyFactory.hpp"
-#include "Engine/ECS/Components/Core/LevelComponent.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/Graphics/TextureManager.hpp"
 #include "LevelFactory.hpp"

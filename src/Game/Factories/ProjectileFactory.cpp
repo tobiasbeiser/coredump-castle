@@ -10,7 +10,6 @@
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Registry.hpp"
-#include "Engine/Graphics/TextureManager.hpp"
 #include "tileson.hpp"
 
 #include <iostream>
@@ -32,7 +31,7 @@ void ProjectileFactory::createProjectile(const glm::vec2 &startPosition, const g
 
 	AnimationFactory::loadProjectileAnimation(reg, textureManager, tilesetPath, entity);
 
-	reg.registerComponent(entity, PositionComponent{.position = startPosition});
+	reg.registerComponent(entity, PositionComponent{.position = startPosition, .previousPosition = startPosition});
 	reg.registerComponent(entity, VelocityComponent{.velocity = direction * speed});
 	reg.registerComponent(entity,
 	                      TransformComponent{.scale = glm::vec2(1.0f, 1.0f), .rotation = static_cast<float>(rotation)});

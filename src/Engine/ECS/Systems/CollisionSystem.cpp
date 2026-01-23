@@ -2,9 +2,6 @@
 
 #include "Engine/Debug/DebugSystem.hpp"
 
-#include <algorithm>
-#include <vector>
-
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
@@ -22,8 +19,6 @@
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
 #include "Engine/Utils/SpatialHash.hpp"
-
-#include <SDL3/SDL_pixels.h>
 
 namespace GameEngine::ECS::Systems::CollisionSystem {
 
@@ -193,44 +188,6 @@ void resolveVerticalCollisions(const Entity entity, Registry &registry, const Ut
 	if (registry.has<GroundedComponent>(entity)) {
 		auto &[cGrounded] = registry.get<GroundedComponent>(entity);
 		cGrounded = grounded;
-	}
-}
-
-void handleEnemyProjectileCollisions(Registry &registry, const Utils::SpatialHash &grid)
-{
-	constexpr int projectileDamage = 10;
-
-	for (auto projectileView = registry.view<EnemyTag, ProjectileComponent>().exclude<RangedAttackComponent>();
-	     const auto projectileEntity : projectileView) {
-		if (!registry.has<PositionComponent>(projectileEntity) || !registry.has<CollisionComponent>(projectileEntity)) {
-			continue;
-		}
-
-		const auto projectileBox = buildEntityCollisionBox(projectileEntity, registry);
-		bool hit = false;
-
-		grid.queryExcluding(projectileBox, projectileEntity, [&](const Entity, const SDL_FRect &tileBox) {
-			if (SDL_HasRectIntersectionFloat(&projectileBox, &tileBox)) {
-				hit = true;
-			}
-		});
-
-		if (hit) {
-			registry.deleteEntity(projectileEntity);
-			continue;
-		}
-
-		for (auto playerView = registry.view<PlayerTag, CollisionComponent, PositionComponent>();
-		     const auto playerEntity : playerView) {
-			const auto playerBox = buildEntityCollisionBox(playerEntity, registry);
-			if (SDL_HasRectIntersectionFloat(&projectileBox, &playerBox)) {
-				if (!registry.has<PendingDamageComponent>(playerEntity)) {
-					registry.registerComponent(playerEntity, PendingDamageComponent{projectileDamage});
-				}
-				registry.deleteEntity(projectileEntity);
-				break;
-			}
-		}
 	}
 }
 

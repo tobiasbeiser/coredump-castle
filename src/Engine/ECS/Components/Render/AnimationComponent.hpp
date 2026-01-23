@@ -52,23 +52,7 @@ class AnimationComponent {
 
 	AnimationFrame &currentFrame(const AnimationType &type)
 	{
-		if (!animations.contains(type) || !frames.contains(type) || frames.at(type).empty()) {
-			for (auto &[animType, frameList] : frames) {
-				if (!frameList.empty()) {
-					return frameList[0];
-				}
-			}
-			throw std::runtime_error("AnimationComponent has no frames loaded");
-		}
-
-		const int frameIndex = animations.at(type).currentFrame();
-		auto &frameList = frames.at(type);
-
-		if (frameIndex < 0 || frameIndex >= static_cast<int>(frameList.size())) {
-			return frameList[0];
-		}
-
-		return frameList[frameIndex];
+		return frames.at(type).at(animations.at(type).currentFrame());
 	}
 
 	bool hasFinished(const AnimationType &type) const
@@ -82,9 +66,7 @@ class AnimationComponent {
 
 	void stepAnimation(const AnimationType &type, const std::chrono::duration<float> deltaTime)
 	{
-		if (animations.contains(type)) {
-			animations.at(type).step(deltaTime);
-		}
+		animations.at(type).step(deltaTime);
 	}
 
 	std::chrono::duration<float> getAnimationDuration(const AnimationType &type) const
@@ -105,12 +87,7 @@ class AnimationComponent {
 	}
 
   private:
-	void startAnimation(const AnimationType &type)
-	{
-		if (animations.contains(type)) {
-			animations.at(type).start();
-		}
-	}
+	void startAnimation(const AnimationType &type) { animations.at(type).start(); }
 	std::unordered_map<AnimationType, Animation> animations{};
 	std::unordered_map<AnimationType, std::vector<AnimationFrame>> frames{};
 	AnimationType currentAnimation = AnimationType::None;

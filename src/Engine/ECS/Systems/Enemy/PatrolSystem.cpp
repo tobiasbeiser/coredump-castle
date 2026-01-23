@@ -44,8 +44,6 @@ void update(Registry &registry)
 			}
 		}
 
-		const bool isRanged = registry.has<RangedAttackComponent>(entity);
-
 		if (input.horizontalDirection == 0.0f && !isChasing) {
 			input.horizontalDirection = 1.0f;
 		}

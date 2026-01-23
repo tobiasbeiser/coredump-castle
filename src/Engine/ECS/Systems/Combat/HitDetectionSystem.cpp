@@ -3,13 +3,11 @@
 #include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
-#include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/PendingDamageComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
-#include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Registry.hpp"
@@ -18,13 +16,9 @@
 #include "Engine/ECS/View.hpp"
 #include "Engine/Utils/HitBoxUtils.hpp"
 
-#include <glm/vec2.hpp>
-
 namespace GameEngine::ECS::Systems::HitDetectionSystem {
 
 namespace {
-
-constexpr int defaultDamage = 10;
 
 bool isHostile(Registry &registry, const Entity attacker, const Entity victim)
 {
@@ -66,7 +60,7 @@ bool isValidVictim(Registry &registry, const Entity attacker, const Entity victi
 	return true;
 }
 
-void applyDamage(Registry &registry, const Entity victim, const int damage = defaultDamage)
+void applyDamage(Registry &registry, const Entity victim, const int damage = 10)
 {
 	if (!registry.has<PendingDamageComponent>(victim)) {
 		registry.registerComponent(victim, PendingDamageComponent{damage});
@@ -125,18 +119,19 @@ void resolveProjectileHits(Registry &registry)
 	auto projectileView = registry.view<EnemyTag, ProjectileComponent>();
 	auto victimView = registry.view<HurtBoxComponent, PositionComponent, HealthComponent>();
 
-	for (const auto attacker : projectileView) {
-		SDL_FRect projectileHurtBox = Utils::HitBoxUtils::getHurtBoxRect(registry, attacker);
+	for (const auto projectile : projectileView) {
+		SDL_FRect projectileHurtBox = Utils::HitBoxUtils::getHurtBoxRect(registry, projectile);
 
 		for (const auto victim : victimView) {
-			if (!isValidVictim(registry, attacker, victim)) {
+			if (!isValidVictim(registry, projectile, victim)) {
 				continue;
 			}
 
 			SDL_FRect victimHurtBoxRect = Utils::HitBoxUtils::getHurtBoxRect(registry, victim);
 
-			if (registry.has<EnemyTag>(attacker) && checkCollision(projectileHurtBox, victimHurtBoxRect)) {
+			if (registry.has<EnemyTag>(projectile) && checkCollision(projectileHurtBox, victimHurtBoxRect)) {
 				applyDamage(registry, victim);
+				registry.deleteEntity(projectile);
 			}
 		}
 	}
