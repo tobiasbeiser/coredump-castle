@@ -1,6 +1,7 @@
 #include "Engine/ECS/Systems/Enemy/ChaseSystem.hpp"
 
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
+#include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
@@ -60,6 +61,7 @@ class ChaseSystemTest : public ::testing::Test {
 		registry.registerComponent<TransformComponent>(player, {});
 		registry.registerComponent<HurtBoxComponent>(player, {{0.0f, 0.0f, 20.0f, 20.0f}});
 		registry.registerComponent<GroundedComponent>(player, {.grounded = true});
+		registry.registerComponent<StateComponent>(player, {});
 	}
 };
 

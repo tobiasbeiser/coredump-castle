@@ -28,7 +28,7 @@
             {
              "name":"collisionBox",
              "type":"string",
-             "value":"23,12,16,22"
+             "value":"23,9,16,22"
             }, 
             {
              "name":"detectionHeightRange",

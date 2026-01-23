@@ -388,7 +388,7 @@
                         {
                          "name":"detectionHeightRange",
                          "type":"float",
-                         "value":60
+                         "value":100
                         }, 
                         {
                          "name":"projectileOffset",
@@ -426,6 +426,35 @@
                  "template":"..\/objects\/meleeEnemy.tj",
                  "x":768.517858415912,
                  "y":703.64297426392
+                }, 
+                {
+                 "gid":3869,
+                 "height":64,
+                 "id":42,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":64,
+                 "x":9.08402256531352,
+                 "y":930.479267322293
+                }, 
+                {
+                 "height":41.6667,
+                 "id":43,
+                 "name":"",
+                 "properties":[
+                        {
+                         "name":"tooltip",
+                         "type":"string",
+                         "value":"save"
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":94.3333,
+                 "x":-5.91597743468648,
+                 "y":886.312267322293
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -516,7 +545,7 @@
          "y":0
         }],
  "nextlayerid":13,
- "nextobjectid":42,
+ "nextobjectid":46,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",
@@ -561,9 +590,13 @@
         {
          "firstgid":619,
          "source":"..\/tilesets\/void.tsj"
+        }, 
+        {
+         "firstgid":3869,
+         "source":"..\/tilesets\/savePoint.tsj"
         }],
  "tilewidth":32,
  "type":"map",
- "version":"1.10",
+ "version":"1.11",
  "width":36
 }

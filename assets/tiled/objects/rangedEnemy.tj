@@ -43,7 +43,7 @@
             {
              "name":"maxHealth",
              "type":"int",
-             "value":100
+             "value":20
             }, 
             {
              "name":"maxSpeedX",
@@ -53,7 +53,7 @@
             {
              "name":"projectileOffset",
              "type":"string",
-             "value":"0,30,0,0"
+             "value":"33,60,0,0"
             }, 
             {
              "name":"projectileSpeed",

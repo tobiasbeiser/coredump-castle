@@ -106,6 +106,7 @@ bool checkLineOfSight(const EnemyContext &enemy, const PlayerContext &player, co
 void handleRangeAttack(const EnemyContext &enemy, const PlayerContext &player, const Utils::SpatialHash &grid,
                        Registry &registry)
 {
+
 	auto &ranged = registry.get<RangedAttackComponent>(enemy.entity);
 
 	if (player.state->state == State::Dead) {
@@ -123,6 +124,10 @@ void handleRangeAttack(const EnemyContext &enemy, const PlayerContext &player, c
 	if (!withinRange && !AttackSystem::isAttacking(*enemy.attack)) {
 		resetChaseState(enemy);
 		return;
+	}
+
+	if (withinRange) {
+		enemy.chase->lastKnownPlayerX = player.center.x;
 	}
 
 	float progress = 0.0f;
@@ -167,6 +172,8 @@ void handleMeleeAttack(const EnemyContext &enemy, const PlayerContext &player)
 		return;
 	}
 
+	enemy.chase->lastKnownPlayerX = player.center.x;
+
 	if (AttackSystem::isAttacking(*enemy.attack)) {
 		enemy.input->attackPressed = false;
 		enemy.input->horizontalDirection = 0.0f;
@@ -178,7 +185,7 @@ void handleMeleeAttack(const EnemyContext &enemy, const PlayerContext &player)
 
 	if (const float stopDistance =
 	        (player.hurtBox.w * player.scale.x * 0.5f) + (enemy.hurtBox.w * enemy.scale.x * 0.5f);
-	    xDistance <= stopDistance) {
+	    xDistance <= stopDistance + 5.0f) {
 		enemy.input->horizontalDirection = 0.0f;
 		enemy.render->flipX = directionToPlayer < 0;
 		enemy.input->attackPressed = enemy.chase->reactionDelay.isTimeout();
