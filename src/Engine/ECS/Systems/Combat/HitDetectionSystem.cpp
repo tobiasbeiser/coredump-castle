@@ -100,7 +100,7 @@ void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
 		if (isAttackingState) {
 			if (auto anim = registry.tryGet<AnimationComponent>(attacker)) {
 				const auto currentAnim = anim->get().getAnimation();
-				 if (anim->get().usesDamageFrames(currentAnim)) {
+				if (anim->get().usesDamageFrames(currentAnim)) {
 					isWeaponActive = anim->get().currentFrame(currentAnim).damageActive;
 					usingFrameData = true;
 				}

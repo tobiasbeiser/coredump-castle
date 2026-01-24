@@ -154,7 +154,8 @@ void handleRangeAttack(const EnemyContext &enemy, const PlayerContext &player, c
 	enemy.render->setFacingLeft(directionToPlayer < 0);
 	if (enemy.chase->reactionDelay.isTimeout()) {
 		enemy.input->attackPressed = true;
-		enemy.attack->currentWindUpLimit = Utils::Random::getFloat(enemy.attack->minWindUpLimit, enemy.attack->maxWindUpLimit);
+		enemy.attack->currentWindUpLimit =
+		    Utils::Random::getFloat(enemy.attack->minWindUpLimit, enemy.attack->maxWindUpLimit);
 	}
 }
 
@@ -201,7 +202,8 @@ void handleMeleeAttack(const EnemyContext &enemy, const PlayerContext &player)
 		enemy.input->horizontalDirection = 0.0f;
 		if (enemy.chase->reactionDelay.isTimeout()) {
 			enemy.input->attackPressed = true;
-			enemy.attack->currentWindUpLimit = Utils::Random::getFloat(enemy.attack->minWindUpLimit, enemy.attack->maxWindUpLimit);
+			enemy.attack->currentWindUpLimit =
+			    Utils::Random::getFloat(enemy.attack->minWindUpLimit, enemy.attack->maxWindUpLimit);
 		}
 		if (!enemy.input->attackPressed) {
 			const bool facingLeft = directionToPlayer < 0;
