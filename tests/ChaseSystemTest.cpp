@@ -19,6 +19,7 @@
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Entity.hpp"
 #include "Engine/ECS/Registry.hpp"
+#include "Engine/ECS/Systems/CollisionSystem.hpp"
 #include "Engine/ECS/View.hpp"
 
 #include <gtest/gtest.h>
@@ -271,6 +272,7 @@ TEST_F(ChaseSystemTest, RangedEnemyDoesNotAttackWhenLineOfSightBlocked)
 
 	auto &playerPosition = playerView.get<PositionComponent>(player);
 	playerPosition.position = {150.0f, 0.0f};
+	GameEngine::ECS::Systems::CollisionSystem::buildStaticColliderGrid(registry);
 
 	GameEngine::ECS::Systems::ChaseSystem::update(registry, 0.6f);
 

@@ -52,36 +52,36 @@ class CollisionSystemTest : public ::testing::Test {
 		    nullptr,
 		    false};
 
-		auto grid = GameEngine::ECS::Systems::CollisionSystem::buildStaticColliderGrid(registry);
-		GameEngine::ECS::Systems::CollisionSystem::resolveHorizontalCollisions(state, grid);
-		GameEngine::ECS::Systems::CollisionSystem::resolveVerticalCollisions(state, grid);
+		GameEngine::ECS::Systems::CollisionSystem::buildStaticColliderGrid(registry);
+		GameEngine::ECS::Systems::CollisionSystem::resolveHorizontalCollisions(state);
+		GameEngine::ECS::Systems::CollisionSystem::resolveVerticalCollisions(state);
 		GameEngine::ECS::Systems::CollisionSystem::updateGroundedState(
-		    state, view.get<GroundedComponent>(dynamicEntity), nullptr, grid);
+		    state, view.get<GroundedComponent>(dynamicEntity), nullptr);
 	}
 };
 
 TEST_F(CollisionSystemTest, PathObstructedWhenLineHitsTile)
 {
 	createTileAtPosition({50.0f, 0.0f});
-	const auto grid = GameEngine::ECS::Systems::CollisionSystem::buildStaticColliderGrid(registry);
+	GameEngine::ECS::Systems::CollisionSystem::buildStaticColliderGrid(registry);
 
 	const glm::vec2 start{0.0f, 50.0f};
 	const glm::vec2 end{200.0f, 50.0f};
 	const glm::vec2 projectileSize{4.0f, 4.0f};
 
-	EXPECT_TRUE(GameEngine::ECS::Systems::CollisionSystem::isPathObstructed(start, end, grid, projectileSize));
+	EXPECT_TRUE(GameEngine::ECS::Systems::CollisionSystem::isPathObstructed(start, end, projectileSize));
 }
 
 TEST_F(CollisionSystemTest, PathClearWhenNoTileInTheWay)
 {
 	createTileAtPosition({200.0f, 0.0f});
-	const auto grid = GameEngine::ECS::Systems::CollisionSystem::buildStaticColliderGrid(registry);
+	GameEngine::ECS::Systems::CollisionSystem::buildStaticColliderGrid(registry);
 
 	const glm::vec2 start{0.0f, 50.0f};
 	const glm::vec2 end{150.0f, 50.0f};
 	const glm::vec2 projectileSize{4.0f, 4.0f};
 
-	EXPECT_FALSE(GameEngine::ECS::Systems::CollisionSystem::isPathObstructed(start, end, grid, projectileSize));
+	EXPECT_FALSE(GameEngine::ECS::Systems::CollisionSystem::isPathObstructed(start, end, projectileSize));
 }
 
 TEST_F(CollisionSystemTest, NoCollisionWhenApart)
