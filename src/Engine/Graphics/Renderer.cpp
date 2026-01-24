@@ -116,6 +116,7 @@ void Renderer::startFrame(const int red, const int green, const int blue, const 
 void Renderer::endFrame() const
 {
 	DebugSystem::renderGameOverlay(renderer.get(), viewport);
+	DebugSystem::updateSettings(renderer.get());
 	DebugSystem::drawUI();
 
 	SDL_SetRenderLogicalPresentation(renderer.get(), 0, 0, SDL_LOGICAL_PRESENTATION_DISABLED);

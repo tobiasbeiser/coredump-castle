@@ -68,7 +68,7 @@ GameEngine::ECS::Entity PlayerFactory::createPlayer(tson::Object &player, const 
 		registry.registerComponent(e, InputComponent{});
 		registry.registerComponent(e, MovementComponent{});
 
-		registry.registerComponent(e, JumpComponent{.maxJumps = 5, .coyoteTimer = Timer{0.08s}});
+		registry.registerComponent(e, JumpComponent{.maxJumps = 1, .coyoteTimer = Timer{0.08s}});
 		registry.registerComponent(e, BlinkComponent{.color = {50, 50, 50, 150}});
 
 		registry.registerComponent(e, InteractionComponent{19, 25, 21, 32});
@@ -76,7 +76,7 @@ GameEngine::ECS::Entity PlayerFactory::createPlayer(tson::Object &player, const 
 		constexpr int weaponHeight = 45;
 		constexpr int weaponOffsetY = -(weaponHeight - collisionBox.h) / 2;
 		registry.registerComponent(e, HitBoxComponent{.weaponHitBox = {0, weaponOffsetY, 35, weaponHeight}});
-		registry.registerComponent(e, HealthComponent{100, 300, 1.75s});
+		registry.registerComponent(e, HealthComponent{60, 60, 1.75s});
 
 		return e;
 	}

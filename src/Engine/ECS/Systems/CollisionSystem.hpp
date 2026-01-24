@@ -21,6 +21,7 @@ struct EntityPhysicsState {
 	AccelerationComponent &acc;
 	const CollisionComponent &col;
 	const TransformComponent *transform = nullptr;
+	bool ignoreLocks = false;
 };
 // NOLINTEND
 
@@ -32,6 +33,7 @@ void resolveVerticalCollisions(const EntityPhysicsState &state, const Utils::Spa
 void updateGroundedState(const EntityPhysicsState &state, GroundedComponent &groundedComp,
                          LastGroundedPositionComponent *lastGroundedComp, const Utils::SpatialHash &grid);
 
-bool isPathObstructed(const glm::vec2 &start, const glm::vec2 &end, const Utils::SpatialHash &grid, const glm::vec2 &projectileSize = {0.0f, 0.0f});
+bool isPathObstructed(const glm::vec2 &start, const glm::vec2 &end, const Utils::SpatialHash &grid,
+                      const glm::vec2 &projectileSize = {0.0f, 0.0f});
 
 } // namespace GameEngine::ECS::Systems::CollisionSystem

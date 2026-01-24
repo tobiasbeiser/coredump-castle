@@ -10,6 +10,7 @@
 #include "Engine/ECS/Components/Gameplay/Combat/RangedAttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Hazard/LastGroundedPositionComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Hazard/SpikeComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/LockComponent.hpp"
 #include "Engine/ECS/Components/Physics/AccelerationComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
@@ -18,25 +19,12 @@
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
+#include "Engine/Utils/HitBoxUtils.hpp"
 #include "Engine/Utils/SpatialHash.hpp"
 
 namespace GameEngine::ECS::Systems::CollisionSystem {
 
 namespace {
-
-SDL_FRect buildEntityCollisionBox(const PositionComponent &positionComponent, const CollisionComponent &collision,
-                                  const TransformComponent *transform)
-{
-	glm::vec2 scale{1.0f, 1.0f};
-
-	if (transform) {
-		scale = transform->scale;
-	}
-
-	return SDL_FRect{positionComponent.position.x + collision.collisionBox.x * scale.x,
-	                 positionComponent.position.y + collision.collisionBox.y * scale.y,
-	                 collision.collisionBox.w * scale.x, collision.collisionBox.h * scale.y};
-}
 
 bool resolveHorizontalCollision(const SDL_FRect &tileBox, glm::vec2 &pos, glm::vec2 &vel, glm::vec2 &acc,
                                 const SDL_FRect scaledEntityBox)
@@ -104,32 +92,42 @@ Utils::SpatialHash buildStaticColliderGrid(Registry &registry)
 		                  collisionBox.w * scale.x, collisionBox.h * scale.y};
 
 		const bool isHazard = registry.has<SpikeComponent>(entity);
-		grid.insert(entity, tileBox, isHazard ? Utils::ColliderType::Hazard : Utils::ColliderType::Normal);
+		const bool isLock = registry.has<LockComponent>(entity);
+		const Utils::ColliderType colliderType =
+		    isHazard ? Utils::ColliderType::Hazard : (isLock ? Utils::ColliderType::Lock : Utils::ColliderType::Normal);
+		grid.insert(entity, tileBox, colliderType);
 	}
 	return grid;
 }
 
 void resolveHorizontalCollisions(const EntityPhysicsState &state, const Utils::SpatialHash &grid)
 {
-	auto entityBox = buildEntityCollisionBox(state.pos, state.col, state.transform);
+	auto entityBox = Utils::HitBoxUtils::getHitBox(state.pos.position, state.col.collisionBox, state.transform->scale);
 
-	grid.queryExcluding(entityBox, state.entity,
-	                    [&](Entity tileEntity, const SDL_FRect &tileBox, Utils::ColliderType type) {
-		                    if (resolveHorizontalCollision(tileBox, state.pos.position, state.vel.velocity,
-		                                                   state.acc.acceleration, entityBox)) {
-			                    entityBox = buildEntityCollisionBox(state.pos, state.col, state.transform);
-		                    }
-	                    });
+	grid.queryExcluding(entityBox, state.entity, [&](Entity, const SDL_FRect &tileBox, Utils::ColliderType type) {
+		if (type == Utils::ColliderType::Lock && state.ignoreLocks) {
+			return;
+		}
+		if (resolveHorizontalCollision(tileBox, state.pos.position, state.vel.velocity, state.acc.acceleration,
+		                               entityBox)) {
+			entityBox =
+			    Utils::HitBoxUtils::getHitBox(state.pos.position, state.col.collisionBox, state.transform->scale);
+		}
+	});
 }
 
 void resolveVerticalCollisions(const EntityPhysicsState &state, const Utils::SpatialHash &grid)
 {
-	auto entityBox = buildEntityCollisionBox(state.pos, state.col, state.transform);
+	auto entityBox = Utils::HitBoxUtils::getHitBox(state.pos.position, state.col.collisionBox, state.transform->scale);
 
 	grid.queryExcluding(entityBox, state.entity, [&](const Entity, const SDL_FRect &tileBox, Utils::ColliderType type) {
+		if (type == Utils::ColliderType::Lock && state.ignoreLocks) {
+			return;
+		}
 		if (resolveVerticalCollision(tileBox, state.pos.position, state.vel.velocity, state.acc.acceleration,
 		                             entityBox)) {
-			entityBox = buildEntityCollisionBox(state.pos, state.col, state.transform);
+			entityBox =
+			    Utils::HitBoxUtils::getHitBox(state.pos.position, state.col.collisionBox, state.transform->scale);
 		}
 	});
 }
@@ -138,7 +136,8 @@ void updateGroundedState(const EntityPhysicsState &state, GroundedComponent &gro
                          LastGroundedPositionComponent *lastGroundedComp, const Utils::SpatialHash &grid)
 {
 	groundedComp.grounded = false;
-	const auto entityBox = buildEntityCollisionBox(state.pos, state.col, state.transform);
+	const auto entityBox =
+	    Utils::HitBoxUtils::getHitBox(state.pos.position, state.col.collisionBox, state.transform->scale);
 
 	SDL_FRect sensorBox = entityBox;
 	sensorBox.y += sensorBox.h;

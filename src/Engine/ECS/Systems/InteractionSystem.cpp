@@ -1,4 +1,5 @@
 ﻿#include "InteractionSystem.hpp"
+
 #include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/SavePointComponent.hpp"
@@ -10,6 +11,7 @@
 #include "Engine/ECS/Components/Gameplay/LockComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/GameEngine.hpp"
+#include "PhysicsSystem.hpp"
 #include "SaveSystem.hpp"
 
 void GameEngine::ECS::Systems::InteractionSystem::update(GameEngine &game, Registry &registry)
@@ -57,6 +59,7 @@ void GameEngine::ECS::Systems::InteractionSystem::update(GameEngine &game, Regis
 						if (const auto &[lockId] = lockView.get<LockComponent>(lockEntity); lockId == id) {
 							registry.deleteEntity(lockEntity);
 						}
+						PhysicsSystem::initStaticCollision(registry);
 					}
 				}
 				if (registry.has<SavePointComponent>(interactableObject)) {

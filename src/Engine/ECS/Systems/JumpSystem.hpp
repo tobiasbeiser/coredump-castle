@@ -1,9 +1,11 @@
 #pragma once
+#include "Engine/Debug/DebugSystem.hpp"
 #include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/JumpComponent.hpp"
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
+#include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
 
@@ -19,6 +21,10 @@ struct JumpSystem {
 			const auto &[grounded] = view.get<GroundedComponent>(entity);
 			auto &[velocity] = view.get<VelocityComponent>(entity);
 			const auto &input = view.get<InputComponent>(entity);
+
+			if (registry.has<PlayerTag>(entity) && DebugSystem::instance().getCheats().unlimitedJumps) {
+				jumpsLeft = maxJumps;
+			}
 
 			coyoteTimer.step(std::chrono::duration<float>(deltaTime), false);
 			if (grounded) {

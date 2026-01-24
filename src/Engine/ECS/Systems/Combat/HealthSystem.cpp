@@ -1,4 +1,6 @@
 #include "HealthSystem.hpp"
+
+#include "Engine/Debug/DebugSystem.hpp"
 #include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
@@ -28,6 +30,11 @@ void update(Registry &registry, const float deltaTime)
 	     const auto entity : view) {
 		auto &health = view.get<HealthComponent>(entity);
 		const auto &[damage, damageSource] = view.get<PendingDamageComponent>(entity);
+
+		if (registry.has<PlayerTag>(entity) && DebugSystem::instance().getCheats().godMode) {
+			registry.remove<PendingDamageComponent>(entity);
+			continue;
+		}
 
 		if ((isInvulnerable(health) || damage == 0) && damageSource != DamageSource::Hazard) {
 			registry.remove<PendingDamageComponent>(entity);

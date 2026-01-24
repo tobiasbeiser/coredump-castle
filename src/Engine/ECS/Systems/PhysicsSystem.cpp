@@ -1,6 +1,7 @@
 #include "PhysicsSystem.hpp"
 
 #include "CollisionSystem.hpp"
+#include "Engine/Debug/DebugSystem.hpp"
 #include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
@@ -11,18 +12,26 @@
 #include "Engine/ECS/Components/Physics/GravityComponent.hpp"
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
 #include "Engine/ECS/Components/Tags/InactiveTag.hpp"
+#include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/Systems/Enemy/ProjectileSystem.hpp"
 #include "Engine/ECS/View.hpp"
+
 #include <glm/glm.hpp>
+
+namespace {
+GameEngine::Utils::SpatialHash &getStaticGrid()
+{
+	static GameEngine::Utils::SpatialHash grid(128.0f);
+	return grid;
+}
+} // namespace
 
 namespace GameEngine::ECS::Systems::PhysicsSystem {
 
-static Utils::SpatialHash staticGrid(128.0f);
-
 void initStaticCollision(Registry &registry)
 {
-	staticGrid = CollisionSystem::buildStaticColliderGrid(registry);
+	getStaticGrid() = CollisionSystem::buildStaticColliderGrid(registry);
 }
 void update(Registry &registry, const float timeStep)
 {
@@ -53,20 +62,25 @@ void update(Registry &registry, const float timeStep)
 		if (collisionComponent) {
 			const auto transform = registry.tryGet<TransformComponent>(entity);
 
+			bool ignoreLocks = false;
+			if (registry.has<PlayerTag>(entity) && DebugSystem::instance().getCheats().noClip) {
+				ignoreLocks = true;
+			}
+
 			CollisionSystem::EntityPhysicsState state{
-			    entity, pos, vel, acc, collisionComponent->get(), transform ? &transform->get() : nullptr};
+			    entity, pos, vel, acc, collisionComponent->get(), transform ? &transform->get() : nullptr, ignoreLocks};
 
 			pos.position.x += vel.velocity.x * timeStep;
-			CollisionSystem::resolveHorizontalCollisions(state, staticGrid);
+			CollisionSystem::resolveHorizontalCollisions(state, getStaticGrid());
 
 			pos.position.y += vel.velocity.y * timeStep;
-			CollisionSystem::resolveVerticalCollisions(state, staticGrid);
+			CollisionSystem::resolveVerticalCollisions(state, getStaticGrid());
 
 			if (const auto groundedComp = registry.tryGet<GroundedComponent>(entity)) {
 				const auto lastGroundedComp = registry.tryGet<LastGroundedPositionComponent>(entity);
 
-				CollisionSystem::updateGroundedState(state, groundedComp->get(),
-				                                     lastGroundedComp ? &lastGroundedComp->get() : nullptr, staticGrid);
+				CollisionSystem::updateGroundedState(
+				    state, groundedComp->get(), lastGroundedComp ? &lastGroundedComp->get() : nullptr, getStaticGrid());
 			}
 		} else {
 			pos.position.x += vel.velocity.x * timeStep;
@@ -76,7 +90,7 @@ void update(Registry &registry, const float timeStep)
 		pos.previousPosition = pos.position;
 	};
 
-	ProjectileSystem::handleEnemyProjectileCollisions(registry, staticGrid);
+	ProjectileSystem::handleEnemyProjectileCollisions(registry, getStaticGrid());
 }
 
 } // namespace GameEngine::ECS::Systems::PhysicsSystem

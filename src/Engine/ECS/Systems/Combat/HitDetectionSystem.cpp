@@ -1,5 +1,6 @@
 #include "HitDetectionSystem.hpp"
 
+#include "Engine/Debug/DebugSystem.hpp"
 #include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
@@ -123,7 +124,11 @@ void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
 			}
 
 			if (hit) {
-				applyDamage(registry, victim);
+				int damage = 10;
+				if (registry.has<PlayerTag>(attacker) && DebugSystem::instance().getCheats().godMode) {
+					damage = INT_MAX;
+				}
+				applyDamage(registry, victim, damage);
 			}
 		}
 	}
