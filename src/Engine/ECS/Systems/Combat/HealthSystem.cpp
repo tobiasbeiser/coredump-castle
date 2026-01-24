@@ -8,6 +8,7 @@
 #include "Engine/ECS/Components/Gameplay/Enemy/ChaseComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Hazard/LastGroundedPositionComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Hazard/PendingRespawnComponent.hpp"
+#include "Engine/ECS/Components/Render/VignetteComponent.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
@@ -61,6 +62,9 @@ void update(Registry &registry, const float deltaTime)
 		}
 
 		registry.remove<PendingDamageComponent>(entity);
+		if (registry.has<PlayerTag>(entity)) {
+			registry.registerComponent<VignetteComponent>(entity, {});
+		}
 	}
 }
 

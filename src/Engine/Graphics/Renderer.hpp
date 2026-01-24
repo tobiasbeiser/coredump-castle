@@ -73,6 +73,8 @@ class Renderer {
 	void drawText(TTF_Text *textObject, float x, float y) const;
 	void renderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, float scrollFactor) const;
 	void renderCircularFade(float progress, SDL_FColor color = {0, 0, 0, 255});
+	void renderVignette(float intensity, const SDL_FColor &color,
+	                    const std::optional<glm::vec2> &focalPoint = std::nullopt) const;
 
 	SDL_FRect getViewport() const;
 

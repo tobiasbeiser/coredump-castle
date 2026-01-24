@@ -9,6 +9,7 @@
 #include "Engine/ECS/Components/Render/CenterCameraComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
+#include "Engine/ECS/Components/Render/VignetteComponent.hpp"
 #include "Engine/ECS/Components/Tags/InactiveTag.hpp"
 #include "Engine/ECS/View.hpp"
 
@@ -165,6 +166,27 @@ void RenderSystem::update(Registry &registry, float alpha)
 				                       renderItem.angle);
 			} else if (renderItem.dst.has_value()) {
 				renderer.renderTextureTiled(*renderItem.texture, renderItem.dst.value(), renderItem.scrollFactor);
+			}
+		}
+
+		for (auto vignetteView = registry.view<VignetteComponent, PositionComponent>(); auto entity : vignetteView) {
+			const auto &vignette = vignetteView.get<VignetteComponent>(entity);
+			const auto &pos = vignetteView.get<PositionComponent>(entity);
+
+			float intensity = vignette.getIntensity();
+
+			if (intensity > 0.0f) {
+				glm::vec2 centerPos = pos.position;
+
+				if (const auto sprite = registry.tryGet<SpriteComponent>(entity)) {
+					centerPos.x += sprite->get().tileSize.x / 2.0f;
+					centerPos.y += sprite->get().tileSize.y / 2.0f;
+				}
+				const SDL_FRect viewport = renderer.getViewport();
+				glm::vec2 screenPos = centerPos - glm::vec2{viewport.x, viewport.y};
+
+				// 3. Render
+				renderer.renderVignette(intensity, vignette.color, screenPos);
 			}
 		}
 		renderItems.clear();
