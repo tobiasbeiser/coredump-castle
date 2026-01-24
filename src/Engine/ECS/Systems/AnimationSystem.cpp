@@ -6,6 +6,8 @@
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
 
+#include <SDL3/SDL_log.h>
+
 namespace {
 void handleJumping(AnimationComponent &anim)
 {
@@ -13,6 +15,13 @@ void handleJumping(AnimationComponent &anim)
 		return;
 	}
 	switch (anim.getAnimation()) {
+	case AnimationType::None:
+	case AnimationType::Idle:
+	case AnimationType::Walking:
+	case AnimationType::Charge:
+	case AnimationType::Fire:
+	case AnimationType::Hurting:
+	case AnimationType::Dead:
 	case AnimationType::Attacking:
 		anim.setAnimation(AnimationType::JumpStart);
 		break;
