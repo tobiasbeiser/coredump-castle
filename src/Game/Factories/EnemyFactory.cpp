@@ -274,12 +274,21 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 		}
 	}
 
-	registry.registerComponent(entity, HealthComponent{maxHealth, maxHealth, invulnerabilityTime});
+	const auto poise = getFloatProp(enemyObj, "poise", 0.0f);
+	auto initialInvuln = invulnerabilityTime;
+	if (poise > 0.0f) {
+		initialInvuln = 200ms;
+	}
+
+	registry.registerComponent(entity,
+	                           HealthComponent{maxHealth, maxHealth, initialInvuln, poise, invulnerabilityTime});
 
 	registry.registerComponent(
 	    entity, AttackComponent{.attackTimer = Timer{attackDuration},
 	                            .attackCoolDownTimer = Timer{std::chrono::duration<float>(attackCooldown)},
-	                            .windUpLimit = windUpLimit});
+	                            .currentWindUpLimit = windUpLimit,
+	                            .minWindUpLimit = windUpLimit * 0.5f,
+	                            .maxWindUpLimit = windUpLimit});
 
 	ensureSafeSpawn(entity);
 

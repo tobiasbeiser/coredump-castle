@@ -100,23 +100,17 @@ void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
 		if (isAttackingState) {
 			if (auto anim = registry.tryGet<AnimationComponent>(attacker)) {
 				const auto currentAnim = anim->get().getAnimation();
-				if (currentAnim == AnimationType::Fire) {
-					isWeaponActive = true;
-					usingFrameData = true;
-				} else if (currentAnim == AnimationType::Charge) {
-					isWeaponActive = false;
-					usingFrameData = true;
-				} else if (anim->get().usesDamageFrames(currentAnim)) {
+				 if (anim->get().usesDamageFrames(currentAnim)) {
 					isWeaponActive = anim->get().currentFrame(currentAnim).damageActive;
 					usingFrameData = true;
 				}
 			}
 		}
 
-		if (!usingFrameData && isWeaponActive && attackComponent.windUpLimit > 0.0f) {
+		if (!usingFrameData && isWeaponActive && attackComponent.currentWindUpLimit > 0.0f) {
 			const float progress =
 			    attackComponent.attackTimer.getTime().count() / attackComponent.attackTimer.getLength().count();
-			if (progress <= attackComponent.windUpLimit) {
+			if (progress <= attackComponent.currentWindUpLimit) {
 				isWeaponActive = false;
 			}
 		}

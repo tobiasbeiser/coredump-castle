@@ -71,6 +71,11 @@
              "value":30
             }, 
             {
+             "name":"poise",
+             "type":"float",
+             "value":50
+            }, 
+            {
              "name":"reactionDelay",
              "type":"float",
              "value":0.05

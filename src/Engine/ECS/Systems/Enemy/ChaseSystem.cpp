@@ -21,6 +21,7 @@
 #include "Engine/ECS/View.hpp"
 
 #include "Engine/Utils/DetectionRangeUtils.hpp"
+#include "Engine/Utils/Random.hpp"
 #include "Engine/Utils/SpatialHash.hpp"
 
 namespace GameEngine::ECS::Systems::ChaseSystem {
@@ -132,7 +133,7 @@ void handleRangeAttack(const EnemyContext &enemy, const PlayerContext &player, c
 		progress = enemy.attack->attackTimer.getTime().count() / enemy.attack->attackTimer.getLength().count();
 	}
 
-	if (progress <= enemy.attack->windUpLimit) {
+	if (progress <= enemy.attack->currentWindUpLimit) {
 		glm::vec2 projectileSize = {0.f, 0.f};
 		glm::vec2 hitboxOffset = {0.0f, 0.0f};
 		if (const auto pc = registry.tryGet<ProjectileComponent>(enemy.entity)) {
@@ -151,7 +152,10 @@ void handleRangeAttack(const EnemyContext &enemy, const PlayerContext &player, c
 	enemy.chase->lastKnownPlayerX = player.center.x;
 	enemy.input->horizontalDirection = 0.0f;
 	enemy.render->setFacingLeft(directionToPlayer < 0);
-	enemy.input->attackPressed = enemy.chase->reactionDelay.isTimeout();
+	if (enemy.chase->reactionDelay.isTimeout()) {
+		enemy.input->attackPressed = true;
+		enemy.attack->currentWindUpLimit = Utils::Random::getFloat(enemy.attack->minWindUpLimit, enemy.attack->maxWindUpLimit);
+	}
 }
 
 void handleMeleeAttack(const EnemyContext &enemy, const PlayerContext &player)
@@ -176,15 +180,11 @@ void handleMeleeAttack(const EnemyContext &enemy, const PlayerContext &player)
 			progress = enemy.attack->attackTimer.getTime().count() / enemy.attack->attackTimer.getLength().count();
 		}
 
-		if (progress <= enemy.attack->windUpLimit) {
+		if (progress <= enemy.attack->currentWindUpLimit) {
 			const float directionToPlayer = player.center.x > enemy.center.x ? 1.0f : -1.0f;
 			const bool facingLeft = directionToPlayer < 0;
 
-			if (enemy.render->isFacingLeft() != facingLeft) {
-				resetChaseState(enemy);
-				enemy.attack->attackTimer.reset();
-				return;
-			}
+			enemy.render->setFacingLeft(facingLeft);
 		}
 
 		enemy.input->attackPressed = false;
@@ -199,7 +199,10 @@ void handleMeleeAttack(const EnemyContext &enemy, const PlayerContext &player)
 	        (player.hurtBox.w * player.scale.x * 0.5f) + (enemy.hurtBox.w * enemy.scale.x * 0.5f);
 	    xDistance <= stopDistance + enemy.hitBox.w * 0.5) {
 		enemy.input->horizontalDirection = 0.0f;
-		enemy.input->attackPressed = enemy.chase->reactionDelay.isTimeout();
+		if (enemy.chase->reactionDelay.isTimeout()) {
+			enemy.input->attackPressed = true;
+			enemy.attack->currentWindUpLimit = Utils::Random::getFloat(enemy.attack->minWindUpLimit, enemy.attack->maxWindUpLimit);
+		}
 		if (!enemy.input->attackPressed) {
 			const bool facingLeft = directionToPlayer < 0;
 			enemy.render->setFacingLeft(facingLeft);

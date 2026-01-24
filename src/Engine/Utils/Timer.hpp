@@ -36,6 +36,7 @@ class Timer {
 	[[nodiscard]] bool isTimeout() const noexcept { return timeout; }
 	[[nodiscard]] std::chrono::duration<float> getTime() const noexcept { return time; }
 	[[nodiscard]] std::chrono::duration<float> getLength() const noexcept { return length; }
+	void setLength(const std::chrono::duration<float> newLength) noexcept { length = newLength; }
 	void reset() noexcept
 	{
 		time = std::chrono::duration<float>::zero();

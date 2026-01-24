@@ -34,10 +34,6 @@ void update(Registry &registry, const float deltaTime)
 			continue;
 		}
 
-		if (const auto state = registry.tryGet<StateComponent>(entity)) {
-			state->get().state = State::Hurting;
-		}
-
 		health.health -= damage;
 		health.invulnerabilityTimer.reset();
 
@@ -49,9 +45,30 @@ void update(Registry &registry, const float deltaTime)
 			}
 		}
 
-		if (const auto chase = registry.tryGet<ChaseComponent>(entity)) {
-			chase->get().reactionDelay.reset();
+		bool isStaggered = true;
+		if (health.maxPoise > 0.0f) {
+			health.currentPoise += static_cast<float>(damage);
+			if (health.currentPoise >= health.maxPoise) {
+				health.currentPoise = 0.0f;
+				isStaggered = true;
+			} else {
+				isStaggered = false;
+			}
 		}
+
+		if (isStaggered) {
+			if (const auto state = registry.tryGet<StateComponent>(entity)) {
+				state->get().state = State::Hurting;
+			}
+			if (const auto chase = registry.tryGet<ChaseComponent>(entity)) {
+				chase->get().reactionDelay.reset();
+			}
+			health.invulnerabilityTimer.setLength(health.staggerInvulnerabilityDuration);
+		} else {
+			health.invulnerabilityTimer.setLength(200ms);
+		}
+
+		health.invulnerabilityTimer.reset();
 
 		registry.remove<PendingDamageComponent>(entity);
 	}
