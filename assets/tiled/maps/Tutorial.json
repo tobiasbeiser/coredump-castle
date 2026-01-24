@@ -223,29 +223,6 @@
          "name":"Enemies",
          "objects":[
                 {
-                 "id":4,
-                 "properties":[
-                        {
-                         "name":"area",
-                         "type":"object",
-                         "value":6
-                        }],
-                 "template":"..\/objects\/baseEnemy.tj",
-                 "x":976.5,
-                 "y":159.5
-                }, 
-                {
-                 "height":45.5,
-                 "id":6,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":211,
-                 "x":871,
-                 "y":142.5
-                }, 
-                {
                  "gid":320,
                  "height":64,
                  "id":9,
@@ -256,6 +233,29 @@
                  "width":64,
                  "x":560,
                  "y":161.5
+                }, 
+                {
+                 "height":34.9437,
+                 "id":23,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":218.311997449196,
+                 "x":866.101207295298,
+                 "y":155.132520376669
+                }, 
+                {
+                 "id":26,
+                 "properties":[
+                        {
+                         "name":"area",
+                         "type":"object",
+                         "value":23
+                        }],
+                 "template":"..\/objects\/demonBoss.tj",
+                 "x":975.257206019896,
+                 "y":183.65785222345
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -384,7 +384,7 @@
          "y":0
         }],
  "nextlayerid":17,
- "nextobjectid":17,
+ "nextobjectid":27,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",

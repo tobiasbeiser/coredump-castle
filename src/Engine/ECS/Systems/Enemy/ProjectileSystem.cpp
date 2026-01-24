@@ -56,7 +56,8 @@ bool shouldSpawnProjectile(Registry &registry, const Entity entity, const Attack
 }
 void updateProjectileMovement(Registry &registry, const float deltaTime)
 {
-	for (auto projectileView = registry.view<ProjectileTag, ProjectileComponent, VelocityComponent, PositionComponent>();
+	for (auto projectileView =
+	         registry.view<ProjectileTag, ProjectileComponent, VelocityComponent, PositionComponent>();
 	     const auto entity : projectileView) {
 		const auto &velocity = projectileView.get<VelocityComponent>(entity);
 		auto &position = projectileView.get<PositionComponent>(entity);
@@ -138,7 +139,8 @@ void handleEnemySpawning(Registry &registry, float deltaTime, const ProjectileFa
 		const glm::vec2 enemyScale = transform ? transform->get().scale : glm::vec2{1.0f, 1.0f};
 
 		if (const auto render = registry.tryGet<RenderComponent>(entity)) {
-			const bool facingLeft = render->get().flipX;
+			const auto &renderComp = render->get();
+			const bool facingLeft = renderComp.isFacingLeft();
 
 			const glm::vec2 spawnPosition = calculateProjectileSpawnPosition(
 			    position.position, enemyHurtBox.hurtBox, enemyScale, rangedAttack.projectileOffset, facingLeft);

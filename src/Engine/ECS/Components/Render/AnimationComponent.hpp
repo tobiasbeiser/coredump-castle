@@ -64,6 +64,19 @@ class AnimationComponent {
 		return animations.at(type).completed();
 	}
 
+	bool usesDamageFrames(const AnimationType &type) const
+	{
+		if (!frames.contains(type)) {
+			return false;
+		}
+		for (const auto &frame : frames.at(type)) {
+			if (frame.damageActive) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	void stepAnimation(const AnimationType &type, const std::chrono::duration<float> deltaTime)
 	{
 		animations.at(type).step(deltaTime);

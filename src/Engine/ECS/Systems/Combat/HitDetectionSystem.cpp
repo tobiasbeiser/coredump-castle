@@ -9,6 +9,7 @@
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/PendingDamageComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
+#include "Engine/ECS/Components/Render/AnimationComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
@@ -86,20 +87,47 @@ void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
 		const auto &attackerHitBox = attackerView.get<HitBoxComponent>(attacker);
 		const auto &[position, previousPosition] = attackerView.get<PositionComponent>(attacker);
 		const auto &[attackerHurtBoxRect] = attackerView.get<HurtBoxComponent>(attacker);
-		const auto facingLeft = attackerView.get<RenderComponent>(attacker).flipX;
+		const auto &render = attackerView.get<RenderComponent>(attacker);
+		const bool facingLeft = render.isFacingLeft();
 
 		const auto attackerTransform = registry.tryGet<TransformComponent>(attacker);
 		const glm::vec2 attackerScale = attackerTransform ? attackerTransform->get().scale : glm::vec2{1.0f, 1.0f};
 
-		const bool isAttacking = AttackSystem::isAttacking(attackComponent);
+		const bool isAttackingState = AttackSystem::isAttacking(attackComponent);
+		bool isWeaponActive = isAttackingState;
+		bool usingFrameData = false;
+
+		if (isAttackingState) {
+			if (auto anim = registry.tryGet<AnimationComponent>(attacker)) {
+				const auto currentAnim = anim->get().getAnimation();
+				if (currentAnim == AnimationType::Fire) {
+					isWeaponActive = true;
+					usingFrameData = true;
+				} else if (currentAnim == AnimationType::Charge) {
+					isWeaponActive = false;
+					usingFrameData = true;
+				} else if (anim->get().usesDamageFrames(currentAnim)) {
+					isWeaponActive = anim->get().currentFrame(currentAnim).damageActive;
+					usingFrameData = true;
+				}
+			}
+		}
+
+		if (!usingFrameData && isWeaponActive && attackComponent.windUpLimit > 0.0f) {
+			const float progress =
+			    attackComponent.attackTimer.getTime().count() / attackComponent.attackTimer.getLength().count();
+			if (progress <= attackComponent.windUpLimit) {
+				isWeaponActive = false;
+			}
+		}
 
 		SDL_FRect attackerWeaponRect = {0, 0, 0, 0};
-		if (isAttacking) {
+		if (isWeaponActive) {
 			attackerWeaponRect = Utils::HitBoxUtils::getWeaponHitBoxRect(position, attackerHitBox, attackerHurtBoxRect,
 			                                                             attackerScale, facingLeft);
 		}
 
-		SDL_FRect attackerBodyRect = Utils::HitBoxUtils::getHitBox(position, attackerHurtBoxRect, attackerScale);
+		SDL_FRect attackerBodyRect = Utils::HitBoxUtils::getHitBox(position, attackerHitBox.bodyHitBox, attackerScale);
 		for (const auto victim : victimView) {
 			if (!isValidVictim(registry, attacker, victim)) {
 				continue;
@@ -111,14 +139,20 @@ void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
 			const glm::vec2 victimScale = victimTransform ? victimTransform->get().scale : glm::vec2{1.0f, 1.0f};
 			SDL_FRect victimHurtBoxRect = Utils::HitBoxUtils::getHitBox(victimPos, victimHurtBox, victimScale);
 
+			if (const auto health = registry.tryGet<HealthComponent>(victim);
+			    health && HealthSystem::isInvulnerable(health->get())) {
+				continue;
+			}
+
 			bool hit = false;
 
-			if (isAttacking && checkCollision(attackerWeaponRect, victimHurtBoxRect)) {
+			if (isWeaponActive && checkCollision(attackerWeaponRect, victimHurtBoxRect)) {
 				hit = true;
 				onHit(attacker, victim);
 			}
 
-			if (!hit && registry.has<EnemyTag>(attacker) && checkCollision(attackerBodyRect, victimHurtBoxRect)) {
+			if (!hit && !isAttackingState && registry.has<EnemyTag>(attacker)
+			    && checkCollision(attackerBodyRect, victimHurtBoxRect)) {
 				hit = true;
 			}
 

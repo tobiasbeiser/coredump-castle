@@ -6,6 +6,8 @@
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/RangedAttackComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Enemy/ChaseComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/TooltipComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
@@ -178,61 +180,68 @@ void DebugSystem::drawCollisionBoxes() const
 }
 void DebugSystem::drawHitBoxes() const
 {
-	// if (!instance().getRenderOptions().showHitBoxes || registry == nullptr) {
-	// 	return;
-	// }
-	//
-	// for (auto view = registry->view<ProjectileComponent, HurtBoxComponent, PositionComponent>();
-	//      const auto entity : view) {
-	// 	SDL_FRect hurtBoxRect = GameEngine::Utils::HitBoxUtils::getHurtBoxRect(*registry, entity);
-	// 	constexpr SDL_Color projectileHurtBoxColor = {0, 255, 255, 255};
-	// 	addRect(hurtBoxRect, projectileHurtBoxColor);
-	// }
-	//
-	// for (auto view =
-	//          registry
-	//              ->view<HitBoxComponent, HurtBoxComponent, RenderComponent, TransformComponent, PositionComponent>();
-	// for (auto view = registry->view<HitBoxComponent, HurtBoxComponent, RenderComponent, PositionComponent>();
-	//      const auto entity : view) {
-	//
-	// 	const auto &[position, previousPosition] = view.get<PositionComponent>(entity);
-	// 	const auto &hitbox = view.get<HitBoxComponent>(entity);
-	// 	const auto &hurtbox = view.get<HurtBoxComponent>(entity);
-	// 	const auto &[renderLayer, flipX] = view.get<RenderComponent>(entity);
-	//
-	// 	const auto transform = registry->tryGet<TransformComponent>(entity);
-	// 	const glm::vec2 scale = transform ? transform->get().scale : glm::vec2{1.0f, 1.0f};
-	//
-	// 	const auto hitBoxRect =
-	// 	    GameEngine::Utils::HitBoxUtils::getWeaponHitBoxRect(position, hitbox, hurtbox.hurtBox, scale, flipX);
-	//
-	// 	constexpr SDL_Color hitboxColor = {0, 255, 0, 255};
-	// 	addRect(hitBoxRect, hitboxColor);
-	//
-	// 	SDL_FRect hurtBoxRect = GameEngine::Utils::HitBoxUtils::getHitBox(position, hurtbox.hurtBox, scale);
-	// 	constexpr SDL_Color hurtBoxColor = {255, 0, 255, 255};
-	// 	addRect(hurtBoxRect, hurtBoxColor);
-	//
-	// 	if (!registry->has<RangedAttackComponent>(entity) && registry->has<ChaseComponent>(entity)) {
-	// 		const auto &chase = registry->get<ChaseComponent>(entity);
-	// 		const auto &patrol = registry->get<PatrolComponent>(entity);
-	//
-	// 		SDL_FRect rangeRect = GameEngine::Utils::DetectionRangeUtils::getMeleeDetectionRect(patrol, chase);
-	//
-	// 		constexpr SDL_Color rangeColor = {255, 165, 0, 255}; // Orange
-	// 		addRect(rangeRect, rangeColor);
-	// 	}
-	//
-	// 	if (registry->has<RangedAttackComponent>(entity)) {
-	// 		const auto &chase = registry->get<ChaseComponent>(entity);
-	// 		const glm::vec2 center = GameEngine::Utils::DetectionRangeUtils::getRectCenter(hurtBoxRect);
-	//
-	// 		SDL_FRect rangeRect = GameEngine::Utils::DetectionRangeUtils::getRangedDetectionRect(chase, center);
-	//
-	// 		constexpr SDL_Color rangeColor = {255, 165, 0, 255}; // Orange
-	// 		addRect(rangeRect, rangeColor);
-	// 	}
-	// }
+	if (!instance().getRenderOptions().showHitBoxes || registry == nullptr) {
+		return;
+	}
+
+	for (auto view = registry->view<ProjectileComponent, HurtBoxComponent, PositionComponent>();
+	     const auto entity : view) {
+		SDL_FRect hurtBoxRect = GameEngine::Utils::HitBoxUtils::getHitBox(
+		    view.get<PositionComponent>(entity).position, view.get<HurtBoxComponent>(entity).hurtBox, {1, 1});
+		constexpr SDL_Color projectileHurtBoxColor = {0, 255, 255, 255};
+		addRect(hurtBoxRect, projectileHurtBoxColor);
+	}
+
+	for (auto view =
+	         registry
+	             ->view<HitBoxComponent, HurtBoxComponent, RenderComponent, TransformComponent, PositionComponent>();
+	     const auto entity : view) {
+
+		const auto &[position, previousPosition] = view.get<PositionComponent>(entity);
+		const auto &hitbox = view.get<HitBoxComponent>(entity);
+		const auto &hurtbox = view.get<HurtBoxComponent>(entity);
+		const auto &render = view.get<RenderComponent>(entity);
+
+		const auto transform = registry->tryGet<TransformComponent>(entity);
+		const glm::vec2 scale = transform ? transform->get().scale : glm::vec2{1.0f, 1.0f};
+
+		const bool facingLeft = render.isFacingLeft();
+		const auto hitBoxRect =
+		    GameEngine::Utils::HitBoxUtils::getWeaponHitBoxRect(position, hitbox, hurtbox.hurtBox, scale, facingLeft);
+
+		constexpr SDL_Color hitboxColor = {0, 255, 0, 255};
+		addRect(hitBoxRect, hitboxColor);
+
+		const SDL_FRect bodyHitBoxRect = GameEngine::Utils::HitBoxUtils::getHitBox(position, hitbox.bodyHitBox, scale);
+		if (bodyHitBoxRect.x != hurtbox.hurtBox.x) {
+			constexpr SDL_Color bodyHitBoxColor = {255, 0, 0, 255};
+			addRect(bodyHitBoxRect, bodyHitBoxColor);
+		}
+
+		SDL_FRect hurtBoxRect = GameEngine::Utils::HitBoxUtils::getHitBox(position, hurtbox.hurtBox, scale);
+		constexpr SDL_Color hurtBoxColor = {255, 0, 255, 255};
+		addRect(hurtBoxRect, hurtBoxColor);
+
+		if (!registry->has<RangedAttackComponent>(entity) && registry->has<ChaseComponent>(entity)) {
+			const auto &chase = registry->tryGet<ChaseComponent>(entity)->get();
+			const auto &patrol = registry->tryGet<PatrolComponent>(entity)->get();
+
+			SDL_FRect rangeRect = GameEngine::Utils::DetectionRangeUtils::getMeleeDetectionRect(patrol, chase);
+
+			constexpr SDL_Color rangeColor = {255, 165, 0, 255}; // Orange
+			addRect(rangeRect, rangeColor);
+		}
+
+		if (registry->has<RangedAttackComponent>(entity)) {
+			const auto &chase = registry->tryGet<ChaseComponent>(entity)->get();
+			const glm::vec2 center = GameEngine::Utils::DetectionRangeUtils::getRectCenter(hurtBoxRect);
+
+			SDL_FRect rangeRect = GameEngine::Utils::DetectionRangeUtils::getRangedDetectionRect(chase, center);
+
+			constexpr SDL_Color rangeColor = {255, 165, 0, 255}; // Orange
+			addRect(rangeRect, rangeColor);
+		}
+	}
 }
 
 void DebugSystem::drawTooltopBoxes() const

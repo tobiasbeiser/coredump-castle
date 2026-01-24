@@ -43,6 +43,7 @@ struct EnemyContext {
 	AttackComponent *attack = nullptr;
 	const PatrolComponent *patrol = nullptr;
 
+	SDL_FRect hitBox;
 	SDL_FRect hurtBox;
 	glm::vec2 center;
 	glm::vec2 scale;
@@ -149,7 +150,7 @@ void handleRangeAttack(const EnemyContext &enemy, const PlayerContext &player, c
 	// player is close enough
 	enemy.chase->lastKnownPlayerX = player.center.x;
 	enemy.input->horizontalDirection = 0.0f;
-	enemy.render->flipX = directionToPlayer < 0;
+	enemy.render->setFacingLeft(directionToPlayer < 0);
 	enemy.input->attackPressed = enemy.chase->reactionDelay.isTimeout();
 }
 
@@ -170,6 +171,22 @@ void handleMeleeAttack(const EnemyContext &enemy, const PlayerContext &player)
 	enemy.chase->lastKnownPlayerX = player.center.x;
 
 	if (AttackSystem::isAttacking(*enemy.attack)) {
+		float progress = 0.0f;
+		if (enemy.attack->attackTimer.getLength().count() > 0.0f) {
+			progress = enemy.attack->attackTimer.getTime().count() / enemy.attack->attackTimer.getLength().count();
+		}
+
+		if (progress <= enemy.attack->windUpLimit) {
+			const float directionToPlayer = player.center.x > enemy.center.x ? 1.0f : -1.0f;
+			const bool facingLeft = directionToPlayer < 0;
+
+			if (enemy.render->isFacingLeft() != facingLeft) {
+				resetChaseState(enemy);
+				enemy.attack->attackTimer.reset();
+				return;
+			}
+		}
+
 		enemy.input->attackPressed = false;
 		enemy.input->horizontalDirection = 0.0f;
 		return;
@@ -180,13 +197,17 @@ void handleMeleeAttack(const EnemyContext &enemy, const PlayerContext &player)
 
 	if (const float stopDistance =
 	        (player.hurtBox.w * player.scale.x * 0.5f) + (enemy.hurtBox.w * enemy.scale.x * 0.5f);
-	    xDistance <= stopDistance + 5.0f) {
+	    xDistance <= stopDistance + enemy.hitBox.w * 0.5) {
 		enemy.input->horizontalDirection = 0.0f;
-		enemy.render->flipX = directionToPlayer < 0;
 		enemy.input->attackPressed = enemy.chase->reactionDelay.isTimeout();
+		if (!enemy.input->attackPressed) {
+			const bool facingLeft = directionToPlayer < 0;
+			enemy.render->setFacingLeft(facingLeft);
+		}
 	} else {
 		enemy.input->horizontalDirection = directionToPlayer;
-		enemy.render->flipX = directionToPlayer < 0;
+		const bool facingLeft = directionToPlayer < 0;
+		enemy.render->setFacingLeft(facingLeft);
 		enemy.movement->maxSpeedX = enemy.chase->chaseSpeed;
 		enemy.input->attackPressed = false;
 		enemy.chase->reactionDelay.reset();
@@ -212,7 +233,9 @@ void update(Registry &registry, const float deltaTime)
 
 	for (const auto entity : enemyView) {
 		const auto &pos = enemyView.get<PositionComponent>(entity);
-		const auto &enemyHurtBox = enemyView.get<HurtBoxComponent>(entity).hurtBox;
+		const auto &enemyHurtBox = enemyView.get<HitBoxComponent>(entity).bodyHitBox;
+		const auto &enemyHitBox = enemyView.get<HitBoxComponent>(entity).weaponHitBox;
+
 		auto &chase = enemyView.get<ChaseComponent>(entity);
 
 		auto transform = registry.tryGet<TransformComponent>(entity);
@@ -226,6 +249,7 @@ void update(Registry &registry, const float deltaTime)
 		                      &enemyView.get<RenderComponent>(entity),
 		                      &enemyView.get<AttackComponent>(entity),
 		                      &enemyView.get<PatrolComponent>(entity),
+		                      enemyHitBox,
 		                      enemyHurtBox,
 		                      Utils::DetectionRangeUtils::calculateCenter(pos.position, enemyHurtBox, enemyScale),
 		                      enemyScale,

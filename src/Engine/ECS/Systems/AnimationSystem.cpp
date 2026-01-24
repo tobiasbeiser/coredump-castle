@@ -143,7 +143,7 @@ void GameEngine::ECS::Systems::AnimationSystem::update(Registry &registry, const
 
 			anim.stepAnimation(anim.getAnimation(), std::chrono::duration<float>(deltaTime));
 
-			const auto [frameTexture, frameTileSize, frameTileMapPosition] = anim.currentFrame(anim.getAnimation());
+			const auto [frameTexture, frameTileSize, frameTileMapPosition, _] = anim.currentFrame(anim.getAnimation());
 			texture = frameTexture;
 			tileSize = frameTileSize;
 			tileMapPosition = frameTileMapPosition;

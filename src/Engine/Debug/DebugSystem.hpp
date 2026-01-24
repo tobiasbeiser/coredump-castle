@@ -3,14 +3,14 @@
 #include <SDL3/SDL_pixels.h>
 #include <SDL3/SDL_rect.h>
 #include <SDL3/SDL_render.h>
+#include <array>
 #include <glm/vec2.hpp>
 #include <string>
 #include <vector>
-#include <array>
 
 struct DebugRenderOptions {
-	bool showBoundingBoxes = false;
-	bool showHitBoxes = false;
+	bool showBoundingBoxes = true;
+	bool showHitBoxes = true;
 	bool showRaycasts = false;
 	bool showTooltipBoxes = false;
 };

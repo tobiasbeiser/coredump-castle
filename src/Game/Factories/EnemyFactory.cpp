@@ -151,6 +151,8 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 	const auto chaseSpeed = getFloatProp(enemyObj, "chaseSpeed", 0.0f);
 	const auto canPatrol = getBoolProp(enemyObj, "canPatrol");
 	const auto collisionStr = getStringProp(enemyObj, "collisionBox", "0,0,0,0");
+	const auto hurtBoxStr = getStringProp(enemyObj, "hurtBox", "");
+	const auto touchDamageBoxStr = getStringProp(enemyObj, "touchDamageBox", "");
 	const auto hitBoxStr = getStringProp(enemyObj, "hitBox", "");
 	const auto maxHealth = getIntProp(enemyObj, "maxHealth", 100);
 	const auto attackCooldown = getFloatProp(enemyObj, "attackCooldown", 0.5);
@@ -160,7 +162,7 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 	const auto detectionWidthRange = getFloatProp(enemyObj, "detectionWidthRange", 300.0f);
 	const auto detectionHeightRange = getFloatProp(enemyObj, "detectionHeightRange", 50.0f);
 	const auto windUpLimit = getFloatProp(enemyObj, "windUpLimit", 0.0f);
-
+	const auto flipXOffset = getBoolProp(enemyObj, "flipXOffset");
 	glm::vec2 projectileOffset = {0.0f, 0.0f};
 	if (const auto offsetStr = getStringProp(enemyObj, "projectileOffset", "")) {
 		const auto parsed = parseCollisionBox(offsetStr.value());
@@ -175,7 +177,7 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 	registry.registerComponent(entity, AccelerationComponent{.acceleration = {0.0f, 0.0f}});
 	registry.registerComponent(entity, GravityComponent{});
 	registry.registerComponent(entity, GroundedComponent{});
-	registry.registerComponent(entity, RenderComponent{.layer = layer, .flipX = false});
+	registry.registerComponent(entity, RenderComponent{.layer = layer, .flipX = false, .flipXOffset = flipXOffset});
 	registry.registerComponent(entity, TransformComponent{.scale = glm::vec2(scale, scale)});
 	registry.registerComponent(entity, StateComponent{});
 	using namespace std::chrono_literals;
@@ -191,8 +193,8 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 
 	if (collisionStr) {
 		const auto collisionBox = parseCollisionBox(collisionStr.value());
-		registry.registerComponent(entity, HitBoxComponent{.bodyHitBox = parseCollisionBox(collisionStr.value()),
-		                                                   .weaponHitBox = weaponHitBox});
+		const auto touchDamageBox = touchDamageBoxStr ? parseCollisionBox(touchDamageBoxStr.value()) : collisionBox;
+		registry.registerComponent(entity, HitBoxComponent{.bodyHitBox = touchDamageBox, .weaponHitBox = weaponHitBox});
 		registry.registerComponent(entity, CollisionComponent{collisionBox});
 		registry.registerComponent(entity, HurtBoxComponent{collisionBox});
 	}
@@ -268,7 +270,7 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 			attackDuration = animComp->get().getAnimationDuration(AnimationType::Fire);
 		}
 		if (animComp->get().hasAnimation(AnimationType::Hurting)) {
-			invulnerabilityTime = animComp->get().getAnimationDuration(AnimationType::Hurting);
+			invulnerabilityTime = animComp->get().getAnimationDuration(AnimationType::Hurting) + 200ms;
 		}
 	}
 

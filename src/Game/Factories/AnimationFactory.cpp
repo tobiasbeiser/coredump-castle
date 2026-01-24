@@ -88,6 +88,14 @@ void AnimationFactory::loadAnimation(tson::Tile *const &tile, const GameEngine::
 		animFrame.texture = &textureManager.getTexture(frameImagePath);
 		animFrame.tileMapPosition = tileMapPosition;
 		animFrame.tileSize = imageSize;
+
+		auto *tileData = tileset->getTile(frame.getTileId());
+		if (tileData) {
+			if (const auto prop = tileData->getProp("damageActive")) {
+				animFrame.damageActive = prop->getValue<bool>();
+			}
+		}
+
 		frames.push_back(animFrame);
 	}
 	auto animComp = registry.tryGet<AnimationComponent>(entity);

@@ -112,7 +112,7 @@ TEST_F(ChaseSystemTest, ChasesPlayerRightWhenInPatrolAndOutOfAttackRange)
 	auto &playerPosition = view.get<PositionComponent>(player);
 	const auto &enemyRender = view.get<RenderComponent>(enemy);
 
-	playerPosition.position = {150.0f, 0.0f};
+	playerPosition.position = {160.0f, 0.0f};
 
 	GameEngine::ECS::Systems::ChaseSystem::update(registry, 0.0f);
 	ASSERT_FALSE(enemyRender.flipX);
@@ -131,7 +131,7 @@ TEST_F(ChaseSystemTest, ChasesPlayerLeftWhenInPatrolAndOutOfAttackRange)
 	auto &playerPosition = view.get<PositionComponent>(player);
 	const auto &enemyRender = view.get<RenderComponent>(enemy);
 
-	playerPosition.position = {40.0f, 0.0f};
+	playerPosition.position = {0.0f, 0.0f};
 
 	GameEngine::ECS::Systems::ChaseSystem::update(registry, 0.1f);
 
@@ -227,7 +227,7 @@ TEST_F(ChaseSystemTest, ChasesPlayerWhenJumpingHigh)
 
 	playerGrounded.grounded = false;
 
-	playerPosition.position = {150.0f, 100.0f};
+	playerPosition.position = {160.0f, 100.0f};
 
 	GameEngine::ECS::Systems::ChaseSystem::update(registry, 0.0f);
 
