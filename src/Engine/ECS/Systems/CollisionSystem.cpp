@@ -1,8 +1,13 @@
 #include "CollisionSystem.hpp"
 
+#include "Engine/Debug/DebugSystem.hpp"
+
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/PendingDamageComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/RangedAttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Hazard/LastGroundedPositionComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Hazard/SpikeComponent.hpp"
 #include "Engine/ECS/Components/Physics/AccelerationComponent.hpp"
@@ -165,6 +170,41 @@ void updateGroundedState(const EntityPhysicsState &state, GroundedComponent &gro
 			    }
 		    }
 	    });
+}
+
+bool isPathObstructed(const glm::vec2 &start, const glm::vec2 &end, const Utils::SpatialHash &grid,
+                      const glm::vec2 &projectileSize)
+{
+	const float halfW = projectileSize.x * 0.5f;
+	const float halfH = projectileSize.y * 0.5f;
+
+	const float minX = std::min(start.x, end.x) - halfW;
+	const float maxX = std::max(start.x, end.x) + halfW;
+	const float minY = std::min(start.y, end.y) - halfH;
+	const float maxY = std::max(start.y, end.y) + halfH;
+
+	const SDL_FRect pathQuery = {minX, minY, maxX - minX, maxY - minY};
+
+	bool obstructed = false;
+	grid.query(pathQuery, [&](const Entity, const SDL_FRect &tileBox, const Utils::ColliderType) {
+		if (obstructed)
+			return;
+
+		// Minkowski Sum
+		const SDL_FRect expandedTile = {tileBox.x - halfW, tileBox.y - halfH, tileBox.w + projectileSize.x,
+		                                tileBox.h + projectileSize.y};
+
+		float x1 = start.x, y1 = start.y;
+		float x2 = end.x, y2 = end.y;
+
+		if (SDL_GetRectAndLineIntersectionFloat(&expandedTile, &x1, &y1, &x2, &y2)) {
+			obstructed = true;
+		}
+	});
+
+	DebugSystem::addRaycast(start, end, obstructed);
+
+	return obstructed;
 }
 
 } // namespace GameEngine::ECS::Systems::CollisionSystem

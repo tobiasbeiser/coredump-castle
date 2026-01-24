@@ -12,8 +12,8 @@
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
 #include "Engine/ECS/Components/Tags/InactiveTag.hpp"
 #include "Engine/ECS/Registry.hpp"
+#include "Engine/ECS/Systems/Enemy/ProjectileSystem.hpp"
 #include "Engine/ECS/View.hpp"
-
 #include <glm/glm.hpp>
 
 namespace GameEngine::ECS::Systems::PhysicsSystem {
@@ -75,6 +75,8 @@ void update(Registry &registry, const float timeStep)
 
 		pos.previousPosition = pos.position;
 	};
+
+	ProjectileSystem::handleEnemyProjectileCollisions(registry, staticGrid);
 }
 
 } // namespace GameEngine::ECS::Systems::PhysicsSystem

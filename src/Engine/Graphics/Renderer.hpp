@@ -63,7 +63,7 @@ class Renderer {
 	[[nodiscard]] SDL_Renderer *getNativeRenderer() const;
 	[[nodiscard]] TTF_TextEngine *getTextEngine() const;
 	void renderTexture(SDL_Texture &texture, const std::optional<SDL_FRect> &srcRect,
-	                   const std::optional<SDL_FRect> &dstRect, const bool flip) const;
+	                   const std::optional<SDL_FRect> &dstRect, const bool flip, double angle = 0.0) const;
 
 	[[nodiscard]] std::unique_ptr<SDL_Texture, SDLTextureDeleter>
 	loadTexture(const std::filesystem::path &filePath) const;

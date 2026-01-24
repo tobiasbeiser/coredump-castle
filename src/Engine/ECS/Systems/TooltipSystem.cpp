@@ -13,10 +13,14 @@
 
 void GameEngine::ECS::Systems::TooltipSystem::update(Registry &registry)
 {
+	auto playerView = registry.view<PlayerTag, InteractionComponent, PositionComponent>();
+	if (playerView.size() == 0) {
+		return; // player is dead
+	}
+
 	for (auto view = registry.view<TooltipComponent>(); const auto entity : view) {
 		auto &[text, box] = view.get<TooltipComponent>(entity);
 
-		auto playerView = registry.view<PlayerTag, InteractionComponent, PositionComponent>();
 		const auto &playerHitbox = playerView.get<InteractionComponent>(playerView.at(0)).interactionBox;
 		const auto &playerPosition = playerView.get<PositionComponent>(playerView.at(0)).position;
 

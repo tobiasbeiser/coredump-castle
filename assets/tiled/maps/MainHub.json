@@ -339,9 +339,9 @@
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":161.067224049427,
-                 "x":319.98278670888,
-                 "y":904.005163987336
+                 "width":163.169398939471,
+                 "x":318.260346509519,
+                 "y":902.086291880162
                 }, 
                 {
                  "height":22.9578216764548,
@@ -368,20 +368,93 @@
                          "value":80
                         }],
                  "template":"..\/objects\/meleeEnemy.tj",
-                 "x":878.66832602663,
-                 "y":898.126076265387
+                 "x":890.547042595977,
+                 "y":901.571946509021
                 }, 
                 {
-                 "id":32,
+                 "id":34,
+                 "name":"RangedEnemy",
                  "properties":[
                         {
                          "name":"area",
                          "type":"object",
                          "value":23
+                        }, 
+                        {
+                         "name":"canPatrol",
+                         "type":"bool",
+                         "value":true
+                        }, 
+                        {
+                         "name":"detectionHeightRange",
+                         "type":"float",
+                         "value":100
+                        }, 
+                        {
+                         "name":"projectileOffset",
+                         "type":"string",
+                         "value":"33,60,0,0"
                         }],
-                 "template":"..\/objects\/baseEnemy.tj",
-                 "x":431.69014084507,
-                 "y":897.887323943662
+                 "template":"..\/objects\/rangedEnemy.tj",
+                 "x":380.598930481283,
+                 "y":879.508021390374
+                }, 
+                {
+                 "height":20.1158645732762,
+                 "id":35,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":113.179676056338,
+                 "x":680.445063231282,
+                 "y":714.350342977665
+                }, 
+                {
+                 "id":37,
+                 "properties":[
+                        {
+                         "name":"area",
+                         "type":"object",
+                         "value":35
+                        }, 
+                        {
+                         "name":"chaseSpeed",
+                         "type":"float",
+                         "value":80
+                        }],
+                 "template":"..\/objects\/meleeEnemy.tj",
+                 "x":768.517858415912,
+                 "y":703.64297426392
+                }, 
+                {
+                 "gid":3869,
+                 "height":64,
+                 "id":42,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":64,
+                 "x":9.08402256531352,
+                 "y":930.479267322293
+                }, 
+                {
+                 "height":41.6667,
+                 "id":43,
+                 "name":"",
+                 "properties":[
+                        {
+                         "name":"tooltip",
+                         "type":"string",
+                         "value":"save"
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":94.3333,
+                 "x":-5.91597743468648,
+                 "y":886.312267322293
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -472,7 +545,7 @@
          "y":0
         }],
  "nextlayerid":13,
- "nextobjectid":33,
+ "nextobjectid":46,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",
@@ -517,9 +590,13 @@
         {
          "firstgid":619,
          "source":"..\/tilesets\/void.tsj"
+        }, 
+        {
+         "firstgid":3869,
+         "source":"..\/tilesets\/savePoint.tsj"
         }],
  "tilewidth":32,
  "type":"map",
- "version":"1.10",
+ "version":"1.11",
  "width":36
 }

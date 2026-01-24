@@ -24,8 +24,10 @@
                 "Falling",
                 "Landing",
                 "Hurting",
-                "Interacting",
-                "Dead"
+                "Dead",
+                "Charge",
+                "Fire",
+                "Interacting"
             ],
             "valuesAsFlags": false
         }

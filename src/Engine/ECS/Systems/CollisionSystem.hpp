@@ -2,6 +2,7 @@
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/Utils/SpatialHash.hpp"
+#include <glm/vec2.hpp>
 
 struct PositionComponent;
 struct VelocityComponent;
@@ -30,5 +31,7 @@ void resolveVerticalCollisions(const EntityPhysicsState &state, const Utils::Spa
 
 void updateGroundedState(const EntityPhysicsState &state, GroundedComponent &groundedComp,
                          LastGroundedPositionComponent *lastGroundedComp, const Utils::SpatialHash &grid);
+
+bool isPathObstructed(const glm::vec2 &start, const glm::vec2 &end, const Utils::SpatialHash &grid, const glm::vec2 &projectileSize = {0.0f, 0.0f});
 
 } // namespace GameEngine::ECS::Systems::CollisionSystem

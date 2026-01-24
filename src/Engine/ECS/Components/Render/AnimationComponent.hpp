@@ -18,8 +18,10 @@ enum class AnimationType {
 	Landing,
 	Attacking,
 	Hurting,
-	Interacting,
-	Dead
+	Dead,
+	Charge,
+	Fire,
+	Interacting
 };
 
 class AnimationComponent {

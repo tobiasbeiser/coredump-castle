@@ -77,6 +77,7 @@ void RenderSystem::update(Registry &registry, float alpha)
 
 			const auto transform = registry.tryGet<TransformComponent>(entity);
 			const glm::vec2 scale = transform ? transform->get().scale : glm::vec2{1.0f, 1.0f};
+			double rotation = transform ? transform->get().rotation : 0.0;
 
 			const SDL_FRect src{.x = static_cast<float>(TileMapPosition.x),
 			                    .y = static_cast<float>(TileMapPosition.y),
@@ -103,69 +104,86 @@ void RenderSystem::update(Registry &registry, float alpha)
 				                                 .flipX = flipX,
 				                                 .colorMod = spriteColorMod});
 			}
+			// interpolation
+			/*SDL_FRect dst{.x = pos.previousPosition.x * (1 - alpha) + pos.position.x * alpha,
+			              .y = pos.previousPosition.y * (1 - alpha) + pos.position.y * alpha,
+			              .w = tile.TileSize,
+			              .h = tile.TileSize};*/
+
+			if (SDL_HasRectIntersectionFloat(&viewport, &dst)) {
+				renderItems.push_back(RenderItem{.layer = layer,
+				                                 .texture = texture,
+				                                 .src = src,
+				                                 .dst = dst,
+				                                 .parallax = false,
+				                                 .flipX = flipX,
+				                                 .angle = rotation,
+				                                 .colorMod = spriteColorMod});
+			}
 		}
-	}
-	{
+		{
 
-		PROFILE_SCOPE("RenderSystem::Sort");
+			PROFILE_SCOPE("RenderSystem::Sort");
 
-		auto sortStrategy = [](const RenderItem &a, const RenderItem &b) {
-			if (a.layer != b.layer) {
-				return a.layer < b.layer;
-			}
+			auto sortStrategy = [](const RenderItem &a, const RenderItem &b) {
+				if (a.layer != b.layer) {
+					return a.layer < b.layer;
+				}
 
-			if (a.texture != b.texture) {
-				return a.texture < b.texture;
-			}
+				if (a.texture != b.texture) {
+					return a.texture < b.texture;
+				}
 
-			// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-			const uint32_t colorA = *reinterpret_cast<const uint32_t *>(&a.colorMod);
-			// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-			const uint32_t colorB = *reinterpret_cast<const uint32_t *>(&b.colorMod);
+				// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+				const uint32_t colorA = *reinterpret_cast<const uint32_t *>(&a.colorMod);
+				// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+				const uint32_t colorB = *reinterpret_cast<const uint32_t *>(&b.colorMod);
 
-			if (colorA != colorB) {
-				return colorA < colorB;
-			}
+				if (colorA != colorB) {
+					return colorA < colorB;
+				}
 
-			return a.flipX < b.flipX;
-		};
+				return a.flipX < b.flipX;
+			};
 
 #if defined(__cpp_lib_execution) && !defined(__APPLE__)
-		std::sort(std::execution::seq, renderItems.begin(), renderItems.end(), sortStrategy);
+			std::sort(std::execution::seq, renderItems.begin(), renderItems.end(), sortStrategy);
 #else
-		// apple libc++ does not implement parallel algorithms
-		std::ranges::sort(renderItems, sortStrategy);
+			// apple libc++ does not implement parallel algorithms
+			std::ranges::sort(renderItems, sortStrategy);
 #endif
-	}
-	{
-		PROFILE_SCOPE("RenderSystem::Submit");
-
-		SDL_Texture *lastTexture = nullptr;
-		uint32_t lastColorVal = 0;
-		bool forceUpdate = true;
-
-		for (auto &renderItem : renderItems) {
-			// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-			const uint32_t currentColorVal = *reinterpret_cast<const uint32_t *>(&renderItem.colorMod);
-
-			if (forceUpdate || renderItem.texture != lastTexture || currentColorVal != lastColorVal) {
-				SDL_SetTextureColorMod(renderItem.texture, renderItem.colorMod.r, renderItem.colorMod.g,
-				                       renderItem.colorMod.b);
-				SDL_SetTextureAlphaMod(renderItem.texture, renderItem.colorMod.a);
-
-				lastTexture = renderItem.texture;
-				lastColorVal = currentColorVal;
-				forceUpdate = false;
-			}
-
-			if (!renderItem.parallax) {
-				renderer.renderTexture(*renderItem.texture, renderItem.src, renderItem.dst, renderItem.flipX);
-			} else if (renderItem.dst.has_value()) {
-				renderer.renderTextureTiled(*renderItem.texture, renderItem.dst.value(), renderItem.scrollFactor);
-			}
 		}
-		renderItems.clear();
+		{
+			PROFILE_SCOPE("RenderSystem::Submit");
+
+			SDL_Texture *lastTexture = nullptr;
+			uint32_t lastColorVal = 0;
+			bool forceUpdate = true;
+
+			for (auto &renderItem : renderItems) {
+				// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+				const uint32_t currentColorVal = *reinterpret_cast<const uint32_t *>(&renderItem.colorMod);
+
+				if (forceUpdate || renderItem.texture != lastTexture || currentColorVal != lastColorVal) {
+					SDL_SetTextureColorMod(renderItem.texture, renderItem.colorMod.r, renderItem.colorMod.g,
+					                       renderItem.colorMod.b);
+					SDL_SetTextureAlphaMod(renderItem.texture, renderItem.colorMod.a);
+
+					lastTexture = renderItem.texture;
+					lastColorVal = currentColorVal;
+					forceUpdate = false;
+				}
+
+				if (!renderItem.parallax) {
+					renderer.renderTexture(*renderItem.texture, renderItem.src, renderItem.dst, renderItem.flipX);
+				} else if (renderItem.dst.has_value()) {
+					renderer.renderTextureTiled(*renderItem.texture, renderItem.dst.value(), renderItem.scrollFactor);
+				}
+			}
+			renderItems.clear();
+		}
 	}
+	renderItems.clear();
 }
 
 void RenderSystem::centerCamera(Registry &registry) const

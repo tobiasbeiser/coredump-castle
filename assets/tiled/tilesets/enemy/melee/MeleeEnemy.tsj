@@ -4,6 +4,7 @@
  "imagewidth":384,
  "margin":0,
  "name":"MeleeEnemy",
+ "objectalignment":"bottomleft",
  "spacing":0,
  "tilecount":24,
  "tiledversion":"1.11.2",
@@ -32,6 +33,40 @@
                  "tileid":4
                 }],
          "id":0,
+         "objectgroup":
+            {
+             "draworder":"index",
+             "id":2,
+             "name":"",
+             "objects":[
+                    {
+                     "height":20,
+                     "id":1,
+                     "name":"",
+                     "rotation":0,
+                     "type":"",
+                     "visible":true,
+                     "width":16,
+                     "x":23,
+                     "y":12
+                    }, 
+                    {
+                     "height":20,
+                     "id":2,
+                     "name":"",
+                     "rotation":0,
+                     "type":"",
+                     "visible":true,
+                     "width":16,
+                     "x":23,
+                     "y":12
+                    }],
+             "opacity":1,
+             "type":"objectgroup",
+             "visible":true,
+             "x":0,
+             "y":0
+            },
          "properties":[
                 {
                  "name":"state",

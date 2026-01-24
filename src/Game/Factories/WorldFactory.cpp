@@ -1,6 +1,6 @@
 #include "WorldFactory.hpp"
 #include "EnemyFactory.hpp"
-#include "Engine/ECS/Components/Core/LevelComponent.hpp"
+#include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/Graphics/TextureManager.hpp"
 #include "LevelFactory.hpp"
 WorldFactory::WorldFactory(GameEngine::ECS::Registry &registry, const std::filesystem::path &projectPath,

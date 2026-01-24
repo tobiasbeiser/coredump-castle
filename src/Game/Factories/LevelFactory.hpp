@@ -40,7 +40,7 @@ class LevelFactory {
 	AnimationFactory animationFactory{registry, textureManager};
 	const std::filesystem::path basePath = "assets/tiled/tilesets/";
 	TileFactory tileFactory;
-	EnemyFactory enemyFactory;
+	GameEngine::ECS::EnemyFactory enemyFactory;
 	PlayerFactory playerFactory;
 	std::vector<std::unique_ptr<IObjectParser>> parsers;
 	void registerParsers();

@@ -1,10 +1,14 @@
 #include "Engine/ECS/Systems/Enemy/PatrolSystem.hpp"
+
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
+#include "Engine/ECS/Registry.hpp"
+#include "Engine/ECS/View.hpp"
+
 #include <gtest/gtest.h>
 
 struct PatrolSystemTest : testing::Test {

@@ -39,6 +39,12 @@ AnimationType AnimationFactory::getAnimationType(const std::string &string)
 	if (string == "Dead") {
 		return AnimationType::Dead;
 	}
+	if (string == "Charge") {
+		return AnimationType::Charge;
+	}
+	if (string == "Fire") {
+		return AnimationType::Fire;
+	}
 	throw std::runtime_error("Unknown state: " + string);
 }
 void AnimationFactory::loadAnimation(tson::Tile *const &tile, const GameEngine::ECS::Entity entity) const
@@ -129,4 +135,68 @@ void AnimationFactory::loadAnimationsFromTileset(tson::Object &object, const Gam
 			loadAnimation(&tile, entity);
 		}
 	}
+}
+
+// Load animation from a standalone tileset (without map context)
+void AnimationFactory::loadAnimationFromStandaloneTileset(GameEngine::ECS::Registry &registry,
+                                                          TextureManager &textureManager, tson::Tileset &tileset,
+                                                          const std::string &tilesetPath,
+                                                          GameEngine::ECS::Entity entity)
+{
+	if (tileset.getTiles().empty()) {
+		return;
+	}
+
+	auto &firstTile = tileset.getTiles()[0];
+	auto &animation = firstTile.getAnimation();
+
+	if (!animation.any()) {
+		return;
+	}
+
+	const std::string imageFile = tileset.getImage().string();
+	const std::string tilesetDir = tilesetPath.substr(0, tilesetPath.find_last_of("/\\") + 1);
+	const std::string texturePath = tilesetDir + imageFile;
+
+	const glm::ivec2 frameSize = {tileset.getTileSize().x, tileset.getTileSize().y};
+
+	const int frameCount = static_cast<int>(animation.getFrames().size());
+	int totalDurationMs = 0;
+	for (const auto &frame : animation.getFrames()) {
+		totalDurationMs += frame.getDuration();
+	}
+	const float animationDuration = totalDurationMs / 1000.0f;
+
+	auto &texture = textureManager.getTexture(texturePath);
+
+	if (!registry.has<AnimationComponent>(entity)) {
+		registry.registerComponent(entity, AnimationComponent{});
+	}
+
+	const auto animComp = registry.tryGet<AnimationComponent>(entity);
+	if (!animComp) {
+		throw std::runtime_error("Animation component does not exist");
+	}
+	animComp->get().addAnimationFromSpritesheet(
+	    AnimationType::Idle, frameCount, std::chrono::duration<float>(animationDuration), &texture, frameSize, {0, 0});
+	animComp->get().setAnimation(AnimationType::Idle);
+
+	if (!registry.has<SpriteComponent>(entity)) {
+		registry.registerComponent(
+		    entity, SpriteComponent{.texture = &texture, .tileSize = frameSize, .tileMapPosition = {0, 0}});
+	}
+}
+
+void AnimationFactory::loadProjectileAnimation(GameEngine::ECS::Registry &registry, TextureManager &textureManager,
+                                               const std::string &tilesetPath, const GameEngine::ECS::Entity entity)
+{
+	tson::Tileset tileset;
+	tson::Json11 json;
+	if (!json.parse(tilesetPath)) {
+		SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Failed to parse: %s", tilesetPath.c_str());
+		return;
+	}
+	tileset.parse(json, nullptr);
+
+	AnimationFactory::loadAnimationFromStandaloneTileset(registry, textureManager, tileset, tilesetPath, entity);
 }

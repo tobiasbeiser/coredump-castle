@@ -5,6 +5,7 @@
 #include "Engine/ECS/Components/Physics/AccelerationComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
+#include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
 
@@ -26,6 +27,7 @@ class CollisionSystemTest : public ::testing::Test {
 		registry.registerComponent(dynamicEntity, AccelerationComponent{});
 		registry.registerComponent(dynamicEntity, CollisionComponent{0, 0, collisionBoxSize, collisionBoxSize});
 		registry.registerComponent(dynamicEntity, GroundedComponent{});
+		registry.registerComponent<PlayerTag>(dynamicEntity, {});
 	}
 
 	GameEngine::ECS::Entity createTileAtPosition(const glm::vec2 &position)
@@ -56,6 +58,30 @@ class CollisionSystemTest : public ::testing::Test {
 		    state, view.get<GroundedComponent>(dynamicEntity), nullptr, grid);
 	}
 };
+
+TEST_F(CollisionSystemTest, PathObstructedWhenLineHitsTile)
+{
+	createTileAtPosition({50.0f, 0.0f});
+	const auto grid = GameEngine::ECS::Systems::CollisionSystem::buildStaticColliderGrid(registry);
+
+	const glm::vec2 start{0.0f, 50.0f};
+	const glm::vec2 end{200.0f, 50.0f};
+	const glm::vec2 projectileSize{4.0f, 4.0f};
+
+	EXPECT_TRUE(GameEngine::ECS::Systems::CollisionSystem::isPathObstructed(start, end, grid, projectileSize));
+}
+
+TEST_F(CollisionSystemTest, PathClearWhenNoTileInTheWay)
+{
+	createTileAtPosition({200.0f, 0.0f});
+	const auto grid = GameEngine::ECS::Systems::CollisionSystem::buildStaticColliderGrid(registry);
+
+	const glm::vec2 start{0.0f, 50.0f};
+	const glm::vec2 end{150.0f, 50.0f};
+	const glm::vec2 projectileSize{4.0f, 4.0f};
+
+	EXPECT_FALSE(GameEngine::ECS::Systems::CollisionSystem::isPathObstructed(start, end, grid, projectileSize));
+}
 
 TEST_F(CollisionSystemTest, NoCollisionWhenApart)
 {

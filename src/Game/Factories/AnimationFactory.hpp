@@ -25,6 +25,11 @@ class AnimationFactory {
 	static AnimationType getAnimationType(const std::string &string);
 	void loadAnimation(tson::Tile *const &tile, GameEngine::ECS::Entity entity) const;
 	void loadAnimationsFromTileset(tson::Object &object, GameEngine::ECS::Entity entity) const;
+	static void loadAnimationFromStandaloneTileset(GameEngine::ECS::Registry &registry, TextureManager &textureManager,
+	                                               tson::Tileset &tileset, const std::string &tilesetPath,
+	                                               const GameEngine::ECS::Entity entity);
+	static void loadProjectileAnimation(GameEngine::ECS::Registry &registry, TextureManager &textureManager,
+	                                    const std::string &tilesetPath, GameEngine::ECS::Entity entity);
 
   private:
 	GameEngine::ECS::Registry &registry;

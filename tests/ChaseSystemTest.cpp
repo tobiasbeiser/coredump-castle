@@ -1,11 +1,13 @@
 #include "Engine/ECS/Systems/Enemy/ChaseSystem.hpp"
 
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
+#include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/RangedAttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/ChaseComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
@@ -23,8 +25,11 @@
 
 class ChaseSystemTest : public ::testing::Test {
   protected:
+	// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
 	GameEngine::ECS::Registry registry;
+	// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
 	GameEngine::ECS::Entity enemy{};
+	// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
 	GameEngine::ECS::Entity player{};
 
 	void SetUp() override
@@ -35,10 +40,10 @@ class ChaseSystemTest : public ::testing::Test {
 		registry.registerComponent<InputComponent>(enemy, InputComponent{});
 		registry.registerComponent<PatrolComponent>(enemy, PatrolComponent{{0.0f, 0.0f}, {200.0f, 0.0f}});
 		registry.registerComponent<PositionComponent>(enemy, {{100.0f, 0.0f}});
-		registry.registerComponent<ChaseComponent>(enemy, ChaseComponent{.verticalDetectionHeight = 50.0f,
-		                                                                 .chaseSpeed = 120.0f,
+		registry.registerComponent<ChaseComponent>(enemy, ChaseComponent{.chaseSpeed = 120.0f,
 		                                                                 .originalPatrolSpeed = 50.0f,
-		                                                                 .reactionDelay = Timer{0.5s}});
+		                                                                 .reactionDelay = Timer{0.5s},
+		                                                                 .detectionHeightRange = 50.0f});
 		registry.registerComponent<HitBoxComponent>(
 		    enemy, {.bodyHitBox = {0.f, 0.f, 20.f, 20.f}, .weaponHitBox = {0.f, 0.f, 0.f, 0.f}});
 		registry.registerComponent<HurtBoxComponent>(enemy, {.hurtBox = {0.f, 0.f, 20.f, 20.f}});
@@ -58,6 +63,7 @@ class ChaseSystemTest : public ::testing::Test {
 		registry.registerComponent<HurtBoxComponent>(player, {{0.0f, 0.0f, 20.0f, 20.0f}});
 		registry.registerComponent<GroundedComponent>(player, {.grounded = true});
 		registry.registerComponent<RenderComponent>(player, {});
+		registry.registerComponent<StateComponent>(player, {});
 	}
 };
 
@@ -225,8 +231,67 @@ TEST_F(ChaseSystemTest, ChasesPlayerWhenJumpingHigh)
 
 	GameEngine::ECS::Systems::ChaseSystem::update(registry, 0.0f);
 
-	// Should still chase
 	ASSERT_FALSE(enemyRender.flipX);
 	ASSERT_FLOAT_EQ(enemyInput.horizontalDirection, 1.0f);
 	ASSERT_FLOAT_EQ(enemyMovement.maxSpeedX, enemyChase.chaseSpeed);
+}
+
+TEST_F(ChaseSystemTest, RangedEnemyStopsAndAttacksInDetectionRange)
+{
+	using namespace std::chrono_literals;
+	registry.registerComponent<RangedAttackComponent>(enemy, {});
+	auto enemyView = registry.view<InputComponent, ChaseComponent>();
+	auto playerView = registry.view<PositionComponent>();
+	auto &enemyChase = enemyView.get<ChaseComponent>(enemy);
+	enemyChase.detectionWidthRange = 150.0f;
+	enemyChase.detectionHeightRange = 100.0f;
+
+	auto &playerPosition = playerView.get<PositionComponent>(player);
+	playerPosition.position = {150.0f, 0.0f};
+
+	GameEngine::ECS::Systems::ChaseSystem::update(registry, 0.6f);
+
+	const auto &enemyInput = enemyView.get<InputComponent>(enemy);
+	EXPECT_FLOAT_EQ(enemyInput.horizontalDirection, 0.0f);
+	EXPECT_TRUE(enemyInput.attackPressed);
+}
+
+TEST_F(ChaseSystemTest, RangedEnemyDoesNotAttackWhenLineOfSightBlocked)
+{
+	registry.registerComponent<RangedAttackComponent>(enemy, {});
+	auto enemyView = registry.view<InputComponent, ChaseComponent>();
+	auto playerView = registry.view<PositionComponent>();
+	auto &enemyChase = enemyView.get<ChaseComponent>(enemy);
+	enemyChase.detectionWidthRange = 200.0f;
+	enemyChase.detectionHeightRange = 50.0f;
+
+	const auto blocker = registry.create();
+	registry.registerComponent<PositionComponent>(blocker, {{120.0f, 0.0f}});
+	registry.registerComponent<CollisionComponent>(blocker, {{0.0f, -5.0f, 10.0f, 20.0f}});
+
+	auto &playerPosition = playerView.get<PositionComponent>(player);
+	playerPosition.position = {150.0f, 0.0f};
+
+	GameEngine::ECS::Systems::ChaseSystem::update(registry, 0.6f);
+
+	const auto &enemyInput = enemyView.get<InputComponent>(enemy);
+	EXPECT_FALSE(enemyInput.attackPressed);
+}
+
+TEST_F(ChaseSystemTest, RangedEnemyResetsWhenPlayerOutOfRange)
+{
+	registry.registerComponent<RangedAttackComponent>(enemy, {});
+	auto enemyView = registry.view<InputComponent, ChaseComponent>();
+	auto playerView = registry.view<PositionComponent>();
+	auto &enemyChase = enemyView.get<ChaseComponent>(enemy);
+	enemyChase.detectionWidthRange = 100.0f;
+	enemyChase.detectionHeightRange = 50.0f;
+
+	auto &playerPosition = playerView.get<PositionComponent>(player);
+	playerPosition.position = {300.0f, 0.0f};
+
+	GameEngine::ECS::Systems::ChaseSystem::update(registry, 0.1f);
+
+	const auto &enemyInput = enemyView.get<InputComponent>(enemy);
+	EXPECT_FALSE(enemyInput.attackPressed);
 }
