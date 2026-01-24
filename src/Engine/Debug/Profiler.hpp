@@ -28,9 +28,9 @@ class Profiler {
 		return inst;
 	}
 
-	std::unordered_map<std::string, SystemProfileData> results;
+	std::unordered_map<std::string_view, SystemProfileData> results;
 
-	void update(const std::string &name, const std::chrono::duration<float, std::milli> duration)
+	void update(const std::string_view &name, const std::chrono::duration<float, std::milli> duration)
 	{
 		results[name].addSample(duration);
 	}

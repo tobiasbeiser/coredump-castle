@@ -14,6 +14,6 @@ namespace GameEngine::ECS::Systems::ProjectileSystem {
 
 void update(Registry &registry, float deltaTime, TextureManager &textureManager);
 
-void handleEnemyProjectileCollisions(Registry &registry, const Utils::SpatialHash &grid);
+void handleEnemyProjectileCollisions(Registry &registry);
 
 } // namespace GameEngine::ECS::Systems::ProjectileSystem

@@ -54,10 +54,17 @@ void DebugSystem::clear()
 
 void DebugSystem::renderGameOverlay(SDL_Renderer *renderer, const SDL_FRect &viewport)
 {
+	PROFILE_SCOPE("Debug::Debug Overlay");
+
 	DebugSystem &sys = instance();
-	sys.drawCollisionBoxes();
-	sys.drawHitBoxes();
-	sys.drawTooltipBoxes();
+	if (sys.render.showBoundingBoxes)
+		sys.drawCollisionBoxes();
+
+	if (sys.render.showHitBoxes)
+		sys.drawHitBoxes();
+
+	if (sys.render.showTooltipBoxes)
+		sys.drawTooltipBoxes();
 
 	for (const auto &[rect, color] : sys.debugRects) {
 		SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
@@ -82,6 +89,8 @@ void DebugSystem::renderGameOverlay(SDL_Renderer *renderer, const SDL_FRect &vie
 }
 void DebugSystem::updateSettings(SDL_Renderer *renderer)
 {
+	PROFILE_SCOPE("Debug::Update Settings");
+
 	static bool lastVSync;
 	if (lastVSync != instance().getRenderOptions().vSync) {
 		SDL_SetRenderVSync(renderer, instance().getRenderOptions().vSync);
@@ -91,6 +100,8 @@ void DebugSystem::updateSettings(SDL_Renderer *renderer)
 
 void DebugSystem::drawUI()
 {
+	PROFILE_SCOPE("Debug::Construct imGui");
+
 	DebugSystem &sys = instance();
 
 	if (!sys.enabled)
@@ -153,10 +164,11 @@ void DebugSystem::drawUI()
 				    (average < 1.0f) ? ImVec4(0, 1, 0, 1) : (average < 5.0f ? ImVec4(1, 1, 0, 1) : ImVec4(1, 0, 0, 1));
 
 				ImGui::PushStyleColor(ImGuiCol_Text, color);
-				ImGui::Text("%s: %f ns", name.c_str(), average * 1000);
+				ImGui::Text("%s: %f ns", std::string(name).c_str(), average * 1000);
 				ImGui::PopStyleColor();
 				// Draw the graph
-				ImGui::PlotLines(name.c_str(), data.history.data(), data.history.size(), data.offset, nullptr, 0.0f,
+				ImGui::PlotLines(std::string(name).c_str(), data.history.data(), data.history.size(), data.offset,
+				                 nullptr, 0.0f,
 				                 data.maxTime.count() * 1.1f, // <--- Passed as raw float here
 				                 ImVec2(0, 40));
 				ImGui::Spacing();

@@ -18,6 +18,7 @@
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/Systems/CollisionSystem.hpp"
 #include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
+#include "Engine/ECS/Systems/PhysicsSystem.hpp"
 #include "Engine/ECS/View.hpp"
 
 #include "Engine/Utils/DetectionRangeUtils.hpp"
@@ -74,8 +75,8 @@ std::optional<PlayerContext> getPlayerContext(Registry &registry)
 }
 } // namespace
 
-bool checkLineOfSight(const EnemyContext &enemy, const PlayerContext &player, const Utils::SpatialHash &grid,
-                      RangedAttackComponent &ranged, const glm::vec2 &projectileSize, const glm::vec2 &hitboxOffset)
+bool checkLineOfSight(const EnemyContext &enemy, const PlayerContext &player, RangedAttackComponent &ranged,
+                      const glm::vec2 &projectileSize, const glm::vec2 &hitboxOffset)
 {
 	const bool facingLeft = (player.center.x - enemy.center.x) < 0.0f;
 
@@ -92,7 +93,7 @@ bool checkLineOfSight(const EnemyContext &enemy, const PlayerContext &player, co
 
 	for (const std::vector targetPoints = {player.center, playerTop}; const auto &targetPoint : targetPoints) {
 
-		if (const bool obstructed = CollisionSystem::isPathObstructed(rayStart, targetPoint, grid, projectileSize);
+		if (const bool obstructed = CollisionSystem::isPathObstructed(rayStart, targetPoint, projectileSize);
 		    !obstructed) {
 			ranged.targetSnapshot = targetPoint;
 			return true;
@@ -101,8 +102,8 @@ bool checkLineOfSight(const EnemyContext &enemy, const PlayerContext &player, co
 	return false;
 }
 
-void handleRangeAttack(const EnemyContext &enemy, const PlayerContext &player, const Utils::SpatialHash &grid,
-                       Registry &registry, RangedAttackComponent &ranged)
+void handleRangeAttack(const EnemyContext &enemy, const PlayerContext &player, Registry &registry,
+                       RangedAttackComponent &ranged)
 {
 
 	if (player.state->state == State::Dead) {
@@ -139,7 +140,7 @@ void handleRangeAttack(const EnemyContext &enemy, const PlayerContext &player, c
 			hitboxOffset = pc->get().hitboxOffset;
 		}
 
-		if (!checkLineOfSight(enemy, player, grid, ranged, projectileSize, hitboxOffset)) {
+		if (!checkLineOfSight(enemy, player, ranged, projectileSize, hitboxOffset)) {
 			resetChaseState(enemy);
 			enemy.attack->attackTimer.reset();
 			return;
@@ -204,8 +205,6 @@ void update(Registry &registry, const float deltaTime)
 	}
 	const PlayerContext &playerCtx = playerCtxOpt.value();
 
-	const auto staticColliderGrid = CollisionSystem::buildStaticColliderGrid(registry);
-
 	auto enemyView = registry.view<EnemyTag, InputComponent, PatrolComponent, ChaseComponent, PositionComponent,
 	                               HitBoxComponent, HurtBoxComponent, CollisionComponent, MovementComponent,
 	                               GroundedComponent, AttackComponent, RenderComponent>();
@@ -234,7 +233,7 @@ void update(Registry &registry, const float deltaTime)
 		chase.reactionDelay.step(std::chrono::duration<float>(deltaTime), false);
 
 		if (auto ranged = registry.tryGet<RangedAttackComponent>(entity)) {
-			handleRangeAttack(enemyCtx, playerCtx, staticColliderGrid, registry, ranged->get());
+			handleRangeAttack(enemyCtx, playerCtx, registry, ranged->get());
 		} else {
 			handleMeleeAttack(enemyCtx, playerCtx);
 		}

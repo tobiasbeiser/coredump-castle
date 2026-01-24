@@ -19,20 +19,8 @@
 
 #include <glm/glm.hpp>
 
-namespace {
-GameEngine::Utils::SpatialHash &getStaticGrid()
-{
-	static GameEngine::Utils::SpatialHash grid(128.0f);
-	return grid;
-}
-} // namespace
-
 namespace GameEngine::ECS::Systems::PhysicsSystem {
 
-void initStaticCollision(Registry &registry)
-{
-	getStaticGrid() = CollisionSystem::buildStaticColliderGrid(registry);
-}
 void update(Registry &registry, const float timeStep)
 {
 	PROFILE_SCOPE("PhysicsSystem");
@@ -71,16 +59,16 @@ void update(Registry &registry, const float timeStep)
 			    entity, pos, vel, acc, collisionComponent->get(), transform ? &transform->get() : nullptr, ignoreLocks};
 
 			pos.position.x += vel.velocity.x * timeStep;
-			CollisionSystem::resolveHorizontalCollisions(state, getStaticGrid());
+			CollisionSystem::resolveHorizontalCollisions(state);
 
 			pos.position.y += vel.velocity.y * timeStep;
-			CollisionSystem::resolveVerticalCollisions(state, getStaticGrid());
+			CollisionSystem::resolveVerticalCollisions(state);
 
 			if (const auto groundedComp = registry.tryGet<GroundedComponent>(entity)) {
 				const auto lastGroundedComp = registry.tryGet<LastGroundedPositionComponent>(entity);
 
-				CollisionSystem::updateGroundedState(
-				    state, groundedComp->get(), lastGroundedComp ? &lastGroundedComp->get() : nullptr, getStaticGrid());
+				CollisionSystem::updateGroundedState(state, groundedComp->get(),
+				                                     lastGroundedComp ? &lastGroundedComp->get() : nullptr);
 			}
 		} else {
 			pos.position.x += vel.velocity.x * timeStep;
@@ -90,7 +78,7 @@ void update(Registry &registry, const float timeStep)
 		pos.previousPosition = pos.position;
 	};
 
-	ProjectileSystem::handleEnemyProjectileCollisions(registry, getStaticGrid());
+	ProjectileSystem::handleEnemyProjectileCollisions(registry);
 }
 
 } // namespace GameEngine::ECS::Systems::PhysicsSystem

@@ -56,7 +56,8 @@ bool shouldSpawnProjectile(Registry &registry, const Entity entity, const Attack
 }
 void updateProjectileMovement(Registry &registry, const float deltaTime)
 {
-	for (auto projectileView = registry.view<ProjectileTag, ProjectileComponent, VelocityComponent, PositionComponent>();
+	for (auto projectileView =
+	         registry.view<ProjectileTag, ProjectileComponent, VelocityComponent, PositionComponent>();
 	     const auto entity : projectileView) {
 		const auto &velocity = projectileView.get<VelocityComponent>(entity);
 		auto &position = projectileView.get<PositionComponent>(entity);
@@ -65,14 +66,14 @@ void updateProjectileMovement(Registry &registry, const float deltaTime)
 	}
 }
 
-void resolveProjectileWallCollisions(Registry &registry, const Utils::SpatialHash &grid)
+void resolveProjectileWallCollisions(Registry &registry)
 {
 	auto projectileView = registry.view<ProjectileTag, PositionComponent, ProjectileComponent>();
 	for (const auto entity : projectileView) {
 		const auto &pos = projectileView.get<PositionComponent>(entity);
 		const auto &projectile = projectileView.get<ProjectileComponent>(entity);
 
-		if (CollisionSystem::isPathObstructed(pos.previousPosition, pos.position, grid, projectile.projectileSize)) {
+		if (CollisionSystem::isPathObstructed(pos.previousPosition, pos.position, projectile.projectileSize)) {
 			registry.deleteEntity(entity);
 		}
 	}
@@ -158,9 +159,9 @@ void handleEnemySpawning(Registry &registry, float deltaTime, const ProjectileFa
 }
 } // anonymous namespace
 
-void handleEnemyProjectileCollisions(Registry &registry, const Utils::SpatialHash &grid)
+void handleEnemyProjectileCollisions(Registry &registry)
 {
-	resolveProjectileWallCollisions(registry, grid);
+	resolveProjectileWallCollisions(registry);
 }
 
 void update(Registry &registry, const float deltaTime, TextureManager &textureManager)
