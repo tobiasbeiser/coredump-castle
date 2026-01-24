@@ -101,7 +101,6 @@ bool checkLineOfSight(const EnemyContext &enemy, const PlayerContext &player, co
 	return false;
 }
 
-// TODO pass ranged component directly
 void handleRangeAttack(const EnemyContext &enemy, const PlayerContext &player, const Utils::SpatialHash &grid,
                        Registry &registry, RangedAttackComponent &ranged)
 {
@@ -218,21 +217,19 @@ void update(Registry &registry, const float deltaTime)
 
 		auto transform = registry.tryGet<TransformComponent>(entity);
 
-		// Check if component exists ? use its scale : use default
 		glm::vec2 enemyScale = transform ? transform->get().scale : glm::vec2{1.0f, 1.0f};
 
-		EnemyContext enemyCtx{
-		    entity,
-		    &enemyView.get<InputComponent>(entity),
-		    &enemyView.get<ChaseComponent>(entity),
-		    &enemyView.get<MovementComponent>(entity),
-		    &enemyView.get<RenderComponent>(entity),
-		    &enemyView.get<AttackComponent>(entity),
-		    &enemyView.get<PatrolComponent>(entity),
-		    enemyHurtBox,
-		    GameEngine::Utils::DetectionRangeUtils::calculateCenter(pos.position, enemyHurtBox, enemyScale),
-		    enemyScale,
-		    pos.position};
+		EnemyContext enemyCtx{entity,
+		                      &enemyView.get<InputComponent>(entity),
+		                      &enemyView.get<ChaseComponent>(entity),
+		                      &enemyView.get<MovementComponent>(entity),
+		                      &enemyView.get<RenderComponent>(entity),
+		                      &enemyView.get<AttackComponent>(entity),
+		                      &enemyView.get<PatrolComponent>(entity),
+		                      enemyHurtBox,
+		                      Utils::DetectionRangeUtils::calculateCenter(pos.position, enemyHurtBox, enemyScale),
+		                      enemyScale,
+		                      pos.position};
 
 		chase.reactionDelay.step(std::chrono::duration<float>(deltaTime), false);
 

@@ -11,6 +11,7 @@
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
+#include "Engine/ECS/Components/Tags/ProjectileTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
 #include "Engine/ECS/Systems/Combat/HealthSystem.hpp"
@@ -356,6 +357,7 @@ TEST_F(HitDetectionTest, ProjectileHitsPlayer)
 {
 	auto projectile = registry.create();
 	registry.registerComponent<EnemyTag>(projectile, {});
+	registry.registerComponent<ProjectileTag>(projectile, {});
 	registry.registerComponent<ProjectileComponent>(projectile, {});
 	registry.registerComponent<PositionComponent>(projectile, {{0.f, 0.f}});
 	registry.registerComponent<HurtBoxComponent>(projectile, {{0.f, 0.f, 10.f, 10.f}});
@@ -365,12 +367,14 @@ TEST_F(HitDetectionTest, ProjectileHitsPlayer)
 	                                                     [](GameEngine::ECS::Entity, GameEngine::ECS::Entity) {});
 
 	EXPECT_TRUE(registry.has<PendingDamageComponent>(attacker));
+	EXPECT_FALSE(registry.has<ProjectileComponent>(projectile));
 }
 
 TEST_F(HitDetectionTest, ProjectileDoesNotHitWhenNoOverlap)
 {
 	auto projectile = registry.create();
 	registry.registerComponent<EnemyTag>(projectile, {});
+	registry.registerComponent<ProjectileTag>(projectile, {});
 	registry.registerComponent<ProjectileComponent>(projectile, {});
 	registry.registerComponent<PositionComponent>(projectile, {{500.f, 500.f}});
 	registry.registerComponent<HurtBoxComponent>(projectile, {{0.f, 0.f, 10.f, 10.f}});
@@ -386,6 +390,7 @@ TEST_F(HitDetectionTest, ProjectileDoesNotHitDeadVictim)
 {
 	auto projectile = registry.create();
 	registry.registerComponent<EnemyTag>(projectile, {});
+	registry.registerComponent<ProjectileTag>(projectile, {});
 	registry.registerComponent<ProjectileComponent>(projectile, {});
 	registry.registerComponent<PositionComponent>(projectile, {{0.f, 0.f}});
 	registry.registerComponent<HurtBoxComponent>(projectile, {{0.f, 0.f, 10.f, 10.f}});
@@ -393,6 +398,20 @@ TEST_F(HitDetectionTest, ProjectileDoesNotHitDeadVictim)
 	auto view = registry.view<StateComponent>();
 	auto &attackerState = view.get<StateComponent>(attacker);
 	attackerState.state = State::Dead;
+
+	GameEngine::ECS::Systems::HitDetectionSystem::update(registry,
+	                                                     [](GameEngine::ECS::Entity, GameEngine::ECS::Entity) {});
+
+	EXPECT_FALSE(registry.has<PendingDamageComponent>(attacker));
+}
+
+TEST_F(HitDetectionTest, UntaggedProjectileDoesNotTriggerProjectileHit)
+{
+	auto projectile = registry.create();
+	registry.registerComponent<EnemyTag>(projectile, {});
+	registry.registerComponent<ProjectileComponent>(projectile, {});
+	registry.registerComponent<PositionComponent>(projectile, {{0.f, 0.f}});
+	registry.registerComponent<HurtBoxComponent>(projectile, {{0.f, 0.f, 10.f, 10.f}});
 
 	GameEngine::ECS::Systems::HitDetectionSystem::update(registry,
 	                                                     [](GameEngine::ECS::Entity, GameEngine::ECS::Entity) {});

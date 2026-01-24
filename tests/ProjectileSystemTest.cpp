@@ -13,11 +13,14 @@
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
+#include "Engine/ECS/Components/Tags/ProjectileTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
 #include "Engine/Graphics/TextureManager.hpp"
 
 #include <gtest/gtest.h>
+#include <cmath>
+#include <numbers>
 
 using namespace std::chrono_literals;
 
@@ -55,7 +58,8 @@ class ProjectileSystemTest : public ::testing::Test {
 TEST_F(ProjectileSystemTest, MovesProjectilesBasedOnVelocity)
 {
 	const auto projectile = registry.create();
-	registry.registerComponent<ProjectileComponent>(projectile, {});
+	registry.registerComponent<ProjectileTag>(projectile, {});
+	registry.registerComponent<ProjectileComponent>(projectile, {.maxRange = 1000.0f, .spawnPosition = {0.0f, 0.0f}});
 	registry.registerComponent<VelocityComponent>(projectile, {{100.0f, 0.0f}});
 	registry.registerComponent<PositionComponent>(projectile, {{0.0f, 0.0f}});
 
@@ -104,11 +108,44 @@ TEST_F(ProjectileSystemTest, SpawnsProjectileTowardTargetSnapshot)
 
 	GameEngine::ECS::Systems::ProjectileSystem::update(registry, 0.1f, *textureManager);
 
-	auto projectileView = registry.view<ProjectileComponent, VelocityComponent>().exclude<RangedAttackComponent>();
+	auto projectileView = registry.view<ProjectileTag, ProjectileComponent, VelocityComponent>();
 	ASSERT_GT(projectileView.size(), 0u);
 	const auto projectile = projectileView.at(0);
 	const auto &velocity = projectileView.get<VelocityComponent>(projectile);
 	EXPECT_GT(velocity.velocity.x, 0.0f);
+}
+
+TEST_F(ProjectileSystemTest, SetsProjectileRotationFromTargetSnapshot)
+{
+	auto view = registry.view<AttackComponent, RangedAttackComponent, PositionComponent, HurtBoxComponent, ProjectileComponent>();
+	auto &attack = view.get<AttackComponent>(enemy);
+	auto &rangedAttack = view.get<RangedAttackComponent>(enemy);
+	auto &position = view.get<PositionComponent>(enemy);
+	auto &hurtBox = view.get<HurtBoxComponent>(enemy);
+	auto &projectileSettings = view.get<ProjectileComponent>(enemy);
+
+	attack.attackTimer.reset();
+	attack.attackTimer.step(std::chrono::duration<float>(0.1f), false);
+
+	position.position = {0.0f, 0.0f};
+	hurtBox.hurtBox = {0.0f, 0.0f, 20.0f, 20.0f};
+	projectileSettings.projectileSize = {10.0f, 10.0f};
+	projectileSettings.hitboxOffset = {0.0f, 0.0f};
+	rangedAttack.projectileOffset = {0.0f, 0.0f};
+	rangedAttack.targetSnapshot = {0.0f, 100.0f};
+
+	GameEngine::ECS::Systems::ProjectileSystem::update(registry, 0.1f, *textureManager);
+
+	auto projectileView = registry.view<ProjectileTag, TransformComponent>();
+	ASSERT_GT(projectileView.size(), 0u);
+	const auto projectile = projectileView.at(0);
+	const auto &transform = projectileView.get<TransformComponent>(projectile);
+
+	const glm::vec2 spawnCenter = glm::vec2{5.0f, 5.0f};
+	const glm::vec2 direction = glm::normalize(rangedAttack.targetSnapshot - spawnCenter);
+	const double expectedRotation = std::atan2(direction.y, direction.x) * (180.0 / std::numbers::pi);
+
+	EXPECT_NEAR(transform.rotation, expectedRotation, 0.1);
 }
 
 TEST_F(ProjectileSystemTest, MarksProjectileAsSpawned)
@@ -142,6 +179,7 @@ TEST_F(ProjectileSystemTest, ResetsSpawnedFlagWhenNotAttacking)
 TEST_F(ProjectileSystemTest, DeletesProjectileWhenExceedingMaxRange)
 {
 	const auto projectile = registry.create();
+	registry.registerComponent<ProjectileTag>(projectile, {});
 	registry.registerComponent<EnemyTag>(projectile, {});
 	registry.registerComponent<ProjectileComponent>(projectile, {.maxRange = 100.0f, .spawnPosition = {0.0f, 0.0f}});
 	registry.registerComponent<PositionComponent>(projectile, {{150.0f, 0.0f}});
@@ -154,6 +192,7 @@ TEST_F(ProjectileSystemTest, DeletesProjectileWhenExceedingMaxRange)
 TEST_F(ProjectileSystemTest, KeepsProjectileWhenWithinRange)
 {
 	auto projectile = registry.create();
+	registry.registerComponent<ProjectileTag>(projectile, {});
 	registry.registerComponent<EnemyTag>(projectile, {});
 	registry.registerComponent<ProjectileComponent>(projectile, {.maxRange = 100.0f, .spawnPosition = {0.0f, 0.0f}});
 	registry.registerComponent<PositionComponent>(projectile, {{50.0f, 0.0f}});
@@ -161,4 +200,17 @@ TEST_F(ProjectileSystemTest, KeepsProjectileWhenWithinRange)
 	GameEngine::ECS::Systems::ProjectileSystem::update(registry, 0.1f, *textureManager);
 
 	EXPECT_TRUE(registry.has<ProjectileComponent>(projectile));
+}
+
+TEST_F(ProjectileSystemTest, IgnoresRangedEnemySettingsInProjectileMovement)
+{
+	registry.registerComponent<VelocityComponent>(enemy, {{50.0f, 0.0f}});
+	auto view = registry.view<PositionComponent>();
+	auto &pos = view.get<PositionComponent>(enemy);
+	const glm::vec2 start = pos.position;
+
+	GameEngine::ECS::Systems::ProjectileSystem::update(registry, 0.1f, *textureManager);
+
+	EXPECT_EQ(pos.position.x, start.x);
+	EXPECT_EQ(pos.position.y, start.y);
 }

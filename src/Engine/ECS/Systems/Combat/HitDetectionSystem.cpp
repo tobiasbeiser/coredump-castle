@@ -12,6 +12,7 @@
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
+#include "Engine/ECS/Components/Tags/ProjectileTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
 #include "Engine/ECS/Systems/Combat/HealthSystem.hpp"
@@ -55,8 +56,8 @@ bool isValidVictim(Registry &registry, const Entity attacker, const Entity victi
 		}
 	}
 
-	if (const auto victomHealth = registry.tryGet<HealthComponent>(victim);
-	    victomHealth && HealthSystem::isDead(victomHealth->get())) {
+	if (const auto victimHealth = registry.tryGet<HealthComponent>(victim);
+	    victimHealth && HealthSystem::isDead(victimHealth->get())) {
 		return false;
 	}
 	return true;
@@ -130,17 +131,17 @@ void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
 
 void resolveProjectileHits(Registry &registry)
 {
-	auto projectileView = registry.view<EnemyTag, ProjectileComponent, PositionComponent, HitBoxComponent>();
+	auto projectileView = registry.view<ProjectileTag, ProjectileComponent, PositionComponent, HurtBoxComponent>();
 	auto victimView = registry.view<HurtBoxComponent, PositionComponent, HealthComponent>();
 
 	for (const auto projectile : projectileView) {
 		auto &[position, previousPosition] = projectileView.get<PositionComponent>(projectile);
-		auto &[bodyHitBox, weaponHitBox] = projectileView.get<HitBoxComponent>(projectile);
+		auto &projectileHurtBox = projectileView.get<HurtBoxComponent>(projectile).hurtBox;
 
 		const auto transform = registry.tryGet<TransformComponent>(projectile);
 		glm::vec2 scale = transform ? transform->get().scale : glm::vec2{1.0f, 1.0f};
 
-		SDL_FRect projectileHurtBox = Utils::HitBoxUtils::getHitBox(position, bodyHitBox, scale);
+		SDL_FRect projectileHurtBoxRect = Utils::HitBoxUtils::getHitBox(position, projectileHurtBox, scale);
 
 		for (const auto victim : victimView) {
 			if (!isValidVictim(registry, projectile, victim)) {
@@ -155,7 +156,7 @@ void resolveProjectileHits(Registry &registry)
 
 			SDL_FRect victimHurtBoxRect = Utils::HitBoxUtils::getHitBox(victimPos.position, victimHurtBox, victimScale);
 
-			if (registry.has<EnemyTag>(projectile) && checkCollision(projectileHurtBox, victimHurtBoxRect)) {
+			if (registry.has<EnemyTag>(projectile) && checkCollision(projectileHurtBoxRect, victimHurtBoxRect)) {
 				applyDamage(registry, victim);
 				registry.deleteEntity(projectile);
 			}

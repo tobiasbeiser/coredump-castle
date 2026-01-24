@@ -102,21 +102,6 @@ void RenderSystem::update(Registry &registry, float alpha)
 				                                 .dst = dst,
 				                                 .parallax = false,
 				                                 .flipX = flipX,
-				                                 .colorMod = spriteColorMod});
-			}
-			// interpolation
-			/*SDL_FRect dst{.x = pos.previousPosition.x * (1 - alpha) + pos.position.x * alpha,
-			              .y = pos.previousPosition.y * (1 - alpha) + pos.position.y * alpha,
-			              .w = tile.TileSize,
-			              .h = tile.TileSize};*/
-
-			if (SDL_HasRectIntersectionFloat(&viewport, &dst)) {
-				renderItems.push_back(RenderItem{.layer = layer,
-				                                 .texture = texture,
-				                                 .src = src,
-				                                 .dst = dst,
-				                                 .parallax = false,
-				                                 .flipX = flipX,
 				                                 .angle = rotation,
 				                                 .colorMod = spriteColorMod});
 			}
@@ -175,7 +160,8 @@ void RenderSystem::update(Registry &registry, float alpha)
 				}
 
 				if (!renderItem.parallax) {
-					renderer.renderTexture(*renderItem.texture, renderItem.src, renderItem.dst, renderItem.flipX);
+					renderer.renderTexture(*renderItem.texture, renderItem.src, renderItem.dst, renderItem.flipX,
+					                      renderItem.angle);
 				} else if (renderItem.dst.has_value()) {
 					renderer.renderTextureTiled(*renderItem.texture, renderItem.dst.value(), renderItem.scrollFactor);
 				}

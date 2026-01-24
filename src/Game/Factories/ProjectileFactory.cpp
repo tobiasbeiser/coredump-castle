@@ -9,6 +9,7 @@
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
+#include "Engine/ECS/Components/Tags/ProjectileTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "tileson.hpp"
 
@@ -28,6 +29,7 @@ void ProjectileFactory::createProjectile(const glm::vec2 &startPosition, const g
 
 	// avoid friendly fire
 	reg.registerComponent(entity, EnemyTag{});
+	reg.registerComponent(entity, ProjectileTag{});
 
 	AnimationFactory::loadProjectileAnimation(reg, textureManager, tilesetPath, entity);
 

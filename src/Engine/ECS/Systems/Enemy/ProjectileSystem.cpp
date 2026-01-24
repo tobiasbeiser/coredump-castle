@@ -9,6 +9,7 @@
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
+#include "Engine/ECS/Components/Tags/ProjectileTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/Systems/CollisionSystem.hpp"
 #include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
@@ -55,8 +56,7 @@ bool shouldSpawnProjectile(Registry &registry, const Entity entity, const Attack
 }
 void updateProjectileMovement(Registry &registry, const float deltaTime)
 {
-	for (auto projectileView =
-	         registry.view<ProjectileComponent, VelocityComponent, PositionComponent>().exclude<AttackComponent>();
+	for (auto projectileView = registry.view<ProjectileTag, ProjectileComponent, VelocityComponent, PositionComponent>();
 	     const auto entity : projectileView) {
 		const auto &velocity = projectileView.get<VelocityComponent>(entity);
 		auto &position = projectileView.get<PositionComponent>(entity);
@@ -67,7 +67,7 @@ void updateProjectileMovement(Registry &registry, const float deltaTime)
 
 void resolveProjectileWallCollisions(Registry &registry, const Utils::SpatialHash &grid)
 {
-	auto projectileView = registry.view<EnemyTag, PositionComponent, ProjectileComponent>();
+	auto projectileView = registry.view<ProjectileTag, PositionComponent, ProjectileComponent>();
 	for (const auto entity : projectileView) {
 		const auto &pos = projectileView.get<PositionComponent>(entity);
 		const auto &projectile = projectileView.get<ProjectileComponent>(entity);
@@ -80,8 +80,7 @@ void resolveProjectileWallCollisions(Registry &registry, const Utils::SpatialHas
 
 void cleanUpOldProjectiles(Registry &registry)
 {
-	auto projectileView =
-	    registry.view<EnemyTag, PositionComponent, ProjectileComponent>().exclude<RangedAttackComponent>();
+	auto projectileView = registry.view<ProjectileTag, PositionComponent, ProjectileComponent>();
 	for (auto entity : projectileView) {
 		const auto &projectile = projectileView.get<ProjectileComponent>(entity);
 		const auto &position = projectileView.get<PositionComponent>(entity);
@@ -104,7 +103,7 @@ bool isPlayerAlive(Registry &registry)
 
 void cleanUpAllProjectiles(Registry &registry)
 {
-	auto projectileView = registry.view<EnemyTag, ProjectileComponent>().exclude<RangedAttackComponent>();
+	auto projectileView = registry.view<ProjectileTag, ProjectileComponent>();
 	for (auto entity : projectileView) {
 		registry.deleteEntity(entity);
 	}
