@@ -187,8 +187,7 @@ void DebugSystem::drawCollisionBoxes() const
 		const auto &[collision] = view.get<CollisionComponent>(entity);
 
 		const auto transform = registry->tryGet<TransformComponent>(entity);
-		const glm::vec2 scale = transform ? transform->get().scale : glm::vec2{1.0f, 1.0f};
-
+		const auto scale = transform ? &transform->get().scale : nullptr;
 		SDL_FRect col = GameEngine::Utils::HitBoxUtils::getHitBox(position, collision, scale);
 
 		const SDL_Color color =
@@ -205,8 +204,7 @@ void DebugSystem::drawProjectileHitBox() const
 		const auto &[hurtBox] = view.get<HurtBoxComponent>(entity);
 
 		const auto transform = registry->tryGet<TransformComponent>(entity);
-		const glm::vec2 scale = transform ? transform->get().scale : glm::vec2{1.0f, 1.0f};
-
+		const auto scale = transform ? &transform->get().scale : nullptr;
 		SDL_FRect hurtBoxRect = GameEngine::Utils::HitBoxUtils::getHitBox(position, hurtBox, scale);
 		constexpr SDL_Color projectileHurtBoxColor = {0, 255, 255, 255};
 		addRect(hurtBoxRect, projectileHurtBoxColor);
@@ -252,8 +250,7 @@ void DebugSystem::drawHitBoxes() const
 		const auto &[renderLayer, flipX] = view.get<RenderComponent>(entity);
 
 		const auto transform = registry->tryGet<TransformComponent>(entity);
-		const glm::vec2 scale = transform ? transform->get().scale : glm::vec2{1.0f, 1.0f};
-
+		const auto scale = transform ? &transform->get().scale : nullptr;
 		const auto hitBoxRect =
 		    GameEngine::Utils::HitBoxUtils::getWeaponHitBoxRect(position, hitbox, hurtbox.hurtBox, scale, flipX);
 

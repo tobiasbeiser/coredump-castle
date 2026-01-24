@@ -53,15 +53,9 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 	if (paused) {
 		return;
 	}
-
 	mapActivationSystem.update(game.getRegistry());
-
 	inputSystem.update(game.getRegistry());
 
-	ECS::Systems::HitDetectionSystem::update(game.getRegistry(),
-	                                         [&](const ECS::Entity attacker, const ECS::Entity victim) {
-		                                         effectFactory.createIsHitEffect(attacker, victim);
-	                                         });
 	ECS::Systems::ChaseSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::ProjectileSystem::update(game.getRegistry(), deltaTime, game.getTextureManager());
 	ECS::Systems::JumpSystem::update(game.getRegistry(), deltaTime);
@@ -70,6 +64,10 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 			effectFactory.createEffectOnEntity(e, EffectType::PlayerSwoosh);
 		}
 	});
+	ECS::Systems::HitDetectionSystem::update(game.getRegistry(),
+	                                         [&](const ECS::Entity attacker, const ECS::Entity victim) {
+		                                         effectFactory.createIsHitEffect(attacker, victim);
+	                                         });
 
 	accumulator += deltaTime;
 	while (accumulator >= stepSize) {
@@ -95,10 +93,6 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 
 void PlayState::render(GameEngine &game, const float alpha)
 {
-	// std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now();
 	renderSystem.update(game.getRegistry(), alpha);
-	// std::chrono::high_resolution_clock::time_point time1 = std::chrono::high_resolution_clock::now();
-	// DebugSystem::Debug("Render Time: " + std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(time1 -
-	// now).count()));
 }
 } // namespace GameEngine

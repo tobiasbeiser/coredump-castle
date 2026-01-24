@@ -90,8 +90,7 @@ void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
 		const auto facingLeft = attackerView.get<RenderComponent>(attacker).flipX;
 
 		const auto attackerTransform = registry.tryGet<TransformComponent>(attacker);
-		const glm::vec2 attackerScale = attackerTransform ? attackerTransform->get().scale : glm::vec2{1.0f, 1.0f};
-
+		const auto attackerScale = attackerTransform ? &attackerTransform->get().scale : nullptr;
 		const bool isAttacking = AttackSystem::isAttacking(attackComponent);
 
 		SDL_FRect attackerWeaponRect = {0, 0, 0, 0};
@@ -109,7 +108,7 @@ void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
 			const auto &[victimPos, victimPPos] = victimView.get<PositionComponent>(victim);
 			const auto &[victimHurtBox] = victimView.get<HurtBoxComponent>(victim);
 			const auto victimTransform = registry.tryGet<TransformComponent>(victim);
-			const glm::vec2 victimScale = victimTransform ? victimTransform->get().scale : glm::vec2{1.0f, 1.0f};
+			const auto victimScale = victimTransform ? &victimTransform->get().scale : nullptr;
 			SDL_FRect victimHurtBoxRect = Utils::HitBoxUtils::getHitBox(victimPos, victimHurtBox, victimScale);
 
 			bool hit = false;
@@ -144,8 +143,7 @@ void resolveProjectileHits(Registry &registry)
 		auto &projectileHurtBox = projectileView.get<HurtBoxComponent>(projectile).hurtBox;
 
 		const auto transform = registry.tryGet<TransformComponent>(projectile);
-		glm::vec2 scale = transform ? transform->get().scale : glm::vec2{1.0f, 1.0f};
-
+		const auto scale = transform ? &transform->get().scale : nullptr;
 		SDL_FRect projectileHurtBoxRect = Utils::HitBoxUtils::getHitBox(position, projectileHurtBox, scale);
 
 		for (const auto victim : victimView) {
@@ -157,7 +155,7 @@ void resolveProjectileHits(Registry &registry)
 			auto &victimHurtBox = victimView.get<HurtBoxComponent>(victim).hurtBox;
 
 			auto victimTransform = registry.tryGet<TransformComponent>(victim);
-			glm::vec2 victimScale = victimTransform ? victimTransform->get().scale : glm::vec2{1.0f, 1.0f};
+			const auto victimScale = victimTransform ? &victimTransform->get().scale : nullptr;
 
 			SDL_FRect victimHurtBoxRect = Utils::HitBoxUtils::getHitBox(victimPos.position, victimHurtBox, victimScale);
 

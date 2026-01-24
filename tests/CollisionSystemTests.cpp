@@ -49,7 +49,8 @@ class CollisionSystemTest : public ::testing::Test {
 		    view.get<VelocityComponent>(dynamicEntity),
 		    view.get<AccelerationComponent>(dynamicEntity),
 		    view.get<CollisionComponent>(dynamicEntity),
-		    nullptr};
+		    nullptr,
+		    false};
 
 		auto grid = GameEngine::ECS::Systems::CollisionSystem::buildStaticColliderGrid(registry);
 		GameEngine::ECS::Systems::CollisionSystem::resolveHorizontalCollisions(state, grid);
