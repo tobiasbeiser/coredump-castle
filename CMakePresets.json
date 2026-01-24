@@ -26,6 +26,16 @@
 				"CMAKE_BUILD_TYPE": "Release",
 				"CMAKE_EXPORT_COMPILE_COMMANDS": "Yes"
 			}
+		},
+		{
+			"name": "opt-debug",
+			"displayName": "Optimized Debug (Tracy)",
+			"inherits": "base",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "RelWithDebInfo",
+				"CMAKE_EXPORT_COMPILE_COMMANDS": "Yes",
+				"USE_TRACY": "ON"
+			}
 		}
 	],
 	"buildPresets": [
@@ -42,6 +52,13 @@
 			"displayName": "Build (Release)",
 			"description": "Build with Ninja/vcpkg (Release)",
 			"configuration": "Release"
+		},
+		{
+			"name": "opt-debug",
+			"configurePreset": "opt-debug",
+			"displayName": "Build (Optimized Debug)",
+			"description": "Optimized build with debug symbols and Tracy profiling",
+			"configuration": "RelWithDebInfo"
 		}
 	],
 	"testPresets": [

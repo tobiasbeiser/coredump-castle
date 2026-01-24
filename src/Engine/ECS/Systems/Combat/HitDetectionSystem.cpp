@@ -2,20 +2,22 @@
 
 #include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
+#include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/PendingDamageComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
+#include "Engine/ECS/Components/Tags/ProjectileTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
 #include "Engine/ECS/Systems/Combat/HealthSystem.hpp"
 #include "Engine/ECS/View.hpp"
-
-#include <glm/vec2.hpp>
+#include "Engine/Utils/HitBoxUtils.hpp"
 
 namespace GameEngine::ECS::Systems::HitDetectionSystem {
 
@@ -38,111 +40,125 @@ bool isHostile(Registry &registry, const Entity attacker, const Entity victim)
 	return false;
 }
 
-SDL_FRect getWeaponHitBoxRect(Registry &registry, const Entity entity)
+bool isValidVictim(Registry &registry, const Entity attacker, const Entity victim)
 {
-	if (!registry.has<HitBoxComponent>(entity) || !registry.has<PositionComponent>(entity)) {
-		return {0, 0, 0, 0};
+	if (victim == attacker) {
+		return false;
 	}
 
-	const auto &[bodyHitBox, weaponHitBox] = registry.get<HitBoxComponent>(entity);
-	const auto &[position, previousPosition] = registry.get<PositionComponent>(entity);
-
-	bool facingLeft = false;
-	if (registry.has<RenderComponent>(entity)) {
-		facingLeft = registry.get<RenderComponent>(entity).flipX;
+	if (!isHostile(registry, attacker, victim)) {
+		return false;
 	}
 
-	glm::vec2 scale = {1.0f, 1.0f};
-	if (registry.has<TransformComponent>(entity)) {
-		scale = registry.get<TransformComponent>(entity).scale;
+	if (const auto state = registry.tryGet<StateComponent>(victim)) {
+		if (state->get().state == State::Dead) {
+			return false;
+		}
 	}
 
-	if (!registry.has<HurtBoxComponent>(entity)) {
-		return {0, 0, 0, 0};
+	if (const auto victimHealth = registry.tryGet<HealthComponent>(victim);
+	    victimHealth && HealthSystem::isDead(victimHealth->get())) {
+		return false;
 	}
-	const auto &[hurtBox] = registry.get<HurtBoxComponent>(entity);
-
-	SDL_FRect result = {0, 0, weaponHitBox.w * scale.x, weaponHitBox.h * scale.y};
-	if (facingLeft) {
-		result.x = position.x + hurtBox.x * scale.x - weaponHitBox.w * scale.x;
-	} else {
-		result.x = position.x + hurtBox.x * scale.x + hurtBox.w * scale.x;
-	}
-	result.y = position.y + hurtBox.y * scale.y;
-
-	return result;
+	return true;
 }
 
-SDL_FRect getHurtBoxRect(Registry &registry, const Entity entity)
+void applyDamage(Registry &registry, const Entity victim, const int damage = 10)
 {
-	if (!registry.has<HurtBoxComponent>(entity) || !registry.has<PositionComponent>(entity)) {
-		return {0, 0, 0, 0};
+	if (!registry.has<PendingDamageComponent>(victim)) {
+		registry.registerComponent(victim, PendingDamageComponent{damage});
 	}
-
-	const auto &[hurtBox] = registry.get<HurtBoxComponent>(entity);
-	const auto &[position, previousPosition] = registry.get<PositionComponent>(entity);
-
-	glm::vec2 scale = {1.0f, 1.0f};
-	if (registry.has<TransformComponent>(entity)) {
-		scale = registry.get<TransformComponent>(entity).scale;
-	}
-
-	return {position.x + hurtBox.x * scale.x, position.y + hurtBox.y * scale.y, hurtBox.w * scale.x,
-	        hurtBox.h * scale.y};
 }
 
-void resolveAttacks(Registry &registry)
+bool checkCollision(const SDL_FRect &rect1, const SDL_FRect &rect2)
 {
-	auto attackerView = registry.view<AttackComponent, HitBoxComponent, PositionComponent>();
+	return SDL_HasRectIntersectionFloat(&rect1, &rect2);
+}
+
+void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
+{
+	auto attackerView =
+	    registry.view<AttackComponent, HitBoxComponent, PositionComponent, HurtBoxComponent, RenderComponent>();
 	auto victimView = registry.view<HurtBoxComponent, PositionComponent, HealthComponent>();
 
 	for (const auto attacker : attackerView) {
-		const auto &attackComponent = registry.get<AttackComponent>(attacker);
-		const auto &[attackerBodyHitBox, attackerWeaponHitBox] = registry.get<HitBoxComponent>(attacker);
+		const auto &attackComponent = attackerView.get<AttackComponent>(attacker);
+		const auto &attackerHitBox = attackerView.get<HitBoxComponent>(attacker);
+		const auto &[position, previousPosition] = attackerView.get<PositionComponent>(attacker);
+		const auto &[attackerHurtBoxRect] = attackerView.get<HurtBoxComponent>(attacker);
+		const auto facingLeft = attackerView.get<RenderComponent>(attacker).flipX;
+
+		const auto attackerTransform = registry.tryGet<TransformComponent>(attacker);
+		const glm::vec2 attackerScale = attackerTransform ? attackerTransform->get().scale : glm::vec2{1.0f, 1.0f};
 
 		const bool isAttacking = AttackSystem::isAttacking(attackComponent);
 
 		SDL_FRect attackerWeaponRect = {0, 0, 0, 0};
 		if (isAttacking) {
-			attackerWeaponRect = getWeaponHitBoxRect(registry, attacker);
+			attackerWeaponRect = Utils::HitBoxUtils::getWeaponHitBoxRect(position, attackerHitBox, attackerHurtBoxRect,
+			                                                             attackerScale, facingLeft);
 		}
 
-		SDL_FRect attackerBodyRect = getHurtBoxRect(registry, attacker);
-
+		SDL_FRect attackerBodyRect = Utils::HitBoxUtils::getHitBox(position, attackerHurtBoxRect, attackerScale);
 		for (const auto victim : victimView) {
-			if (victim == attacker) {
+			if (!isValidVictim(registry, attacker, victim)) {
 				continue;
 			}
 
-			if (!isHostile(registry, attacker, victim)) {
-				continue;
-			}
+			const auto &[victimPos, victimPPos] = victimView.get<PositionComponent>(victim);
+			const auto &[victimHurtBox] = victimView.get<HurtBoxComponent>(victim);
+			const auto victimTransform = registry.tryGet<TransformComponent>(victim);
+			const glm::vec2 victimScale = victimTransform ? victimTransform->get().scale : glm::vec2{1.0f, 1.0f};
+			SDL_FRect victimHurtBoxRect = Utils::HitBoxUtils::getHitBox(victimPos, victimHurtBox, victimScale);
 
-			const auto &victimHealth = registry.get<HealthComponent>(victim);
-			if (HealthSystem::isDead(victimHealth)) {
-				continue;
-			}
-
-			SDL_FRect victimHurtBoxRect = getHurtBoxRect(registry, victim);
 			bool hit = false;
 
-			if (isAttacking) {
-				if (SDL_HasRectIntersectionFloat(&attackerWeaponRect, &victimHurtBoxRect)) {
-					hit = true;
-				}
+			if (isAttacking && checkCollision(attackerWeaponRect, victimHurtBoxRect)) {
+				hit = true;
+				onHit(attacker, victim);
 			}
 
-			// always body damage on for enemies, but not for the player
-			if (!hit && registry.has<EnemyTag>(attacker)) {
-				if (SDL_HasRectIntersectionFloat(&attackerBodyRect, &victimHurtBoxRect)) {
-					hit = true;
-				}
+			if (!hit && registry.has<EnemyTag>(attacker) && checkCollision(attackerBodyRect, victimHurtBoxRect)) {
+				hit = true;
 			}
 
 			if (hit) {
-				if (!registry.has<PendingDamageComponent>(victim)) {
-					registry.registerComponent(victim, PendingDamageComponent{10});
-				}
+				applyDamage(registry, victim);
+			}
+		}
+	}
+}
+
+void resolveProjectileHits(Registry &registry)
+{
+	auto projectileView = registry.view<ProjectileTag, ProjectileComponent, PositionComponent, HurtBoxComponent>();
+	auto victimView = registry.view<HurtBoxComponent, PositionComponent, HealthComponent>();
+
+	for (const auto projectile : projectileView) {
+		auto &[position, previousPosition] = projectileView.get<PositionComponent>(projectile);
+		auto &projectileHurtBox = projectileView.get<HurtBoxComponent>(projectile).hurtBox;
+
+		const auto transform = registry.tryGet<TransformComponent>(projectile);
+		glm::vec2 scale = transform ? transform->get().scale : glm::vec2{1.0f, 1.0f};
+
+		SDL_FRect projectileHurtBoxRect = Utils::HitBoxUtils::getHitBox(position, projectileHurtBox, scale);
+
+		for (const auto victim : victimView) {
+			if (!isValidVictim(registry, projectile, victim)) {
+				continue;
+			}
+
+			auto &victimPos = victimView.get<PositionComponent>(victim);
+			auto &victimHurtBox = victimView.get<HurtBoxComponent>(victim).hurtBox;
+
+			auto victimTransform = registry.tryGet<TransformComponent>(victim);
+			glm::vec2 victimScale = victimTransform ? victimTransform->get().scale : glm::vec2{1.0f, 1.0f};
+
+			SDL_FRect victimHurtBoxRect = Utils::HitBoxUtils::getHitBox(victimPos.position, victimHurtBox, victimScale);
+
+			if (registry.has<EnemyTag>(projectile) && checkCollision(projectileHurtBoxRect, victimHurtBoxRect)) {
+				applyDamage(registry, victim);
+				registry.deleteEntity(projectile);
 			}
 		}
 	}
@@ -150,11 +166,11 @@ void resolveAttacks(Registry &registry)
 
 } // anonymous namespace
 
-void update(Registry &registry)
+void update(Registry &registry, const EnemyHitCallback &onHit)
 {
 	PROFILE_SCOPE("HitDetectionSystem");
-
-	resolveAttacks(registry);
+	resolveAttacks(registry, onHit);
+	resolveProjectileHits(registry);
 }
 
 } // namespace GameEngine::ECS::Systems::HitDetectionSystem

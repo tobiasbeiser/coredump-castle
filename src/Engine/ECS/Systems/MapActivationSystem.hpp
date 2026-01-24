@@ -10,6 +10,7 @@
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
+#include "PhysicsSystem.hpp"
 
 namespace GameEngine::ECS::Systems {
 class MapActivationSystem {
@@ -28,7 +29,7 @@ class MapActivationSystem {
 
 			// Activate/deactivate entities if they are inside/outside the current level
 			for (auto view = registry.view<PositionComponent>().exclude<PlayerTag>(); const auto entity : view) {
-				if (auto &[position, previousPosition] = registry.get<PositionComponent>(entity);
+				if (auto &[position, previousPosition] = view.get<PositionComponent>(entity);
 				    position.x >= static_cast<float>(referenceFrame.x)
 				    && position.y >= static_cast<float>(referenceFrame.y)
 				    && position.x < static_cast<float>(referenceFrame.w + referenceFrame.x)
@@ -54,6 +55,7 @@ class MapActivationSystem {
 					}
 				}
 			}
+			PhysicsSystem::initStaticCollision(registry);
 		}
 	};
 

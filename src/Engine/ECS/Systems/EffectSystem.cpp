@@ -8,7 +8,7 @@
 
 void GameEngine::ECS::Systems::EffectSystem::update(Registry &registry, const float deltaTime)
 {
-	// PROFILE_SCOPE("EffectSystem");
+	PROFILE_SCOPE("EffectSystem");
 
 	for (auto view = registry.view<EffectComponent, SpriteComponent>(); const auto entity : view) {
 		auto &effect = view.get<EffectComponent>(entity);

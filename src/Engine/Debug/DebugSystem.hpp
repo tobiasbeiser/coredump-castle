@@ -3,12 +3,16 @@
 #include <SDL3/SDL_pixels.h>
 #include <SDL3/SDL_rect.h>
 #include <SDL3/SDL_render.h>
+#include <glm/vec2.hpp>
 #include <string>
 #include <vector>
+#include <array>
 
 struct DebugRenderOptions {
 	bool showBoundingBoxes = false;
 	bool showHitBoxes = false;
+	bool showRaycasts = false;
+	bool showTooltipBoxes = false;
 };
 
 struct DebugSkipMenuOptions {
@@ -17,12 +21,19 @@ struct DebugSkipMenuOptions {
 
 struct DebugPlayerOptions {
 	bool showState = false;
+	bool showPosition = true;
 	bool godMode = false;
 	bool noClip = false;
 };
 
 struct DebugRect {
 	SDL_FRect rect{};
+	SDL_Color color{};
+};
+
+struct DebugLine {
+	glm::vec2 start{};
+	glm::vec2 end{};
 	SDL_Color color{};
 };
 
@@ -36,6 +47,8 @@ class DebugSystem {
 
 	static void debug(const std::string &message);
 	static void addRect(const SDL_FRect &rect, const SDL_Color &color);
+	static void addLine(const glm::vec2 &start, const glm::vec2 &end, const SDL_Color &color);
+	static void addRaycast(const glm::vec2 &start, const glm::vec2 &end, bool obstructed);
 	static void clear();
 
 	static void renderGameOverlay(SDL_Renderer *renderer, const SDL_FRect &viewport);
@@ -51,6 +64,7 @@ class DebugSystem {
   private:
 	bool enabled = false;
 	std::vector<DebugRect> debugRects{};
+	std::vector<DebugLine> debugLines{};
 	std::vector<std::string> debugMessages{};
 	DebugRenderOptions render;
 	DebugPlayerOptions player;
@@ -58,6 +72,7 @@ class DebugSystem {
 	GameEngine::ECS::Registry *registry = nullptr;
 	void drawCollisionBoxes() const;
 	void drawHitBoxes() const;
+	void drawTooltopBoxes() const;
 	void updateFPS();
 
 	static constexpr int fpsHistorySize = 400;

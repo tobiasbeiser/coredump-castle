@@ -1,6 +1,8 @@
 #pragma once
 #include "Engine/ECS/Entity.hpp"
 
+#include <vector>
+
 namespace GameEngine::ECS {
 class IStorage {
   public:
@@ -11,6 +13,8 @@ class IStorage {
 	virtual ~IStorage() = default;
 
 	virtual void remove(Entity entity) = 0;
+	[[nodiscard]] virtual size_t getSize() const = 0;
+	[[nodiscard]] virtual const std::vector<Entity> &getEntities() const = 0;
 
   protected:
 	IStorage() = default;

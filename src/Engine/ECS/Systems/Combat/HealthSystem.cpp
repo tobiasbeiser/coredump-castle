@@ -1,6 +1,7 @@
 #include "HealthSystem.hpp"
 #include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
+#include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/PendingDamageComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/ChaseComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Hazard/LastGroundedPositionComponent.hpp"
@@ -9,6 +10,8 @@
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
 
+#include <SDL3/SDL_log.h>
+
 namespace GameEngine::ECS::Systems::HealthSystem {
 
 void update(Registry &registry, const float deltaTime)
@@ -16,7 +19,7 @@ void update(Registry &registry, const float deltaTime)
 	PROFILE_SCOPE("AttackSystem");
 
 	for (auto entityView = registry.view<HealthComponent>(); const auto entity : entityView) {
-		if (auto &health = registry.get<HealthComponent>(entity); isInvulnerable(health)) {
+		if (auto &health = entityView.get<HealthComponent>(entity); isInvulnerable(health)) {
 			health.invulnerabilityTimer.step(std::chrono::duration<float>(deltaTime), false);
 		}
 	}
@@ -31,6 +34,10 @@ void update(Registry &registry, const float deltaTime)
 			continue;
 		}
 
+		if (const auto state = registry.tryGet<StateComponent>(entity)) {
+			state->get().state = State::Hurting;
+		}
+
 		health.health -= damage;
 		health.invulnerabilityTimer.reset();
 
@@ -42,9 +49,8 @@ void update(Registry &registry, const float deltaTime)
 			}
 		}
 
-		if (registry.has<ChaseComponent>(entity)) {
-			auto &chase = registry.get<ChaseComponent>(entity);
-			chase.reactionDelay.reset();
+		if (const auto chase = registry.tryGet<ChaseComponent>(entity)) {
+			chase->get().reactionDelay.reset();
 		}
 
 		registry.remove<PendingDamageComponent>(entity);

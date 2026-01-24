@@ -13,10 +13,6 @@ void handleJumping(AnimationComponent &anim)
 		return;
 	}
 	switch (anim.getAnimation()) {
-	case AnimationType::None:
-	case AnimationType::Idle:
-	case AnimationType::Walking:
-	case AnimationType::Landing:
 	case AnimationType::Attacking:
 		anim.setAnimation(AnimationType::JumpStart);
 		break;
@@ -55,6 +51,8 @@ void handleFalling(AnimationComponent &anim)
 	case AnimationType::JumpStart:
 	case AnimationType::FlyingUp:
 	case AnimationType::Attacking:
+	case AnimationType::Charge:
+	case AnimationType::Fire:
 	case AnimationType::Hurting:
 	case AnimationType::Dead:
 	case AnimationType::Landing:
@@ -70,6 +68,7 @@ void handleFalling(AnimationComponent &anim)
 	case AnimationType::Falling:
 		anim.setAnimation(AnimationType::Falling);
 		break;
+	default:;
 	}
 	anim.setAnimation(AnimationType::Falling);
 }
@@ -93,9 +92,9 @@ void GameEngine::ECS::Systems::AnimationSystem::update(Registry &registry, const
 		auto &[texture, tileSize, tileMapPosition, alpha] = view.get<SpriteComponent>(entity);
 
 		// Determine current animation from state
-		if (registry.has<StateComponent>(entity)) {
-			const auto &[state] = registry.get<StateComponent>(entity);
-			switch (state) {
+
+		if (auto state = registry.tryGet<StateComponent>(entity); state.has_value()) {
+			switch (state->get().state) {
 			case State::Idle:
 				handleLanding(anim, AnimationType::Idle);
 				break;
@@ -109,7 +108,16 @@ void GameEngine::ECS::Systems::AnimationSystem::update(Registry &registry, const
 				handleFalling(anim);
 				break;
 			case State::Attacking:
-				if (anim.hasAnimation(AnimationType::Attacking)) {
+				if (anim.hasAnimation(AnimationType::Charge)) {
+					if (anim.getAnimation() == AnimationType::Charge && anim.hasFinished(AnimationType::Charge)
+					    && anim.hasAnimation(AnimationType::Fire)) {
+						anim.setAnimation(AnimationType::Fire);
+					} else if (anim.getAnimation() != AnimationType::Fire) {
+						anim.setAnimation(AnimationType::Charge);
+					}
+				} else if (anim.hasAnimation(AnimationType::Fire)) {
+					anim.setAnimation(AnimationType::Fire);
+				} else if (anim.hasAnimation(AnimationType::Attacking)) {
 					anim.setAnimation(AnimationType::Attacking);
 				}
 				break;
@@ -121,6 +129,11 @@ void GameEngine::ECS::Systems::AnimationSystem::update(Registry &registry, const
 			case State::Dead:
 				if (anim.hasAnimation(AnimationType::Dead)) {
 					anim.setAnimation(AnimationType::Dead);
+				}
+				break;
+			case State::Interacting:
+				if (anim.hasAnimation(AnimationType::Interacting)) {
+					anim.setAnimation(AnimationType::Interacting);
 				}
 				break;
 			}

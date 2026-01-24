@@ -23,6 +23,13 @@ find_package(GTest CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 
+if(CMAKE_BUILD_TYPE MATCHES "Debug|RelWithDebInfo")
+    find_package(tracy CONFIG REQUIRED)
+    set(USE_TRACY ON)
+else()
+    set(USE_TRACY OFF)
+endif()
+
 add_subdirectory(vendor)
 add_subdirectory(src)
 add_subdirectory(tests)

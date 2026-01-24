@@ -1,11 +1,11 @@
 #pragma once
 #include "ComponentStorage.hpp"
+#include "Engine/Debug/ScopedProfiler.hpp"
 #include "Entity.hpp"
 #include "IStorage.hpp"
+
 #include <atomic>
 #include <memory>
-#include <ranges>
-#include <typeindex>
 #include <vector>
 
 namespace GameEngine::ECS {
@@ -53,18 +53,15 @@ class Registry {
 		getStorage<T>().insert(entity, std::move(component));
 	}
 
-	template <typename T>
-	bool has(Entity entity)
+	template <typename... Components>
+	bool has(const Entity entity) const
 	{
-		if (const size_t id = ComponentId<T>::value; id >= storagePools.size() || !storagePools[id])
-			return false;
-		return getStorage<T>().contains(entity);
-	}
-
-	template <typename ... Components>
-	bool hasAll(const Entity entity)
-	{
-		return (has<Components>(entity) && ...);
+		return ([&]() {
+			const size_t id = ComponentId<Components>::value;
+			if (id >= storagePools.size() || !storagePools[id])
+				return false;
+			return static_cast<ComponentStorage<Components> *>(storagePools[id].get())->contains(entity);
+		}() && ...);
 	}
 
 	template <typename T>
@@ -74,9 +71,19 @@ class Registry {
 	}
 
 	template <typename T>
-	T &get(Entity entity)
+	std::optional<std::reference_wrapper<T>> tryGet(Entity entity)
 	{
-		return getStorage<T>().get(entity);
+		const size_t id = ComponentId<T>::value;
+		if (id >= storagePools.size() || !storagePools[id]) {
+			return std::nullopt;
+		}
+		auto *storage = static_cast<ComponentStorage<T> *>(storagePools[id].get());
+
+		if (!storage->contains(entity)) {
+			return std::nullopt;
+		}
+
+		return storage->get(entity);
 	}
 
 	template <typename... Components>

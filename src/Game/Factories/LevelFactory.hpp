@@ -2,6 +2,7 @@
 #include "EnemyFactory.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/Graphics/TextureManager.hpp"
+#include "Engine/Input/InputManager.hpp"
 #include "Game/Factories/AnimationFactory.hpp"
 #include "Parsers/SavePointParser.hpp"
 #include "PlayerFactory.hpp"
@@ -12,7 +13,7 @@
 
 class LevelFactory {
   public:
-	LevelFactory(GameEngine::ECS::Registry &registry, TextureManager &textureManager);
+	LevelFactory(GameEngine::ECS::Registry &registry, TextureManager &textureManager, InputManager &inputManager);
 
 	LevelFactory(LevelFactory &&) = delete;
 	LevelFactory &operator=(LevelFactory &&) = delete;
@@ -35,10 +36,11 @@ class LevelFactory {
 	glm::vec2 playerSpawnPosition = {0, 0};
 	GameEngine::ECS::Registry &registry;
 	TextureManager &textureManager;
+	InputManager &inputManager;
 	AnimationFactory animationFactory{registry, textureManager};
 	const std::filesystem::path basePath = "assets/tiled/tilesets/";
 	TileFactory tileFactory;
-	EnemyFactory enemyFactory;
+	GameEngine::ECS::EnemyFactory enemyFactory;
 	PlayerFactory playerFactory;
 	std::vector<std::unique_ptr<IObjectParser>> parsers;
 	void registerParsers();

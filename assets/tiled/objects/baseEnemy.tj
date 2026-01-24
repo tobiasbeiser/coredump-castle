@@ -18,7 +18,7 @@
             {
              "name":"collisionBox",
              "type":"string",
-             "value":"2,10,26,13"
+             "value":"9,12,14,20"
             }, 
             {
              "name":"maxHealth",
@@ -33,7 +33,7 @@
             {
              "name":"scale",
              "type":"float",
-             "value":1.8
+             "value":1.5
             }],
      "rotation":0,
      "type":"",

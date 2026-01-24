@@ -18,8 +18,10 @@ class TileFactory {
 
 	GameEngine::ECS::Entity createTile(tson::Tile &tile, const glm::vec2 &worldPosition, int layerIndex) const;
 
-	GameEngine::ECS::Entity createFromObject(const tson::Object &object, const glm::vec2 &levelPos,
-	                                         int layerIndex) const;
+	std::optional<GameEngine::ECS::Entity> createFromObject(const tson::Object &object, const glm::vec2 &levelPos,
+	                                                        int layerIndex) const;
+
+	std::optional<tson::Tile> getTileFromObject(const tson::Object &object) const;
 	void setMap(tson::Map &tsonMap);
 
   private:

@@ -1,10 +1,10 @@
-#include "Engine/GameEngine.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/JumpComponent.hpp"
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/Systems/JumpSystem.hpp"
+#include "Engine/GameEngine.hpp"
 
 #include <gtest/gtest.h>
 
@@ -14,25 +14,25 @@ using namespace std::chrono_literals;
 
 constexpr std::chrono::duration<float> coyoteThreshold = 0.08s;
 
-class JumpSystemTest : public ::testing::Test {
-  protected:
-	Registry registry;
-	Entity entity;
+struct JumpSystemTest : testing::Test {
+	Registry registry{};
+	Entity entity{};
 
 	void SetUp() override
 	{
 		entity = registry.create();
 
-		registry.registerComponent<JumpComponent>(entity, JumpComponent {.maxJumps = 2, .coyoteTimer=Timer{coyoteThreshold}});
+		registry.registerComponent<JumpComponent>(entity,
+		                                          JumpComponent{.maxJumps = 2, .coyoteTimer = Timer{coyoteThreshold}});
 		registry.registerComponent<GroundedComponent>(entity, GroundedComponent{.grounded = true});
 		registry.registerComponent<VelocityComponent>(entity, VelocityComponent{});
 		registry.registerComponent<InputComponent>(entity, InputComponent{});
 	}
 
-	JumpComponent &getJump() { return registry.get<JumpComponent>(entity); }
-	GroundedComponent &getGrounded() { return registry.get<GroundedComponent>(entity); }
-	VelocityComponent &getVelocity() { return registry.get<VelocityComponent>(entity); }
-	InputComponent &getInput() { return registry.get<InputComponent>(entity); }
+	JumpComponent &getJump() { return registry.view<JumpComponent>().get<JumpComponent>(entity); }
+	GroundedComponent &getGrounded() { return registry.view<GroundedComponent>().get<GroundedComponent>(entity); }
+	VelocityComponent &getVelocity() { return registry.view<VelocityComponent>().get<VelocityComponent>(entity); }
+	InputComponent &getInput() { return registry.view<InputComponent>().get<InputComponent>(entity); }
 
 	void triggerJumpInput() { getInput().jumpPressed = true; }
 	void setGrounded(const bool grounded) { getGrounded().grounded = grounded; }

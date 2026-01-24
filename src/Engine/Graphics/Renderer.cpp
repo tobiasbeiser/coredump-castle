@@ -25,7 +25,7 @@ Renderer::Renderer(const std::string &title, const Resolution resolution) : curr
 	if (!renderer)
 		throw std::runtime_error(SDL_GetError());
 
-	// SDL_SetRenderVSync(renderer.get(), 1);
+	SDL_SetRenderVSync(renderer.get(), 1);
 
 	if (!TTF_Init()) {
 		throw std::runtime_error(SDL_GetError());
@@ -196,6 +196,11 @@ void Renderer::renderCircularFade(float progress, SDL_FColor color)
 
 	SDL_RenderGeometry(renderer.get(), nullptr, vertices.data(), vertices.size(), indices.data(), indices.size());
 }
+SDL_FRect Renderer::getViewport() const
+{
+	return viewport;
+}
+
 void Renderer::setupImGui() const
 {
 	IMGUI_CHECKVERSION();
@@ -216,17 +221,10 @@ void Renderer::startImGuiFrame()
 	ImGui_ImplSDL3_NewFrame();
 	ImGui::NewFrame();
 }
-bool Renderer::isInViewport(const SDL_FRect &rect) const
-{
-	return SDL_HasRectIntersectionFloat(&rect, &viewport);
-}
 
 void Renderer::renderTexture(SDL_Texture &texture, const std::optional<SDL_FRect> &srcRect,
-                             const std::optional<SDL_FRect> &dstRect, const bool flip) const
+                             const std::optional<SDL_FRect> &dstRect, const bool flip, const double angle) const
 {
-	if (dstRect && !isInViewport(dstRect.value()))
-		return;
-
 	const SDL_FRect *srcPtr = srcRect ? &srcRect.value() : nullptr;
 	SDL_FRect localDst;
 
@@ -240,7 +238,7 @@ void Renderer::renderTexture(SDL_Texture &texture, const std::optional<SDL_FRect
 	}
 
 	const SDL_FlipMode flipMode = flip ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
-	SDL_RenderTextureRotated(renderer.get(), &texture, srcPtr, dstPtr, 0, nullptr, flipMode);
+	SDL_RenderTextureRotated(renderer.get(), &texture, srcPtr, dstPtr, angle, nullptr, flipMode);
 }
 
 void Renderer::drawRectShape(const SDL_FRect rect, const SDL_Color fillColor, const SDL_Color outlineColor) const

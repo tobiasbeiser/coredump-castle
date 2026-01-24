@@ -2,6 +2,7 @@
 
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
 #include "Engine/ECS/Components/Physics/AccelerationComponent.hpp"
 #include "Engine/ECS/Components/Render/EffectComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
@@ -9,68 +10,115 @@
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/Graphics/Animation.hpp"
 
+using namespace std::chrono_literals;
+
 EffectFactory::EffectFactory(GameEngine::ECS::Registry &registry, TextureManager &texture_manager)
     : registry(registry), textureManager(texture_manager)
 {
-	loadAnimation(EffectType::PlayerSwoosh, "PlayerAttackSwoosh.png", 5, std::chrono::milliseconds(200),
-	              glm::ivec2(192, 192), glm::ivec2(11, 0));
+	loadEffect({EffectType::PlayerSwoosh, "PlayerAttackSwoosh.png", 6, 200ms, glm::ivec2(192, 192), glm::ivec2(9, 0),
+	            glm::vec2(0.4f, 0.7f), glm::vec2(10.0f, 35.0f), false});
+
+	loadEffect({EffectType::IsHit, "HitEffect.png", 7, 200ms, glm::ivec2(128, 128), glm::ivec2(0, 0),
+	            glm::vec2(0.5f, 0.5f), glm::vec2(0.0f, 0.0f), true});
 }
-void EffectFactory::createEffect(const EffectType type, const glm::vec2 &position, int layer, bool flipX) const
+
+void EffectFactory::createEffect(const EffectType type, const glm::vec2 &position, const bool flipX) const
 {
+	const auto &data = effects.at(type);
 	const auto entity = registry.create();
-	constexpr glm::vec2 scale{0.4f, 0.7f};
-	const auto frameSize = frames.at(type).at(0).tileSize;
 
-	const glm::vec2 scaledHalfSize{frameSize.x * scale.x * 0.5f, frameSize.y * scale.y * 0.5f};
-	registry.registerComponent<TransformComponent>(entity, {.scale = scale});
-	registry.registerComponent<PositionComponent>(entity, {position - scaledHalfSize});
-	registry.registerComponent<SpriteComponent>(entity, {frames.at(type).front().texture});
-	registry.registerComponent<RenderComponent>(entity, {100, flipX});
+	const auto frameSize = data.frames[0].tileSize;
+	const glm::vec2 worldSize = {frameSize.x * data.scale.x, frameSize.y * data.scale.y};
 
-	auto effectComponent = EffectComponent(frames.at(type), animations.at(type));
+	const glm::vec2 topLeft = position - (worldSize * 0.5f);
+
+	registry.registerComponent<TransformComponent>(entity, {.scale = data.scale});
+	registry.registerComponent<PositionComponent>(entity, {topLeft});
+	registry.registerComponent<SpriteComponent>(entity, {data.frames.front().texture});
+
+	registry.registerComponent<RenderComponent>(entity, {defaultLayer, flipX});
+
+	auto effectComponent = EffectComponent(data.frames, data.animation);
 	effectComponent.animation.start();
 	registry.registerComponent<EffectComponent>(entity, effectComponent);
 }
-
-void EffectFactory::createAttackEffect(const GameEngine::ECS::Entity entity) const
+void EffectFactory::createIsHitEffect(GameEngine::ECS::Entity attacker, GameEngine::ECS::Entity victim) const
 {
-	if (!registry.has<PlayerTag>(entity))
+	if (registry.has<PlayerTag>(victim)) {
 		return;
-	const auto center = getEntityCenter(entity);
-	const bool flipX = registry.has<RenderComponent>(entity) ? registry.get<RenderComponent>(entity).flipX : false;
-	const int layer = registry.has<RenderComponent>(entity) ? registry.get<RenderComponent>(entity).layer + 1 : 101;
-	const float offsetX = flipX ? -10.0f : 10.0f;
-	createEffect(EffectType::PlayerSwoosh, center + glm::vec2(offsetX, 35.0f), layer, flipX);
-}
-
-void EffectFactory::loadAnimation(const EffectType type, const std::string &fileName, int frameCount,
-                                  const std::chrono::duration<float> &duration, const glm::ivec2 &tileSize,
-                                  const glm::ivec2 &tilesetOffset)
-{
-	SDL_Texture &playerSwooshTexture = textureManager.getTexture(basePath / fileName);
-
-	Animation playerSwooshAnimation(frameCount, duration, false);
-	std::vector<AnimationFrame> playerAnimationFrames{};
-	for (int i = 0; i < frameCount; i++) {
-		playerAnimationFrames.push_back(
-		    AnimationFrame{.texture = &playerSwooshTexture,
-		                   .tileSize = tileSize,
-		                   .tileMapPosition = glm::ivec2(i * tileSize.x, 0) + tilesetOffset * tileSize});
 	}
 
-	animations.emplace(type, playerSwooshAnimation);
-	frames.emplace(type, playerAnimationFrames);
+	const auto &victimHitBox = registry.tryGet<HitBoxComponent>(victim);
+	if (!victimHitBox) {
+		return;
+	}
+
+	const auto attackerCenter = getEntityCenter(attacker);
+
+	const auto victimCenter = getEntityCenter(victim);
+	const bool attackerIsLeftOfVictim = attackerCenter.x < victimCenter.x;
+
+	const auto &data = effects.at(EffectType::IsHit);
+
+	const float dirMult = attackerIsLeftOfVictim ? -1.0f : 1.0f;
+	const glm::vec2 finalOffset = {victimHitBox->get().bodyHitBox.w / 2 + data.offset.x * dirMult, data.offset.y};
+
+	createEffect(EffectType::IsHit, victimCenter + finalOffset, !attackerIsLeftOfVictim);
+}
+
+void EffectFactory::createEffectOnEntity(const GameEngine::ECS::Entity entity, const EffectType type) const
+{
+	if (!effects.contains(type))
+		return;
+
+	const auto &data = effects.at(type);
+	const auto center = getEntityCenter(entity);
+
+	bool isTargetFlipped = false;
+
+	if (const auto render = registry.tryGet<RenderComponent>(entity)) {
+		isTargetFlipped = render->get().flipX;
+	}
+
+	const float dirMult = isTargetFlipped ? -1.0f : 1.0f;
+	const glm::vec2 finalOffset = {data.offset.x * dirMult, data.offset.y};
+
+	createEffect(type, center + finalOffset, isTargetFlipped);
+}
+
+void EffectFactory::loadEffect(const LoadEffectData &data)
+{
+	SDL_Texture &texture = textureManager.getTexture(basePath / data.fileName);
+	const Animation animation(data.frameCount, data.duration, false);
+	std::vector<AnimationFrame> frames;
+
+	for (int i = 0; i < data.frameCount; i++) {
+		glm::ivec2 pos;
+		if (data.vertical)
+			pos = glm::ivec2(0, i * data.tileSize.y) + data.tilesetOffset * data.tileSize;
+		else
+			pos = glm::ivec2(i * data.tileSize.x, 0) + data.tilesetOffset * data.tileSize;
+
+		frames.push_back({&texture, data.tileSize, pos});
+	}
+
+	effects[data.type] = {frames, animation, data.scale, data.offset};
 }
 
 glm::vec2 EffectFactory::getEntityCenter(const GameEngine::ECS::Entity entity) const
 {
-	const auto &[position, previousPosition] = registry.get<PositionComponent>(entity);
-	const auto &sprite = registry.get<SpriteComponent>(entity);
-
-	glm::vec2 scale(1.0f);
-	if (registry.has<TransformComponent>(entity)) {
-		scale = registry.get<TransformComponent>(entity).scale;
+	const auto position = registry.tryGet<PositionComponent>(entity);
+	if (!position) {
+		throw std::runtime_error("Entity does not have a PositionComponent");
+	}
+	const auto sprite = registry.tryGet<SpriteComponent>(entity);
+	if (!sprite) {
+		throw std::runtime_error("Entity does not have a SpriteComponent");
 	}
 
-	return position + glm::vec2(sprite.tileSize.x * scale.x * 0.5f, sprite.tileSize.y * scale.y * 0.5f);
+	const auto transform = registry.tryGet<TransformComponent>(entity);
+	const glm::vec2 scale = transform ? transform->get().scale : glm::vec2{1.0f, 1.0f};
+
+	return position->get().position
+	       + glm::vec2(sprite->get().tileSize.x * scale.x * 0.5f, sprite->get().tileSize.y * scale.y * 0.5f);
 }

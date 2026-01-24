@@ -2,57 +2,61 @@
 
 #include "Registry.hpp"
 #include <algorithm>
+#include <array>
 #include <tuple>
 #include <vector>
+
 namespace GameEngine::ECS {
 
 template <typename... Components>
 class View {
-	Registry *registry;
+	std::tuple<ComponentStorage<Components> *...> pools;
 	std::vector<Entity> entities;
+	Registry *registry;
 
   public:
-	explicit View(Registry &reg) : registry(&reg)
+	explicit View(Registry &reg) : registry(&reg), pools(std::make_tuple(&reg.getStorage<Components>()...))
 	{
-		auto storages = std::make_tuple(&reg.getStorage<Components>()...);
-		auto &driverStorage = *std::get<0>(storages);
-		entities.reserve(driverStorage.components.size());
-		for (auto const &[entity, val] : driverStorage.components) {
-			if ((std::get<ComponentStorage<Components> *>(storages)->contains(entity) && ...)) {
+		std::array<IStorage *, sizeof...(Components)> genericPools = {&reg.getStorage<Components>()...};
+
+		IStorage *smallestPool = genericPools[0];
+		size_t smallestSize = smallestPool->getSize();
+
+		for (size_t i = 1; i < genericPools.size(); ++i) {
+			if (genericPools[i]->getSize() < smallestSize) {
+				smallestPool = genericPools[i];
+				smallestSize = smallestPool->getSize();
+			}
+		}
+		entities.reserve(smallestSize);
+
+		const auto &candidateEntities = smallestPool->getEntities();
+		for (const auto entity : candidateEntities) {
+			if ((std::get<ComponentStorage<Components> *>(pools)->contains(entity) && ...)) {
 				entities.push_back(entity);
 			}
 		}
 	}
 
-	View(const View &) = delete;
-	View &operator=(const View &) = delete;
-	View(View &&) = default;
-	View &operator=(View &&) = default;
-	~View() = default;
-
 	template <typename... Excluded>
 	View exclude() &&
 	{
-		std::vector<Entity> filtered;
-		for (Entity e : entities) {
-			if ((!registry->has<Excluded>(e) && ...)) {
-				filtered.push_back(e);
-			}
-		}
-		entities = std::move(filtered);
+		auto it = std::remove_if(entities.begin(), entities.end(),
+		                         [&](const Entity e) { return (registry->has<Excluded>(e) || ...); });
+
+		entities.erase(it, entities.end());
 		return std::move(*this);
 	}
 
 	auto begin() { return entities.begin(); }
 	auto end() { return entities.end(); }
-	auto at(const int index) { return entities.at(index); }
-
 	[[nodiscard]] int size() const { return entities.size(); }
+	auto at(const int index) { return entities.at(index); }
 
 	template <typename T>
 	T &get(Entity e)
 	{
-		return registry->getStorage<T>().get(e);
+		return std::get<ComponentStorage<T> *>(pools)->get(e);
 	}
 };
 } // namespace GameEngine::ECS

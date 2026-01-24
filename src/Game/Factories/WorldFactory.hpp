@@ -1,13 +1,15 @@
 #pragma once
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/Graphics/TextureManager.hpp"
+#include "Engine/Input/InputManager.hpp"
+
 #include <filesystem>
 #include <tileson.hpp>
 
 class WorldFactory {
   public:
 	WorldFactory(GameEngine::ECS::Registry &registry, const std::filesystem::path &projectPath,
-	             TextureManager &textureManager);
+	             TextureManager &textureManager, InputManager &inputManager);
 
 	WorldFactory(const WorldFactory &) = delete;
 	WorldFactory &operator=(const WorldFactory &) = delete;
@@ -22,4 +24,5 @@ class WorldFactory {
 	tson::Project project{};
 	tson::Tileson tileson{&project};
 	TextureManager &textureManager;
+	InputManager &inputManager;
 };

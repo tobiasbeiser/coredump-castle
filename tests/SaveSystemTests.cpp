@@ -1,3 +1,4 @@
+
 #include <gtest/gtest.h>
 #include <vector>
 #include <chrono>
@@ -113,7 +114,7 @@ TEST_F(SaveSystemTest, LoadSavedGame_RestoresPlayerStateFromJson)
 	storagePtr->write(saved);
 
 	// Reset components to defaults to ensure they are actually changed by load
-	auto playerView = registry.view<PlayerTag>();
+	auto playerView = registry.view<PlayerTag, JumpComponent, PositionComponent, InventoryComponent>();
 	const Entity entity = playerView.at(0U);
 
 	auto &jumpComponent = playerView.get<JumpComponent>(entity);
@@ -137,7 +138,6 @@ TEST_F(SaveSystemTest, LoadSavedGame_RestoresPlayerStateFromJson)
 	const auto &inventoryComponentAfter = playerView.get<InventoryComponent>(entity);
 	const std::vector expectedKeys{1, 2, 3};
 	EXPECT_EQ(expectedKeys, inventoryComponentAfter.keys);
-
 }
 
 TEST_F(SaveSystemTest, LoadSavedGame_RemovesCollectedLocksAndKeys)
@@ -152,7 +152,6 @@ TEST_F(SaveSystemTest, LoadSavedGame_RemovesCollectedLocksAndKeys)
 	saved["positionY"] = 3.3F;
 	saved["keys"] = std::vector<int>{9, 4, 5, 2, 1, 8};
 	storagePtr->write(saved);
-
 
 	const Entity lock1 = registry.create();
 	registry.registerComponent<LockComponent>(lock1, LockComponent{.lockId = 4}); // In keys
@@ -216,6 +215,9 @@ TEST_F(SaveSystemTest, SaveGame_ThrowsIfMultiplePlayerEntitiesExist)
 {
 	const Entity secondPlayer = registry.create();
 	registry.registerComponent<PlayerTag>(secondPlayer, PlayerTag{});
+	registry.registerComponent<InventoryComponent>(secondPlayer, {});
+	registry.registerComponent<JumpComponent>(secondPlayer, {});
+	registry.registerComponent<PositionComponent>(secondPlayer, {});
 
 	auto storage = std::make_unique<FakeSaveStorage>();
 	const SaveSystem saveSystem{std::move(storage)};
@@ -238,6 +240,9 @@ TEST_F(SaveSystemTest, LoadSavedGame_ThrowsIfMultiplePlayerEntitiesExist)
 
 	const Entity secondPlayer = registry.create();
 	registry.registerComponent<PlayerTag>(secondPlayer, PlayerTag{});
+	registry.registerComponent<InventoryComponent>(secondPlayer, {});
+	registry.registerComponent<JumpComponent>(secondPlayer, {});
+	registry.registerComponent<PositionComponent>(secondPlayer, {});
 
 	EXPECT_THROW(saveSystem.loadSavedGame(registry), std::runtime_error);
 }
@@ -272,15 +277,15 @@ TEST_F(SaveSystemTest, RoundTrip_SaveThenLoad_PreservesState)
     auto *storagePtr = storage.get();
     const SaveSystem saveSystem{std::move(storage)};
 
-    // 1. Modify initial state
-    auto playerView = registry.view<PlayerTag>();
-    const Entity entity = playerView.at(0U);
+	// 1. Modify initial state to be distinct from defaults
+	auto playerView = registry.view<PlayerTag, JumpComponent, PositionComponent>();
+	const Entity entity = playerView.at(0U);
 
-    auto& jump = playerView.get<JumpComponent>(entity);
-    jump.maxJumps = 99;
+	auto &jump = playerView.get<JumpComponent>(entity);
+	jump.maxJumps = 99;
 
-    auto& pos = playerView.get<PositionComponent>(entity);
-    pos.position = glm::vec2{500.0F, 500.0F};
+	auto &pos = playerView.get<PositionComponent>(entity);
+	pos.position = glm::vec2{500.0F, 500.0F};
 
     // 2. Save
     const std::string saveName = "RoundTripSave";
@@ -311,11 +316,11 @@ TEST_F(SaveSystemTest, LoadSavedGame_Throws_WhenSaveDataIsCorrupt)
     auto *storagePtr = storage.get();
     const SaveSystem saveSystem{std::move(storage)};
 
-    // Create incomplete JSON (missing 'maxJumps')
-    json corruptData;
-    corruptData["positionX"] = 10.0F;
-    corruptData["positionY"] = 10.0F;
-    corruptData["keys"] = std::vector<int>{};
+	// Create incomplete JSON (missing 'maxJumps')
+	json corruptData;
+	corruptData["positionX"] = 10.0F;
+	corruptData["positionY"] = 10.0F;
+	corruptData["keys"] = std::vector<int>{};
 
     storagePtr->write(corruptData);
 
@@ -323,7 +328,7 @@ TEST_F(SaveSystemTest, LoadSavedGame_Throws_WhenSaveDataIsCorrupt)
         SaveMetaData{"CorruptFile", std::filesystem::file_time_type::clock::now()}
     });
 
-    EXPECT_THROW(saveSystem.loadSavedGame(registry), json::out_of_range);
+	EXPECT_THROW(saveSystem.loadSavedGame(registry), json::out_of_range);
 }
 
 TEST_F(SaveSystemTest, DeleteAllSaves_DelegatesToStorage)

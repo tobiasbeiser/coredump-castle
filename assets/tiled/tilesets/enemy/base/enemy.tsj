@@ -1,13 +1,13 @@
-{ "columns":8,
- "image":"..\/..\/slime-Sheet.png",
- "imageheight":75,
- "imagewidth":256,
+{ "columns":5,
+ "image":"..\/..\/Zombie_Small.png",
+ "imageheight":96,
+ "imagewidth":160,
  "margin":0,
  "name":"slime-Sheet",
  "spacing":0,
- "tilecount":24,
+ "tilecount":15,
  "tiledversion":"1.11.2",
- "tileheight":25,
+ "tileheight":32,
  "tiles":[
         {
          "animation":[
@@ -33,15 +33,11 @@
                  "name":"state",
                  "propertytype":"State",
                  "type":"int",
-                 "value":1
+                 "value":0
                 }]
         }, 
         {
          "animation":[
-                {
-                 "duration":100,
-                 "tileid":4
-                }, 
                 {
                  "duration":100,
                  "tileid":5
@@ -53,113 +49,22 @@
                 {
                  "duration":100,
                  "tileid":7
-                }],
-         "id":4,
-         "properties":[
+                }, 
                 {
-                 "name":"state",
-                 "propertytype":"State",
-                 "type":"int",
-                 "value":0
-                }]
-        }, 
-        {
-         "animation":[
-                {
-                 "duration":150,
+                 "duration":100,
                  "tileid":8
                 }, 
                 {
-                 "duration":150,
+                 "duration":100,
                  "tileid":9
-                }, 
-                {
-                 "duration":150,
-                 "tileid":10
-                }, 
-                {
-                 "duration":150,
-                 "tileid":11
                 }],
-         "id":8,
+         "id":5,
          "properties":[
                 {
                  "name":"state",
                  "propertytype":"State",
                  "type":"int",
-                 "value":8
-                }]
-        }, 
-        {
-         "animation":[
-                {
-                 "duration":100,
-                 "tileid":12
-                }, 
-                {
-                 "duration":100,
-                 "tileid":13
-                }, 
-                {
-                 "duration":100,
-                 "tileid":14
-                }, 
-                {
-                 "duration":100,
-                 "tileid":15
-                }],
-         "id":12,
-         "properties":[
-                {
-                 "name":"state",
-                 "propertytype":"State",
-                 "type":"int",
-                 "value":2
-                }]
-        }, 
-        {
-         "id":16,
-         "properties":[
-                {
-                 "name":"state",
-                 "propertytype":"State",
-                 "type":"int",
-                 "value":9
-                }]
-        }, 
-        {
-         "animation":[
-                {
-                 "duration":100,
-                 "tileid":23
-                }, 
-                {
-                 "duration":100,
-                 "tileid":22
-                }, 
-                {
-                 "duration":100,
-                 "tileid":21
-                }, 
-                {
-                 "duration":100,
-                 "tileid":20
-                }, 
-                {
-                 "duration":100,
-                 "tileid":19
-                }, 
-                {
-                 "duration":100,
-                 "tileid":18
-                }],
-         "id":23,
-         "properties":[
-                {
-                 "name":"state",
-                 "propertytype":"State",
-                 "type":"int",
-                 "value":9
+                 "value":1
                 }]
         }],
  "tilewidth":32,

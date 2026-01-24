@@ -94,7 +94,7 @@ class SaveSystem {
 
 	[[nodiscard]] static json buildSaveData(Registry &registry)
 	{
-		auto playerView = registry.view<PlayerTag>();
+		auto playerView = registry.view<PlayerTag, InventoryComponent, JumpComponent, PositionComponent>();
 		if (playerView.size() > 1U) {
 			throw std::runtime_error("Multiple entities with PlayerTag component");
 		}
@@ -115,7 +115,7 @@ class SaveSystem {
 
 	static void reinitializePlayerGameData(Registry &registry, json gameData)
 	{
-		auto playerView = registry.view<PlayerTag>();
+		auto playerView = registry.view<PlayerTag, InventoryComponent, JumpComponent, PositionComponent>();
 		if (playerView.size() > 1U) {
 			throw std::runtime_error("Multiple entities with PlayerTag component");
 		}
