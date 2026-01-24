@@ -24,7 +24,7 @@ find_package(nlohmann_json CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 
 if(CMAKE_BUILD_TYPE MATCHES "Debug|RelWithDebInfo")
-    find_package(tracy CONFIG REQUIRED)
+    find_package(Tracy CONFIG REQUIRED)
     set(USE_TRACY ON)
 else()
     set(USE_TRACY OFF)

@@ -10,6 +10,7 @@
 #include "Engine/FileIO/ISaveStorage.hpp"
 
 #include <nlohmann/json.hpp>
+#include <set>
 #include <utility>
 
 namespace GameEngine::ECS::Systems {
@@ -46,15 +47,41 @@ class SaveSystem {
 		}
 	}
 
-	[[nodiscard]] std::vector<std::string> getSaves() const { return saveStorage->getSavesNames(); }
+	[[nodiscard]] std::vector<SaveMetaData> getSaves() const { return saveStorage->getSavesData(); }
+
+	void deleteAllSaves() const { saveStorage->deleteSaves(); }
 
   private:
 	std::unique_ptr<ISaveStorage> saveStorage;
 
 	void initNewGameSave() const
 	{
-		const std::vector<std::string> saves = saveStorage->getSavesNames();
-		const std::string saveName = "Saved Game " + std::to_string(saves.size() + 1);
+		static constexpr std::string_view kPrefix = "Saved Game ";
+		const auto saves = saveStorage->getSavesData();
+
+		std::set<int> usedIds;
+
+		for (const auto &[name, _] : saves) {
+			if (!name.starts_with(kPrefix))
+				continue;
+
+			if (std::string_view numPart = std::string_view(name).substr(kPrefix.length());
+			    !numPart.empty() && std::ranges::all_of(numPart, [](unsigned char c) { return std::isdigit(c); })) {
+				int id = 0;
+				for (const char c : numPart) {
+					id = id * 10 + (c - '0');
+				}
+				usedIds.insert(id);
+			}
+		}
+
+		int newIndex = 1;
+		while (usedIds.contains(newIndex)) {
+			newIndex++;
+		}
+
+		const std::string saveName = "Saved Game " + std::to_string(newIndex);
+
 		saveStorage->setSaveName(saveName);
 		writeEmptyGameSave();
 	}

@@ -1,35 +1,33 @@
 #pragma once
 #include "Engine/Graphics/Renderer.hpp"
 
-namespace Ui
-{
-    struct Paint {
-        SDL_Color fillCol{};
-        SDL_Color outlineCol{};
-        SDL_Color textCol{};
-    };
+namespace Ui {
+struct Paint {
+	SDL_Color fillCol{};
+	SDL_Color outlineCol{};
+	SDL_Color textCol{};
+};
 
-    struct ButtonStyle {
-        float widthPadding = 5.0f;
-        float heightPadding = 5.0f;
-        Paint normal;
-        Paint hovered;
-        Paint pressed;
-        Paint disabled;
+struct ButtonStyle {
+	float widthPadding = 5.0f;
+	float heightPadding = 5.0f;
+	Paint normal;
+	Paint hovered;
+	Paint pressed;
+	Paint disabled;
+};
 
-    };
+struct UiTheme {
+	SDL_Color titleTextColor{};
+	ButtonStyle button;
+};
 
-    struct UiTheme {
-        SDL_Color titleTextColor{};
-        ButtonStyle button;
-    };
-
-    struct UIContext {
-        Renderer *renderer = nullptr;
-        TTF_Font *titleFont = nullptr;
-        TTF_Font *bigFont = nullptr;
-        TTF_Font *textFont = nullptr;
-        UiTheme theme;
-        Resolution resolution{};
-    };
-}
+struct UIContext {
+	Renderer *renderer = nullptr;
+	TTF_Font *titleFont = nullptr;
+	TTF_Font *bigFont = nullptr;
+	TTF_Font *textFont = nullptr;
+	UiTheme theme;
+	Resolution resolution{};
+};
+} // namespace Ui

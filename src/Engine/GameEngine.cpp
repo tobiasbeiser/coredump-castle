@@ -7,6 +7,8 @@
 
 #include <imgui_impl_sdl3.h>
 
+#include "Graphics/Gui/CoredumpContext.hpp"
+
 namespace GameEngine {
 
 GameEngine::GameEngine(const std::string &title, const Resolution resolution)
@@ -23,8 +25,11 @@ GameEngine::~GameEngine()
 
 bool GameEngine::init()
 {
-	// game data
-	states.emplace_back(std::make_unique<MainMenuState>(inputManager, textureManager, fontManager, renderer));
+	std::unique_ptr<Ui::UIContext> context = CoredumpContext::getContext(*this);
+
+	guiManager = std::make_unique<Ui::GuiManager>(std::move(context));
+	states.emplace_back(
+	    std::make_unique<MainMenuState>(getInputManager(), getTextureManager(), getGuiManager(), getRenderer()));
 	running = true;
 
 	states.back()->init(*this);
