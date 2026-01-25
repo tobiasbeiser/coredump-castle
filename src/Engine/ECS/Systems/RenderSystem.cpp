@@ -4,6 +4,8 @@
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
+#include "Engine/ECS/Components/Render/AlreadySeenComponent.hpp"
 #include "Engine/ECS/Components/Render/BackgroundComponent.hpp"
 #include "Engine/ECS/Components/Render/BlinkComponent.hpp"
 #include "Engine/ECS/Components/Render/CenterCameraComponent.hpp"
@@ -22,13 +24,7 @@ using namespace GameEngine::ECS::Systems;
 
 RenderSystem::RenderSystem(Renderer &renderer) : renderer(renderer) {}
 
-auto RenderSystem::getRenderRank(const RenderSystem::RenderItem &item)
-{
-	return std::tie(item.layer, item.texture, item.colorMod.r, item.colorMod.g, item.colorMod.b, item.colorMod.a,
-	                item.flipX);
-}
-
-void RenderSystem::update(Registry &registry, float alpha)
+void RenderSystem::update(Registry &registry)
 {
 	{
 		PROFILE_SCOPE("RenderSystem::Collect");
@@ -48,149 +44,85 @@ void RenderSystem::update(Registry &registry, float alpha)
 		// Backgrounds
 
 		for (const auto entity : bgView) {
-			const auto &[layer, flipX] = bgView.get<RenderComponent>(entity);
-			const auto &[position, previousPosition] = bgView.get<PositionComponent>(entity);
-			const auto &bg = bgView.get<BackgroundComponent>(entity);
+			const auto bgComp = bgView.get<BackgroundComponent>(entity);
+			const auto posComp = bgView.get<PositionComponent>(entity);
+			const auto renderComp = bgView.get<RenderComponent>(entity);
 
-			constexpr std::optional<SDL_FRect> srcOpt;
-			std::optional<SDL_FRect> dstOpt;
-
-			if (bg.repeatX) {
-				dstOpt =
-				    SDL_FRect{.x = position.x, .y = bg.yOffset + position.y, .h = static_cast<float>(bg.texture->h)};
-			}
-
-			renderItems.emplace_back(RenderItem{.layer = layer,
-			                                    .texture = bg.texture,
-			                                    .src = srcOpt,
-			                                    .dst = dstOpt,
-			                                    .parallax = bg.repeatX,
-			                                    .scrollFactor = bg.scrollingSpeed,
-			                                    .flipX = flipX});
+			if (const auto item = createBackgroundItem({bgComp, posComp, renderComp}))
+				renderItems.push_back(std::move(item.value()));
 		}
 
+		std::vector<Entity> entitiesToCache;
 		const SDL_FRect &viewport = renderer.getViewport();
-		// Tiles, Player
 		for (const auto entity : view) {
-			const auto &[position, previousPosition] = view.get<PositionComponent>(entity);
-			const auto &[texture, TileSize, TileMapPosition, spriteColorMod] = view.get<SpriteComponent>(entity);
-			const auto &[layer, flipX] = view.get<RenderComponent>(entity);
+			const auto& pos = view.get<PositionComponent>(entity);
+			const auto& sprite = view.get<SpriteComponent>(entity);
+			const auto& render = view.get<RenderComponent>(entity);
+			const auto& transform = registry.tryGet<TransformComponent>(entity);
 
-			const auto transform = registry.tryGet<TransformComponent>(entity);
-			const glm::vec2 scale = transform ? transform->get().scale : glm::vec2{1.0f, 1.0f};
-			double rotation = transform ? transform->get().rotation : 0.0;
+			if (const auto item = createSpriteItem({pos, sprite, render, transform}, viewport)) {
+				renderItems.push_back(std::move(item.value()));
 
-			const SDL_FRect src{.x = static_cast<float>(TileMapPosition.x),
-			                    .y = static_cast<float>(TileMapPosition.y),
-			                    .w = static_cast<float>(TileSize.x),
-			                    .h = static_cast<float>(TileSize.y)};
+				if (registry.tryGet<MovementComponent>(entity))
+					continue;
 
-			// non interpolation
-			SDL_FRect dst{.x = position.x,
-			              .y = position.y,
-			              .w = static_cast<float>(TileSize.x) * scale.x,
-			              .h = static_cast<float>(TileSize.y) * scale.y};
-
-			// interpolation
-			/*SDL_FRect dst{.x = pos.previousPosition.x * (1 - alpha) + pos.position.x * alpha,
-			              .y = pos.previousPosition.y * (1 - alpha) + pos.position.y * alpha,
-			              .w = tile.TileSize,
-			              .h = tile.TileSize};*/
-			if (SDL_HasRectIntersectionFloat(&dst, &viewport)) {
-				renderItems.push_back(RenderItem{.layer = layer,
-				                                 .texture = texture,
-				                                 .src = src,
-				                                 .dst = dst,
-				                                 .parallax = false,
-				                                 .flipX = flipX,
-				                                 .angle = rotation,
-				                                 .colorMod = spriteColorMod});
-			}
-		}
-	}
-	{
-
-		PROFILE_SCOPE("RenderSystem::Sort");
-
-		auto sortStrategy = [](const RenderItem &a, const RenderItem &b) {
-			if (a.layer != b.layer) {
-				return a.layer < b.layer;
-			}
-
-			if (a.texture != b.texture) {
-				return a.texture < b.texture;
-			}
-
-			// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-			const uint32_t colorA = *reinterpret_cast<const uint32_t *>(&a.colorMod);
-			// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-			const uint32_t colorB = *reinterpret_cast<const uint32_t *>(&b.colorMod);
-
-			if (colorA != colorB) {
-				return colorA < colorB;
-			}
-
-			return a.flipX < b.flipX;
-		};
-
-#if defined(__cpp_lib_execution) && !defined(__APPLE__)
-		std::sort(std::execution::seq, renderItems.begin(), renderItems.end(), sortStrategy);
-#else
-		// apple libc++ does not implement parallel algorithms
-		std::ranges::sort(renderItems, sortStrategy);
-#endif
-	}
-	{
-		PROFILE_SCOPE("RenderSystem::Submit");
-
-		SDL_Texture *lastTexture = nullptr;
-		uint32_t lastColorVal = 0;
-		bool forceUpdate = true;
-
-		for (auto &renderItem : renderItems) {
-			// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-			const uint32_t currentColorVal = *reinterpret_cast<const uint32_t *>(&renderItem.colorMod);
-
-			if (forceUpdate || renderItem.texture != lastTexture || currentColorVal != lastColorVal) {
-				SDL_SetTextureColorMod(renderItem.texture, renderItem.colorMod.r, renderItem.colorMod.g,
-				                       renderItem.colorMod.b);
-				SDL_SetTextureAlphaMod(renderItem.texture, renderItem.colorMod.a);
-
-				lastTexture = renderItem.texture;
-				lastColorVal = currentColorVal;
-				forceUpdate = false;
-			}
-
-			if (!renderItem.parallax) {
-				renderer.renderTexture(*renderItem.texture, renderItem.src, renderItem.dst, renderItem.flipX,
-				                       renderItem.angle);
-			} else if (renderItem.dst.has_value()) {
-				renderer.renderTextureTiled(*renderItem.texture, renderItem.dst.value(), renderItem.scrollFactor);
-			}
-		}
-
-		for (auto vignetteView = registry.view<VignetteComponent, PositionComponent>(); auto entity : vignetteView) {
-			const auto &vignette = vignetteView.get<VignetteComponent>(entity);
-			const auto &pos = vignetteView.get<PositionComponent>(entity);
-
-			float intensity = vignette.getIntensity();
-
-			if (intensity > 0.0f) {
-				glm::vec2 centerPos = pos.position;
-
-				if (const auto sprite = registry.tryGet<SpriteComponent>(entity)) {
-					centerPos.x += sprite->get().tileSize.x / 2.0f;
-					centerPos.y += sprite->get().tileSize.y / 2.0f;
+				if (!registry.tryGet<AlreadySeenComponent>(entity)) {
+					entitiesToCache.push_back(entity);
 				}
-				const SDL_FRect viewport = renderer.getViewport();
-				glm::vec2 screenPos = centerPos - glm::vec2{viewport.x, viewport.y};
-
-				// 3. Render
-				renderer.renderVignette(intensity, vignette.color, screenPos);
 			}
 		}
-		renderItems.clear();
+		for (auto entity : entitiesToCache) {
+			registry.registerComponent(entity, AlreadySeenComponent{});
+		}
 	}
+
+	sortRenderItems();
+	submitRenderItems();
+
+	for (auto vignetteView = registry.view<VignetteComponent, PositionComponent>(); auto entity : vignetteView) {
+		const auto &vignette = vignetteView.get<VignetteComponent>(entity);
+		const auto &pos = vignetteView.get<PositionComponent>(entity);
+
+		float intensity = vignette.getIntensity();
+
+		if (intensity > 0.0f) {
+			glm::vec2 centerPos = pos.position;
+
+			if (const auto sprite = registry.tryGet<SpriteComponent>(entity)) {
+				centerPos.x += sprite->get().tileSize.x / 2.0f;
+				centerPos.y += sprite->get().tileSize.y / 2.0f;
+			}
+			const SDL_FRect viewport = renderer.getViewport();
+			glm::vec2 screenPos = centerPos - glm::vec2{viewport.x, viewport.y};
+
+			// 3. Render
+			renderer.renderVignette(intensity, vignette.color, screenPos);
+		}
+	}
+	renderItems.clear();
+}
+
+void RenderSystem::updateIngameMap(Registry &registry)
+{
+	renderItems.clear();
+	auto view = registry.view<AlreadySeenComponent,RenderComponent, PositionComponent, SpriteComponent>();
+	renderItems.reserve(view.size());
+	const SDL_FRect &viewport = renderer.getViewport();
+
+	for (const auto entity : view) {
+		const auto& pos = view.get<PositionComponent>(entity);
+		const auto& sprite = view.get<SpriteComponent>(entity);
+		const auto& render = view.get<RenderComponent>(entity);
+		const auto& transform = registry.tryGet<TransformComponent>(entity);
+
+		if (const auto item = createSpriteItem({pos, sprite, render, transform}, viewport)) {
+			renderItems.push_back(std::move(item.value()));
+		}
+	}
+
+	sortRenderItems();
+	submitRenderItems();
+	renderItems.clear();
 }
 
 void RenderSystem::centerCamera(Registry &registry) const
@@ -223,4 +155,123 @@ void RenderSystem::centerCamera(Registry &registry) const
 	} else if (centerCameraView.size() > 1) {
 		throw std::runtime_error("There cannot be more than on entity with a CenterCameraComponent");
 	}
+}
+
+void RenderSystem::sortRenderItems()
+{
+	PROFILE_SCOPE("RenderSystem::Sort");
+
+	auto sortStrategy = [](const RenderItem &a, const RenderItem &b) {
+		if (a.layer != b.layer) {
+			return a.layer < b.layer;
+		}
+
+		if (a.texture != b.texture) {
+			return a.texture < b.texture;
+		}
+
+		// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+		const uint32_t colorA = *reinterpret_cast<const uint32_t *>(&a.colorMod);
+		// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+		const uint32_t colorB = *reinterpret_cast<const uint32_t *>(&b.colorMod);
+
+		if (colorA != colorB) {
+			return colorA < colorB;
+		}
+
+		return a.flipX < b.flipX;
+	};
+
+#if defined(__cpp_lib_execution) && !defined(__APPLE__)
+	std::sort(std::execution::seq, renderItems.begin(), renderItems.end(), sortStrategy);
+#else
+	// apple libc++ does not implement parallel algorithms
+	std::ranges::sort(renderItems, sortStrategy);
+#endif
+}
+
+void RenderSystem::submitRenderItems()
+{
+	PROFILE_SCOPE("RenderSystem::Submit");
+
+	SDL_Texture *lastTexture = nullptr;
+	uint32_t lastColorVal = 0;
+	bool forceUpdate = true;
+
+	for (auto &renderItem : renderItems) {
+		// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+		const uint32_t currentColorVal = *reinterpret_cast<const uint32_t *>(&renderItem.colorMod);
+
+		if (forceUpdate || renderItem.texture != lastTexture || currentColorVal != lastColorVal) {
+			SDL_SetTextureColorMod(renderItem.texture, renderItem.colorMod.r, renderItem.colorMod.g,
+			                       renderItem.colorMod.b);
+			SDL_SetTextureAlphaMod(renderItem.texture, renderItem.colorMod.a);
+
+			lastTexture = renderItem.texture;
+			lastColorVal = currentColorVal;
+			forceUpdate = false;
+		}
+
+		if (!renderItem.parallax) {
+			renderer.renderTexture(*renderItem.texture, renderItem.src, renderItem.dst, renderItem.flipX,
+			                       renderItem.angle);
+		} else if (renderItem.dst.has_value()) {
+			renderer.renderTextureTiled(*renderItem.texture, renderItem.dst.value(), renderItem.scrollFactor);
+		}
+	}
+}
+
+std::optional<RenderItem> RenderSystem::createBackgroundItem(const BackgroundRenderContext &ctx)
+{
+	const auto &[layer, flipX] = ctx.renderComp;
+	const auto &[position, previousPosition] = ctx.posComp;
+	const auto &[texture, scrollSpeed, scrollPos, yOffset, repeatX] = ctx.bgComp;
+
+	constexpr std::optional<SDL_FRect> srcOpt;
+	std::optional<SDL_FRect> dstOpt;
+
+	if (repeatX) {
+		dstOpt =
+		    SDL_FRect{.x = position.x, .y = yOffset + position.y, .h = static_cast<float>(texture->h)};
+	}
+	return RenderItem{.layer = layer,
+	                  .texture = texture,
+	                  .src = srcOpt,
+	                  .dst = dstOpt,
+	                  .parallax = repeatX,
+	                  .scrollFactor = scrollSpeed,
+	                  .flipX = flipX};
+}
+
+std::optional<RenderItem> RenderSystem::createSpriteItem(const SpriteRenderContext &ctx, const SDL_FRect &viewport)
+{
+	// Tiles, Player
+	const auto &[position, previousPosition] = ctx.posComp;
+	const auto &[texture, TileSize, TileMapPosition, spriteColorMod] = ctx.spriteComp;
+	const auto &[layer, flipX] = ctx.renderComp;
+
+	const glm::vec2 scale = ctx.transformComp ? ctx.transformComp->get().scale : glm::vec2{1.0f, 1.0f};
+	const double rotation = ctx.transformComp ? ctx.transformComp->get().rotation : 0.0;
+
+	const SDL_FRect src{.x = static_cast<float>(TileMapPosition.x),
+	                    .y = static_cast<float>(TileMapPosition.y),
+	                    .w = static_cast<float>(TileSize.x),
+	                    .h = static_cast<float>(TileSize.y)};
+
+	// non interpolation
+	SDL_FRect dst{.x = position.x,
+	              .y = position.y,
+	              .w = static_cast<float>(TileSize.x) * scale.x,
+	              .h = static_cast<float>(TileSize.y) * scale.y};
+	if (!SDL_HasRectIntersectionFloat(&dst, &viewport))
+		return std::nullopt;
+
+	return RenderItem{.layer = layer,
+	                  .texture = texture,
+	                  .src = src,
+	                  .dst = dst,
+	                  .parallax = false,
+	                  .flipX = flipX,
+	                  .angle = rotation,
+	                  .colorMod = spriteColorMod};
 }
