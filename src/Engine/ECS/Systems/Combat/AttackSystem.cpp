@@ -34,6 +34,7 @@ void updateCoolDown(AttackComponent &attack, const float deltaTime)
 void startAttack(AttackComponent &attack, const float deltaTime)
 {
 	attack.attackTimer.reset();
+	attack.attackCoolDownTimer.reset();
 	attack.attackTimer.step(std::chrono::duration<float>(deltaTime), false);
 }
 
@@ -89,10 +90,10 @@ void update(Registry &registry, const float deltaTime, const AttackCallback &onA
 
 		if (isAttacking(attack)) {
 			updateDamageState(registry, entity, attack);
+		}
 
-			if (attack.attackTimer.isTimeout()) {
-				endAttack(attack);
-			}
+		if (attack.attackTimer.isTimeout()) {
+			endAttack(attack);
 		}
 	}
 }

@@ -7,6 +7,7 @@
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/RangedAttackComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Enemy/ChargeComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/ChaseComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
@@ -22,6 +23,7 @@
 #include "Engine/ECS/View.hpp"
 
 #include "Engine/Utils/DetectionRangeUtils.hpp"
+#include "Engine/Utils/HitBoxUtils.hpp"
 #include "Engine/Utils/Random.hpp"
 #include "Engine/Utils/SpatialHash.hpp"
 
@@ -51,12 +53,102 @@ struct EnemyContext {
 	glm::vec2 scale;
 	glm::vec2 position;
 };
+
+float getDirectionToPlayer(const EnemyContext &enemy, const PlayerContext &player)
+{
+	return player.center.x > enemy.center.x ? 1.0f : -1.0f;
+}
+
+void resetChargeState(ChargeComponent &charge, const EnemyContext &enemy, const ChaseComponent &chase)
+{
+	charge.chargeTimer.reset();
+	charge.chargePauseTimer.reset();
+	enemy.input->attackPressed = false;
+	enemy.input->horizontalDirection = 0.0f;
+	enemy.movement->maxSpeedX = chase.chaseSpeed;
+}
+
+bool updateChargePaused(ChargeComponent &charge, const EnemyContext &enemy, const ChaseComponent &chase,
+                        const float deltaTime)
+{
+	const bool isChargePaused = charge.chargePauseTimer.isRunning() && !charge.chargePauseTimer.isTimeout();
+	if (!isChargePaused) {
+		return false;
+	}
+
+	charge.chargePauseTimer.step(std::chrono::duration<float>(deltaTime), false);
+
+	enemy.input->attackPressed = false;
+	enemy.input->horizontalDirection = 0.0f;
+
+	if (charge.chargePauseTimer.isTimeout()) {
+		enemy.movement->maxSpeedX = chase.chaseSpeed;
+	}
+	return true;
+}
+
+bool updateCharging(ChargeComponent &charge, const EnemyContext &enemy, const PlayerContext &player,
+                    const ChaseComponent &chase, const float deltaTime)
+{
+	if (const bool isCharging = charge.chargeTimer.isRunning() && !charge.chargeTimer.isTimeout(); !isCharging) {
+		return false;
+	}
+
+	charge.chargeTimer.step(std::chrono::duration<float>(deltaTime), false);
+
+	const float directionToPlayer = getDirectionToPlayer(enemy, player);
+	enemy.input->attackPressed = false;
+	enemy.input->horizontalDirection = directionToPlayer;
+	enemy.render->setFacingLeft(directionToPlayer < 0);
+	enemy.movement->maxSpeedX = chase.chaseSpeed * charge.chargeSpeedMultiplier;
+
+	SDL_FRect enemyHurtBoxRect = Utils::HitBoxUtils::getHitBox(enemy.position, enemy.hurtBox, &enemy.scale);
+	SDL_FRect playerHurtBoxRect = Utils::HitBoxUtils::getHitBox(player.center, player.hurtBox, &player.scale);
+
+	const float passThroughDistance = player.hurtBox.w * player.scale.x * charge.chargePassThroughFactor;
+	const bool passedThrough = directionToPlayer > 0.0f ? enemy.center.x >= player.center.x + passThroughDistance
+	                                                    : enemy.center.x <= player.center.x - passThroughDistance;
+
+	if (SDL_HasRectIntersectionFloat(&enemyHurtBoxRect, &playerHurtBoxRect) && passedThrough) {
+		charge.chargeTimer.reset();
+		charge.chargePauseTimer.reset();
+		charge.chargePauseTimer.step(std::chrono::duration<float>(0.0f), false);
+		enemy.input->attackPressed = false;
+		enemy.input->horizontalDirection = 0.0f;
+		return true;
+	}
+
+	if (charge.chargeTimer.isTimeout()) {
+		enemy.movement->maxSpeedX = chase.chaseSpeed;
+	}
+	return true;
+}
 void resetChaseState(const EnemyContext &enemy)
 {
 	enemy.input->attackPressed = false;
 	enemy.movement->maxSpeedX = enemy.chase->originalPatrolSpeed;
 	enemy.chase->reactionDelay.reset();
 	enemy.chase->lastKnownPlayerX = std::nullopt;
+}
+
+void beginCharge(ChargeComponent &charge, InputComponent &input, ChaseComponent &chase, MovementComponent &movement,
+                 RenderComponent &render, const float directionToPlayer)
+{
+	charge.chargeTimer.reset();
+	charge.chargeTimer.step(std::chrono::duration<float>(0.0f), false); // signal it started
+	charge.chargeCooldown.reset();
+	chase.reactionDelay.reset();
+	input.attackPressed = false;
+	input.horizontalDirection = directionToPlayer;
+	render.setFacingLeft(directionToPlayer < 0);
+	movement.maxSpeedX = chase.chaseSpeed * charge.chargeSpeedMultiplier;
+}
+
+bool shouldCharge(const ChargeComponent &charge, const ChaseComponent &chase, const float xDistance,
+                  const float chargeRange)
+{
+	return xDistance <= chargeRange && chase.reactionDelay.isTimeout() && charge.chargeCooldown.isTimeout()
+	       && Utils::Random::getFloat(0.0f, 1.0f) <= charge.chargeChance;
 }
 
 std::optional<PlayerContext> getPlayerContext(Registry &registry)
@@ -260,6 +352,49 @@ void update(Registry &registry, const float deltaTime)
 		                      pos.position};
 
 		chase.reactionDelay.step(std::chrono::duration<float>(deltaTime), false);
+
+		if (auto chargeComp = registry.tryGet<ChargeComponent>(entity)) {
+			auto &charge = chargeComp->get();
+			charge.chargeCooldown.step(std::chrono::duration<float>(deltaTime), false);
+
+			if (playerCtx.state->state == State::Dead) {
+				resetChargeState(charge, enemyCtx, chase);
+				continue;
+			}
+
+			if (updateChargePaused(charge, enemyCtx, chase, deltaTime)) {
+				continue;
+			}
+
+			if (updateCharging(charge, enemyCtx, playerCtx, chase, deltaTime)) {
+				continue;
+			}
+
+			if (AttackSystem::isAttacking(*enemyCtx.attack)) {
+				continue;
+			}
+
+			const float verticalThreshold =
+			    Utils::DetectionRangeUtils::getVerticalThreshold(chase, playerCtx.isGrounded);
+			if (std::abs(playerCtx.center.y - enemyCtx.center.y) > verticalThreshold) {
+				continue;
+			}
+
+			if (!Utils::DetectionRangeUtils::isWithinDetectionRange(enemyCtx.center, playerCtx.center, chase)) {
+				continue;
+			}
+
+			const float xDistance = std::abs(playerCtx.center.x - enemyCtx.center.x);
+			const float stopDistance =
+			    (playerCtx.hurtBox.w * playerCtx.scale.x * 0.5f) + (enemyCtx.hurtBox.w * enemyCtx.scale.x * 0.5f);
+
+			if (const float chargeRange = chase.detectionWidthRange.value_or(stopDistance * 3.0f);
+			    shouldCharge(charge, chase, xDistance, chargeRange)) {
+				beginCharge(charge, *enemyCtx.input, chase, *enemyCtx.movement, *enemyCtx.render,
+				            getDirectionToPlayer(enemyCtx, playerCtx));
+				continue;
+			}
+		}
 
 		if (auto ranged = registry.tryGet<RangedAttackComponent>(entity)) {
 			handleRangeAttack(enemyCtx, playerCtx, registry, ranged->get());

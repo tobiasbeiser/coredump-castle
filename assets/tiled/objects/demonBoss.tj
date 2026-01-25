@@ -28,7 +28,7 @@
             {
              "name":"chaseSpeed",
              "type":"float",
-             "value":80
+             "value":70
             }, 
             {
              "name":"collisionBox",
@@ -48,12 +48,12 @@
             {
              "name":"hitBox",
              "type":"string",
-             "value":"0,50,60,40"
+             "value":"0,-5,60,90"
             }, 
             {
              "name":"hurtBox",
              "type":"string",
-             "value":"125,70,40,90"
+             "value":"130,90,35,70"
             }, 
             {
              "name":"isBoss",
@@ -88,12 +88,12 @@
             {
              "name":"touchDamageBox",
              "type":"string",
-             "value":"130,120,30,40"
+             "value":"130,115,35,45"
             }, 
             {
              "name":"windUpLimit",
              "type":"float",
-             "value":0.15
+             "value":0.25
             }],
      "rotation":0,
      "type":"",

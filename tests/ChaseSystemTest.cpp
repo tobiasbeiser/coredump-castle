@@ -19,7 +19,6 @@
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Entity.hpp"
 #include "Engine/ECS/Registry.hpp"
-#include "Engine/ECS/Systems/CollisionSystem.hpp"
 #include "Engine/ECS/View.hpp"
 
 #include <gtest/gtest.h>
@@ -113,7 +112,7 @@ TEST_F(ChaseSystemTest, ChasesPlayerRightWhenInPatrolAndOutOfAttackRange)
 	auto &playerPosition = view.get<PositionComponent>(player);
 	const auto &enemyRender = view.get<RenderComponent>(enemy);
 
-	playerPosition.position = {160.0f, 0.0f};
+	playerPosition.position = {150.0f, 0.0f};
 
 	GameEngine::ECS::Systems::ChaseSystem::update(registry, 0.0f);
 	ASSERT_FALSE(enemyRender.flipX);
@@ -132,7 +131,7 @@ TEST_F(ChaseSystemTest, ChasesPlayerLeftWhenInPatrolAndOutOfAttackRange)
 	auto &playerPosition = view.get<PositionComponent>(player);
 	const auto &enemyRender = view.get<RenderComponent>(enemy);
 
-	playerPosition.position = {0.0f, 0.0f};
+	playerPosition.position = {40.0f, 0.0f};
 
 	GameEngine::ECS::Systems::ChaseSystem::update(registry, 0.1f);
 
@@ -175,13 +174,9 @@ TEST_F(ChaseSystemTest, AttacksAfterReactionDelay)
 
 TEST_F(ChaseSystemTest, StopsMovementAndInputWhileAttacking)
 {
-	auto view = registry.view<InputComponent, PositionComponent, AttackComponent>();
+	auto view = registry.view<InputComponent, PositionComponent>();
 	auto &enemyInput = view.get<InputComponent>(enemy);
 	auto &playerPosition = view.get<PositionComponent>(player);
-	auto &attack = view.get<AttackComponent>(enemy);
-
-	attack.attackTimer = Timer{std::chrono::duration<float>(1.0f)};
-	attack.attackTimer.step(std::chrono::duration<float>(0.1f), false);
 
 	playerPosition.position = {120.0f, 0.0f};
 
@@ -232,7 +227,7 @@ TEST_F(ChaseSystemTest, ChasesPlayerWhenJumpingHigh)
 
 	playerGrounded.grounded = false;
 
-	playerPosition.position = {160.0f, 100.0f};
+	playerPosition.position = {150.0f, 100.0f};
 
 	GameEngine::ECS::Systems::ChaseSystem::update(registry, 0.0f);
 
@@ -276,7 +271,6 @@ TEST_F(ChaseSystemTest, RangedEnemyDoesNotAttackWhenLineOfSightBlocked)
 
 	auto &playerPosition = playerView.get<PositionComponent>(player);
 	playerPosition.position = {150.0f, 0.0f};
-	GameEngine::ECS::Systems::CollisionSystem::buildStaticColliderGrid(registry);
 
 	GameEngine::ECS::Systems::ChaseSystem::update(registry, 0.6f);
 

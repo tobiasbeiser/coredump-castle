@@ -11,7 +11,7 @@
 #include <vector>
 
 struct DebugRenderOptions {
-	bool showBoundingBoxes = true;
+	bool showBoundingBoxes = false;
 	bool showHitBoxes = true;
 	bool showRaycasts = false;
 	bool showTooltipBoxes = false;

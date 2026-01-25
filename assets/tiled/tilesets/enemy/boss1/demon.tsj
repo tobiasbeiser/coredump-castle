@@ -106,63 +106,63 @@
         {
          "animation":[
                 {
-                 "duration":60,
+                 "duration":50,
                  "tileid":44
                 }, 
                 {
-                 "duration":60,
+                 "duration":50,
                  "tileid":45
                 }, 
                 {
-                 "duration":60,
+                 "duration":50,
                  "tileid":46
                 }, 
                 {
-                 "duration":60,
+                 "duration":50,
                  "tileid":47
                 }, 
                 {
-                 "duration":60,
+                 "duration":50,
                  "tileid":48
                 }, 
                 {
-                 "duration":60,
+                 "duration":50,
                  "tileid":49
                 }, 
                 {
-                 "duration":60,
+                 "duration":50,
                  "tileid":50
                 }, 
                 {
-                 "duration":60,
+                 "duration":50,
                  "tileid":51
                 }, 
                 {
-                 "duration":60,
+                 "duration":50,
                  "tileid":52
                 }, 
                 {
-                 "duration":60,
+                 "duration":50,
                  "tileid":53
                 }, 
                 {
-                 "duration":60,
+                 "duration":50,
                  "tileid":54
                 }, 
                 {
-                 "duration":60,
+                 "duration":50,
                  "tileid":55
                 }, 
                 {
-                 "duration":60,
+                 "duration":50,
                  "tileid":56
                 }, 
                 {
-                 "duration":60,
+                 "duration":50,
                  "tileid":57
                 }, 
                 {
-                 "duration":60,
+                 "duration":50,
                  "tileid":58
                 }],
          "id":44,
@@ -185,6 +185,24 @@
         }, 
         {
          "id":54,
+         "properties":[
+                {
+                 "name":"damageActive",
+                 "type":"bool",
+                 "value":true
+                }]
+        }, 
+        {
+         "id":55,
+         "properties":[
+                {
+                 "name":"damageActive",
+                 "type":"bool",
+                 "value":true
+                }]
+        }, 
+        {
+         "id":56,
          "properties":[
                 {
                  "name":"damageActive",

@@ -12,6 +12,7 @@
 #include "Engine/ECS/Components/Gameplay/Combat/PoiseComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/RangedAttackComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Enemy/ChargeComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/ChaseComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
@@ -27,6 +28,8 @@
 #include "Engine/ECS/View.hpp"
 #include "Game/Factories/AnimationFactory.hpp"
 #include "Game/Factories/ProjectileFactory.hpp"
+#include <algorithm>
+#include <cctype>
 #include <tileson.hpp>
 
 namespace {
@@ -166,7 +169,12 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 	const auto flipXOffset = getBoolProp(enemyObj, "flipXOffset");
 	const auto poise = getFloatProp(enemyObj, "poise", 0.0f);
 	const auto recoveryTime = getFloatProp(enemyObj, "recoveryTime", 2.0f);
-
+	const auto isBoss = getBoolProp(enemyObj, "isBoss");
+	const auto chargeChance = getFloatProp(enemyObj, "chargeChance", 0.25f);
+	const auto chargeDuration = getFloatProp(enemyObj, "chargeDuration", 0.75f);
+	const auto chargePauseDuration = getFloatProp(enemyObj, "chargePauseDuration", 1.0f);
+	const auto chargeSpeedMultiplier = getFloatProp(enemyObj, "chargeSpeedMultiplier", 1.5f);
+	const auto chargePassThroughFactor = getFloatProp(enemyObj, "chargePassThroughFactor", 0.35f);
 
 	glm::vec2 projectileOffset = {0.0f, 0.0f};
 	if (const auto offsetStr = getStringProp(enemyObj, "projectileOffset", "")) {
@@ -191,6 +199,15 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 	registry.registerComponent(entity, MovementComponent{.maxSpeedX = maxSpeedX});
 	registry.registerComponent(entity, BlinkComponent{});
 
+	if (isBoss) {
+		registry.registerComponent(
+		    entity, ChargeComponent{.chargeTimer = Timer{std::chrono::duration<float>(chargeDuration)},
+		                            .chargePauseTimer = Timer{std::chrono::duration<float>(chargePauseDuration)},
+		                            .chargeChance = chargeChance,
+		                            .chargeSpeedMultiplier = chargeSpeedMultiplier,
+		                            .chargePassThroughFactor = chargePassThroughFactor});
+	}
+
 	SDL_FRect weaponHitBox = {0.f, 0.f, 0.f, 0.f};
 	if (hitBoxStr) {
 		weaponHitBox = parseCollisionBox(hitBoxStr.value());
@@ -201,7 +218,8 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 		const auto touchDamageBox = touchDamageBoxStr ? parseCollisionBox(touchDamageBoxStr.value()) : collisionBox;
 		registry.registerComponent(entity, HitBoxComponent{.bodyHitBox = touchDamageBox, .weaponHitBox = weaponHitBox});
 		registry.registerComponent(entity, CollisionComponent{collisionBox});
-		registry.registerComponent(entity, HurtBoxComponent{collisionBox});
+		registry.registerComponent(entity,
+		                           HurtBoxComponent{hurtBoxStr ? parseCollisionBox(hurtBoxStr.value()) : collisionBox});
 	}
 
 	if (canPatrol) {
@@ -280,12 +298,11 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 	}
 
 	registry.registerComponent(entity, HealthComponent{maxHealth, maxHealth, invulnerabilityTime});
-	
-    if (poise > 0.0f) {
-		registry.registerComponent(entity, PoiseComponent{
-            .maxPoise = poise,
-            .recoveryTimer = Timer{std::chrono::duration<float>(recoveryTime)}
-        });
+
+	if (poise > 0.0f) {
+		registry.registerComponent(
+		    entity,
+		    PoiseComponent{.maxPoise = poise, .recoveryTimer = Timer{std::chrono::duration<float>(recoveryTime)}});
 	}
 
 	registry.registerComponent(

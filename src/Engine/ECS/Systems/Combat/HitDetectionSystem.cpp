@@ -114,21 +114,33 @@ void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
 			const auto victimScale = victimTransform ? &victimTransform->get().scale : nullptr;
 			SDL_FRect victimHurtBoxRect = Utils::HitBoxUtils::getHitBox(victimPos, victimHurtBox, victimScale);
 
-			if (const auto health = registry.tryGet<HealthComponent>(victim);
-			    health && HealthSystem::isInvulnerable(health->get())) {
-				continue;
+			bool isInvulnerable = false;
+			if (const auto health = registry.tryGet<HealthComponent>(victim)) {
+				isInvulnerable = HealthSystem::isInvulnerable(health->get());
 			}
 
 			bool hit = false;
+			bool bodyHit = false;
 
 			if (isWeaponActive && checkCollision(attackerWeaponRect, victimHurtBoxRect)) {
-				hit = true;
-				onHit(attacker, victim);
+				if (!isInvulnerable) {
+					hit = true;
+					onHit(attacker, victim);
+				}
 			}
 
-			if (!hit && !isAttackingState && registry.has<EnemyTag>(attacker)
-			    && checkCollision(attackerBodyRect, victimHurtBoxRect)) {
-				hit = true;
+			if (!hit && registry.has<EnemyTag>(attacker) && checkCollision(attackerBodyRect, victimHurtBoxRect)) {
+				bodyHit = true;
+				if (!isInvulnerable) {
+					hit = true;
+				}
+			}
+
+			if (bodyHit && isInvulnerable) {
+				if (auto health = registry.tryGet<HealthComponent>(victim)) {
+					health->get().invulnerabilityTimer.reset();
+				}
+				continue;
 			}
 
 			if (hit) {
