@@ -1,8 +1,11 @@
 # Coredump Castle
 
-Coredump Castle is a student project developed for the master’s course **703333 VU Advanced C++** at the **University of Innsbruck**.
+Coredump Castle is a student project developed for the master’s course **703333 VU Advanced C++** at the **University of
+Innsbruck**.
 
-The goal of the project is to build a game *from scratch* as a learning exercise in **modern C++ (C++23)**. To keep the focus on core language and engine concepts, highly abstracted or performance-optimized libraries such as `entt` or `nuklear` are intentionally **not used**.
+The goal of the project is to build a game *from scratch* as a learning exercise in **modern C++ (C++23)**. To keep the
+focus on core language and engine concepts, highly abstracted or performance-optimized libraries such as `entt` or
+`nuklear` are intentionally **not used**.
 
 ---
 
@@ -31,7 +34,14 @@ Make sure the LLVM tools (`clang-format`, `clang-tidy`) are available in your `P
 
 ### All Platforms
 
+#### Init Git Submodules
+
+```bash
+git submodule update --init --recursive
+```
+
 #### pre-commit
+
 ```bash
 pip3 install pre-commit
 pre-commit install
@@ -62,11 +72,11 @@ cmake --build --preset=release
 * **C++23 compiler**
 * **vcpkg** – dependency management
 
-  * `pkg-config`
+    * `pkg-config`
 * **pre-commit hooks**
 
-  * `clang-format`
-  * `clang-tidy`
+    * `clang-format`
+    * `clang-tidy`
 
 ---
 

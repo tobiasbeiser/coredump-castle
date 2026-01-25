@@ -1,5 +1,6 @@
 ﻿#include "AudioManager.hpp"
 #include <iostream>
+#include <random>
 
 AudioManager::AudioManager()
 {
@@ -113,4 +114,30 @@ void AudioManager::setMusicVolume(const float volume) const
 	if (musicTrack) {
 		MIX_SetTrackGain(musicTrack.get(), volume);
 	}
+}
+
+void AudioManager::loadSoundGroup(const std::string &groupId, const std::filesystem::path &folderPath)
+{
+	if (!std::filesystem::exists(folderPath))
+		return;
+
+	for (const auto &entry : std::filesystem::directory_iterator(folderPath)) {
+		if (entry.path().extension() == ".wav" || entry.path().extension() == ".ogg") {
+			if (MIX_Audio *audio = loadAudio(entry.path())) {
+				soundGroups[groupId].push_back(audio);
+			}
+		}
+	}
+}
+
+void AudioManager::playGroup(const std::string &groupId)
+{
+	if (!soundGroups.contains(groupId) || soundGroups[groupId].empty())
+		return;
+
+	// Pick random index
+	std::uniform_int_distribution<size_t> dist(0, soundGroups[groupId].size() - 1);
+	MIX_Audio *clip = soundGroups[groupId][dist(rng)];
+
+	MIX_PlayAudio(mixer.get(), clip);
 }

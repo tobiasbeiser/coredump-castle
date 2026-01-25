@@ -2,7 +2,9 @@
 
 #include <SDL3_mixer/SDL_mixer.h>
 #include <filesystem>
+#include <map>
 #include <memory>
+#include <random>
 #include <string>
 #include <unordered_map>
 
@@ -49,15 +51,20 @@ class AudioManager {
 
 	void playSound(const std::filesystem::path &filePath, float volume = 1.0f);
 
+	void loadSoundGroup(const std::string &groupId, const std::filesystem::path &folderPath);
+	void playGroup(const std::string &groupId);
+
 	void setMasterVolume(float volume) const;
 	void setMusicVolume(float volume) const;
 
   private:
 	MIX_Audio *loadAudio(const std::filesystem::path &filePath);
-
+	std::map<std::string, std::vector<MIX_Audio *>> soundGroups;
+	mutable std::mt19937 rng{std::random_device{}()};
 	std::unique_ptr<MIX_Mixer, MixMixerDeleter> mixer;
 
 	std::unique_ptr<MIX_Track, MixTrackDeleter> musicTrack;
 
 	std::unordered_map<std::string, std::unique_ptr<MIX_Audio, MixAudioDeleter>> audioCache;
+	std::filesystem::path basePath = "assets/audio/";
 };

@@ -4,16 +4,16 @@
 #include "Engine/Graphics/TextureManager.hpp"
 #include "LevelFactory.hpp"
 WorldFactory::WorldFactory(GameEngine::ECS::Registry &registry, const std::filesystem::path &projectPath,
-                           TextureManager &textureManager, InputManager &inputManager)
+                           TextureManager &textureManager, InputManager &inputManager, AudioManager &audioManager)
     : registry(registry), project(tson::Project{projectPath}), textureManager(textureManager),
-      inputManager(inputManager)
+      inputManager(inputManager), audioManager(audioManager)
 {
 }
 void WorldFactory::createWorld(const std::filesystem::path &worldPath)
 {
 	tson::World world;
 	world.parse(worldPath);
-	auto levelFactory = LevelFactory(registry, textureManager, inputManager);
+	auto levelFactory = LevelFactory(registry, textureManager, inputManager, audioManager);
 
 	for (const auto &data : world.getMapData()) {
 		std::unique_ptr<tson::Map> map = tileson.parse(fs::path(world.getFolder() / data.fileName));

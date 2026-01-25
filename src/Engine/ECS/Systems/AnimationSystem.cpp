@@ -22,6 +22,7 @@ void handleJumping(AnimationComponent &anim)
 	case AnimationType::Fire:
 	case AnimationType::Hurting:
 	case AnimationType::Dead:
+	case AnimationType::Landing:
 	case AnimationType::Attacking:
 		anim.setAnimation(AnimationType::JumpStart);
 		break;
@@ -79,7 +80,6 @@ void handleFalling(AnimationComponent &anim)
 		break;
 	default:;
 	}
-	anim.setAnimation(AnimationType::Falling);
 }
 void handleLanding(AnimationComponent &anim, const AnimationType fallback)
 {
