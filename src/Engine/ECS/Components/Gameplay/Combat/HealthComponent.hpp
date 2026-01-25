@@ -11,12 +11,8 @@ struct HealthComponent {
 	HealthComponent() = default;
 
 	HealthComponent(const int health, const int maxHealth,
-	                const std::chrono::duration<float> invulnerabilityDuration = std::chrono::duration<float>(500ms),
-	                const float maxPoise = 0.0f)
-	    : health(health), maxHealth(maxHealth), invulnerabilityTimer(invulnerabilityDuration, true), maxPoise(maxPoise)
+	                const std::chrono::duration<float> invulnerabilityDuration = std::chrono::duration<float>(500ms))
+	    : health(health), maxHealth(maxHealth), invulnerabilityTimer(invulnerabilityDuration, true)
 	{
 	}
-
-	float currentPoise{0.0f};
-	float maxPoise{0.0f};
 };

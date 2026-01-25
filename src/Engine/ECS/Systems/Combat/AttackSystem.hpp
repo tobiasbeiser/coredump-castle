@@ -1,74 +1,19 @@
 #pragma once
-#include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
-#include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
-#include "Engine/ECS/Registry.hpp"
-#include "Engine/ECS/View.hpp"
-#include "Game/Factories/EffectFactory.hpp"
-
+#include "Engine/ECS/Registry.hpp" // Or wherever 'Entity' is defined
 #include <functional>
 
-namespace GameEngine::ECS::Systems {
-class AttackSystem {
-	using AttackCallback = std::function<void(Entity)>;
+namespace GameEngine::ECS {
+class Registry;
+}
 
-  public:
-	static void update(Registry &registry, const float deltaTime, const AttackCallback &onAttack)
-	{
-		PROFILE_SCOPE("AttackSystem");
-		for (auto view = registry.view<AttackComponent, InputComponent>(); const auto entity : view) {
-			auto &attack = view.get<AttackComponent>(entity);
-			const auto &input = view.get<InputComponent>(entity);
+namespace GameEngine::ECS::Systems::AttackSystem {
 
-			updateCoolDown(attack, deltaTime);
+// Now the compiler knows what std::function and Entity are
+using AttackCallback = std::function<void(Entity)>;
 
-			if (input.attackPressed && !isAttacking(attack) && isCoolDown(attack)) {
-				startAttack(attack, deltaTime);
-				onAttack(entity);
-			} else if (isAttacking(attack)) {
-				processAttack(attack, deltaTime);
+bool isAttacking(const AttackComponent &attack);
 
-				if (attack.attackTimer.isTimeout()) {
-					endAttack(attack);
-				}
-			}
-		}
-	}
+void update(Registry &registry, float deltaTime, const AttackCallback &onAttack);
 
-	static bool isAttacking(const AttackComponent &attack)
-	{
-		return attack.attackTimer.isRunning() && !attack.attackTimer.isTimeout();
-	}
-
-  private:
-	static bool isCoolDown(const AttackComponent &attack)
-	{
-		return attack.attackCoolDownTimer.getTime() >= attack.attackCoolDownTimer.getLength();
-	}
-
-	static void updateCoolDown(AttackComponent &attack, const float deltaTime)
-	{
-		if (!attack.attackCoolDownTimer.isTimeout() && !isAttacking(attack)) {
-			attack.attackCoolDownTimer.step(std::chrono::duration<float>(deltaTime), false);
-		}
-	}
-
-	static void startAttack(AttackComponent &attack, const float deltaTime)
-	{
-		attack.attackTimer.reset();
-		attack.attackTimer.step(std::chrono::duration<float>(deltaTime), false);
-	}
-
-	static void processAttack(AttackComponent &attack, const float deltaTime)
-	{
-		attack.attackTimer.step(std::chrono::duration<float>(deltaTime), false);
-	}
-
-	static void endAttack(AttackComponent &attack)
-	{
-		attack.attackTimer.reset();
-		attack.attackCoolDownTimer.reset();
-	}
-};
-
-} // namespace GameEngine::ECS::Systems
+} // namespace GameEngine::ECS::Systems::AttackSystem

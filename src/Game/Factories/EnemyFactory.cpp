@@ -9,6 +9,7 @@
 #include "Engine/ECS/Components/Gameplay/Combat/HealthComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/PoiseComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/RangedAttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/ChaseComponent.hpp"
@@ -163,6 +164,10 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 	const auto detectionHeightRange = getFloatProp(enemyObj, "detectionHeightRange", 50.0f);
 	const auto windUpLimit = getFloatProp(enemyObj, "windUpLimit", 0.0f);
 	const auto flipXOffset = getBoolProp(enemyObj, "flipXOffset");
+	const auto poise = getFloatProp(enemyObj, "poise", 0.0f);
+	const auto recoveryTime = getFloatProp(enemyObj, "recoveryTime", 2.0f);
+
+
 	glm::vec2 projectileOffset = {0.0f, 0.0f};
 	if (const auto offsetStr = getStringProp(enemyObj, "projectileOffset", "")) {
 		const auto parsed = parseCollisionBox(offsetStr.value());
@@ -274,10 +279,14 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 		}
 	}
 
-	// If we have poise, we still want the FULL invulnerability duration to be the "Stagger Duration"
-	// We will handle the short "hit-trade" invulnerability in the HealthSystem by manipulating the timer.
-	const auto poise = getFloatProp(enemyObj, "poise", 0.0f);
-	registry.registerComponent(entity, HealthComponent{maxHealth, maxHealth, invulnerabilityTime, poise});
+	registry.registerComponent(entity, HealthComponent{maxHealth, maxHealth, invulnerabilityTime});
+	
+    if (poise > 0.0f) {
+		registry.registerComponent(entity, PoiseComponent{
+            .maxPoise = poise,
+            .recoveryTimer = Timer{std::chrono::duration<float>(recoveryTime)}
+        });
+	}
 
 	registry.registerComponent(
 	    entity, AttackComponent{.attackTimer = Timer{attackDuration},
