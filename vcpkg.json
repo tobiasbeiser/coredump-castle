@@ -19,5 +19,11 @@
         "sdl3-renderer-binding"
       ]
     }
+  ],
+  "overrides": [
+    {
+      "name": "sdl3",
+      "version-string": "3.4.0"
+    }
   ]
 }

@@ -16,6 +16,7 @@ void MainMenuState::init(GameEngine &game)
 	}
 
 	setupUI(game);
+	game.getAudioManager().playMusic("assets/audio/music/main_menu_theme.ogg", 2500);
 }
 
 void MainMenuState::cleanup() {}

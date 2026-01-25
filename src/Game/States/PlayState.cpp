@@ -32,6 +32,8 @@ void PlayState::init(GameEngine &game)
 	const std::filesystem::path worldPath = "assets/tiled/coredumpCastle.world";
 	factory.createWorld(worldPath);
 	game.getSaveSystem().loadSavedGame(game.getRegistry());
+
+	game.getAudioManager().playMusic("assets/audio/music/main_theme.ogg", 2500);
 }
 
 void PlayState::cleanup() {}
