@@ -32,7 +32,10 @@ jobs:
         # Installing X11/Wayland prevents vcpkg from building them from source
         run: |
           sudo apt-get update
-          sudo apt-get install -y libltdl-dev libx11-dev libxft-dev libxext-dev libwayland-dev libxkbcommon-dev libegl1-mesa-dev
+          sudo apt-get install -y \
+            libltdl-dev libx11-dev libxft-dev libxext-dev libwayland-dev libxkbcommon-dev libegl1-mesa-dev \
+            libxcursor-dev libxrandr-dev libxinerama-dev libxi-dev \
+            ibus libibus-1.0-dev
 
       - uses: lukka/get-cmake@latest
 
