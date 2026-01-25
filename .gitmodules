@@ -1,3 +1,6 @@
 [submodule "vcpkg"]
 	path = vcpkg
 	url = https://github.com/microsoft/vcpkg.git
+[submodule "vendor/SDL3_mixer"]
+	path = vendor/SDL3_mixer
+	url = https://github.com/libsdl-org/SDL_mixer.git

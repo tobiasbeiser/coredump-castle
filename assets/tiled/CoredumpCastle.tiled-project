@@ -30,6 +30,17 @@
                 "Interacting"
             ],
             "valuesAsFlags": false
+        },
+        {
+            "id": 3,
+            "name": "Ability",
+            "storageType": "int",
+            "type": "enum",
+            "values": [
+                "None",
+                "DoubleJump"
+            ],
+            "valuesAsFlags": false
         }
     ]
 }

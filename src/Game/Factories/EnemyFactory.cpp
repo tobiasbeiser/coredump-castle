@@ -5,6 +5,7 @@
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/BossComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HealthComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
@@ -26,6 +27,7 @@
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/View.hpp"
+#include <cctype>
 #include <tileson.hpp>
 
 namespace {
@@ -86,6 +88,52 @@ std::optional<std::string> getStringProp(tson::Object &obj, const std::string &n
 	}
 
 	return prop->getValue<std::string>();
+}
+
+AbilityType parseAbilityType(const std::optional<std::string> &value)
+{
+	if (!value.has_value()) {
+		return AbilityType::None;
+	}
+	if (value->empty()) {
+		return AbilityType::None;
+	}
+	std::string normalized;
+	normalized.reserve(value->size());
+	for (const char ch : *value) {
+		if (std::isalnum(static_cast<unsigned char>(ch))) {
+			normalized.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(ch))));
+		}
+	}
+	if (normalized == "none") {
+		return AbilityType::None;
+	}
+	if (normalized == "doublejump") {
+		return AbilityType::DoubleJump;
+	}
+	if (normalized == "slide") {
+		return AbilityType::Slide;
+	}
+	if (normalized == "dash") {
+		return AbilityType::Dash;
+	}
+	return AbilityType::None;
+}
+
+AbilityType getAbilityProp(tson::Object &obj, const std::string &name, const AbilityType defaultValue)
+{
+	const auto prop = obj.getProp(name);
+	if (prop == nullptr) {
+		return defaultValue;
+	}
+	if (prop->getType() == tson::Type::Enum) {
+		const auto enumValue = prop->getValue<tson::EnumValue>();
+		return parseAbilityType(enumValue.getValueName());
+	}
+	if (prop->getType() == tson::Type::String || prop->getType() == tson::Type::File) {
+		return parseAbilityType(getStringProp(obj, name, ""));
+	}
+	return defaultValue;
 }
 
 SDL_FRect parseCollisionBox(const std::string &value)
@@ -166,6 +214,8 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 	const auto poise = getFloatProp(enemyObj, "poise", 0.0f);
 	const auto recoveryTime = getFloatProp(enemyObj, "recoveryTime", 2.0f);
 	const auto isBoss = getBoolProp(enemyObj, "isBoss");
+	const auto bossIdProp = getIntProp(enemyObj, "bossId", -1);
+	const auto unlockAbility = getAbilityProp(enemyObj, "unlockAbility", AbilityType::None);
 	const auto chargeChance = getFloatProp(enemyObj, "chargeChance", 0.25f);
 	const auto chargeDuration = getFloatProp(enemyObj, "chargeDuration", 0.75f);
 	const auto chargePauseDuration = getFloatProp(enemyObj, "chargePauseDuration", 1.0f);
@@ -196,6 +246,8 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 	registry.registerComponent(entity, BlinkComponent{});
 
 	if (isBoss) {
+		const int bossId = bossIdProp == -1 ? static_cast<int>(enemyObj.getId()) : bossIdProp;
+		registry.registerComponent(entity, BossComponent{.bossId = bossId, .unlockAbility = unlockAbility});
 		registry.registerComponent(
 		    entity, ChargeComponent{.chargeTimer = Timer{std::chrono::duration<float>(chargeDuration)},
 		                            .chargePauseTimer = Timer{std::chrono::duration<float>(chargePauseDuration)},

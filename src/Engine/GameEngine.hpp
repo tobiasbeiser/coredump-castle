@@ -1,4 +1,5 @@
 #pragma once
+#include "Audio/AudioManager.hpp"
 #include "ECS/Registry.hpp"
 #include "ECS/Systems/SaveSystem.hpp"
 #include "Game/Factories/EffectFactory.hpp"
@@ -57,9 +58,10 @@ class GameEngine {
 	InputManager &getInputManager() { return inputManager; }
 	TextureManager &getTextureManager() { return textureManager; }
 	FontManager &getFontManager() { return fontManager; }
-	Ui::GuiManager& getGuiManager() const { return *guiManager; }
+	Ui::GuiManager &getGuiManager() const { return *guiManager; }
 	EffectFactory &getEffectFactory() { return effectFactory; };
 	ECS::Systems::SaveSystem &getSaveSystem() { return saveSystem; }
+	AudioManager &getAudioManager() { return audioManager; }
 
   private:
 	std::vector<std::unique_ptr<GameState>> states{};
@@ -79,5 +81,6 @@ class GameEngine {
 	};
 	std::vector<PendingAction> actionQueue;
 	EffectFactory effectFactory{registry, textureManager};
+	AudioManager audioManager{};
 };
 } // namespace GameEngine

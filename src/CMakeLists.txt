@@ -13,6 +13,7 @@ target_link_libraries(GameLib PUBLIC
         nlohmann_json::nlohmann_json
         imgui::imgui
         SDL3_ttf::SDL3_ttf
+        SDL3_mixer::SDL3_mixer
         vendor
 )
 
@@ -23,5 +24,4 @@ endif ()
 
 add_executable(${PROJECT_NAME} main.cpp)
 target_link_libraries(${PROJECT_NAME} PRIVATE GameLib)
-
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_EXCEPTIONS ON)

@@ -16,10 +16,10 @@
 #include <glm/vec2.hpp>
 
 LevelFactory::LevelFactory(GameEngine::ECS::Registry &registry, TextureManager &textureManager,
-                           InputManager &inputManager)
+                           InputManager &inputManager, AudioManager &audioManager)
     : registry(registry), textureManager(textureManager), inputManager(inputManager),
       tileFactory(registry, textureManager, animationFactory), enemyFactory(registry, animationFactory),
-      playerFactory(registry, textureManager, animationFactory)
+      playerFactory(registry, textureManager, animationFactory, audioManager)
 {
 	registerParsers();
 };

@@ -17,6 +17,7 @@
 #include "Engine/ECS/Systems/PhysicsSystem.hpp"
 #include "Engine/ECS/Systems/RenderSystem.hpp"
 #include "Engine/ECS/Systems/RespawnSystem.hpp"
+#include "Engine/ECS/Systems/SoundSystem.hpp"
 #include "Engine/ECS/Systems/StateSystem.hpp"
 #include "Engine/ECS/Systems/TooltipSystem.hpp"
 #include "Engine/ECS/Systems/VignetteSystem.hpp"
@@ -28,11 +29,14 @@ namespace GameEngine {
 void PlayState::init(GameEngine &game)
 {
 	const std::filesystem::path projectPath = "assets/tiled/CoredumpCastle.tiled-project";
-	auto factory = WorldFactory(game.getRegistry(), projectPath, game.getTextureManager(), game.getInputManager());
+	auto factory = WorldFactory(game.getRegistry(), projectPath, game.getTextureManager(), game.getInputManager(),
+	                            game.getAudioManager());
 
 	const std::filesystem::path worldPath = "assets/tiled/coredumpCastle.world";
 	factory.createWorld(worldPath);
 	game.getSaveSystem().loadSavedGame(game.getRegistry());
+
+	game.getAudioManager().playMusic("assets/audio/music/main_theme.ogg", 2500);
 }
 
 void PlayState::cleanup() {}
@@ -88,6 +92,7 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 	ECS::Systems::BlinkSystem::update(game.getRegistry());
 	ECS::Systems::EffectSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::VignetteSystem::update(game.getRegistry(), deltaTime);
+	ECS::Systems::SoundSystem::update(game.getRegistry(), game.getAudioManager(), deltaTime);
 
 	ECS::Systems::DeathSystem::update(game.getRegistry(), deltaTime);
 

@@ -142,6 +142,7 @@ void DebugSystem::drawUI()
 			auto playerView = sys.registry->view<PlayerTag, PositionComponent>();
 			const auto &pos = playerView.get<PositionComponent>(playerView.at(0)).position;
 			ImGui::Text("X: %.2f Y: %.2f", pos.x, pos.y);
+			// ImGui::Text("MaxEntity: %d", sys.registry->getMaxEntity());
 		}
 		if (sys.player.showHP) {
 			ImGui::SeparatorText("HP");

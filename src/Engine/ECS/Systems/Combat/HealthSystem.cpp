@@ -40,10 +40,7 @@ void applyDamage(HealthComponent &health, const int damage)
 void handleHazardRespawn(Registry &registry, const Entity entity, const HealthComponent &health,
                          const DamageSource damageSource)
 {
-	if (health.health > 0) {
-		return;
-	}
-	if (damageSource == DamageSource::Hazard) {
+	if (damageSource == DamageSource::Hazard && health.health > 0) {
 		if (registry.has<LastGroundedPositionComponent>(entity) && registry.has<PlayerTag>(entity)) {
 			registry.registerComponent<PendingRespawnComponent>(entity, {});
 		}
@@ -68,7 +65,7 @@ bool checkStagger(Registry &registry, const Entity entity, const int damage)
 	return false;
 }
 
-void handleStaggerEffect(Registry &registry, const Entity entity, HealthComponent &health, const bool isStaggered)
+void handleFlinchEffect(Registry &registry, const Entity entity, HealthComponent &health, const bool isStaggered)
 {
 	health.invulnerabilityTimer.reset();
 
@@ -121,7 +118,7 @@ void update(Registry &registry, const float deltaTime)
 		handleHazardRespawn(registry, entity, health, damageSource);
 
 		const bool isStaggered = checkStagger(registry, entity, damage);
-		handleStaggerEffect(registry, entity, health, isStaggered);
+		handleFlinchEffect(registry, entity, health, isStaggered);
 		applyPostDamageEffects(registry, entity);
 
 		registry.remove<PendingDamageComponent>(entity);

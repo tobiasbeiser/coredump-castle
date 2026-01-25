@@ -330,35 +330,35 @@
         {
          "animation":[
                 {
-                 "duration":75,
+                 "duration":150,
                  "tileid":64
                 }, 
                 {
-                 "duration":75,
+                 "duration":150,
                  "tileid":65
                 }, 
                 {
-                 "duration":75,
+                 "duration":150,
                  "tileid":66
                 }, 
                 {
-                 "duration":75,
+                 "duration":150,
                  "tileid":67
                 }, 
                 {
-                 "duration":75,
+                 "duration":150,
                  "tileid":68
                 }, 
                 {
-                 "duration":75,
+                 "duration":150,
                  "tileid":69
                 }, 
                 {
-                 "duration":75,
+                 "duration":150,
                  "tileid":70
                 }, 
                 {
-                 "duration":75,
+                 "duration":150,
                  "tileid":71
                 }],
          "id":64,

@@ -1,4 +1,5 @@
 #pragma once
+#include "Engine/Audio/AudioManager.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/Graphics/TextureManager.hpp"
 #include "Engine/Input/InputManager.hpp"
@@ -9,7 +10,7 @@
 class WorldFactory {
   public:
 	WorldFactory(GameEngine::ECS::Registry &registry, const std::filesystem::path &projectPath,
-	             TextureManager &textureManager, InputManager &inputManager);
+	             TextureManager &textureManager, InputManager &inputManager, AudioManager &audioManager);
 
 	WorldFactory(const WorldFactory &) = delete;
 	WorldFactory &operator=(const WorldFactory &) = delete;
@@ -25,4 +26,5 @@ class WorldFactory {
 	tson::Tileson tileson{&project};
 	TextureManager &textureManager;
 	InputManager &inputManager;
+	AudioManager &audioManager;
 };

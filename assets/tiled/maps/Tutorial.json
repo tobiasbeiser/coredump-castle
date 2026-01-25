@@ -252,6 +252,26 @@
                          "name":"area",
                          "type":"object",
                          "value":23
+                        }, 
+                        {
+                         "name":"hurtBox",
+                         "type":"string",
+                         "value":"130,90,35,70"
+                        }, 
+                        {
+                         "name":"maxHealth",
+                         "type":"int",
+                         "value":10
+                        }, 
+                        {
+                         "name":"touchDamageBox",
+                         "type":"string",
+                         "value":"130,130,35,40"
+                        }, 
+                        {
+                         "name":"unlockAbility",
+                         "type":"string",
+                         "value":"double_jump"
                         }],
                  "template":"..\/objects\/demonBoss.tj",
                  "x":975.257206019896,
