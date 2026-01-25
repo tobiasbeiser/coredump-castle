@@ -175,9 +175,13 @@ TEST_F(ChaseSystemTest, AttacksAfterReactionDelay)
 
 TEST_F(ChaseSystemTest, StopsMovementAndInputWhileAttacking)
 {
-	auto view = registry.view<InputComponent, PositionComponent>();
+	auto view = registry.view<InputComponent, PositionComponent, AttackComponent>();
 	auto &enemyInput = view.get<InputComponent>(enemy);
 	auto &playerPosition = view.get<PositionComponent>(player);
+	auto &attack = view.get<AttackComponent>(enemy);
+
+	attack.attackTimer = Timer{std::chrono::duration<float>(1.0f)};
+	attack.attackTimer.step(std::chrono::duration<float>(0.1f), false);
 
 	playerPosition.position = {120.0f, 0.0f};
 

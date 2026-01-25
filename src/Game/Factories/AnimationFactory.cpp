@@ -59,6 +59,7 @@ void AnimationFactory::loadAnimation(tson::Tile *const &tile, const GameEngine::
 	}
 
 	std::vector<AnimationFrame> frames;
+	std::vector<bool> damageFrames;
 	std::chrono::duration<float> duration = std::chrono::duration<float>::zero();
 	for (const auto frame : animation.getFrames()) {
 		duration += std::chrono::duration<float, std::milli>(frame.getDuration());
@@ -89,12 +90,14 @@ void AnimationFactory::loadAnimation(tson::Tile *const &tile, const GameEngine::
 		animFrame.tileMapPosition = tileMapPosition;
 		animFrame.tileSize = imageSize;
 
+		bool isDamageActive = false;
 		auto *tileData = tileset->getTile(frame.getTileId());
 		if (tileData) {
 			if (const auto prop = tileData->getProp("damageActive")) {
-				animFrame.damageActive = prop->getValue<bool>();
+				isDamageActive = prop->getValue<bool>();
 			}
 		}
+		damageFrames.push_back(isDamageActive);
 
 		frames.push_back(animFrame);
 	}
@@ -109,9 +112,9 @@ void AnimationFactory::loadAnimation(tson::Tile *const &tile, const GameEngine::
 		const tson::EnumValue &enumValue = prop->getValue<tson::EnumValue>();
 		const AnimationType state = getAnimationType(enumValue.getValueName());
 
-		animComp->get().addAnimation(state, frames, duration);
+		animComp->get().addAnimation(state, frames, damageFrames, duration);
 	} else {
-		animComp->get().addAnimation(AnimationType::None, frames, duration);
+		animComp->get().addAnimation(AnimationType::None, frames, damageFrames, duration);
 	}
 
 	if (!registry.has<SpriteComponent>(entity)) {

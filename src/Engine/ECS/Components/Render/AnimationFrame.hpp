@@ -6,5 +6,4 @@ struct AnimationFrame {
 	SDL_Texture *texture{};
 	glm::ivec2 tileSize{};
 	glm::ivec2 tileMapPosition{};
-	bool damageActive = false;
 };

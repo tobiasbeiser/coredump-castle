@@ -10,7 +10,6 @@
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/PendingDamageComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
-#include "Engine/ECS/Components/Render/AnimationComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
@@ -95,26 +94,7 @@ void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
 		const auto attackerScale = attackerTransform ? &attackerTransform->get().scale : nullptr;
 
 		const bool isAttackingState = AttackSystem::isAttacking(attackComponent);
-		bool isWeaponActive = isAttackingState;
-		bool usingFrameData = false;
-
-		if (isAttackingState) {
-			if (auto anim = registry.tryGet<AnimationComponent>(attacker)) {
-				const auto currentAnim = anim->get().getAnimation();
-				if (anim->get().usesDamageFrames(currentAnim)) {
-					isWeaponActive = anim->get().currentFrame(currentAnim).damageActive;
-					usingFrameData = true;
-				}
-			}
-		}
-
-		if (!usingFrameData && isWeaponActive && attackComponent.activeWindUpLimit > 0.0f) {
-			const float progress =
-			    attackComponent.attackTimer.getTime().count() / attackComponent.attackTimer.getLength().count();
-			if (progress <= attackComponent.activeWindUpLimit) {
-				isWeaponActive = false;
-			}
-		}
+		bool isWeaponActive = isAttackingState && attackComponent.isDamageActive;
 
 		SDL_FRect attackerWeaponRect = {0, 0, 0, 0};
 		if (isWeaponActive) {

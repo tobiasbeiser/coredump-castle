@@ -269,6 +269,12 @@ void DebugSystem::drawHitBoxes() const
 		constexpr SDL_Color hitboxColor = {0, 255, 0, 255};
 		addRect(hitBoxRect, hitboxColor);
 
+		const SDL_FRect bodyHitBoxRect = GameEngine::Utils::HitBoxUtils::getHitBox(position, hitbox.bodyHitBox, scale);
+		if (bodyHitBoxRect.x != hurtbox.hurtBox.x) {
+			constexpr SDL_Color bodyHitBoxColor = {255, 0, 0, 255};
+			addRect(bodyHitBoxRect, bodyHitBoxColor);
+		}
+
 		SDL_FRect hurtBoxRect = GameEngine::Utils::HitBoxUtils::getHitBox(position, hurtbox.hurtBox, scale);
 		constexpr SDL_Color hurtBoxColor = {255, 0, 255, 255};
 		addRect(hurtBoxRect, hurtBoxColor);

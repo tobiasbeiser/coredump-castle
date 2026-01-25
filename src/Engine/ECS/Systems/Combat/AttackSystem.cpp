@@ -1,6 +1,7 @@
 #include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
+#include "Engine/ECS/Components/Render/AnimationComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
 #include "Game/Factories/EffectFactory.hpp"
@@ -47,6 +48,27 @@ void endAttack(AttackComponent &attack)
 	attack.attackCoolDownTimer.reset();
 }
 
+void updateDamageState(Registry &registry, Entity entity, AttackComponent &attack)
+{
+	bool usingFrameData = false;
+	if (const auto anim = registry.tryGet<AnimationComponent>(entity)) {
+		const auto currentAnim = anim->get().getAnimation();
+		if (anim->get().usesDamageFrames(currentAnim)) {
+			attack.isDamageActive = anim->get().isDamageActive(currentAnim);
+			usingFrameData = true;
+		}
+	}
+
+	if (!usingFrameData) {
+		if (attack.activeWindUpLimit > 0.0f) {
+			const float progress = attack.attackTimer.getTime().count() / attack.attackTimer.getLength().count();
+			attack.isDamageActive = progress > attack.activeWindUpLimit;
+		} else {
+			attack.isDamageActive = true;
+		}
+	}
+}
+
 }; // namespace
 
 void update(Registry &registry, const float deltaTime, const AttackCallback &onAttack)
@@ -63,6 +85,10 @@ void update(Registry &registry, const float deltaTime, const AttackCallback &onA
 			onAttack(entity);
 		} else if (isAttacking(attack)) {
 			processAttack(attack, deltaTime);
+		}
+
+		if (isAttacking(attack)) {
+			updateDamageState(registry, entity, attack);
 
 			if (attack.attackTimer.isTimeout()) {
 				endAttack(attack);
