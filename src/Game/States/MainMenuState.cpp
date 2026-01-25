@@ -42,6 +42,12 @@ void MainMenuState::update(GameEngine &game, const float deltaTime) {}
 void MainMenuState::render(GameEngine &game, const float alpha)
 {
 	PROFILE_SCOPE("MainMenuState::render");
+
+	if (SDL_Texture *backgroundTexture = &game.getTextureManager().getTexture("assets/ui/main_menu_background.png")) {
+		SDL_SetTextureColorMod(backgroundTexture, 170, 170, 170);
+		SDL_SetTextureAlphaMod(backgroundTexture, 255);
+		renderer.renderTexture(*backgroundTexture, std::nullopt, std::nullopt, false);
+	}
 	guiManager.render();
 }
 
