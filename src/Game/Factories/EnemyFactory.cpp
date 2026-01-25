@@ -26,10 +26,6 @@
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/View.hpp"
-#include "Game/Factories/AnimationFactory.hpp"
-#include "Game/Factories/ProjectileFactory.hpp"
-#include <algorithm>
-#include <cctype>
 #include <tileson.hpp>
 
 namespace {
@@ -243,8 +239,6 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 			projectileTilesetPath = (basePath / tilesetPathOpt.value()).string();
 		}
 
-		const auto &projectileData = ProjectileFactory::getCachedProjectileData(projectileTilesetPath);
-
 		registry.registerComponent(entity, ChaseComponent{
 		                                       .chaseSpeed = chaseSpeed,
 		                                       .originalPatrolSpeed = maxSpeedX,
@@ -256,20 +250,11 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 		                                       .projectileSpeed = projectileSpeed,
 		                                       .projectileOffset = projectileOffset,
 		                                   });
-		glm::vec2 projSize = {projectileData.hitbox.w, projectileData.hitbox.h};
-		if (const auto sizeStr = getStringProp(enemyObj, "projectileSize", "")) {
-			const auto parsed = parseCollisionBox(sizeStr.value());
-			projSize = {parsed.w, parsed.h};
-		}
-
 		registry.registerComponent(entity, ProjectileComponent{
 		                                       .maxRange = 2000.0f,
 		                                       .speed = projectileSpeed,
 		                                       .spawnPosition = {0.f, 0.f},
 		                                       .projectileTilesetPath = projectileTilesetPath,
-		                                       .projectileSize = projSize,
-		                                       .spriteSize = projectileData.spriteSize,
-		                                       .hitboxOffset = {projectileData.hitbox.x, projectileData.hitbox.y},
 		                                   });
 	}
 

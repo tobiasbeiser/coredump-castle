@@ -21,6 +21,7 @@
 #include "Engine/ECS/Systems/CollisionSystem.hpp"
 #include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
 #include "Engine/ECS/View.hpp"
+#include "Game/Factories/ProjectileFactory.hpp"
 
 #include "Engine/Utils/DetectionRangeUtils.hpp"
 #include "Engine/Utils/HitBoxUtils.hpp"
@@ -230,8 +231,12 @@ void handleRangeAttack(const EnemyContext &enemy, const PlayerContext &player, R
 		glm::vec2 projectileSize = {0.f, 0.f};
 		glm::vec2 hitboxOffset = {0.0f, 0.0f};
 		if (const auto pc = registry.tryGet<ProjectileComponent>(enemy.entity)) {
-			projectileSize = pc->get().projectileSize;
-			hitboxOffset = pc->get().hitboxOffset;
+			const auto &tilesetPath = pc->get().projectileTilesetPath;
+			if (!tilesetPath.empty()) {
+				const auto &projectileData = ProjectileFactory::getCachedProjectileData(tilesetPath);
+				projectileSize = {projectileData.hitbox.w, projectileData.hitbox.h};
+				hitboxOffset = {projectileData.hitbox.x, projectileData.hitbox.y};
+			}
 		}
 
 		if (!checkLineOfSight(enemy, player, ranged, projectileSize, hitboxOffset)) {

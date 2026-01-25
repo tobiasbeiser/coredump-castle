@@ -210,14 +210,13 @@ void DebugSystem::drawCollisionBoxes() const
 
 void DebugSystem::drawProjectileHitBox() const
 {
-	for (auto view = registry->view<ProjectileComponent, HurtBoxComponent, PositionComponent>();
+	for (auto view = registry->view<ProjectileComponent, HitBoxComponent, PositionComponent>();
 	     const auto entity : view) {
 		const auto &[position, previousPosition] = view.get<PositionComponent>(entity);
-		const auto &[hurtBox] = view.get<HurtBoxComponent>(entity);
-
+		const auto &hitBox = view.get<HitBoxComponent>(entity).bodyHitBox;
 		const auto transform = registry->tryGet<TransformComponent>(entity);
 		const auto scale = transform ? &transform->get().scale : nullptr;
-		SDL_FRect hurtBoxRect = GameEngine::Utils::HitBoxUtils::getHitBox(position, hurtBox, scale);
+		SDL_FRect hurtBoxRect = GameEngine::Utils::HitBoxUtils::getHitBox(position, hitBox, scale);
 		constexpr SDL_Color projectileHurtBoxColor = {0, 255, 255, 255};
 		addRect(hurtBoxRect, projectileHurtBoxColor);
 	}

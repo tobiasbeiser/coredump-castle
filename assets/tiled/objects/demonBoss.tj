@@ -26,9 +26,24 @@
              "value":true
             }, 
             {
+             "name":"chargeDuration",
+             "type":"float",
+             "value":0.75
+            }, 
+            {
+             "name":"chargePauseDuration",
+             "type":"float",
+             "value":0.1
+            }, 
+            {
+             "name":"chargeSpeedMultiplier",
+             "type":"float",
+             "value":2
+            }, 
+            {
              "name":"chaseSpeed",
              "type":"float",
-             "value":70
+             "value":60
             }, 
             {
              "name":"collisionBox",

@@ -5,6 +5,7 @@
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/RangedAttackComponent.hpp"
+#include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Render/AnimationComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
@@ -68,12 +69,13 @@ void updateProjectileMovement(Registry &registry, const float deltaTime)
 
 void resolveProjectileWallCollisions(Registry &registry)
 {
-	auto projectileView = registry.view<ProjectileTag, PositionComponent, ProjectileComponent>();
+	auto projectileView = registry.view<ProjectileTag, PositionComponent, CollisionComponent>();
 	for (const auto entity : projectileView) {
 		const auto &pos = projectileView.get<PositionComponent>(entity);
-		const auto &projectile = projectileView.get<ProjectileComponent>(entity);
+		const auto &collision = projectileView.get<CollisionComponent>(entity);
+		const glm::vec2 projectileSize = {collision.collisionBox.w, collision.collisionBox.h};
 
-		if (CollisionSystem::isPathObstructed(pos.previousPosition, pos.position, projectile.projectileSize)) {
+		if (CollisionSystem::isPathObstructed(pos.previousPosition, pos.position, projectileSize)) {
 			registry.deleteEntity(entity);
 		}
 	}
@@ -145,8 +147,16 @@ void handleEnemySpawning(Registry &registry, float deltaTime, const ProjectileFa
 			const glm::vec2 spawnPosition = calculateProjectileSpawnPosition(
 			    position.position, enemyHurtBox.hurtBox, enemyScale, rangedAttack.projectileOffset, facingLeft);
 
-			const glm::vec2 spawnCenter =
-			    spawnPosition + projectileSettings.hitboxOffset + (projectileSettings.projectileSize * 0.5f);
+			glm::vec2 hitboxOffset = {0.0f, 0.0f};
+			glm::vec2 projectileSize = {0.0f, 0.0f};
+			if (!projectileSettings.projectileTilesetPath.empty()) {
+				const auto &projectileData =
+				    ProjectileFactory::getCachedProjectileData(projectileSettings.projectileTilesetPath);
+				hitboxOffset = {projectileData.hitbox.x, projectileData.hitbox.y};
+				projectileSize = {projectileData.hitbox.w, projectileData.hitbox.h};
+			}
+
+			const glm::vec2 spawnCenter = spawnPosition + hitboxOffset + (projectileSize * 0.5f);
 
 			const glm::vec2 direction = calculateProjectileDirection(spawnCenter, rangedAttack.targetSnapshot);
 

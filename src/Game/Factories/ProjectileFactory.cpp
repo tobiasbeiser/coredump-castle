@@ -4,10 +4,12 @@
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
+#include "Engine/ECS/Components/Render/SpriteComponent.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Components/Tags/ProjectileTag.hpp"
 #include "Engine/ECS/Registry.hpp"
@@ -40,20 +42,23 @@ void ProjectileFactory::createProjectile(const glm::vec2 &startPosition, const g
 	reg.registerComponent(entity, RenderComponent{.layer = 15, .flipX = false});
 
 	const ProjectileData &data = getCachedProjectileData(tilesetPath);
+	if (!reg.has<SpriteComponent>(entity) && !data.texturePath.empty()) {
+		auto &texture = textureManager.get().getTexture(data.texturePath);
+		reg.registerComponent(
+		    entity, SpriteComponent{.texture = &texture, .tileSize = data.tileSize, .tileMapPosition = {0, 0}});
+	}
 
 	SDL_FRect finalHitbox = data.hitbox;
 	finalHitbox.x = data.hitbox.x;
 	finalHitbox.y = data.hitbox.y;
 
 	reg.registerComponent(entity, HurtBoxComponent{.hurtBox = finalHitbox});
+	reg.registerComponent(entity, HitBoxComponent{.bodyHitBox = finalHitbox, .weaponHitBox = {0.0f, 0.0f, 0.0f, 0.0f}});
 	reg.registerComponent(entity, CollisionComponent{.collisionBox = finalHitbox});
 	reg.registerComponent(entity, ProjectileComponent{.maxRange = range,
 	                                                  .speed = speed,
 	                                                  .spawnPosition = startPosition,
-	                                                  .projectileTilesetPath = tilesetPath,
-	                                                  .projectileSize = {finalHitbox.w, finalHitbox.h},
-	                                                  .spriteSize = data.spriteSize,
-	                                                  .hitboxOffset = {data.hitbox.x, data.hitbox.y}});
+	                                                  .projectileTilesetPath = tilesetPath});
 }
 
 const ProjectileData &ProjectileFactory::getCachedProjectileData(const std::string &path)
@@ -72,7 +77,11 @@ const ProjectileData &ProjectileFactory::getCachedProjectileData(const std::stri
 	if (json.parse(path)) {
 		tileset.parse(json, nullptr);
 
-		data.spriteSize = {static_cast<float>(tileset.getTileSize().x), static_cast<float>(tileset.getTileSize().y)};
+		data.tileSize = {tileset.getTileSize().x, tileset.getTileSize().y};
+		if (!tileset.getImage().empty()) {
+			const std::string tilesetDir = path.substr(0, path.find_last_of("/\\") + 1);
+			data.texturePath = tilesetDir + tileset.getImage().string();
+		}
 
 		if (!tileset.getTiles().empty()) {
 			auto &firstTile = tileset.getTiles()[0];
