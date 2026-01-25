@@ -8,6 +8,7 @@
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/RangedAttackComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Enemy/ChargeComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/ChaseComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
@@ -19,6 +20,7 @@
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Entity.hpp"
 #include "Engine/ECS/Registry.hpp"
+#include "Engine/ECS/Systems/CollisionSystem.hpp"
 #include "Engine/ECS/View.hpp"
 
 #include <gtest/gtest.h>
@@ -184,9 +186,37 @@ TEST_F(ChaseSystemTest, StopsMovementAndInputWhileAttacking)
 	// trap value
 	enemyInput.horizontalDirection = 1.0f;
 
+	auto &attack = registry.view<AttackComponent>().get<AttackComponent>(enemy);
+	attack.attackTimer = Timer{std::chrono::duration<float>(1.0f)};
+	attack.attackTimer.step(std::chrono::duration<float>(0.1f), false);
+
 	GameEngine::ECS::Systems::ChaseSystem::update(registry, 0.1f);
 
 	ASSERT_FLOAT_EQ(enemyInput.horizontalDirection, 0.0f);
+	ASSERT_FALSE(enemyInput.attackPressed);
+}
+
+TEST_F(ChaseSystemTest, ChargeStartsWhenChanceAndRangeMatch)
+{
+	using namespace std::chrono_literals;
+	registry.registerComponent<ChargeComponent>(enemy, ChargeComponent{});
+	auto view = registry.view<InputComponent, MovementComponent, ChaseComponent, PositionComponent>();
+	auto &enemyInput = view.get<InputComponent>(enemy);
+	auto &enemyMovement = view.get<MovementComponent>(enemy);
+	auto &enemyChase = view.get<ChaseComponent>(enemy);
+	auto &playerPosition = view.get<PositionComponent>(player);
+
+	playerPosition.position = {130.0f, 0.0f};
+	enemyChase.reactionDelay.timeoutNow();
+	auto &charge = registry.view<ChargeComponent>().get<ChargeComponent>(enemy);
+	charge.chargeChance = 1.0f;
+	charge.chargeCooldown.timeoutNow();
+
+	GameEngine::ECS::Systems::ChaseSystem::update(registry, 0.1f);
+
+	ASSERT_TRUE(charge.chargeTimer.isRunning());
+	ASSERT_FLOAT_EQ(enemyInput.horizontalDirection, 1.0f);
+	ASSERT_FLOAT_EQ(enemyMovement.maxSpeedX, enemyChase.chaseSpeed * charge.chargeSpeedMultiplier);
 	ASSERT_FALSE(enemyInput.attackPressed);
 }
 
@@ -268,6 +298,7 @@ TEST_F(ChaseSystemTest, RangedEnemyDoesNotAttackWhenLineOfSightBlocked)
 	const auto blocker = registry.create();
 	registry.registerComponent<PositionComponent>(blocker, {{120.0f, 0.0f}});
 	registry.registerComponent<CollisionComponent>(blocker, {{0.0f, -5.0f, 10.0f, 20.0f}});
+	GameEngine::ECS::Systems::CollisionSystem::buildStaticColliderGrid(registry);
 
 	auto &playerPosition = playerView.get<PositionComponent>(player);
 	playerPosition.position = {150.0f, 0.0f};

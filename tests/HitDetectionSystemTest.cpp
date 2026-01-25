@@ -153,6 +153,26 @@ TEST_F(HitDetectionTest, BodyHitBoxShouldAlwaysDealDamage)
 	EXPECT_FALSE(registry.has<PendingDamageComponent>(enemy));
 }
 
+TEST_F(HitDetectionTest, PlayerAboveBodyHitBoxShouldNotTakeDamage)
+{
+	auto view = registry.view<PositionComponent>();
+	auto &enemyPos = view.get<PositionComponent>(enemy);
+	registry.registerComponent<HitBoxComponent>(
+	    enemy, {.bodyHitBox = {0.f, 0.f, 20.f, 20.f}, .weaponHitBox = {0.f, 0.f, 0.f, 0.f}});
+	enemyPos.position = {0.f, 0.f};
+
+	auto &playerPos = view.get<PositionComponent>(attacker);
+	playerPos.position = {0.f, 50.f};
+
+	bool callbackCalled = false;
+	auto mockCallback = [&](const GameEngine::ECS::Entity, const GameEngine::ECS::Entity) { callbackCalled = true; };
+
+	GameEngine::ECS::Systems::HitDetectionSystem::update(registry, mockCallback);
+
+	EXPECT_FALSE(callbackCalled);
+	EXPECT_FALSE(registry.has<PendingDamageComponent>(attacker));
+}
+
 TEST_F(HitDetectionTest, VictimIsDeadShouldNotApplyDamage)
 {
 	auto view = registry.view<PositionComponent, StateComponent>();

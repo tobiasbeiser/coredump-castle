@@ -59,8 +59,11 @@ TEST_F(HitDetectionMultiTargetTest, AttackerShouldHitMultipleEnemies)
 {
 	auto view = registry.view<AttackComponent>();
 	auto &attack = view.get<AttackComponent>(attacker);
+	attack.attackTimer = Timer{1s};
+	attack.attackCoolDownTimer = Timer{1s};
 	attack.attackTimer.reset();
 	attack.attackTimer.step(std::chrono::duration<float>(0.1f), false);
+	attack.isDamageActive = true;
 
 	bool callbackCalled = false;
 	GameEngine::ECS::Entity calledEntity{};
