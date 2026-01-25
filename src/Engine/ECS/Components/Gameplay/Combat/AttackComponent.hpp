@@ -4,7 +4,6 @@
 struct AttackComponent {
 	Timer attackTimer{std::chrono::duration<float>::zero()};
 	Timer attackCoolDownTimer{std::chrono::duration<float>::zero()};
-	float currentWindUpLimit = 0.0f;
-	float minWindUpLimit = 0.0f;
-	float maxWindUpLimit = 0.0f;
+	float windUpLimit = 0.0f;       // Configured max limit
+	float activeWindUpLimit = 0.0f; // Randomized limit for current attack
 };

@@ -18,6 +18,7 @@
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/Systems/CollisionSystem.hpp"
 #include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
+#include "Engine/ECS/Systems/PhysicsSystem.hpp"
 #include "Engine/ECS/View.hpp"
 
 #include "Engine/Utils/DetectionRangeUtils.hpp"
@@ -76,8 +77,8 @@ std::optional<PlayerContext> getPlayerContext(Registry &registry)
 }
 } // namespace
 
-bool checkLineOfSight(const EnemyContext &enemy, const PlayerContext &player, const Utils::SpatialHash &grid,
-                      RangedAttackComponent &ranged, const glm::vec2 &projectileSize, const glm::vec2 &hitboxOffset)
+bool checkLineOfSight(const EnemyContext &enemy, const PlayerContext &player, RangedAttackComponent &ranged,
+                      const glm::vec2 &projectileSize, const glm::vec2 &hitboxOffset)
 {
 	const bool facingLeft = (player.center.x - enemy.center.x) < 0.0f;
 
@@ -94,7 +95,7 @@ bool checkLineOfSight(const EnemyContext &enemy, const PlayerContext &player, co
 
 	for (const std::vector targetPoints = {player.center, playerTop}; const auto &targetPoint : targetPoints) {
 
-		if (const bool obstructed = CollisionSystem::isPathObstructed(rayStart, targetPoint, grid, projectileSize);
+		if (const bool obstructed = CollisionSystem::isPathObstructed(rayStart, targetPoint, projectileSize);
 		    !obstructed) {
 			ranged.targetSnapshot = targetPoint;
 			return true;
@@ -103,8 +104,8 @@ bool checkLineOfSight(const EnemyContext &enemy, const PlayerContext &player, co
 	return false;
 }
 
-void handleRangeAttack(const EnemyContext &enemy, const PlayerContext &player, const Utils::SpatialHash &grid,
-                       Registry &registry, RangedAttackComponent &ranged)
+void handleRangeAttack(const EnemyContext &enemy, const PlayerContext &player, Registry &registry,
+                       RangedAttackComponent &ranged)
 {
 
 	if (player.state->state == State::Dead) {
@@ -133,7 +134,7 @@ void handleRangeAttack(const EnemyContext &enemy, const PlayerContext &player, c
 		progress = enemy.attack->attackTimer.getTime().count() / enemy.attack->attackTimer.getLength().count();
 	}
 
-	if (progress <= enemy.attack->currentWindUpLimit) {
+	if (progress <= enemy.attack->activeWindUpLimit) {
 		glm::vec2 projectileSize = {0.f, 0.f};
 		glm::vec2 hitboxOffset = {0.0f, 0.0f};
 		if (const auto pc = registry.tryGet<ProjectileComponent>(enemy.entity)) {
@@ -141,7 +142,7 @@ void handleRangeAttack(const EnemyContext &enemy, const PlayerContext &player, c
 			hitboxOffset = pc->get().hitboxOffset;
 		}
 
-		if (!checkLineOfSight(enemy, player, grid, ranged, projectileSize, hitboxOffset)) {
+		if (!checkLineOfSight(enemy, player, ranged, projectileSize, hitboxOffset)) {
 			resetChaseState(enemy);
 			enemy.attack->attackTimer.reset();
 			return;
@@ -154,8 +155,8 @@ void handleRangeAttack(const EnemyContext &enemy, const PlayerContext &player, c
 	enemy.render->setFacingLeft(directionToPlayer < 0);
 	if (enemy.chase->reactionDelay.isTimeout()) {
 		enemy.input->attackPressed = true;
-		enemy.attack->currentWindUpLimit =
-		    Utils::Random::getFloat(enemy.attack->minWindUpLimit, enemy.attack->maxWindUpLimit);
+		enemy.attack->activeWindUpLimit =
+		    Utils::Random::getFloat(enemy.attack->windUpLimit * 0.5f, enemy.attack->windUpLimit);
 	}
 }
 
@@ -181,7 +182,7 @@ void handleMeleeAttack(const EnemyContext &enemy, const PlayerContext &player)
 			progress = enemy.attack->attackTimer.getTime().count() / enemy.attack->attackTimer.getLength().count();
 		}
 
-		if (progress <= enemy.attack->currentWindUpLimit) {
+		if (progress <= enemy.attack->activeWindUpLimit) {
 			const float directionToPlayer = player.center.x > enemy.center.x ? 1.0f : -1.0f;
 			const bool facingLeft = directionToPlayer < 0;
 
@@ -202,8 +203,8 @@ void handleMeleeAttack(const EnemyContext &enemy, const PlayerContext &player)
 		enemy.input->horizontalDirection = 0.0f;
 		if (enemy.chase->reactionDelay.isTimeout()) {
 			enemy.input->attackPressed = true;
-			enemy.attack->currentWindUpLimit =
-			    Utils::Random::getFloat(enemy.attack->minWindUpLimit, enemy.attack->maxWindUpLimit);
+			enemy.attack->activeWindUpLimit =
+			    Utils::Random::getFloat(enemy.attack->windUpLimit * 0.5f, enemy.attack->windUpLimit);
 		}
 		if (!enemy.input->attackPressed) {
 			const bool facingLeft = directionToPlayer < 0;
@@ -229,8 +230,6 @@ void update(Registry &registry, const float deltaTime)
 		return;
 	}
 	const PlayerContext &playerCtx = playerCtxOpt.value();
-
-	const auto staticColliderGrid = CollisionSystem::buildStaticColliderGrid(registry);
 
 	auto enemyView = registry.view<EnemyTag, InputComponent, PatrolComponent, ChaseComponent, PositionComponent,
 	                               HitBoxComponent, HurtBoxComponent, CollisionComponent, MovementComponent,
@@ -263,7 +262,7 @@ void update(Registry &registry, const float deltaTime)
 		chase.reactionDelay.step(std::chrono::duration<float>(deltaTime), false);
 
 		if (auto ranged = registry.tryGet<RangedAttackComponent>(entity)) {
-			handleRangeAttack(enemyCtx, playerCtx, staticColliderGrid, registry, ranged->get());
+			handleRangeAttack(enemyCtx, playerCtx, registry, ranged->get());
 		} else {
 			handleMeleeAttack(enemyCtx, playerCtx);
 		}

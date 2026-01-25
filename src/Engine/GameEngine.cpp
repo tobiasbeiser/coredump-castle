@@ -7,6 +7,8 @@
 
 #include <imgui_impl_sdl3.h>
 
+#include "Graphics/Gui/CoredumpContext.hpp"
+
 namespace GameEngine {
 
 GameEngine::GameEngine(const std::string &title, const Resolution resolution)
@@ -23,8 +25,11 @@ GameEngine::~GameEngine()
 
 bool GameEngine::init()
 {
-	// game data
-	states.emplace_back(std::make_unique<MainMenuState>(inputManager, textureManager, fontManager, renderer));
+	std::unique_ptr<Ui::UIContext> context = CoredumpContext::getContext(*this);
+
+	guiManager = std::make_unique<Ui::GuiManager>(std::move(context));
+	states.emplace_back(
+	    std::make_unique<MainMenuState>(getInputManager(), getTextureManager(), getGuiManager(), getRenderer()));
 	running = true;
 
 	states.back()->init(*this);
@@ -51,6 +56,7 @@ void GameEngine::popState()
 
 void GameEngine::handleEvents()
 {
+	PROFILE_SCOPE("GameEngine::handleEvents");
 	SDL_Event event{0};
 	while (SDL_PollEvent(&event)) {
 		ImGui_ImplSDL3_ProcessEvent(&event);
@@ -81,6 +87,7 @@ void GameEngine::handleEvents()
 
 void GameEngine::update(const float deltaTime)
 {
+	PROFILE_SCOPE("GameEngine::Update");
 	DebugSystem::clear();
 	for (const auto &state : states) {
 		state->update(*this, deltaTime);
@@ -125,6 +132,7 @@ void GameEngine::update(const float deltaTime)
 
 void GameEngine::render(const float alpha)
 {
+	PROFILE_SCOPE("GameEngine::Render");
 	constexpr int red = 12, green = 19, blue = 25;
 	constexpr int opacity = 255;
 	renderer.startFrame(red, green, blue, opacity);

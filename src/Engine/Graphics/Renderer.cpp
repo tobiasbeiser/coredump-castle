@@ -115,17 +115,25 @@ void Renderer::startFrame(const int red, const int green, const int blue, const 
 
 void Renderer::endFrame() const
 {
-	DebugSystem::renderGameOverlay(renderer.get(), viewport);
-	DebugSystem::drawUI();
+	{
+		DebugSystem::renderGameOverlay(renderer.get(), viewport);
+		DebugSystem::updateSettings(renderer.get());
+		DebugSystem::drawUI();
+	}
 
 	SDL_SetRenderLogicalPresentation(renderer.get(), 0, 0, SDL_LOGICAL_PRESENTATION_DISABLED);
 
-	ImGui::Render();
-	ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer.get());
-
+	{
+		PROFILE_SCOPE("Renderer::ImGui");
+		ImGui::Render();
+		ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer.get());
+	}
 	SDL_SetRenderLogicalPresentation(renderer.get(), logicalResolution.width, logicalResolution.height,
 	                                 SDL_LOGICAL_PRESENTATION_LETTERBOX);
-	SDL_RenderPresent(renderer.get());
+	{
+		PROFILE_SCOPE("Renderer::Present");
+		SDL_RenderPresent(renderer.get());
+	}
 }
 
 void Renderer::centerCameraOn(const glm::vec2 &position, const glm::vec2 &levelPos, const glm::vec2 &levelSize)
@@ -194,6 +202,71 @@ void Renderer::renderCircularFade(float progress, SDL_FColor color)
 		indices.push_back(i + 1);
 	}
 
+	SDL_RenderGeometry(renderer.get(), nullptr, vertices.data(), vertices.size(), indices.data(), indices.size());
+}
+void Renderer::renderVignette(const float intensity, const SDL_FColor &color,
+                              const std::optional<glm::vec2> &focalPoint) const
+{
+	if (intensity <= 0.0f)
+		return;
+
+	const SDL_FColor innerColor = {color.r, color.g, color.b, 0.0f};
+	const SDL_FColor outerColor = {color.r, color.g, color.b, std::clamp(intensity, 0.0f, 1.0f)};
+
+	const float w = static_cast<float>(logicalResolution.width);
+	const float h = static_cast<float>(logicalResolution.height);
+
+	// 1. Determine Center (Default to screen center if no focalPoint provided)
+	const float centerX = focalPoint ? focalPoint->x : w / 2.0f;
+	const float centerY = focalPoint ? focalPoint->y : h / 2.0f;
+
+	// 2. Dimensions
+	// Inner Radius: The "clear hole" size (e.g., 40% of screen height)
+	const float innerRadius = h * 0.4f;
+
+	// Outer Radius: Must extend from the focal point to the FARTHEST corner
+	// otherwise you will see the edge of the mesh when the player moves to the side.
+	const float distTL = std::hypot(centerX - 0.0f, centerY - 0.0f); // Top-Left
+	const float distTR = std::hypot(centerX - w, centerY - 0.0f);    // Top-Right
+	const float distBL = std::hypot(centerX - 0.0f, centerY - h);    // Bottom-Left
+	const float distBR = std::hypot(centerX - w, centerY - h);       // Bottom-Right
+
+	const float maxDist = std::max({distTL, distTR, distBL, distBR});
+	const float outerRadius = maxDist + 50.0f; // Add buffer just in case
+
+	// 3. Generate Geometry
+	constexpr int segments = 32;
+	std::vector<SDL_Vertex> vertices;
+	std::vector<int> indices;
+
+	for (int i = 0; i <= segments; ++i) {
+		const float angle = (static_cast<float>(i) / segments) * 2.0f * std::numbers::pi;
+		const float cosA = std::cos(angle);
+		const float sinA = std::sin(angle);
+
+		vertices.push_back(
+		    SDL_Vertex{{centerX + cosA * innerRadius, centerY + sinA * innerRadius}, innerColor, {0, 0}});
+
+		vertices.push_back(
+		    SDL_Vertex{{centerX + cosA * outerRadius, centerY + sinA * outerRadius}, outerColor, {0, 0}});
+	}
+
+	for (int i = 0; i < segments; ++i) {
+		int innerCurrent = i * 2;
+		int outerCurrent = i * 2 + 1;
+		int innerNext = (i + 1) * 2;
+		int outerNext = (i + 1) * 2 + 1;
+
+		indices.push_back(innerCurrent);
+		indices.push_back(outerCurrent);
+		indices.push_back(innerNext);
+
+		indices.push_back(outerCurrent);
+		indices.push_back(outerNext);
+		indices.push_back(innerNext);
+	}
+
+	SDL_SetRenderDrawBlendMode(renderer.get(), SDL_BLENDMODE_BLEND);
 	SDL_RenderGeometry(renderer.get(), nullptr, vertices.data(), vertices.size(), indices.data(), indices.size());
 }
 SDL_FRect Renderer::getViewport() const

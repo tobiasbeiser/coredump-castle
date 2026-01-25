@@ -274,21 +274,16 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 		}
 	}
 
+	// If we have poise, we still want the FULL invulnerability duration to be the "Stagger Duration"
+	// We will handle the short "hit-trade" invulnerability in the HealthSystem by manipulating the timer.
 	const auto poise = getFloatProp(enemyObj, "poise", 0.0f);
-	auto initialInvuln = invulnerabilityTime;
-	if (poise > 0.0f) {
-		initialInvuln = 200ms;
-	}
-
-	registry.registerComponent(entity,
-	                           HealthComponent{maxHealth, maxHealth, initialInvuln, poise, invulnerabilityTime});
+	registry.registerComponent(entity, HealthComponent{maxHealth, maxHealth, invulnerabilityTime, poise});
 
 	registry.registerComponent(
 	    entity, AttackComponent{.attackTimer = Timer{attackDuration},
 	                            .attackCoolDownTimer = Timer{std::chrono::duration<float>(attackCooldown)},
-	                            .currentWindUpLimit = windUpLimit,
-	                            .minWindUpLimit = windUpLimit * 0.5f,
-	                            .maxWindUpLimit = windUpLimit});
+	                            .windUpLimit = windUpLimit,
+	                            .activeWindUpLimit = windUpLimit});
 
 	ensureSafeSpawn(entity);
 

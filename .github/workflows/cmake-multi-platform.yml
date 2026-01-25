@@ -13,8 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-         os: [macos-latest]
-         #os: [windows-latest, macos-latest, ubuntu-latest]
+         os: [ubuntu-latest]
 
     env:
       # 1. FORCE vcpkg to use a local folder for caching (Reliable)

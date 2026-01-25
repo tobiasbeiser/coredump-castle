@@ -1,5 +1,7 @@
 #pragma once
 #include "Engine/ECS/Registry.hpp"
+#include "Engine/Graphics/Renderer.hpp"
+
 #include <SDL3/SDL_pixels.h>
 #include <SDL3/SDL_rect.h>
 #include <SDL3/SDL_render.h>
@@ -13,6 +15,7 @@ struct DebugRenderOptions {
 	bool showHitBoxes = true;
 	bool showRaycasts = false;
 	bool showTooltipBoxes = false;
+	bool vSync = true;
 };
 
 struct DebugSkipMenuOptions {
@@ -22,8 +25,13 @@ struct DebugSkipMenuOptions {
 struct DebugPlayerOptions {
 	bool showState = false;
 	bool showPosition = true;
+	bool showHP = true;
+};
+
+struct Cheats {
 	bool godMode = false;
 	bool noClip = false;
+	bool unlimitedJumps = false;
 };
 
 struct DebugRect {
@@ -52,6 +60,7 @@ class DebugSystem {
 	static void clear();
 
 	static void renderGameOverlay(SDL_Renderer *renderer, const SDL_FRect &viewport);
+	static void updateSettings(SDL_Renderer *renderer);
 	static void drawUI();
 
 	void toggle() { enabled = !enabled; }
@@ -60,6 +69,7 @@ class DebugSystem {
 	const DebugRenderOptions &getRenderOptions() const { return render; }
 	const DebugPlayerOptions &getPlayerOptions() const { return player; }
 	const DebugSkipMenuOptions &getSkipMenuOptions() const { return skipMenu; }
+	const Cheats &getCheats() const { return cheats; }
 
   private:
 	bool enabled = false;
@@ -68,11 +78,14 @@ class DebugSystem {
 	std::vector<std::string> debugMessages{};
 	DebugRenderOptions render;
 	DebugPlayerOptions player;
+	Cheats cheats;
 	DebugSkipMenuOptions skipMenu;
 	GameEngine::ECS::Registry *registry = nullptr;
 	void drawCollisionBoxes() const;
+	void drawProjectileHitBox() const;
+	void drawPatrolBoxes(std::vector<unsigned>::value_type entity, SDL_FRect hurtBoxRect) const;
 	void drawHitBoxes() const;
-	void drawTooltopBoxes() const;
+	void drawTooltipBoxes() const;
 	void updateFPS();
 
 	static constexpr int fpsHistorySize = 400;

@@ -3,6 +3,7 @@
 #include "ECS/Systems/SaveSystem.hpp"
 #include "Game/Factories/EffectFactory.hpp"
 #include "Graphics/FontManager.hpp"
+#include "Graphics/Gui/GuiManager.hpp"
 #include "Graphics/Renderer.hpp"
 #include "Graphics/TextureManager.hpp"
 #include "Input/InputManager.hpp"
@@ -56,6 +57,7 @@ class GameEngine {
 	InputManager &getInputManager() { return inputManager; }
 	TextureManager &getTextureManager() { return textureManager; }
 	FontManager &getFontManager() { return fontManager; }
+	Ui::GuiManager& getGuiManager() const { return *guiManager; }
 	EffectFactory &getEffectFactory() { return effectFactory; };
 	ECS::Systems::SaveSystem &getSaveSystem() { return saveSystem; }
 
@@ -68,6 +70,7 @@ class GameEngine {
 	InputManager inputManager;
 	TextureManager textureManager;
 	FontManager fontManager;
+	std::unique_ptr<Ui::GuiManager> guiManager;
 	ECS::Systems::SaveSystem saveSystem;
 	struct PendingAction {
 		enum class Type { Push, Pop, Change };

@@ -13,7 +13,7 @@ class Registry;
 namespace GameEngine::Utils::HitBoxUtils {
 
 SDL_FRect getWeaponHitBoxRect(const glm::vec2 &pos, const HitBoxComponent &hitBox, const SDL_FRect &hurtBox,
-                              const glm::vec2 scale, const bool facingLeft = false);
+                              const glm::vec2 *scale, const bool facingLeft = false);
 
-SDL_FRect getHitBox(const glm::vec2 &pos, const SDL_FRect &hitbox, const glm::vec2 &scale);
+SDL_FRect getHitBox(const glm::vec2 &pos, const SDL_FRect &hitbox, const glm::vec2 *scale);
 } // namespace GameEngine::Utils::HitBoxUtils

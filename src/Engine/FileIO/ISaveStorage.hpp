@@ -4,6 +4,12 @@
 
 namespace GameEngine::ECS {
 
+struct SaveMetaData
+{
+	std::string saveName;
+	std::filesystem::file_time_type lastSaved;
+};
+
 class ISaveStorage {
   public:
 	ISaveStorage(const ISaveStorage &) = delete;
@@ -14,8 +20,9 @@ class ISaveStorage {
 
 	virtual void write(const nlohmann::json &data) = 0;
 	[[nodiscard]] virtual nlohmann::json read() const = 0;
-	[[nodiscard]] virtual std::vector<std::string> getSavesNames() const = 0;
-	virtual std::string getSaveName() = 0;
+	[[nodiscard]] virtual std::vector<SaveMetaData> getSavesData() const = 0;
+	virtual void deleteSaves() = 0;
+	virtual std::string getSaveName() const = 0;
 	virtual void setSaveName(std::string saveName) = 0;
 
   protected:

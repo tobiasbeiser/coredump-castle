@@ -1,4 +1,6 @@
 #include "HealthSystem.hpp"
+
+#include "Engine/Debug/DebugSystem.hpp"
 #include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
@@ -6,6 +8,7 @@
 #include "Engine/ECS/Components/Gameplay/Enemy/ChaseComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Hazard/LastGroundedPositionComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Hazard/PendingRespawnComponent.hpp"
+#include "Engine/ECS/Components/Render/VignetteComponent.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
@@ -28,6 +31,11 @@ void update(Registry &registry, const float deltaTime)
 	     const auto entity : view) {
 		auto &health = view.get<HealthComponent>(entity);
 		const auto &[damage, damageSource] = view.get<PendingDamageComponent>(entity);
+
+		if (registry.has<PlayerTag>(entity) && DebugSystem::instance().getCheats().godMode) {
+			registry.remove<PendingDamageComponent>(entity);
+			continue;
+		}
 
 		if ((isInvulnerable(health) || damage == 0) && damageSource != DamageSource::Hazard) {
 			registry.remove<PendingDamageComponent>(entity);
@@ -56,6 +64,8 @@ void update(Registry &registry, const float deltaTime)
 			}
 		}
 
+		health.invulnerabilityTimer.reset();
+
 		if (isStaggered) {
 			if (const auto state = registry.tryGet<StateComponent>(entity)) {
 				state->get().state = State::Hurting;
@@ -63,14 +73,20 @@ void update(Registry &registry, const float deltaTime)
 			if (const auto chase = registry.tryGet<ChaseComponent>(entity)) {
 				chase->get().reactionDelay.reset();
 			}
-			health.invulnerabilityTimer.setLength(health.staggerInvulnerabilityDuration);
 		} else {
-			health.invulnerabilityTimer.setLength(200ms);
+			// Poise held. Grant only short invulnerability (200ms) without changing the timer's permanent length.
+			// We do this by advancing the timer so it is closer to timeout.
+			const auto length = health.invulnerabilityTimer.getLength();
+			const auto shortDuration = 200ms;
+			if (length > shortDuration) {
+				health.invulnerabilityTimer.step(length - shortDuration, false);
+			}
 		}
 
-		health.invulnerabilityTimer.reset();
-
 		registry.remove<PendingDamageComponent>(entity);
+		if (registry.has<PlayerTag>(entity)) {
+			registry.registerComponent<VignetteComponent>(entity, {});
+		}
 	}
 }
 
