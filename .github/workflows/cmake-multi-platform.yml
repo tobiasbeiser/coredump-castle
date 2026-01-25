@@ -64,13 +64,9 @@ jobs:
           configurePreset: 'release'
           buildPreset: 'release'
           testPreset: 'release'
-          configureOptions: >
-            -DSDL_X11=OFF
-            -DSDL_X11_XCURSOR=OFF
-            -DSDL_X11_XRANDR=OFF
-            -DSDL_X11_XI=OFF
-            -DSDL_X11_XINERAMA=OFF
-
+          configurePresetAdditionalArgs: > 
+            ["-DSDL_X11=OFF", "-DSDL_X11_XCURSOR=OFF", "-DSDL_X11_XRANDR=OFF", "-DSDL_X11_XI=OFF", "-DSDL_X11_XINERAMA=OFF"]
+          
       - name: Zip out directory on failure
         if: failure()
         shell: bash
