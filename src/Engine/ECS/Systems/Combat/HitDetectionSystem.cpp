@@ -10,7 +10,9 @@
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/PendingDamageComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
+#include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
+#include "Engine/ECS/Components/Render/SpriteComponent.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Components/Tags/ProjectileTag.hpp"
@@ -84,6 +86,14 @@ void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
 		const auto &[attackerHurtBoxRect] = attackerView.get<HurtBoxComponent>(attacker);
 		const auto &render = attackerView.get<RenderComponent>(attacker);
 		const bool facingLeft = render.isFacingLeft();
+		SDL_FRect attackerReferenceBox = attackerHitBox.bodyHitBox;
+		if (const auto sprite = registry.tryGet<SpriteComponent>(attacker)) {
+			const auto &tileSize = sprite->get().tileSize;
+			attackerReferenceBox = {0.0f, 0.0f, static_cast<float>(tileSize.x), static_cast<float>(tileSize.y)};
+		} else if (const auto collision = registry.tryGet<CollisionComponent>(attacker)) {
+			attackerReferenceBox = collision->get().collisionBox;
+		}
+
 
 		const auto attackerTransform = registry.tryGet<TransformComponent>(attacker);
 		const auto attackerScale = attackerTransform ? &attackerTransform->get().scale : nullptr;
@@ -93,11 +103,18 @@ void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
 
 		SDL_FRect attackerWeaponRect = {0, 0, 0, 0};
 		if (isWeaponActive) {
-			attackerWeaponRect = Utils::HitBoxUtils::getWeaponHitBoxRect(position, attackerHitBox, attackerHurtBoxRect,
-			                                                             attackerScale, facingLeft);
+			SDL_FRect localHurtBox = attackerHurtBoxRect;
+			if (facingLeft) {
+				localHurtBox.x = attackerReferenceBox.x + attackerReferenceBox.w
+				                 - (attackerHurtBoxRect.x + attackerHurtBoxRect.w);
+			}
+			attackerWeaponRect =
+			    Utils::HitBoxUtils::getWeaponHitBoxRect(position, attackerHitBox, localHurtBox, attackerScale, facingLeft);
 		}
 
-		SDL_FRect attackerBodyRect = Utils::HitBoxUtils::getHitBox(position, attackerHitBox.bodyHitBox, attackerScale);
+		SDL_FRect attackerBodyRect = Utils::HitBoxUtils::getHitBoxFacing(position, attackerHitBox.bodyHitBox,
+		                                                                 attackerReferenceBox, attackerScale,
+		                                                                 facingLeft);
 		for (const auto victim : victimView) {
 			if (!isValidVictim(registry, attacker, victim)) {
 				continue;
@@ -107,7 +124,20 @@ void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
 			const auto &[victimHurtBox] = victimView.get<HurtBoxComponent>(victim);
 			const auto victimTransform = registry.tryGet<TransformComponent>(victim);
 			const auto victimScale = victimTransform ? &victimTransform->get().scale : nullptr;
-			SDL_FRect victimHurtBoxRect = Utils::HitBoxUtils::getHitBox(victimPos, victimHurtBox, victimScale);
+			SDL_FRect victimReferenceBox = victimHurtBox;
+			if (const auto sprite = registry.tryGet<SpriteComponent>(victim)) {
+				const auto &tileSize = sprite->get().tileSize;
+				victimReferenceBox = {0.0f, 0.0f, static_cast<float>(tileSize.x), static_cast<float>(tileSize.y)};
+			} else if (const auto collision = registry.tryGet<CollisionComponent>(victim)) {
+				victimReferenceBox = collision->get().collisionBox;
+			}
+			bool victimFacingLeft = false;
+			if (const auto victimRender = registry.tryGet<RenderComponent>(victim)) {
+				victimFacingLeft = victimRender->get().isFacingLeft();
+			}
+			SDL_FRect victimHurtBoxRect = Utils::HitBoxUtils::getHitBoxFacing(victimPos, victimHurtBox,
+			                                                                  victimReferenceBox, victimScale,
+			                                                                  victimFacingLeft);
 
 			bool isInvulnerable = false;
 			if (const auto health = registry.tryGet<HealthComponent>(victim)) {

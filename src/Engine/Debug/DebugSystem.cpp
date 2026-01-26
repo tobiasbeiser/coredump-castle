@@ -12,6 +12,7 @@
 #include "Engine/ECS/Components/Gameplay/TooltipComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
+#include "Engine/ECS/Components/Render/SpriteComponent.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/View.hpp"
 #include "Engine/Utils/DetectionRangeUtils.hpp"
@@ -322,21 +323,32 @@ void DebugSystem::drawHitBoxes() const
 		const auto &hurtbox = view.get<HurtBoxComponent>(entity);
 		const auto &render = view.get<RenderComponent>(entity);
 		const bool facingLeft = render.isFacingLeft();
+		SDL_FRect referenceBox = hurtbox.hurtBox;
+		if (const auto sprite = registry->tryGet<SpriteComponent>(entity)) {
+			const auto &tileSize = sprite->get().tileSize;
+			referenceBox = {0.0f, 0.0f, static_cast<float>(tileSize.x), static_cast<float>(tileSize.y)};
+		} else if (const auto collision = registry->tryGet<CollisionComponent>(entity)) {
+			referenceBox = collision->get().collisionBox;
+		}
 		const auto transform = registry->tryGet<TransformComponent>(entity);
 		const auto scale = transform ? &transform->get().scale : nullptr;
+		SDL_FRect localHurtBox = hurtbox.hurtBox;
+		if (facingLeft) {
+			localHurtBox.x = referenceBox.x + referenceBox.w - (hurtbox.hurtBox.x + hurtbox.hurtBox.w);
+		}
 		const auto hitBoxRect =
-		    GameEngine::Utils::HitBoxUtils::getWeaponHitBoxRect(position, hitbox, hurtbox.hurtBox, scale, facingLeft);
+		    GameEngine::Utils::HitBoxUtils::getWeaponHitBoxRect(position, hitbox, localHurtBox, scale, facingLeft);
 
 		constexpr SDL_Color hitboxColor = {0, 255, 0, 255};
 		addRect(hitBoxRect, hitboxColor);
 
-		const SDL_FRect bodyHitBoxRect = GameEngine::Utils::HitBoxUtils::getHitBox(position, hitbox.bodyHitBox, scale);
-		if (bodyHitBoxRect.x != hurtbox.hurtBox.x) {
-			constexpr SDL_Color bodyHitBoxColor = {255, 0, 0, 255};
-			addRect(bodyHitBoxRect, bodyHitBoxColor);
-		}
+		const SDL_FRect bodyHitBoxRect = GameEngine::Utils::HitBoxUtils::getHitBoxFacing(
+		    position, hitbox.bodyHitBox, referenceBox, scale, facingLeft);
+		const SDL_FRect hurtBoxRect = GameEngine::Utils::HitBoxUtils::getHitBoxFacing(position, hurtbox.hurtBox,
+		                                                                              referenceBox, scale, facingLeft);
+		constexpr SDL_Color bodyHitBoxColor = {255, 0, 0, 255};
+		addRect(bodyHitBoxRect, bodyHitBoxColor);
 
-		SDL_FRect hurtBoxRect = GameEngine::Utils::HitBoxUtils::getHitBox(position, hurtbox.hurtBox, scale);
 		constexpr SDL_Color hurtBoxColor = {255, 0, 255, 255};
 		addRect(hurtBoxRect, hurtBoxColor);
 

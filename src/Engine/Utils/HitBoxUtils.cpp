@@ -21,6 +21,18 @@ SDL_FRect GameEngine::Utils::HitBoxUtils::getWeaponHitBoxRect(const glm::vec2 &p
 
 	return result;
 }
+
+SDL_FRect GameEngine::Utils::HitBoxUtils::getHitBoxFacing(const glm::vec2 &pos, const SDL_FRect &hitbox,
+                                                          const SDL_FRect &referenceBox, const glm::vec2 *scale,
+                                                          const bool facingLeft)
+{
+	SDL_FRect localHitBox = hitbox;
+	if (facingLeft) {
+		localHitBox.x = referenceBox.x + referenceBox.w - (hitbox.x + hitbox.w);
+	}
+	return getHitBox(pos, localHitBox, scale);
+}
+
 SDL_FRect GameEngine::Utils::HitBoxUtils::getHitBox(const glm::vec2 &pos, const SDL_FRect &hitbox,
                                                     const glm::vec2 *scale)
 {

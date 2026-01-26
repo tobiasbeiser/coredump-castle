@@ -106,63 +106,63 @@
         {
          "animation":[
                 {
-                 "duration":35,
+                 "duration":125,
                  "tileid":44
                 }, 
                 {
-                 "duration":35,
+                 "duration":125,
                  "tileid":45
                 }, 
                 {
-                 "duration":35,
+                 "duration":125,
                  "tileid":46
                 }, 
                 {
-                 "duration":35,
+                 "duration":125,
                  "tileid":47
                 }, 
                 {
-                 "duration":35,
+                 "duration":125,
                  "tileid":48
                 }, 
                 {
-                 "duration":35,
+                 "duration":125,
                  "tileid":49
                 }, 
                 {
-                 "duration":35,
+                 "duration":125,
                  "tileid":50
                 }, 
                 {
-                 "duration":35,
+                 "duration":125,
                  "tileid":51
                 }, 
                 {
-                 "duration":35,
+                 "duration":125,
                  "tileid":52
                 }, 
                 {
-                 "duration":35,
+                 "duration":125,
                  "tileid":53
                 }, 
                 {
-                 "duration":35,
+                 "duration":125,
                  "tileid":54
                 }, 
                 {
-                 "duration":35,
+                 "duration":125,
                  "tileid":55
                 }, 
                 {
-                 "duration":35,
+                 "duration":125,
                  "tileid":56
                 }, 
                 {
-                 "duration":35,
+                 "duration":125,
                  "tileid":57
                 }, 
                 {
-                 "duration":35,
+                 "duration":125,
                  "tileid":58
                 }],
          "id":44,
@@ -172,33 +172,6 @@
                  "propertytype":"State",
                  "type":"int",
                  "value":2
-                }]
-        }, 
-        {
-         "id":50,
-         "properties":[
-                {
-                 "name":"damageActive",
-                 "type":"bool",
-                 "value":true
-                }]
-        }, 
-        {
-         "id":51,
-         "properties":[
-                {
-                 "name":"damageActive",
-                 "type":"bool",
-                 "value":true
-                }]
-        }, 
-        {
-         "id":52,
-         "properties":[
-                {
-                 "name":"damageActive",
-                 "type":"bool",
-                 "value":true
                 }]
         }, 
         {
@@ -212,24 +185,6 @@
         }, 
         {
          "id":54,
-         "properties":[
-                {
-                 "name":"damageActive",
-                 "type":"bool",
-                 "value":true
-                }]
-        }, 
-        {
-         "id":55,
-         "properties":[
-                {
-                 "name":"damageActive",
-                 "type":"bool",
-                 "value":true
-                }]
-        }, 
-        {
-         "id":56,
          "properties":[
                 {
                  "name":"damageActive",

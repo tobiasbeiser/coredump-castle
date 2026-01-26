@@ -63,12 +63,12 @@
             {
              "name":"hitBox",
              "type":"string",
-             "value":"0,-15,90,100"
+             "value":"0,45,90,25"
             }, 
             {
              "name":"hurtBox",
              "type":"string",
-             "value":"130,90,35,70"
+             "value":"110,90,70,70"
             }, 
             {
              "name":"isBoss",
@@ -103,7 +103,7 @@
             {
              "name":"touchDamageBox",
              "type":"string",
-             "value":"125,140,40,20"
+             "value":"110,135,70,25"
             }, 
             {
              "name":"unlockAbility",
