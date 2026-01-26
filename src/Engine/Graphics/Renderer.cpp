@@ -1,14 +1,15 @@
 #include "Renderer.hpp"
-#include "../Debug/DebugSystem.hpp"
-#include <SDL3/SDL.h>
-#include <SDL3_image/SDL_image.h>
-#include <SDL3_ttf/SDL_ttf.h>
+#include "Engine/Debug/DebugSystem.hpp"
+
 #include <algorithm>
 #include <cmath>
 #include <imgui_impl_sdl3.h>
 #include <imgui_impl_sdlrenderer3.h>
 #include <numbers>
 #include <stdexcept>
+#include <SDL3/SDL.h>
+#include <SDL3_image/SDL_image.h>
+#include <SDL3_ttf/SDL_ttf.h>
 
 Renderer::Renderer(const std::string &title, const Resolution resolution) : currentResolution(resolution)
 {
@@ -41,6 +42,57 @@ Renderer::~Renderer()
 	TTF_DestroyRendererTextEngine(textEngine.get());
 	SDL_Quit();
 	TTF_Quit();
+}
+
+Renderer::RenderScopeGuard::RenderScopeGuard(Renderer &r, const SDL_FRect &screenRect, const float zoom) : renderer(r)
+{
+	renderer.pushRenderScope(screenRect, zoom);
+}
+
+Renderer::RenderScopeGuard::~RenderScopeGuard()
+{
+	renderer.popRenderScope();
+}
+
+void Renderer::pushRenderScope(const SDL_FRect &screenRect, const float zoom)
+{
+	RenderScopeState currentState{
+	    .logicalViewport = viewport, .physicalClip = std::nullopt, .scaleX = 0.0f, .scaleY = 0.0f};
+
+	SDL_GetRenderScale(renderer.get(), &currentState.scaleX, &currentState.scaleY);
+
+	stateStack.push(currentState);
+
+	const float newLogicalWidth = screenRect.w / zoom;
+	const float newLogicalHeight = screenRect.h / zoom;
+
+	viewport.w = newLogicalWidth;
+	viewport.h = newLogicalHeight;
+
+	SDL_SetRenderScale(renderer.get(), zoom, zoom);
+}
+
+void Renderer::popRenderScope()
+{
+	if (stateStack.empty())
+		return;
+
+	const auto &previousState = stateStack.top();
+
+	viewport = previousState.logicalViewport;
+
+	if (stateStack.size() == 1) {
+		SDL_SetRenderViewport(renderer.get(), nullptr);
+		SDL_SetRenderClipRect(renderer.get(), nullptr);
+		SDL_SetRenderScale(renderer.get(), previousState.scaleX, previousState.scaleY);
+	}
+
+	stateStack.pop();
+}
+
+Renderer::RenderScopeGuard Renderer::createRenderScope(const SDL_FRect &screenRect, const float zoom)
+{
+	return RenderScopeGuard(*this, screenRect, zoom);
 }
 
 void Renderer::resize(const Resolution newResolution)
@@ -261,6 +313,7 @@ void Renderer::renderVignette(const float intensity, const SDL_FColor &color,
 	SDL_SetRenderDrawBlendMode(renderer.get(), SDL_BLENDMODE_BLEND);
 	SDL_RenderGeometry(renderer.get(), nullptr, vertices.data(), vertices.size(), indices.data(), indices.size());
 }
+
 SDL_FRect Renderer::getViewport() const
 {
 	return viewport;

@@ -6,6 +6,7 @@
 #include <imgui.h>
 #include <memory>
 #include <optional>
+#include <stack>
 #include <string>
 #include <vector>
 
@@ -52,6 +53,30 @@ class Renderer {
 	Renderer &operator=(const Renderer &) = delete;
 	~Renderer();
 
+	struct RenderScopeState {
+		SDL_FRect logicalViewport{};
+		std::optional<SDL_FRect> physicalClip;
+		float scaleX = 0;
+		float scaleY = 0;
+	};
+
+	class RenderScopeGuard {
+	  public:
+		RenderScopeGuard(Renderer &r, const SDL_FRect &screenRect, float zoom);
+		~RenderScopeGuard();
+		RenderScopeGuard(const RenderScopeGuard &) = delete;
+		RenderScopeGuard(const RenderScopeGuard &&) = delete;
+		RenderScopeGuard &operator=(const RenderScopeGuard &) = delete;
+		RenderScopeGuard &operator=(const RenderScopeGuard &&) = delete;
+
+	  private:
+		Renderer &renderer;
+	};
+
+	void pushRenderScope(const SDL_FRect &screenRect, float zoom);
+	void popRenderScope();
+	[[nodiscard]] RenderScopeGuard createRenderScope(const SDL_FRect &screenRect, const float zoom);
+
 	void startFrame(int red, int green, int blue, int alpha) const;
 	void endFrame() const;
 	void centerCameraOn(const glm::vec2 &position, const glm::vec2 &levelPos, const glm::vec2 &levelSize);
@@ -75,8 +100,7 @@ class Renderer {
 	void renderCircularFade(float progress, SDL_FColor color = {0, 0, 0, 255});
 	void renderVignette(float intensity, const SDL_FColor &color,
 	                    const std::optional<glm::vec2> &focalPoint = std::nullopt) const;
-
-	SDL_FRect getViewport() const;
+	[[nodiscard]] SDL_FRect getViewport() const;
 
   private:
 	void setupImGui() const;
@@ -88,7 +112,14 @@ class Renderer {
 	                   .y = 0,
 	                   .w = static_cast<float>(logicalResolution.width),
 	                   .h = static_cast<float>(logicalResolution.height)};
+	SDL_FRect mapViewport{.x = 0,
+	                      .y = 0,
+	                      .w = static_cast<float>(logicalResolution.width),
+	                      .h = static_cast<float>(logicalResolution.height)};
+
 	std::vector<std::string> debugMessages{};
+
+	std::stack<RenderScopeState> stateStack;
 
 	struct SDLRendererDeleter {
 		void operator()(SDL_Renderer *r) const noexcept
