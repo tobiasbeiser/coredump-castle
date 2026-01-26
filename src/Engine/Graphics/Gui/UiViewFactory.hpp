@@ -36,6 +36,5 @@ std::unique_ptr<Widget> createSettingsMenu(const UIContext &ctx, const SettingsM
 
 std::unique_ptr<Widget> createLoadingScreen(const UIContext &ctx);
 
-std::unique_ptr<Widget> createMapScreen(const UIContext &ctx, std::function<void()> &drawCallback,
-                                        GameEngine::GameEngine &game);
+std::unique_ptr<Widget> createMapScreen(const UIContext &ctx, GameEngine::GameEngine &game, float mapSizeFactor);
 }; // namespace UiViewFactory

@@ -1,6 +1,8 @@
 
 #include "Frame.hpp"
 
+#include "Engine/Utils/RenderUtils.hpp"
+
 namespace Ui {
 
 void Frame::layout(const UIContext &ctx, SDL_FRect allocatedRect)
@@ -19,7 +21,8 @@ void Frame::draw(const UIContext &ctx, const glm::vec2 parentOffset) const
 	auto [fill, outline] = ctx.theme.frame;
 
 	ctx.renderer->drawRectShape(rect, fill, outline);
-	drawBackground(ctx, parentOffset);
+
+	drawBackground(ctx, {rect.x, rect.y});
 }
 
 glm::vec2 Frame::performMeasure(const UIContext &ctx, BoxConstraints constraints) const

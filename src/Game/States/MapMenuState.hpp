@@ -2,6 +2,7 @@
 #include "Engine/ECS/Systems/InputSystem.hpp"
 #include "Engine/ECS/Systems/RenderSystem.hpp"
 #include "Engine/GameState.hpp"
+#include "Engine/ECS/Systems/MapRenderSystem.hpp"
 #include "Engine/Graphics/Gui/GuiManager.hpp"
 #include "Engine/Graphics/TextureManager.hpp"
 
@@ -27,7 +28,8 @@ class MapMenuState final : public GameState {
 	TextureManager &textureManager;
 	Ui::GuiManager &guiManager;
 	Renderer &renderer;
-	ECS::Systems::RenderSystem renderSystem{renderer};
+	static constexpr float initialScalingFactor = 0.45;
+	ECS::Systems::MapRenderSystem mapRenderSystem{renderer, initialScalingFactor};
 	ECS::Systems::InputSystem inputSystem{inputManager};
 	std::unique_ptr<Ui::Widget> rootWidget{};
 	bool paused = false;

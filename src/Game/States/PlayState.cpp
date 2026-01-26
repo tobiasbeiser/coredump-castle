@@ -19,7 +19,7 @@
 #include "Engine/ECS/Systems/SoundSystem.hpp"
 #include "Engine/ECS/Systems/StateSystem.hpp"
 #include "Engine/ECS/Systems/TooltipSystem.hpp"
-#include "Engine/ECS/Systems/UiMapSystem.hpp"
+#include "Engine/ECS/Systems/MapToggleSystem.hpp"
 #include "Engine/ECS/Systems/VignetteSystem.hpp"
 #include "Engine/GameEngine.hpp"
 #include "Game/Factories/WorldFactory.hpp"
@@ -98,7 +98,7 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 	ECS::Systems::InteractionSystem::update(game, game.getRegistry());
 	ECS::Systems::TooltipSystem::update(game.getRegistry());
 	ECS::Systems::RespawnSystem::update(game.getRegistry(), game, deltaTime);
-	ECS::Systems::UiMapSystem::update(game.getRegistry(), game);
+	ECS::Systems::MapToggleSystem::update(game.getRegistry(), game);
 }
 
 void PlayState::render(GameEngine &game, const float alpha)

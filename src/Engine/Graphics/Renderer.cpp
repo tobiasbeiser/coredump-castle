@@ -1,15 +1,15 @@
 #include "Renderer.hpp"
 #include "Engine/Debug/DebugSystem.hpp"
 
+#include <SDL3/SDL.h>
+#include <SDL3_image/SDL_image.h>
+#include <SDL3_ttf/SDL_ttf.h>
 #include <algorithm>
 #include <cmath>
 #include <imgui_impl_sdl3.h>
 #include <imgui_impl_sdlrenderer3.h>
 #include <numbers>
 #include <stdexcept>
-#include <SDL3/SDL.h>
-#include <SDL3_image/SDL_image.h>
-#include <SDL3_ttf/SDL_ttf.h>
 
 Renderer::Renderer(const std::string &title, const Resolution resolution) : currentResolution(resolution)
 {
@@ -188,26 +188,31 @@ void Renderer::endFrame() const
 	}
 }
 
-void Renderer::centerCameraOn(const glm::vec2 &position, const glm::vec2 &levelPos, const glm::vec2 &levelSize)
+void Renderer::setCameraCenter(const glm::vec2 &newCenter)
 {
-	const float newViewportXCoordinate = position.x - (viewport.w / 2.0f);
-	const float newViewportYCoordinate = position.y - (viewport.h / 2.0f);
+	const float newViewportXCoordinate = newCenter.x - (viewport.w / 2.0f);
+	const float newViewportYCoordinate = newCenter.y - (viewport.h / 2.0f);
 
 	viewport.x = newViewportXCoordinate;
 	viewport.y = newViewportYCoordinate;
+}
+
+void Renderer::centerCameraOn(const glm::vec2 &position, const glm::vec2 &levelPos, const glm::vec2 &levelSize)
+{
+	setCameraCenter(position);
 
 	if (levelSize.x <= viewport.w) {
 		// Level is smaller than viewport -> center level horizontally
 		viewport.x = levelPos.x + (levelSize.x - viewport.w) / 2;
 	} else {
-		viewport.x = std::clamp(newViewportXCoordinate, levelPos.x, levelSize.x + levelPos.x - viewport.w);
+		viewport.x = std::clamp(viewport.x, levelPos.x, levelSize.x + levelPos.x - viewport.w);
 	}
 
 	if (levelSize.y <= viewport.h) {
 		// Level is smaller than viewport -> center level vertically
 		viewport.y = levelPos.y + (levelSize.y - viewport.h) / 2;
 	} else {
-		viewport.y = std::clamp(newViewportYCoordinate, levelPos.y, levelSize.y + levelPos.y - viewport.h);
+		viewport.y = std::clamp(viewport.y, levelPos.y, levelSize.y + levelPos.y - viewport.h);
 	}
 }
 
@@ -362,6 +367,18 @@ void Renderer::renderTexture(SDL_Texture &texture, const std::optional<SDL_FRect
 		localDst.y -= viewport.y;
 		dstPtr = &localDst;
 	}
+
+	const SDL_FlipMode flipMode = flip ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
+	SDL_RenderTextureRotated(renderer.get(), &texture, srcPtr, dstPtr, angle, nullptr, flipMode);
+}
+
+void Renderer::renderAbsolutePositionTexture(SDL_Texture &texture, const std::optional<SDL_FRect> &srcRect,
+                                             const std::optional<SDL_FRect> &dstRect, const bool flip,
+                                             const double angle) const
+{
+	const SDL_FRect *srcPtr = srcRect ? &srcRect.value() : nullptr;
+
+	const SDL_FRect *dstPtr = dstRect ? &dstRect.value() : nullptr;
 
 	const SDL_FlipMode flipMode = flip ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
 	SDL_RenderTextureRotated(renderer.get(), &texture, srcPtr, dstPtr, angle, nullptr, flipMode);

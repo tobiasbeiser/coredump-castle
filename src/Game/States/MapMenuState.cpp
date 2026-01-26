@@ -1,7 +1,7 @@
 
 #include "MapMenuState.hpp"
 
-#include "Engine/ECS/Systems/UiMapSystem.hpp"
+#include "Engine/ECS/Systems/MapToggleSystem.hpp"
 #include "Engine/GameEngine.hpp"
 #include "Engine/Graphics/Gui/UiViewFactory.hpp"
 #include "Engine/Graphics/Gui/Utils.hpp"
@@ -11,8 +11,7 @@ namespace GameEngine {
 
 void MapMenuState::init(GameEngine &game)
 {
-	std::function<void()> menuFillDraw = [this, &game] { renderSystem.updateIngameMap(game.getRegistry()); };
-	rootWidget = UiViewFactory::createMapScreen(guiManager.getContext(), menuFillDraw, game);
+	rootWidget = UiViewFactory::createMapScreen(guiManager.getContext(), game, mapRenderSystem.getMapSizeFactor());
 	guiManager.updateLayout(rootWidget.get());
 }
 
@@ -30,18 +29,20 @@ void MapMenuState::resume()
 
 void MapMenuState::handleEvents(GameEngine &game, const SDL_Event &event)
 {
-	Ui::Utils::passMouseEvent(rootWidget.get(), event, renderer);
+	// check and passScrolling mouse event to mapMenuSystem
+	// Ui::Utils::passMouseEvent(rootWidget.get(), event, renderer);
 }
 
 void MapMenuState::update(GameEngine &game, const float deltaTime)
 {
 	inputSystem.update(game.getRegistry());
-	ECS::Systems::UiMapSystem::update(game.getRegistry(), game);
+	ECS::Systems::MapToggleSystem::update(game.getRegistry(), game);
 }
 
 void MapMenuState::render(GameEngine &game, const float alpha)
 {
 	rootWidget->draw(guiManager.getContext(), {0, 0});
+	mapRenderSystem.update(game.getRegistry(), game);
 }
 
 } // namespace GameEngine

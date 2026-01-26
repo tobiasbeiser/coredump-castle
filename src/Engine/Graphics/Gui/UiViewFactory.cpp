@@ -10,9 +10,9 @@
 #include "Layouts/AnchorLayout.hpp"
 #include "Layouts/LinearLayout.hpp"
 #include "Widgets/Button.hpp"
-#include "Widgets/LambdaWidget.hpp"
 #include "Widgets/Frame.hpp"
 #include "Widgets/Label.hpp"
+#include "Widgets/LambdaWidget.hpp"
 #include "Widgets/Spacer.hpp"
 
 namespace UiViewFactory {
@@ -147,9 +147,9 @@ std::unique_ptr<Widget> createSettingsMenu(const UIContext &ctx, const SettingsM
 {
 	auto root = makeMenuRoot(ctx, "Settings");
 
-	std::unordered_map<std::string, std::string> keyMapping = {
-	    {"Left", "[A]"}, {"Right", "[D]"}, {"Jump", "[Space]"}, {"Attack", "[K]"}, {"Interact", "[E]"}, {"Toggle Map", "[M]"}
-	};
+	std::unordered_map<std::string, std::string> keyMapping = {{"Left", "[A]"},     {"Right", "[D]"},
+	                                                           {"Jump", "[Space]"}, {"Attack", "[K]"},
+	                                                           {"Interact", "[E]"}, {"Toggle Map", "[M]"}};
 
 	auto container = std::make_unique<LinearLayout>();
 	container->setOrientation(Orientation::Horizontal);
@@ -204,20 +204,18 @@ std::unique_ptr<Widget> createLoadingScreen(const UIContext &ctx)
 	return root;
 }
 
-std::unique_ptr<Widget> createMapScreen(const UIContext &ctx, std::function<void()> &drawCallback,
-                                        GameEngine::GameEngine &game)
+std::unique_ptr<Widget> createMapScreen(const UIContext &ctx, GameEngine::GameEngine &game, const float mapSizeFactor)
 {
 	const auto [width, height] = ctx.renderer->getLogicalResolution();
 	auto root = std::make_unique<AnchorLayout>();
-	auto mapFrame = std::make_unique<Frame>();
-	mapFrame->setFixedSize({width * 0.8f, height * 0.8f});
-	mapFrame->setBackground(&game.getTextureManager().getTexture("assets/tiled/background/layer_1.png"));
+	// auto mapFrame = std::make_unique<Frame>();
+	// mapFrame->setFixedSize({width, height});
+	// root->addChild(std::move(mapFrame), AnchorParams::center);
 
-	root->addChild(std::move(mapFrame), AnchorParams::center);
-	auto clipWidget = std::make_unique<LambdaWidget>(drawCallback);
-	clipWidget->setContentZoom(0.3);
-	clipWidget->setFixedSize({width * 0.8f, height * 0.8f});
-	root->addChild(std::move(clipWidget), AnchorParams::center);
+	auto mapContent = std::make_unique<Frame>();
+	mapContent->setBackground(&game.getTextureManager().getTexture("assets/tiled/background/layer_1.png"));
+	mapContent->setFixedSize({width * mapSizeFactor, height * mapSizeFactor});
+	root->addChild(std::move(mapContent), AnchorParams::center);
 
 	return root;
 }

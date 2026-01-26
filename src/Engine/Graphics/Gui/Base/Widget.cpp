@@ -1,10 +1,12 @@
 #include "Widget.hpp"
 
+#include "Engine/Graphics/Gui/LayoutEngine.hpp"
 #include "Engine/Utils/RenderUtils.hpp"
 
-using namespace  GameEngine::Utils::RenderUtils;
+using namespace GameEngine::Utils::RenderUtils;
 
 namespace Ui {
+static constexpr float backgroundOffset = 4;
 glm::vec2 Widget::measure(const UIContext &ctx, BoxConstraints constraints) const
 {
 	if (widthMode == SizeMode::Fixed) {
@@ -58,9 +60,12 @@ SDL_FRect Widget::getScreenRect(const glm::vec2 parentOffset) const noexcept
 
 void Widget::drawBackground(const UIContext &ctx, const glm::vec2 parentOffset) const
 {
-	// TODO: figure out why it does not show
 	if (backgroundTex) {
-		ctx.renderer->renderTexture(*backgroundTex, std::nullopt, getScreenRect(parentOffset), false);
+		const auto size = getMeasuredSize();
+		auto sizedRect = LayoutEngine::positionCentered(size, size - backgroundOffset);
+		sizedRect.x += parentOffset.x;
+		sizedRect.y += parentOffset.y;
+		ctx.renderer->renderAbsolutePositionTexture(*backgroundTex, std::nullopt, sizedRect, false, 0);
 	}
 }
 } // namespace Ui
