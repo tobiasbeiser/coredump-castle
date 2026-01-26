@@ -49,24 +49,24 @@ void RenderSystem::update(Registry &registry)
 			const auto renderComp = bgView.get<RenderComponent>(entity);
 
 			if (const auto item = createBackgroundItem({bgComp, posComp, renderComp}))
-				renderItems.push_back(std::move(item.value()));
+				renderItems.push_back(item.value());
 		}
 
 		std::vector<Entity> entitiesToCache;
 		const SDL_FRect &viewport = renderer.getViewport();
 		for (const auto entity : view) {
-			const auto& pos = view.get<PositionComponent>(entity);
-			const auto& sprite = view.get<SpriteComponent>(entity);
-			const auto& render = view.get<RenderComponent>(entity);
-			const auto& transform = registry.tryGet<TransformComponent>(entity);
+			const auto &pos = view.get<PositionComponent>(entity);
+			const auto &sprite = view.get<SpriteComponent>(entity);
+			const auto &render = view.get<RenderComponent>(entity);
+			const auto &transform = registry.tryGet<TransformComponent>(entity);
 
 			if (const auto item = createSpriteItem({pos, sprite, render, transform}, viewport)) {
-				renderItems.push_back(std::move(item.value()));
+				renderItems.push_back(item.value());
 
-				if (registry.tryGet<MovementComponent>(entity))
+				if (registry.has<MovementComponent>(entity))
 					continue;
 
-				if (!registry.tryGet<AlreadySeenComponent>(entity)) {
+				if (!registry.has<AlreadySeenComponent>(entity)) {
 					entitiesToCache.push_back(entity);
 				}
 			}
@@ -105,18 +105,29 @@ void RenderSystem::update(Registry &registry)
 void RenderSystem::updateIngameMap(Registry &registry)
 {
 	renderItems.clear();
-	auto view = registry.view<AlreadySeenComponent,RenderComponent, PositionComponent, SpriteComponent>();
+	centerCamera(registry);
+
+	auto levelView = registry.view<LevelComponent, PositionComponent>().exclude<InactiveTag>();
+	if (levelView.size() == 1) {
+		const auto levelEntity = levelView.at(0);
+		const auto &level = levelView.get<LevelComponent>(levelEntity);
+		const auto &posLvl = levelView.get<PositionComponent>(levelEntity);
+		renderer.centerCameraOn(posLvl.position + level.levelSize / 2.0f, posLvl.position, level.levelSize);
+	}
+
+	auto view = registry.view<AlreadySeenComponent, RenderComponent, PositionComponent, SpriteComponent>()
+	                .exclude<InactiveTag>();
 	renderItems.reserve(view.size());
 	const SDL_FRect &viewport = renderer.getViewport();
 
 	for (const auto entity : view) {
-		const auto& pos = view.get<PositionComponent>(entity);
-		const auto& sprite = view.get<SpriteComponent>(entity);
-		const auto& render = view.get<RenderComponent>(entity);
-		const auto& transform = registry.tryGet<TransformComponent>(entity);
+		const auto &pos = view.get<PositionComponent>(entity);
+		const auto &sprite = view.get<SpriteComponent>(entity);
+		const auto &render = view.get<RenderComponent>(entity);
+		const auto &transform = registry.tryGet<TransformComponent>(entity);
 
 		if (const auto item = createSpriteItem({pos, sprite, render, transform}, viewport)) {
-			renderItems.push_back(std::move(item.value()));
+			renderItems.push_back(item.value());
 		}
 	}
 
@@ -231,8 +242,7 @@ std::optional<RenderItem> RenderSystem::createBackgroundItem(const BackgroundRen
 	std::optional<SDL_FRect> dstOpt;
 
 	if (repeatX) {
-		dstOpt =
-		    SDL_FRect{.x = position.x, .y = yOffset + position.y, .h = static_cast<float>(texture->h)};
+		dstOpt = SDL_FRect{.x = position.x, .y = yOffset + position.y, .h = static_cast<float>(texture->h)};
 	}
 	return RenderItem{.layer = layer,
 	                  .texture = texture,

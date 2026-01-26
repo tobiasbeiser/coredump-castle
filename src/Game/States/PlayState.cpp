@@ -99,7 +99,7 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 void PlayState::render(GameEngine &game, const float alpha)
 {
 	// std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now();
-	renderSystem.update(game.getRegistry(), alpha);
+	renderSystem.update(game.getRegistry());
 	// std::chrono::high_resolution_clock::time_point time1 = std::chrono::high_resolution_clock::now();
 	// DebugSystem::Debug("Render Time: " + std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(time1 -
 	// now).count()));
