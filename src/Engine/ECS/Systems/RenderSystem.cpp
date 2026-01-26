@@ -14,6 +14,7 @@
 #include "Engine/ECS/View.hpp"
 #include "Engine/Utils/RenderUtils.hpp"
 
+#include <algorithm>
 #include <execution>
 #include <stdexcept>
 #include <vector>
@@ -22,6 +23,12 @@ using namespace GameEngine::ECS::Systems;
 using namespace GameEngine::Utils;
 
 RenderSystem::RenderSystem(Renderer &renderer) : renderer(renderer) {}
+
+auto RenderSystem::getRenderRank(const RenderItem &item)
+{
+	return std::tie(item.layer, item.texture, item.colorMod.r, item.colorMod.g, item.colorMod.b, item.colorMod.a,
+					item.flipX);
+}
 
 void RenderSystem::update(Registry &registry)
 {
@@ -53,6 +60,7 @@ void RenderSystem::update(Registry &registry)
 
 		std::vector<Entity> entitiesToCache;
 		const SDL_FRect &viewport = renderer.getViewport();
+		// Tiles, Player
 		for (const auto entity : view) {
 			const auto &pos = view.get<PositionComponent>(entity);
 			const auto &sprite = view.get<SpriteComponent>(entity);
@@ -118,8 +126,8 @@ void RenderSystem::centerCamera(Registry &registry) const
 			                        level.levelSize);
 
 			if (const auto render = registry.tryGet<RenderComponent>(levelEntity)) {
-				auto &[layer, flipX] = render->get();
-				layer = level.playerLayer;
+				auto &renderComp = render->get();
+				renderComp.layer = level.playerLayer;
 			}
 
 		} else if (levelView.size() > 1) {

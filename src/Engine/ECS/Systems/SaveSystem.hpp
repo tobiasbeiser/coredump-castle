@@ -1,5 +1,6 @@
 #pragma once
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/BossComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InventoryComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/JumpComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/KeyComponent.hpp"
@@ -7,6 +8,7 @@
 #include "Engine/ECS/Components/Tags/AlreadySeenTag.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/ProgressComponent.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
@@ -61,6 +63,8 @@ class SaveSystem {
 	static constexpr std::string positionXLabel = "positionX";
 	static constexpr std::string positionYLabel = "positionY";
 	static constexpr std::string seenPositionsLabel = "seenPositions";
+	static constexpr std::string defeatedBossesLabel = "defeatedBosses";
+	static constexpr std::string unlockedAbilitiesLabel = "unlockedAbilities";
 
 	void initNewGameSave() const
 	{
@@ -102,7 +106,8 @@ class SaveSystem {
 
 	[[nodiscard]] static json buildSaveData(Registry &registry)
 	{
-		auto playerView = registry.view<PlayerTag, InventoryComponent, JumpComponent, PositionComponent>();
+		auto playerView =
+		    registry.view<PlayerTag, InventoryComponent, JumpComponent, PositionComponent, ProgressComponent>();
 		if (playerView.size() > 1U) {
 			throw std::runtime_error("Multiple entities with PlayerTag component");
 		}
@@ -111,12 +116,15 @@ class SaveSystem {
 		const auto &[keys] = playerView.get<InventoryComponent>(playerEntity);
 		const auto &jumpComponent = playerView.get<JumpComponent>(playerEntity);
 		const auto &[position, previousPosition] = playerView.get<PositionComponent>(playerEntity);
+		const auto &progress = playerView.get<ProgressComponent>(playerEntity);
 
 		json saveData;
-		saveData["maxJumps"] = jumpComponent.maxJumps;
-		saveData["positionX"] = position.x;
-		saveData["positionY"] = position.y;
-		saveData["keys"] = keys;
+		saveData[maxJumpsLabel] = jumpComponent.maxJumps;
+		saveData[positionXLabel] = position.x;
+		saveData[positionYLabel] = position.y;
+		saveData[keyLabel] = keys;
+		saveData[defeatedBossesLabel] = progress.defeatedBosses;
+		saveData[unlockedAbilitiesLabel] = progress.unlockedAbilities;
 
 		std::set<std::pair<int, int>> visitedPositions;
 		for (auto view = registry.view<AlreadySeenTag, PositionComponent>().exclude<PlayerTag>();
@@ -131,7 +139,8 @@ class SaveSystem {
 
 	static void reinitializePlayerGameData(Registry &registry, json gameData)
 	{
-		auto playerView = registry.view<PlayerTag, InventoryComponent, JumpComponent, PositionComponent>();
+		auto playerView =
+		    registry.view<PlayerTag, InventoryComponent, JumpComponent, PositionComponent, ProgressComponent>();
 		if (playerView.size() > 1U) {
 			throw std::runtime_error("Multiple entities with PlayerTag component");
 		}
@@ -141,9 +150,19 @@ class SaveSystem {
 		auto &jumpComponent = playerView.get<JumpComponent>(playerEntity);
 		auto &[position, previousPosition] = playerView.get<PositionComponent>(playerEntity);
 		auto &[keys] = playerView.get<InventoryComponent>(playerEntity);
+		auto &progress = playerView.get<ProgressComponent>(playerEntity);
 
-		if (gameData.contains(maxJumpsLabel))
+		if (gameData.contains(maxJumpsLabel)) {
 			jumpComponent.maxJumps = gameData.at(maxJumpsLabel).get<int>();
+		}
+
+		if (gameData.contains(unlockedAbilitiesLabel)) {
+			progress.unlockedAbilities = gameData.at(unlockedAbilitiesLabel).get<std::vector<int>>();
+		}
+
+		if (progress.hasAbility(AbilityType::DoubleJump)) {
+			jumpComponent.maxJumps = std::max(jumpComponent.maxJumps, 2);
+		}
 
 		if (gameData.contains(positionXLabel) && gameData.contains(positionYLabel)) {
 			position.x = gameData.at(positionXLabel).get<float>();
@@ -163,6 +182,17 @@ class SaveSystem {
 				if (const auto &[keyId] = keyView.get<KeyComponent>(keyEntity);
 				    std::ranges::find(keys, keyId) != keys.end()) {
 					registry.deleteEntity(keyEntity);
+				}
+			}
+		}
+
+		if (gameData.contains(defeatedBossesLabel)) {
+			progress.defeatedBosses = gameData.at(defeatedBossesLabel).get<std::vector<int>>();
+
+			for (auto bossView = registry.view<BossComponent>(); const auto bossEntity : bossView) {
+				const auto &[bossId, unlockAbility] = bossView.get<BossComponent>(bossEntity);
+				if (std::ranges::find(progress.defeatedBosses, bossId) != progress.defeatedBosses.end()) {
+					registry.deleteEntity(bossEntity);
 				}
 			}
 		}

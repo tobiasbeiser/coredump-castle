@@ -21,7 +21,8 @@ void GameEngine::ECS::Systems::EffectSystem::update(Registry &registry, const fl
 			continue;
 		}
 
-		auto &[frameTexture, frameTileSize, frameTileMapPosition] = effect.frames.at(effect.animation.currentFrame());
+		auto &[frameTexture, frameTileSize, frameTileMapPosition] =
+		    effect.frames.at(effect.animation.currentFrame());
 		texture = frameTexture;
 		tileSize = frameTileSize;
 		tileMapPosition = frameTileMapPosition;

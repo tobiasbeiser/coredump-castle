@@ -5,12 +5,15 @@
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/BossComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HealthComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/PoiseComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/RangedAttackComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Enemy/ChargeComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/ChaseComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
@@ -24,8 +27,7 @@
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/View.hpp"
-#include "Game/Factories/AnimationFactory.hpp"
-#include "Game/Factories/ProjectileFactory.hpp"
+#include <cctype>
 #include <tileson.hpp>
 
 namespace {
@@ -86,6 +88,52 @@ std::optional<std::string> getStringProp(tson::Object &obj, const std::string &n
 	}
 
 	return prop->getValue<std::string>();
+}
+
+AbilityType parseAbilityType(const std::optional<std::string> &value)
+{
+	if (!value.has_value()) {
+		return AbilityType::None;
+	}
+	if (value->empty()) {
+		return AbilityType::None;
+	}
+	std::string normalized;
+	normalized.reserve(value->size());
+	for (const char ch : *value) {
+		if (std::isalnum(static_cast<unsigned char>(ch))) {
+			normalized.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(ch))));
+		}
+	}
+	if (normalized == "none") {
+		return AbilityType::None;
+	}
+	if (normalized == "doublejump") {
+		return AbilityType::DoubleJump;
+	}
+	if (normalized == "slide") {
+		return AbilityType::Slide;
+	}
+	if (normalized == "dash") {
+		return AbilityType::Dash;
+	}
+	return AbilityType::None;
+}
+
+AbilityType getAbilityProp(tson::Object &obj, const std::string &name, const AbilityType defaultValue)
+{
+	const auto prop = obj.getProp(name);
+	if (prop == nullptr) {
+		return defaultValue;
+	}
+	if (prop->getType() == tson::Type::Enum) {
+		const auto enumValue = prop->getValue<tson::EnumValue>();
+		return parseAbilityType(enumValue.getValueName());
+	}
+	if (prop->getType() == tson::Type::String || prop->getType() == tson::Type::File) {
+		return parseAbilityType(getStringProp(obj, name, ""));
+	}
+	return defaultValue;
 }
 
 SDL_FRect parseCollisionBox(const std::string &value)
@@ -151,6 +199,8 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 	const auto chaseSpeed = getFloatProp(enemyObj, "chaseSpeed", 0.0f);
 	const auto canPatrol = getBoolProp(enemyObj, "canPatrol");
 	const auto collisionStr = getStringProp(enemyObj, "collisionBox", "0,0,0,0");
+	const auto hurtBoxStr = getStringProp(enemyObj, "hurtBox", "");
+	const auto touchDamageBoxStr = getStringProp(enemyObj, "touchDamageBox", "");
 	const auto hitBoxStr = getStringProp(enemyObj, "hitBox", "");
 	const auto maxHealth = getIntProp(enemyObj, "maxHealth", 100);
 	const auto attackCooldown = getFloatProp(enemyObj, "attackCooldown", 0.5);
@@ -160,6 +210,16 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 	const auto detectionWidthRange = getFloatProp(enemyObj, "detectionWidthRange", 300.0f);
 	const auto detectionHeightRange = getFloatProp(enemyObj, "detectionHeightRange", 50.0f);
 	const auto windUpLimit = getFloatProp(enemyObj, "windUpLimit", 0.0f);
+	const auto flipXOffset = getBoolProp(enemyObj, "flipXOffset");
+	const auto poise = getFloatProp(enemyObj, "poise", 0.0f);
+	const auto recoveryTime = getFloatProp(enemyObj, "recoveryTime", 2.0f);
+	const auto isBoss = getBoolProp(enemyObj, "isBoss");
+	const auto bossIdProp = getIntProp(enemyObj, "bossId", -1);
+	const auto unlockAbility = getAbilityProp(enemyObj, "unlockAbility", AbilityType::None);
+	const auto chargeChance = getFloatProp(enemyObj, "chargeChance", 0.25f);
+	const auto chargeDuration = getFloatProp(enemyObj, "chargeDuration", 0.75f);
+	const auto chargePauseDuration = getFloatProp(enemyObj, "chargePauseDuration", 1.0f);
+	const auto chargeSpeedMultiplier = getFloatProp(enemyObj, "chargeSpeedMultiplier", 1.5f);
 
 	glm::vec2 projectileOffset = {0.0f, 0.0f};
 	if (const auto offsetStr = getStringProp(enemyObj, "projectileOffset", "")) {
@@ -175,7 +235,7 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 	registry.registerComponent(entity, AccelerationComponent{.acceleration = {0.0f, 0.0f}});
 	registry.registerComponent(entity, GravityComponent{});
 	registry.registerComponent(entity, GroundedComponent{});
-	registry.registerComponent(entity, RenderComponent{.layer = layer, .flipX = false});
+	registry.registerComponent(entity, RenderComponent{.layer = layer, .flipX = false, .flipXOffset = flipXOffset});
 	registry.registerComponent(entity, TransformComponent{.scale = glm::vec2(scale, scale)});
 	registry.registerComponent(entity, StateComponent{});
 	using namespace std::chrono_literals;
@@ -184,6 +244,16 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 	registry.registerComponent(entity, MovementComponent{.maxSpeedX = maxSpeedX});
 	registry.registerComponent(entity, BlinkComponent{});
 
+	if (isBoss) {
+		const int bossId = bossIdProp == -1 ? static_cast<int>(enemyObj.getId()) : bossIdProp;
+		registry.registerComponent(entity, BossComponent{.bossId = bossId, .unlockAbility = unlockAbility});
+		registry.registerComponent(
+		    entity, ChargeComponent{.chargeTimer = Timer{std::chrono::duration<float>(chargeDuration)},
+		                            .chargePauseTimer = Timer{std::chrono::duration<float>(chargePauseDuration)},
+		                            .chargeChance = chargeChance,
+		                            .chargeSpeedMultiplier = chargeSpeedMultiplier});
+	}
+
 	SDL_FRect weaponHitBox = {0.f, 0.f, 0.f, 0.f};
 	if (hitBoxStr) {
 		weaponHitBox = parseCollisionBox(hitBoxStr.value());
@@ -191,10 +261,11 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 
 	if (collisionStr) {
 		const auto collisionBox = parseCollisionBox(collisionStr.value());
-		registry.registerComponent(entity, HitBoxComponent{.bodyHitBox = parseCollisionBox(collisionStr.value()),
-		                                                   .weaponHitBox = weaponHitBox});
+		const auto touchDamageBox = touchDamageBoxStr ? parseCollisionBox(touchDamageBoxStr.value()) : collisionBox;
+		registry.registerComponent(entity, HitBoxComponent{.bodyHitBox = touchDamageBox, .weaponHitBox = weaponHitBox});
 		registry.registerComponent(entity, CollisionComponent{collisionBox});
-		registry.registerComponent(entity, HurtBoxComponent{collisionBox});
+		registry.registerComponent(entity,
+		                           HurtBoxComponent{hurtBoxStr ? parseCollisionBox(hurtBoxStr.value()) : collisionBox});
 	}
 
 	if (canPatrol) {
@@ -218,8 +289,6 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 			projectileTilesetPath = (basePath / tilesetPathOpt.value()).string();
 		}
 
-		const auto &projectileData = ProjectileFactory::getCachedProjectileData(projectileTilesetPath);
-
 		registry.registerComponent(entity, ChaseComponent{
 		                                       .chaseSpeed = chaseSpeed,
 		                                       .originalPatrolSpeed = maxSpeedX,
@@ -231,20 +300,11 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 		                                       .projectileSpeed = projectileSpeed,
 		                                       .projectileOffset = projectileOffset,
 		                                   });
-		glm::vec2 projSize = {projectileData.hitbox.w, projectileData.hitbox.h};
-		if (const auto sizeStr = getStringProp(enemyObj, "projectileSize", "")) {
-			const auto parsed = parseCollisionBox(sizeStr.value());
-			projSize = {parsed.w, parsed.h};
-		}
-
 		registry.registerComponent(entity, ProjectileComponent{
 		                                       .maxRange = 2000.0f,
 		                                       .speed = projectileSpeed,
 		                                       .spawnPosition = {0.f, 0.f},
 		                                       .projectileTilesetPath = projectileTilesetPath,
-		                                       .projectileSize = projSize,
-		                                       .spriteSize = projectileData.spriteSize,
-		                                       .hitboxOffset = {projectileData.hitbox.x, projectileData.hitbox.y},
 		                                   });
 	}
 
@@ -268,16 +328,23 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 			attackDuration = animComp->get().getAnimationDuration(AnimationType::Fire);
 		}
 		if (animComp->get().hasAnimation(AnimationType::Hurting)) {
-			invulnerabilityTime = animComp->get().getAnimationDuration(AnimationType::Hurting);
+			invulnerabilityTime = animComp->get().getAnimationDuration(AnimationType::Hurting) + 200ms;
 		}
 	}
 
 	registry.registerComponent(entity, HealthComponent{maxHealth, maxHealth, invulnerabilityTime});
 
+	if (poise > 0.0f) {
+		registry.registerComponent(
+		    entity,
+		    PoiseComponent{.maxPoise = poise, .recoveryTimer = Timer{std::chrono::duration<float>(recoveryTime)}});
+	}
+
 	registry.registerComponent(
 	    entity, AttackComponent{.attackTimer = Timer{attackDuration},
 	                            .attackCoolDownTimer = Timer{std::chrono::duration<float>(attackCooldown)},
-	                            .windUpLimit = windUpLimit});
+	                            .windUpLimit = windUpLimit,
+	                            .activeWindUpLimit = windUpLimit});
 
 	ensureSafeSpawn(entity);
 

@@ -6,10 +6,12 @@
 #include <algorithm>
 
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/BossComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InventoryComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/JumpComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/KeyComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/LockComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/ProgressComponent.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Systems/SaveSystem.hpp"
 
@@ -76,6 +78,8 @@ class SaveSystemTest : public ::testing::Test {
 		InventoryComponent inventoryComponent{};
 		inventoryComponent.keys = std::vector{9, 4, 5, 2, 1, 8};
 		registry.registerComponent<InventoryComponent>(playerEntity, inventoryComponent);
+
+		registry.registerComponent<ProgressComponent>(playerEntity, ProgressComponent{});
 	}
 };
 
@@ -97,6 +101,31 @@ TEST_F(SaveSystemTest, SaveGame_ProducesExpectedJson)
 	const auto keysFromFile = data.at("keys").get<std::vector<int>>();
 	const std::vector<int> expectedKeys{9, 4, 5, 2, 1, 8};
 	EXPECT_EQ(expectedKeys, keysFromFile);
+
+	const auto defeatedBosses = data.at("defeatedBosses").get<std::vector<int>>();
+	const auto unlockedAbilities = data.at("unlockedAbilities").get<std::vector<int>>();
+	EXPECT_TRUE(defeatedBosses.empty());
+	EXPECT_TRUE(unlockedAbilities.empty());
+}
+
+TEST_F(SaveSystemTest, SaveGame_IncludesProgressData)
+{
+	auto storage = std::make_unique<FakeSaveStorage>();
+	auto *storagePtr = storage.get();
+	const SaveSystem saveSystem{std::move(storage)};
+
+	auto playerView = registry.view<PlayerTag, ProgressComponent>();
+	const Entity entity = playerView.at(0U);
+	auto &progress = playerView.get<ProgressComponent>(entity);
+	progress.defeatedBosses = {1, 5};
+	progress.unlockedAbilities = {static_cast<int>(AbilityType::DoubleJump)};
+
+	storagePtr->setSaveName("QuickSave");
+	saveSystem.saveGame(registry);
+
+	const json data = storagePtr->read();
+	EXPECT_EQ(progress.defeatedBosses, data.at("defeatedBosses").get<std::vector<int>>());
+	EXPECT_EQ(progress.unlockedAbilities, data.at("unlockedAbilities").get<std::vector<int>>());
 }
 
 TEST_F(SaveSystemTest, LoadSavedGame_RestoresPlayerStateFromJson)
@@ -218,6 +247,7 @@ TEST_F(SaveSystemTest, SaveGame_ThrowsIfMultiplePlayerEntitiesExist)
 	registry.registerComponent<InventoryComponent>(secondPlayer, {});
 	registry.registerComponent<JumpComponent>(secondPlayer, {});
 	registry.registerComponent<PositionComponent>(secondPlayer, {});
+	registry.registerComponent<ProgressComponent>(secondPlayer, {});
 
 	auto storage = std::make_unique<FakeSaveStorage>();
 	const SaveSystem saveSystem{std::move(storage)};
@@ -243,6 +273,7 @@ TEST_F(SaveSystemTest, LoadSavedGame_ThrowsIfMultiplePlayerEntitiesExist)
 	registry.registerComponent<InventoryComponent>(secondPlayer, {});
 	registry.registerComponent<JumpComponent>(secondPlayer, {});
 	registry.registerComponent<PositionComponent>(secondPlayer, {});
+	registry.registerComponent<ProgressComponent>(secondPlayer, {});
 
 	EXPECT_THROW(saveSystem.loadSavedGame(registry), std::runtime_error);
 }
@@ -278,7 +309,7 @@ TEST_F(SaveSystemTest, RoundTrip_SaveThenLoad_PreservesState)
     const SaveSystem saveSystem{std::move(storage)};
 
 	// 1. Modify initial state to be distinct from defaults
-	auto playerView = registry.view<PlayerTag, JumpComponent, PositionComponent>();
+	auto playerView = registry.view<PlayerTag, JumpComponent, PositionComponent, ProgressComponent>();
 	const Entity entity = playerView.at(0U);
 
 	auto &jump = playerView.get<JumpComponent>(entity);
@@ -308,6 +339,70 @@ TEST_F(SaveSystemTest, RoundTrip_SaveThenLoad_PreservesState)
     EXPECT_EQ(99, jump.maxJumps);
     EXPECT_FLOAT_EQ(500.0F, pos.position.x);
     EXPECT_FLOAT_EQ(500.0F, pos.position.y);
+}
+
+TEST_F(SaveSystemTest, LoadSavedGame_RemovesDefeatedBossEntities)
+{
+	auto storage = std::make_unique<FakeSaveStorage>();
+	auto *storagePtr = storage.get();
+	const SaveSystem saveSystem{std::move(storage)};
+
+	json saved;
+	saved["maxJumps"] = 1;
+	saved["positionX"] = 0.0F;
+	saved["positionY"] = 0.0F;
+	saved["keys"] = std::vector<int>{};
+	saved["defeatedBosses"] = std::vector<int>{7};
+	saved["unlockedAbilities"] = std::vector<int>{static_cast<int>(AbilityType::DoubleJump)};
+	storagePtr->write(saved);
+
+	const Entity bossDefeated = registry.create();
+	registry.registerComponent<BossComponent>(bossDefeated, BossComponent{.bossId = 7,
+	                                                                    .unlockAbility = AbilityType::DoubleJump});
+
+	const Entity bossAlive = registry.create();
+	registry.registerComponent<BossComponent>(bossAlive, BossComponent{.bossId = 9,
+	                                                                  .unlockAbility = AbilityType::None});
+
+	saveSystem.loadSavedGame(registry);
+
+	auto bossView = registry.view<BossComponent>();
+	std::vector<int> remainingBosses;
+	for (const Entity e : bossView) {
+		remainingBosses.push_back(bossView.get<BossComponent>(e).bossId);
+	}
+	ASSERT_EQ(1U, remainingBosses.size());
+	EXPECT_EQ(9, remainingBosses.front());
+}
+
+TEST_F(SaveSystemTest, LoadSavedGame_KeepsBossIfNotDefeated)
+{
+	auto storage = std::make_unique<FakeSaveStorage>();
+	auto *storagePtr = storage.get();
+	const SaveSystem saveSystem{std::move(storage)};
+
+	json saved;
+	saved["maxJumps"] = 1;
+	saved["positionX"] = 0.0F;
+	saved["positionY"] = 0.0F;
+	saved["keys"] = std::vector<int>{};
+	saved["defeatedBosses"] = std::vector<int>{};
+	saved["unlockedAbilities"] = std::vector<int>{};
+	storagePtr->write(saved);
+
+	const Entity bossAlive = registry.create();
+	registry.registerComponent<BossComponent>(bossAlive, BossComponent{.bossId = 3,
+	                                                                  .unlockAbility = AbilityType::None});
+
+	saveSystem.loadSavedGame(registry);
+
+	auto bossView = registry.view<BossComponent>();
+	std::vector<int> remainingBosses;
+	for (const Entity e : bossView) {
+		remainingBosses.push_back(bossView.get<BossComponent>(e).bossId);
+	}
+	ASSERT_EQ(1U, remainingBosses.size());
+	EXPECT_EQ(3, remainingBosses.front());
 }
 
 TEST_F(SaveSystemTest, DeleteAllSaves_DelegatesToStorage)

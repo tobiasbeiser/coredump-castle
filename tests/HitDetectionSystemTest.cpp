@@ -16,6 +16,7 @@
 #include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
 #include "Engine/ECS/Systems/Combat/HealthSystem.hpp"
 #include "Engine/ECS/Systems/StateSystem.hpp"
+#include "Engine/ECS/View.hpp"
 #include <gtest/gtest.h>
 
 using namespace std::chrono_literals;
@@ -40,7 +41,7 @@ struct HitDetectionTest : testing::Test {
 		registry.registerComponent<HealthComponent>(attacker, {100, 100});
 		registry.registerComponent<RenderComponent>(attacker, {.layer = 0, .flipX = false});
 		AnimationComponent attackerAnim;
-		attackerAnim.addAnimation(AnimationType::Hurting, {}, std::chrono::duration<float>(1.0f));
+		attackerAnim.addAnimation(AnimationType::Hurting, {}, {}, std::chrono::duration<float>(1.0f));
 		registry.registerComponent(attacker, attackerAnim);
 
 		registry.registerComponent<EnemyTag>(enemy, {});
@@ -53,7 +54,7 @@ struct HitDetectionTest : testing::Test {
 		registry.registerComponent<RenderComponent>(enemy, {});
 
 		AnimationComponent enemyAnim;
-		enemyAnim.addAnimation(AnimationType::Hurting, {}, std::chrono::duration<float>(1.0f));
+		enemyAnim.addAnimation(AnimationType::Hurting, {}, {}, std::chrono::duration<float>(1.0f));
 		registry.registerComponent(enemy, enemyAnim);
 	}
 };
@@ -85,6 +86,8 @@ TEST_F(HitDetectionTest, AttackerIsAttackingShouldDealDamage)
 	auto &attack = view.get<AttackComponent>(attacker);
 	attack.attackTimer.reset();
 	attack.attackTimer.step(std::chrono::duration<float>(0.1f), false);
+	attack.isDamageActive = true;
+	attack.isDamageActive = true;
 
 	auto &victimPos = view.get<PositionComponent>(enemy);
 	victimPos.position = {20.f, 0.f};
@@ -150,6 +153,26 @@ TEST_F(HitDetectionTest, BodyHitBoxShouldAlwaysDealDamage)
 	EXPECT_FALSE(registry.has<PendingDamageComponent>(enemy));
 }
 
+TEST_F(HitDetectionTest, PlayerAboveBodyHitBoxShouldNotTakeDamage)
+{
+	auto view = registry.view<PositionComponent>();
+	auto &enemyPos = view.get<PositionComponent>(enemy);
+	registry.registerComponent<HitBoxComponent>(
+	    enemy, {.bodyHitBox = {0.f, 0.f, 20.f, 20.f}, .weaponHitBox = {0.f, 0.f, 0.f, 0.f}});
+	enemyPos.position = {0.f, 0.f};
+
+	auto &playerPos = view.get<PositionComponent>(attacker);
+	playerPos.position = {0.f, 50.f};
+
+	bool callbackCalled = false;
+	auto mockCallback = [&](const GameEngine::ECS::Entity, const GameEngine::ECS::Entity) { callbackCalled = true; };
+
+	GameEngine::ECS::Systems::HitDetectionSystem::update(registry, mockCallback);
+
+	EXPECT_FALSE(callbackCalled);
+	EXPECT_FALSE(registry.has<PendingDamageComponent>(attacker));
+}
+
 TEST_F(HitDetectionTest, VictimIsDeadShouldNotApplyDamage)
 {
 	auto view = registry.view<PositionComponent, StateComponent>();
@@ -185,7 +208,9 @@ TEST_F(HitDetectionTest, PlayerShouldNotDamagePlayer)
 	auto view = registry.view<AttackComponent>();
 	auto &attack = view.get<AttackComponent>(attacker);
 	attack.attackTimer.reset();
+	attack.isDamageActive = true;
 	attack.attackTimer.step(std::chrono::duration<float>(0.1f), false);
+	attack.isDamageActive = true;
 
 	bool callbackCalled = false;
 	GameEngine::ECS::Entity calledAttacker{};
@@ -233,8 +258,10 @@ TEST_F(HitDetectionTest, NoOverlapShouldNotDealDamage)
 {
 	auto view = registry.view<AttackComponent>();
 	auto &attack = view.get<AttackComponent>(attacker);
+	attack.isDamageActive = true;
 	attack.attackTimer.reset();
 	attack.attackTimer.step(std::chrono::duration<float>(0.1f), false);
+	attack.isDamageActive = true;
 
 	bool callbackCalled = false;
 	GameEngine::ECS::Entity calledAttacker{};
@@ -255,6 +282,7 @@ TEST_F(HitDetectionTest, EdgeTouchingShouldDealDamage)
 	auto &attack = view.get<AttackComponent>(attacker);
 	attack.attackTimer.reset();
 	attack.attackTimer.step(std::chrono::duration<float>(0.1f), false);
+	attack.isDamageActive = true;
 
 	auto &enemyPos = view.get<PositionComponent>(enemy);
 	enemyPos.position = {20.f, 0.f};
@@ -284,6 +312,7 @@ TEST_F(HitDetectionTest, FacingLeftShouldOffsetHitboxCorrectly)
 	auto &attack = view.get<AttackComponent>(attacker);
 	attack.attackTimer.reset();
 	attack.attackTimer.step(std::chrono::duration<float>(0.1f), false);
+	attack.isDamageActive = true;
 
 	auto &enemyPos = view.get<PositionComponent>(enemy);
 	enemyPos.position = {-10.f, 0.f};

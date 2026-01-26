@@ -2,6 +2,7 @@
 
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
+#include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HealthComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
@@ -11,6 +12,7 @@
 #include "Engine/ECS/Components/Gameplay/TooltipComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
+#include "Engine/ECS/Components/Render/SpriteComponent.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/View.hpp"
 #include "Engine/Utils/DetectionRangeUtils.hpp"
@@ -137,6 +139,66 @@ void DebugSystem::drawUI()
 			ImGui::Checkbox("No Clip", &sys.cheats.noClip);
 			ImGui::Checkbox("Unlimited Jumps", &sys.cheats.unlimitedJumps);
 		}
+		// Replaced hardcoded buttons with dynamic area selection
+		if (ImGui::CollapsingHeader("Teleport", ImGuiTreeNodeFlags_DefaultOpen)) {
+			if (!sys.hasSpawnPoint) {
+				ImGui::TextDisabled("No SpawnPoint found in loaded maps");
+			}
+			ImGui::Separator();
+			if (!sys.maps.empty()) {
+				static int selectedMapIdx = 0;
+				if (selectedMapIdx >= static_cast<int>(sys.maps.size())) {
+					selectedMapIdx = 0;
+				}
+
+				const char *previewValue = sys.maps[selectedMapIdx].name.c_str();
+				if (ImGui::BeginCombo("Select Area", previewValue)) {
+					for (int n = 0; n < static_cast<int>(sys.maps.size()); n++) {
+						const bool isSelected = (selectedMapIdx == n);
+						if (ImGui::Selectable(sys.maps[n].name.c_str(), isSelected))
+							selectedMapIdx = n;
+						if (isSelected)
+							ImGui::SetItemDefaultFocus();
+					}
+					ImGui::EndCombo();
+				}
+				if (ImGui::Button("Teleport to Selected Area")) {
+					if (sys.registry) {
+						const auto &map = sys.maps[selectedMapIdx];
+						glm::vec2 target = {map.area.x, map.area.y}; // Default to map start
+						bool foundSpawn = false;
+
+						for (const auto &sp : sys.spawnPoints) {
+							if (sp.x >= map.area.x && sp.x <= map.area.x + map.area.w && sp.y >= map.area.y
+							    && sp.y <= map.area.y + map.area.h) {
+								target = sp;
+								foundSpawn = true;
+								break;
+							}
+						}
+
+						auto playerView = sys.registry->view<PlayerTag, PositionComponent>();
+						if (playerView.size() == 1U) {
+							const auto playerEntity = playerView.at(0U);
+							auto &playerPos = playerView.get<PositionComponent>(playerEntity);
+							playerPos.position = target;
+							playerPos.previousPosition = target;
+
+							if (auto velocity = sys.registry->tryGet<VelocityComponent>(playerEntity)) {
+								velocity->get().velocity = {0.0f, 0.0f};
+							}
+						}
+						if (foundSpawn) {
+							DebugSystem::debug("Teleported to spawn point in " + map.name);
+						} else {
+							DebugSystem::debug("No spawn point found in " + map.name + ", teleported to origin.");
+						}
+					}
+				}
+			} else {
+				ImGui::TextDisabled("No areas loaded from Tiled.");
+			}
+		}
 		if (sys.player.showPosition) {
 			ImGui::SeparatorText("PlayerPosition");
 			auto playerView = sys.registry->view<PlayerTag, PositionComponent>();
@@ -211,14 +273,13 @@ void DebugSystem::drawCollisionBoxes() const
 
 void DebugSystem::drawProjectileHitBox() const
 {
-	for (auto view = registry->view<ProjectileComponent, HurtBoxComponent, PositionComponent>();
+	for (auto view = registry->view<ProjectileComponent, HitBoxComponent, PositionComponent>();
 	     const auto entity : view) {
 		const auto &[position, previousPosition] = view.get<PositionComponent>(entity);
-		const auto &[hurtBox] = view.get<HurtBoxComponent>(entity);
-
+		const auto &hitBox = view.get<HitBoxComponent>(entity).bodyHitBox;
 		const auto transform = registry->tryGet<TransformComponent>(entity);
 		const auto scale = transform ? &transform->get().scale : nullptr;
-		SDL_FRect hurtBoxRect = GameEngine::Utils::HitBoxUtils::getHitBox(position, hurtBox, scale);
+		SDL_FRect hurtBoxRect = GameEngine::Utils::HitBoxUtils::getHitBox(position, hitBox, scale);
 		constexpr SDL_Color projectileHurtBoxColor = {0, 255, 255, 255};
 		addRect(hurtBoxRect, projectileHurtBoxColor);
 	}
@@ -260,17 +321,34 @@ void DebugSystem::drawHitBoxes() const
 		const auto &[position, previousPosition] = view.get<PositionComponent>(entity);
 		const auto &hitbox = view.get<HitBoxComponent>(entity);
 		const auto &hurtbox = view.get<HurtBoxComponent>(entity);
-		const auto &[renderLayer, flipX] = view.get<RenderComponent>(entity);
-
+		const auto &render = view.get<RenderComponent>(entity);
+		const bool facingLeft = render.isFacingLeft();
+		SDL_FRect referenceBox = hurtbox.hurtBox;
+		if (const auto sprite = registry->tryGet<SpriteComponent>(entity)) {
+			const auto &tileSize = sprite->get().tileSize;
+			referenceBox = {0.0f, 0.0f, static_cast<float>(tileSize.x), static_cast<float>(tileSize.y)};
+		} else if (const auto collision = registry->tryGet<CollisionComponent>(entity)) {
+			referenceBox = collision->get().collisionBox;
+		}
 		const auto transform = registry->tryGet<TransformComponent>(entity);
 		const auto scale = transform ? &transform->get().scale : nullptr;
+		SDL_FRect localHurtBox = hurtbox.hurtBox;
+		if (facingLeft) {
+			localHurtBox.x = referenceBox.x + referenceBox.w - (hurtbox.hurtBox.x + hurtbox.hurtBox.w);
+		}
 		const auto hitBoxRect =
-		    GameEngine::Utils::HitBoxUtils::getWeaponHitBoxRect(position, hitbox, hurtbox.hurtBox, scale, flipX);
+		    GameEngine::Utils::HitBoxUtils::getWeaponHitBoxRect(position, hitbox, localHurtBox, scale, facingLeft);
 
 		constexpr SDL_Color hitboxColor = {0, 255, 0, 255};
 		addRect(hitBoxRect, hitboxColor);
 
-		SDL_FRect hurtBoxRect = GameEngine::Utils::HitBoxUtils::getHitBox(position, hurtbox.hurtBox, scale);
+		const SDL_FRect bodyHitBoxRect = GameEngine::Utils::HitBoxUtils::getHitBoxFacing(
+		    position, hitbox.bodyHitBox, referenceBox, scale, facingLeft);
+		const SDL_FRect hurtBoxRect =
+		    GameEngine::Utils::HitBoxUtils::getHitBoxFacing(position, hurtbox.hurtBox, referenceBox, scale, facingLeft);
+		constexpr SDL_Color bodyHitBoxColor = {255, 0, 0, 255};
+		addRect(bodyHitBoxRect, bodyHitBoxColor);
+
 		constexpr SDL_Color hurtBoxColor = {255, 0, 255, 255};
 		addRect(hurtBoxRect, hurtBoxColor);
 

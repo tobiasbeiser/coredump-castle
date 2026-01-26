@@ -45,6 +45,11 @@ struct DebugLine {
 	SDL_Color color{};
 };
 
+struct MapArea {
+	std::string name;
+	SDL_FRect area{};
+};
+
 class DebugSystem {
   public:
 	static DebugSystem &instance()
@@ -65,6 +70,14 @@ class DebugSystem {
 
 	void toggle() { enabled = !enabled; }
 	void setRegistry(GameEngine::ECS::Registry &registryPtr) { registry = &registryPtr; }
+	void addSpawnPoint(const glm::vec2 &point)
+	{
+		spawnPoint = point;
+		hasSpawnPoint = true;
+		spawnPoints.push_back(point);
+	}
+
+	void registerMap(const std::string &name, const SDL_FRect &area) { maps.push_back({name, area}); }
 
 	const DebugRenderOptions &getRenderOptions() const { return render; }
 	const DebugPlayerOptions &getPlayerOptions() const { return player; }
@@ -76,11 +89,15 @@ class DebugSystem {
 	std::vector<DebugRect> debugRects{};
 	std::vector<DebugLine> debugLines{};
 	std::vector<std::string> debugMessages{};
+	std::vector<MapArea> maps{};
+	std::vector<glm::vec2> spawnPoints{};
 	DebugRenderOptions render;
 	DebugPlayerOptions player;
 	Cheats cheats;
 	DebugSkipMenuOptions skipMenu;
 	GameEngine::ECS::Registry *registry = nullptr;
+	glm::vec2 spawnPoint{};
+	bool hasSpawnPoint = false;
 	void drawCollisionBoxes() const;
 	void drawProjectileHitBox() const;
 	void drawPatrolBoxes(std::vector<unsigned>::value_type entity, SDL_FRect hurtBoxRect) const;

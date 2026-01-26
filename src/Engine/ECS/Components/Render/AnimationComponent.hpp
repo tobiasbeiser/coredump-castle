@@ -27,11 +27,12 @@ enum class AnimationType {
 class AnimationComponent {
   public:
 	void addAnimation(const AnimationType &type, const std::vector<AnimationFrame> &animationFrames,
-	                  const std::chrono::duration<float> duration)
+	                  const std::vector<bool> &damageFrames, const std::chrono::duration<float> duration)
 	{
 		const bool loop = !nonLoopingAnimations.contains(type);
 		animations[type] = Animation(static_cast<int>(animationFrames.size()), duration, loop);
 		frames[type] = animationFrames;
+		this->damageFrames[type] = damageFrames;
 	}
 
 	void addAnimationFromSpritesheet(const AnimationType &type, const int frameCount,
@@ -46,6 +47,8 @@ class AnimationComponent {
 		}
 
 		frames[type] = animationFrames;
+		// Default to false for spritesheet animations
+		damageFrames[type] = std::vector<bool>(frameCount, false);
 	}
 
 	bool hasAnimation(const AnimationType &type) const { return animations.contains(type); };
@@ -62,6 +65,32 @@ class AnimationComponent {
 			             // queue
 		}
 		return animations.at(type).completed();
+	}
+
+	bool usesDamageFrames(const AnimationType &type) const
+	{
+		if (!damageFrames.contains(type)) {
+			return false;
+		}
+		for (const auto isActive : damageFrames.at(type)) {
+			if (isActive) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	bool isDamageActive(const AnimationType &type) const
+	{
+		if (!damageFrames.contains(type) || !animations.contains(type)) {
+			return false;
+		}
+		const int currentFrame = animations.at(type).currentFrame();
+		const auto &frames = damageFrames.at(type);
+		if (currentFrame >= frames.size()) {
+			return false;
+		}
+		return frames[currentFrame];
 	}
 
 	void stepAnimation(const AnimationType &type, const std::chrono::duration<float> deltaTime)
@@ -90,6 +119,7 @@ class AnimationComponent {
 	void startAnimation(const AnimationType &type) { animations.at(type).start(); }
 	std::unordered_map<AnimationType, Animation> animations{};
 	std::unordered_map<AnimationType, std::vector<AnimationFrame>> frames{};
+	std::unordered_map<AnimationType, std::vector<bool>> damageFrames{};
 	AnimationType currentAnimation = AnimationType::None;
 	std::unordered_set<AnimationType> nonLoopingAnimations = {AnimationType::Dead, AnimationType::Hurting,
 	                                                          AnimationType::Attacking, AnimationType::Interacting};

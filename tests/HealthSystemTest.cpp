@@ -25,9 +25,9 @@ struct HealthSystemTest : testing::Test {
 		registry.registerComponent<AnimationComponent>(entity, {});
 
 		AnimationComponent animComp;
-		animComp.addAnimation(AnimationType::Dead, {}, std::chrono::duration<float>(1.0f));
+		animComp.addAnimation(AnimationType::Dead, {}, {}, std::chrono::duration<float>(1.0f));
 		registry.registerComponent(entity, animComp);
-		animComp.addAnimation(AnimationType::Hurting, {}, std::chrono::duration<float>(1.0f));
+		animComp.addAnimation(AnimationType::Hurting, {}, {}, std::chrono::duration<float>(1.0f));
 		registry.registerComponent(entity, animComp);
 	}
 };

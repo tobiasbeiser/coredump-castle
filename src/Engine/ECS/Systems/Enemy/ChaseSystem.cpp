@@ -7,8 +7,10 @@
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/RangedAttackComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Enemy/ChargeComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/ChaseComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
@@ -18,10 +20,12 @@
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/Systems/CollisionSystem.hpp"
 #include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
-#include "Engine/ECS/Systems/PhysicsSystem.hpp"
 #include "Engine/ECS/View.hpp"
+#include "Game/Factories/ProjectileFactory.hpp"
 
 #include "Engine/Utils/DetectionRangeUtils.hpp"
+#include "Engine/Utils/HitBoxUtils.hpp"
+#include "Engine/Utils/Random.hpp"
 #include "Engine/Utils/SpatialHash.hpp"
 
 namespace GameEngine::ECS::Systems::ChaseSystem {
@@ -31,6 +35,7 @@ struct PlayerContext {
 	glm::vec2 center = glm::vec2(0.0f);
 	SDL_FRect hurtBox = {0, 0, 0, 0};
 	glm::vec2 scale = glm::vec2(1.0f, 1.0f);
+	glm::vec2 position = glm::vec2(0.0f);
 	bool isGrounded = false;
 	const StateComponent *state = nullptr;
 };
@@ -44,17 +49,129 @@ struct EnemyContext {
 	AttackComponent *attack = nullptr;
 	const PatrolComponent *patrol = nullptr;
 
+	SDL_FRect hitBox;
 	SDL_FRect hurtBox;
 	glm::vec2 center;
 	glm::vec2 scale;
 	glm::vec2 position;
+	PositionComponent *posComp = nullptr;
+	VelocityComponent *velComp = nullptr;
 };
+
+float getDirectionToPlayer(const EnemyContext &enemy, const PlayerContext &player)
+{
+	return player.center.x > enemy.center.x ? 1.0f : -1.0f;
+}
+
+void resetChargeState(ChargeComponent &charge, const EnemyContext &enemy, const ChaseComponent &chase)
+{
+	charge.chargeTimer.reset();
+	charge.chargePauseTimer.reset();
+	enemy.input->attackPressed = false;
+	enemy.input->horizontalDirection = 0.0f;
+	enemy.movement->maxSpeedX = chase.chaseSpeed;
+}
+
+bool updateChargePaused(ChargeComponent &charge, const EnemyContext &enemy, const ChaseComponent &chase,
+                        const float deltaTime)
+{
+	const bool isChargePaused = charge.chargePauseTimer.isRunning() && !charge.chargePauseTimer.isTimeout();
+	if (!isChargePaused) {
+		return false;
+	}
+
+	charge.chargePauseTimer.step(std::chrono::duration<float>(deltaTime), false);
+
+	enemy.input->attackPressed = false;
+	enemy.input->horizontalDirection = 0.0f;
+
+	if (charge.chargePauseTimer.isTimeout()) {
+		enemy.movement->maxSpeedX = chase.chaseSpeed;
+	}
+	return true;
+}
+
+bool updateCharging(ChargeComponent &charge, const EnemyContext &enemy, const PlayerContext &player,
+                    const ChaseComponent &chase, const float deltaTime)
+{
+	if (const bool isCharging = charge.chargeTimer.isRunning() && !charge.chargeTimer.isTimeout(); !isCharging) {
+		return false;
+	}
+
+	charge.chargeTimer.step(std::chrono::duration<float>(deltaTime), false);
+
+	const float directionToPlayer = getDirectionToPlayer(enemy, player);
+	enemy.input->attackPressed = false;
+	enemy.input->horizontalDirection = directionToPlayer;
+	enemy.render->setFacingLeft(directionToPlayer < 0);
+	enemy.movement->maxSpeedX = chase.chaseSpeed * charge.chargeSpeedMultiplier;
+
+	SDL_FRect enemyHurtBoxRect = Utils::HitBoxUtils::getHitBox(enemy.position, enemy.hurtBox, &enemy.scale);
+	SDL_FRect playerHurtBoxRect = Utils::HitBoxUtils::getHitBox(player.position, player.hurtBox, &player.scale);
+
+	if (SDL_HasRectIntersectionFloat(&enemyHurtBoxRect, &playerHurtBoxRect)) {
+		bool chargingRight = directionToPlayer > 0;
+		if (enemy.velComp && std::abs(enemy.velComp->velocity.x) > 0.1f) {
+			chargingRight = enemy.velComp->velocity.x > 0;
+		}
+
+		if (chargingRight) {
+			const float snapPositionX = playerHurtBoxRect.x - enemyHurtBoxRect.w;
+			const float diff = snapPositionX - enemyHurtBoxRect.x;
+			if (enemy.posComp) {
+				enemy.posComp->position.x += diff;
+			}
+		} else {
+			const float snapPositionX = playerHurtBoxRect.x + playerHurtBoxRect.w;
+			const float diff = snapPositionX - enemyHurtBoxRect.x;
+			if (enemy.posComp) {
+				enemy.posComp->position.x += diff;
+			}
+		}
+
+		if (enemy.velComp) {
+			enemy.velComp->velocity.x = 0.0f;
+		}
+
+		charge.chargeTimer.reset();
+		charge.chargePauseTimer.reset();
+		charge.chargePauseTimer.step(std::chrono::duration<float>(0.0f), false);
+		enemy.input->attackPressed = false;
+		enemy.input->horizontalDirection = 0.0f;
+		return true;
+	}
+
+	if (charge.chargeTimer.isTimeout()) {
+		enemy.movement->maxSpeedX = chase.chaseSpeed;
+	}
+	return true;
+}
 void resetChaseState(const EnemyContext &enemy)
 {
 	enemy.input->attackPressed = false;
 	enemy.movement->maxSpeedX = enemy.chase->originalPatrolSpeed;
 	enemy.chase->reactionDelay.reset();
 	enemy.chase->lastKnownPlayerX = std::nullopt;
+}
+
+void beginCharge(ChargeComponent &charge, InputComponent &input, ChaseComponent &chase, MovementComponent &movement,
+                 RenderComponent &render, const float directionToPlayer)
+{
+	charge.chargeTimer.reset();
+	charge.chargeTimer.step(std::chrono::duration<float>(0.0f), false); // signal it started
+	charge.chargeCooldown.reset();
+	chase.reactionDelay.reset();
+	input.attackPressed = false;
+	input.horizontalDirection = directionToPlayer;
+	render.setFacingLeft(directionToPlayer < 0);
+	movement.maxSpeedX = chase.chaseSpeed * charge.chargeSpeedMultiplier;
+}
+
+bool shouldCharge(const ChargeComponent &charge, const ChaseComponent &chase, const float xDistance,
+                  const float chargeRange)
+{
+	return xDistance <= chargeRange && chase.reactionDelay.isTimeout() && charge.chargeCooldown.isTimeout()
+	       && Utils::Random::getFloat(0.0f, 1.0f) <= charge.chargeChance;
 }
 
 std::optional<PlayerContext> getPlayerContext(Registry &registry)
@@ -68,8 +185,12 @@ std::optional<PlayerContext> getPlayerContext(Registry &registry)
 		const auto &ground = view.get<GroundedComponent>(entity);
 		const auto &state = view.get<StateComponent>(entity);
 
-		return PlayerContext{Utils::DetectionRangeUtils::calculateCenter(pos, hurtBox, transform.scale), hurtBox,
-		                     transform.scale, ground.grounded, &state};
+		return PlayerContext{Utils::DetectionRangeUtils::calculateCenter(pos, hurtBox, transform.scale),
+		                     hurtBox,
+		                     transform.scale,
+		                     pos,
+		                     ground.grounded,
+		                     &state};
 	}
 	return std::nullopt;
 }
@@ -132,12 +253,16 @@ void handleRangeAttack(const EnemyContext &enemy, const PlayerContext &player, R
 		progress = enemy.attack->attackTimer.getTime().count() / enemy.attack->attackTimer.getLength().count();
 	}
 
-	if (progress <= enemy.attack->windUpLimit) {
+	if (progress <= enemy.attack->activeWindUpLimit) {
 		glm::vec2 projectileSize = {0.f, 0.f};
 		glm::vec2 hitboxOffset = {0.0f, 0.0f};
 		if (const auto pc = registry.tryGet<ProjectileComponent>(enemy.entity)) {
-			projectileSize = pc->get().projectileSize;
-			hitboxOffset = pc->get().hitboxOffset;
+			const auto &tilesetPath = pc->get().projectileTilesetPath;
+			if (!tilesetPath.empty()) {
+				const auto &projectileData = ProjectileFactory::getCachedProjectileData(tilesetPath);
+				projectileSize = {projectileData.hitbox.w, projectileData.hitbox.h};
+				hitboxOffset = {projectileData.hitbox.x, projectileData.hitbox.y};
+			}
 		}
 
 		if (!checkLineOfSight(enemy, player, ranged, projectileSize, hitboxOffset)) {
@@ -150,8 +275,12 @@ void handleRangeAttack(const EnemyContext &enemy, const PlayerContext &player, R
 	// player is close enough
 	enemy.chase->lastKnownPlayerX = player.center.x;
 	enemy.input->horizontalDirection = 0.0f;
-	enemy.render->flipX = directionToPlayer < 0;
-	enemy.input->attackPressed = enemy.chase->reactionDelay.isTimeout();
+	enemy.render->setFacingLeft(directionToPlayer < 0);
+	if (enemy.chase->reactionDelay.isTimeout()) {
+		enemy.input->attackPressed = true;
+		enemy.attack->activeWindUpLimit =
+		    Utils::Random::getFloat(enemy.attack->windUpLimit * 0.5f, enemy.attack->windUpLimit);
+	}
 }
 
 void handleMeleeAttack(const EnemyContext &enemy, const PlayerContext &player)
@@ -171,6 +300,18 @@ void handleMeleeAttack(const EnemyContext &enemy, const PlayerContext &player)
 	enemy.chase->lastKnownPlayerX = player.center.x;
 
 	if (AttackSystem::isAttacking(*enemy.attack)) {
+		float progress = 0.0f;
+		if (enemy.attack->attackTimer.getLength().count() > 0.0f) {
+			progress = enemy.attack->attackTimer.getTime().count() / enemy.attack->attackTimer.getLength().count();
+		}
+
+		if (progress <= enemy.attack->activeWindUpLimit) {
+			const float directionToPlayer = player.center.x > enemy.center.x ? 1.0f : -1.0f;
+			const bool facingLeft = directionToPlayer < 0;
+
+			enemy.render->setFacingLeft(facingLeft);
+		}
+
 		enemy.input->attackPressed = false;
 		enemy.input->horizontalDirection = 0.0f;
 		return;
@@ -181,13 +322,21 @@ void handleMeleeAttack(const EnemyContext &enemy, const PlayerContext &player)
 
 	if (const float stopDistance =
 	        (player.hurtBox.w * player.scale.x * 0.5f) + (enemy.hurtBox.w * enemy.scale.x * 0.5f);
-	    xDistance <= stopDistance + 5.0f) {
+	    xDistance <= stopDistance + enemy.hitBox.w * 0.5) {
 		enemy.input->horizontalDirection = 0.0f;
-		enemy.render->flipX = directionToPlayer < 0;
-		enemy.input->attackPressed = enemy.chase->reactionDelay.isTimeout();
+		if (enemy.chase->reactionDelay.isTimeout()) {
+			enemy.input->attackPressed = true;
+			enemy.attack->activeWindUpLimit =
+			    Utils::Random::getFloat(enemy.attack->windUpLimit * 0.5f, enemy.attack->windUpLimit);
+		}
+		if (!enemy.input->attackPressed) {
+			const bool facingLeft = directionToPlayer < 0;
+			enemy.render->setFacingLeft(facingLeft);
+		}
 	} else {
 		enemy.input->horizontalDirection = directionToPlayer;
-		enemy.render->flipX = directionToPlayer < 0;
+		const bool facingLeft = directionToPlayer < 0;
+		enemy.render->setFacingLeft(facingLeft);
 		enemy.movement->maxSpeedX = enemy.chase->chaseSpeed;
 		enemy.input->attackPressed = false;
 		enemy.chase->reactionDelay.reset();
@@ -207,11 +356,14 @@ void update(Registry &registry, const float deltaTime)
 
 	auto enemyView = registry.view<EnemyTag, InputComponent, PatrolComponent, ChaseComponent, PositionComponent,
 	                               HitBoxComponent, HurtBoxComponent, CollisionComponent, MovementComponent,
-	                               GroundedComponent, AttackComponent, RenderComponent>();
+	                               GroundedComponent, AttackComponent, RenderComponent, VelocityComponent>();
 
 	for (const auto entity : enemyView) {
-		const auto &pos = enemyView.get<PositionComponent>(entity);
-		const auto &enemyHurtBox = enemyView.get<HurtBoxComponent>(entity).hurtBox;
+		auto &pos = enemyView.get<PositionComponent>(entity);
+		auto &vel = enemyView.get<VelocityComponent>(entity);
+		const auto &enemyHurtBox = enemyView.get<HitBoxComponent>(entity).bodyHitBox;
+		const auto &enemyHitBox = enemyView.get<HitBoxComponent>(entity).weaponHitBox;
+
 		auto &chase = enemyView.get<ChaseComponent>(entity);
 
 		auto transform = registry.tryGet<TransformComponent>(entity);
@@ -225,12 +377,58 @@ void update(Registry &registry, const float deltaTime)
 		                      &enemyView.get<RenderComponent>(entity),
 		                      &enemyView.get<AttackComponent>(entity),
 		                      &enemyView.get<PatrolComponent>(entity),
+		                      enemyHitBox,
 		                      enemyHurtBox,
 		                      Utils::DetectionRangeUtils::calculateCenter(pos.position, enemyHurtBox, enemyScale),
 		                      enemyScale,
-		                      pos.position};
+		                      pos.position,
+		                      &pos,
+		                      &vel};
 
 		chase.reactionDelay.step(std::chrono::duration<float>(deltaTime), false);
+
+		if (auto chargeComp = registry.tryGet<ChargeComponent>(entity)) {
+			auto &charge = chargeComp->get();
+			charge.chargeCooldown.step(std::chrono::duration<float>(deltaTime), false);
+
+			if (playerCtx.state->state == State::Dead) {
+				resetChargeState(charge, enemyCtx, chase);
+				continue;
+			}
+
+			if (updateChargePaused(charge, enemyCtx, chase, deltaTime)) {
+				continue;
+			}
+
+			if (updateCharging(charge, enemyCtx, playerCtx, chase, deltaTime)) {
+				continue;
+			}
+
+			if (AttackSystem::isAttacking(*enemyCtx.attack)) {
+				continue;
+			}
+
+			const float verticalThreshold =
+			    Utils::DetectionRangeUtils::getVerticalThreshold(chase, playerCtx.isGrounded);
+			if (std::abs(playerCtx.center.y - enemyCtx.center.y) > verticalThreshold) {
+				continue;
+			}
+
+			if (!Utils::DetectionRangeUtils::isWithinDetectionRange(enemyCtx.center, playerCtx.center, chase)) {
+				continue;
+			}
+
+			const float xDistance = std::abs(playerCtx.center.x - enemyCtx.center.x);
+			const float stopDistance =
+			    (playerCtx.hurtBox.w * playerCtx.scale.x * 0.5f) + (enemyCtx.hurtBox.w * enemyCtx.scale.x * 0.5f);
+
+			if (const float chargeRange = chase.detectionWidthRange.value_or(stopDistance * 3.0f);
+			    shouldCharge(charge, chase, xDistance, chargeRange)) {
+				beginCharge(charge, *enemyCtx.input, chase, *enemyCtx.movement, *enemyCtx.render,
+				            getDirectionToPlayer(enemyCtx, playerCtx));
+				continue;
+			}
+		}
 
 		if (auto ranged = registry.tryGet<RangedAttackComponent>(entity)) {
 			handleRangeAttack(enemyCtx, playerCtx, registry, ranged->get());

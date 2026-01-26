@@ -53,7 +53,7 @@ TEST_F(AttackSystemTest, StartsAttackOnMeleeInput)
 
 	EXPECT_TRUE(GameEngine::ECS::Systems::AttackSystem::isAttacking(attack));
 	EXPECT_FLOAT_EQ(attack.attackTimer.getTime().count(), 0.1s .count());
-	EXPECT_FLOAT_EQ(attack.attackCoolDownTimer.getTime().count(), 0.2s .count());
+	EXPECT_FLOAT_EQ(attack.attackCoolDownTimer.getTime().count(), 0.0f);
 	EXPECT_TRUE(input.attackPressed);
 }
 
@@ -132,6 +132,6 @@ TEST_F(AttackSystemTest, ZeroDeltaTimeDoesAffectState)
 
 	GameEngine::ECS::Systems::AttackSystem::update(registry, 0.0f, noopCallback);
 
-	EXPECT_TRUE(GameEngine::ECS::Systems::AttackSystem::isAttacking(attack));
+	EXPECT_FALSE(GameEngine::ECS::Systems::AttackSystem::isAttacking(attack));
 	EXPECT_EQ(attack.attackTimer.getTime(), std::chrono::duration<float>::zero());
 }

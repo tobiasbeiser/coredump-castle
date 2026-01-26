@@ -8,6 +8,7 @@
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/RangedAttackComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Enemy/ChargeComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/ChaseComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
@@ -54,6 +55,7 @@ class ChaseSystemTest : public ::testing::Test {
 		registry.registerComponent<AttackComponent>(enemy, {});
 		registry.registerComponent<RenderComponent>(enemy, {});
 		registry.registerComponent<TransformComponent>(enemy, {.scale = {1.0f, 1.0f}});
+		registry.registerComponent<VelocityComponent>(enemy, {{0.0f, 0.0f}});
 
 		player = registry.create();
 		registry.registerComponent<PlayerTag>(player, {});
@@ -185,9 +187,37 @@ TEST_F(ChaseSystemTest, StopsMovementAndInputWhileAttacking)
 	// trap value
 	enemyInput.horizontalDirection = 1.0f;
 
+	auto &attack = registry.view<AttackComponent>().get<AttackComponent>(enemy);
+	attack.attackTimer = Timer{std::chrono::duration<float>(1.0f)};
+	attack.attackTimer.step(std::chrono::duration<float>(0.1f), false);
+
 	GameEngine::ECS::Systems::ChaseSystem::update(registry, 0.1f);
 
 	ASSERT_FLOAT_EQ(enemyInput.horizontalDirection, 0.0f);
+	ASSERT_FALSE(enemyInput.attackPressed);
+}
+
+TEST_F(ChaseSystemTest, ChargeStartsWhenChanceAndRangeMatch)
+{
+	using namespace std::chrono_literals;
+	registry.registerComponent<ChargeComponent>(enemy, ChargeComponent{});
+	auto view = registry.view<InputComponent, MovementComponent, ChaseComponent, PositionComponent>();
+	auto &enemyInput = view.get<InputComponent>(enemy);
+	auto &enemyMovement = view.get<MovementComponent>(enemy);
+	auto &enemyChase = view.get<ChaseComponent>(enemy);
+	auto &playerPosition = view.get<PositionComponent>(player);
+
+	playerPosition.position = {130.0f, 0.0f};
+	enemyChase.reactionDelay.timeoutNow();
+	auto &charge = registry.view<ChargeComponent>().get<ChargeComponent>(enemy);
+	charge.chargeChance = 1.0f;
+	charge.chargeCooldown.timeoutNow();
+
+	GameEngine::ECS::Systems::ChaseSystem::update(registry, 0.1f);
+
+	ASSERT_TRUE(charge.chargeTimer.isRunning());
+	ASSERT_FLOAT_EQ(enemyInput.horizontalDirection, 1.0f);
+	ASSERT_FLOAT_EQ(enemyMovement.maxSpeedX, enemyChase.chaseSpeed * charge.chargeSpeedMultiplier);
 	ASSERT_FALSE(enemyInput.attackPressed);
 }
 
@@ -269,15 +299,89 @@ TEST_F(ChaseSystemTest, RangedEnemyDoesNotAttackWhenLineOfSightBlocked)
 	const auto blocker = registry.create();
 	registry.registerComponent<PositionComponent>(blocker, {{120.0f, 0.0f}});
 	registry.registerComponent<CollisionComponent>(blocker, {{0.0f, -5.0f, 10.0f, 20.0f}});
+	GameEngine::ECS::Systems::CollisionSystem::buildStaticColliderGrid(registry);
 
 	auto &playerPosition = playerView.get<PositionComponent>(player);
 	playerPosition.position = {150.0f, 0.0f};
-	GameEngine::ECS::Systems::CollisionSystem::buildStaticColliderGrid(registry);
 
 	GameEngine::ECS::Systems::ChaseSystem::update(registry, 0.6f);
 
 	const auto &enemyInput = enemyView.get<InputComponent>(enemy);
 	EXPECT_FALSE(enemyInput.attackPressed);
+}
+
+TEST_F(ChaseSystemTest, ChargeStopsOnContact)
+{
+	using namespace std::chrono_literals;
+	registry.registerComponent<ChargeComponent>(enemy, ChargeComponent{});
+	auto view = registry.view<InputComponent, MovementComponent, ChaseComponent, PositionComponent>();
+	auto &enemyInput = view.get<InputComponent>(enemy);
+	auto &enemyChase = view.get<ChaseComponent>(enemy);
+	auto &playerPosition = view.get<PositionComponent>(player);
+
+	// Start charge
+	playerPosition.position = {130.0f, 0.0f};
+	enemyChase.reactionDelay.timeoutNow();
+	auto &charge = registry.view<ChargeComponent>().get<ChargeComponent>(enemy);
+	charge.chargeChance = 1.0f;
+	charge.chargeCooldown.timeoutNow();
+
+	GameEngine::ECS::Systems::ChaseSystem::update(registry, 0.1f);
+	ASSERT_TRUE(charge.chargeTimer.isRunning());
+	ASSERT_NE(enemyInput.horizontalDirection, 0.0f);
+
+	// Move enemy to overlap with player
+	auto &enemyPosition = view.get<PositionComponent>(enemy);
+	enemyPosition.position = playerPosition.position; // Perfect overlap
+
+	GameEngine::ECS::Systems::ChaseSystem::update(registry, 0.1f);
+
+	// Charge should have stopped
+	ASSERT_FALSE(charge.chargeTimer.isRunning());
+	ASSERT_FLOAT_EQ(enemyInput.horizontalDirection, 0.0f);
+}
+
+TEST_F(ChaseSystemTest, ChargeSnapsToCorrectSideWhenOvershooting)
+{
+	using namespace std::chrono_literals;
+	registry.registerComponent<ChargeComponent>(enemy, ChargeComponent{});
+	auto view = registry.view<InputComponent, MovementComponent, ChaseComponent, PositionComponent, VelocityComponent>();
+	auto &enemyInput = view.get<InputComponent>(enemy);
+	auto &enemyChase = view.get<ChaseComponent>(enemy);
+	auto &enemyVel = view.get<VelocityComponent>(enemy);
+	auto &playerPosition = view.get<PositionComponent>(player);
+
+	// Start charge Left -> Right
+	playerPosition.position = {130.0f, 0.0f}; // Player Box: [130, 150], Center 140
+	enemyChase.reactionDelay.timeoutNow();
+	auto &charge = registry.view<ChargeComponent>().get<ChargeComponent>(enemy);
+	charge.chargeChance = 1.0f;
+	charge.chargeCooldown.timeoutNow();
+
+	GameEngine::ECS::Systems::ChaseSystem::update(registry, 0.1f);
+	ASSERT_TRUE(charge.chargeTimer.isRunning());
+	// Moving Right
+	ASSERT_FLOAT_EQ(enemyInput.horizontalDirection, 1.0f);
+	enemyVel.velocity.x = 100.0f; 
+
+	// Overshoot: Move Enemy to [145, 165]. Center 155.
+	// Player Center is 140. Enemy > Player. directionToPlayer will be -1 (Left).
+	// Overlap is [145, 150] (5 pixels).
+	auto &enemyPosition = view.get<PositionComponent>(enemy);
+	enemyPosition.position = {145.0f, 0.0f};
+
+	GameEngine::ECS::Systems::ChaseSystem::update(registry, 0.1f);
+
+	// Should stop
+	ASSERT_FALSE(charge.chargeTimer.isRunning());
+	
+	// Should snap to LEFT of player (130 - 20 = 110).
+	// Because we were charging Right.
+	// Current BUG: It checks directionToPlayer (-1), thinks we charge Left, so snaps to Right of Player (130+20=150).
+	// So if it equals 150, it passed through.
+	// If it equals 110, it blocked correctly.
+	
+	ASSERT_NEAR(enemyPosition.position.x, 110.0f, 0.1f);
 }
 
 TEST_F(ChaseSystemTest, RangedEnemyResetsWhenPlayerOutOfRange)

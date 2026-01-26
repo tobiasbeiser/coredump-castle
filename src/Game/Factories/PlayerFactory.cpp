@@ -13,6 +13,7 @@
 #include "Engine/ECS/Components/Gameplay/JumpComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MapToggleComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/ProgressComponent.hpp"
 #include "Engine/ECS/Components/Physics/AccelerationComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Physics/GravityComponent.hpp"
@@ -51,6 +52,7 @@ GameEngine::ECS::Entity PlayerFactory::createPlayer(tson::Object &player, const 
 		registry.registerComponent(e, TransformComponent{});
 		registry.registerComponent(e, CenterCameraComponent{});
 		registry.registerComponent(e, InventoryComponent{});
+		registry.registerComponent(e, ProgressComponent{});
 
 		registry.registerComponent(e, StateComponent{});
 

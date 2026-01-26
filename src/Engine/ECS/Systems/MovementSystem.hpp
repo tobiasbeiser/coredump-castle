@@ -46,7 +46,8 @@ class MovementSystem {
 			}
 
 			if (const auto renderComp = registry.tryGet<RenderComponent>(entity); renderComp && velocity.x) {
-				renderComp->get().flipX = velocity.x < 0;
+				const bool facingLeft = velocity.x < 0;
+				renderComp->get().setFacingLeft(facingLeft);
 			}
 		}
 	}

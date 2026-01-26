@@ -5,6 +5,7 @@
 #include "Engine/ECS/Systems/Combat/DeathSystem.hpp"
 #include "Engine/ECS/Systems/Combat/HealthSystem.hpp"
 #include "Engine/ECS/Systems/Combat/HitDetectionSystem.hpp"
+#include "Engine/ECS/Systems/Combat/PoiseSystem.hpp"
 #include "Engine/ECS/Systems/EffectSystem.hpp"
 #include "Engine/ECS/Systems/Enemy/ChaseSystem.hpp"
 #include "Engine/ECS/Systems/Enemy/PatrolSystem.hpp"
@@ -85,6 +86,7 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 
 	ECS::Systems::SpikeSystem::update(game.getRegistry());
 	ECS::Systems::HealthSystem::update(game.getRegistry(), deltaTime);
+	ECS::Systems::PoiseSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::StateSystem::update(game.getRegistry());
 
 	ECS::Systems::AnimationSystem::update(game.getRegistry(), deltaTime);

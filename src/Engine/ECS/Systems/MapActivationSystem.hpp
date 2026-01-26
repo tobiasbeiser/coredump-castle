@@ -43,8 +43,8 @@ class MapActivationSystem {
 			// Set player layer correctly
 			for (auto playerView = registry.view<PlayerTag, RenderComponent, VelocityComponent>();
 			     const auto playerEntity : playerView) {
-				auto &[layer, flipX] = playerView.get<RenderComponent>(playerEntity);
-				layer = referenceFrame.playerLayer;
+				auto &render = playerView.get<RenderComponent>(playerEntity);
+				render.layer = referenceFrame.playerLayer;
 				if (transitionFromBottomToTop) {
 					if (auto &[velocity] = playerView.get<VelocityComponent>(playerEntity); velocity.y < 0) {
 						velocity.y = -400;

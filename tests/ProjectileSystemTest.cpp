@@ -5,12 +5,14 @@
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/RangedAttackComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
+#include "Engine/ECS/Components/Render/SpriteComponent.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Components/Tags/ProjectileTag.hpp"
@@ -18,8 +20,8 @@
 #include "Engine/ECS/View.hpp"
 #include "Engine/Graphics/TextureManager.hpp"
 
-#include <gtest/gtest.h>
 #include <cmath>
+#include <gtest/gtest.h>
 #include <numbers>
 
 using namespace std::chrono_literals;
@@ -44,6 +46,8 @@ class ProjectileSystemTest : public ::testing::Test {
 		registry.registerComponent<ProjectileComponent>(enemy, {.maxRange = 500.0f, .speed = 200.0f});
 		registry.registerComponent<RenderComponent>(enemy, {.flipX = false});
 		registry.registerComponent<TransformComponent>(enemy, {.scale = {1.0f, 1.0f}});
+		registry.registerComponent<SpriteComponent>(enemy, {});
+		registry.registerComponent<HitBoxComponent>(enemy, {});
 
 		player = registry.create();
 		registry.registerComponent<PlayerTag>(player, {});
@@ -117,11 +121,14 @@ TEST_F(ProjectileSystemTest, SpawnsProjectileTowardTargetSnapshot)
 
 TEST_F(ProjectileSystemTest, SetsProjectileRotationFromTargetSnapshot)
 {
-	auto view = registry.view<AttackComponent, RangedAttackComponent, PositionComponent, HurtBoxComponent, ProjectileComponent>();
+	auto view = registry.view<AttackComponent, RangedAttackComponent, PositionComponent, HurtBoxComponent,
+	                          ProjectileComponent, SpriteComponent, HitBoxComponent>();
 	auto &attack = view.get<AttackComponent>(enemy);
 	auto &rangedAttack = view.get<RangedAttackComponent>(enemy);
 	auto &position = view.get<PositionComponent>(enemy);
 	auto &hurtBox = view.get<HurtBoxComponent>(enemy);
+	auto &sprite = view.get<SpriteComponent>(enemy);
+	auto &hitBox = view.get<HitBoxComponent>(enemy);
 	auto &projectileSettings = view.get<ProjectileComponent>(enemy);
 
 	attack.attackTimer.reset();
@@ -129,8 +136,8 @@ TEST_F(ProjectileSystemTest, SetsProjectileRotationFromTargetSnapshot)
 
 	position.position = {0.0f, 0.0f};
 	hurtBox.hurtBox = {0.0f, 0.0f, 20.0f, 20.0f};
-	projectileSettings.projectileSize = {10.0f, 10.0f};
-	projectileSettings.hitboxOffset = {0.0f, 0.0f};
+	sprite.tileSize = {10.0f, 10.0f};
+	hitBox = {0.0f, 0.0f};
 	rangedAttack.projectileOffset = {0.0f, 0.0f};
 	rangedAttack.targetSnapshot = {0.0f, 100.0f};
 
@@ -141,7 +148,7 @@ TEST_F(ProjectileSystemTest, SetsProjectileRotationFromTargetSnapshot)
 	const auto projectile = projectileView.at(0);
 	const auto &transform = projectileView.get<TransformComponent>(projectile);
 
-	const glm::vec2 spawnCenter = glm::vec2{5.0f, 5.0f};
+	const glm::vec2 spawnCenter = glm::vec2{0.0f, 0.0f};
 	const glm::vec2 direction = glm::normalize(rangedAttack.targetSnapshot - spawnCenter);
 	const double expectedRotation = std::atan2(direction.y, direction.x) * (180.0 / std::numbers::pi);
 

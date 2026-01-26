@@ -10,7 +10,9 @@
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/PendingDamageComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
+#include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
+#include "Engine/ECS/Components/Render/SpriteComponent.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Components/Tags/ProjectileTag.hpp"
@@ -24,7 +26,7 @@ namespace GameEngine::ECS::Systems::HitDetectionSystem {
 
 namespace {
 
-bool isHostile(Registry &registry, const Entity attacker, const Entity victim)
+bool isHostile(const Registry &registry, const Entity attacker, const Entity victim)
 {
 	const auto attackerIsPlayer = registry.has<PlayerTag>(attacker);
 	const auto attackerIsEnemy = registry.has<EnemyTag>(attacker);
@@ -71,11 +73,6 @@ void applyDamage(Registry &registry, const Entity victim, const int damage = 10)
 	}
 }
 
-bool checkCollision(const SDL_FRect &rect1, const SDL_FRect &rect2)
-{
-	return SDL_HasRectIntersectionFloat(&rect1, &rect2);
-}
-
 void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
 {
 	auto attackerView =
@@ -87,19 +84,35 @@ void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
 		const auto &attackerHitBox = attackerView.get<HitBoxComponent>(attacker);
 		const auto &[position, previousPosition] = attackerView.get<PositionComponent>(attacker);
 		const auto &[attackerHurtBoxRect] = attackerView.get<HurtBoxComponent>(attacker);
-		const auto facingLeft = attackerView.get<RenderComponent>(attacker).flipX;
+		const auto &render = attackerView.get<RenderComponent>(attacker);
+		const bool facingLeft = render.isFacingLeft();
+		SDL_FRect attackerReferenceBox = attackerHitBox.bodyHitBox;
+		if (const auto sprite = registry.tryGet<SpriteComponent>(attacker)) {
+			const auto &tileSize = sprite->get().tileSize;
+			attackerReferenceBox = {0.0f, 0.0f, static_cast<float>(tileSize.x), static_cast<float>(tileSize.y)};
+		} else if (const auto collision = registry.tryGet<CollisionComponent>(attacker)) {
+			attackerReferenceBox = collision->get().collisionBox;
+		}
 
 		const auto attackerTransform = registry.tryGet<TransformComponent>(attacker);
 		const auto attackerScale = attackerTransform ? &attackerTransform->get().scale : nullptr;
-		const bool isAttacking = AttackSystem::isAttacking(attackComponent);
+
+		const bool isAttackingState = AttackSystem::isAttacking(attackComponent);
+		bool isWeaponActive = isAttackingState && attackComponent.isDamageActive;
 
 		SDL_FRect attackerWeaponRect = {0, 0, 0, 0};
-		if (isAttacking) {
-			attackerWeaponRect = Utils::HitBoxUtils::getWeaponHitBoxRect(position, attackerHitBox, attackerHurtBoxRect,
+		if (isWeaponActive) {
+			SDL_FRect localHurtBox = attackerHurtBoxRect;
+			if (facingLeft) {
+				localHurtBox.x =
+				    attackerReferenceBox.x + attackerReferenceBox.w - (attackerHurtBoxRect.x + attackerHurtBoxRect.w);
+			}
+			attackerWeaponRect = Utils::HitBoxUtils::getWeaponHitBoxRect(position, attackerHitBox, localHurtBox,
 			                                                             attackerScale, facingLeft);
 		}
 
-		SDL_FRect attackerBodyRect = Utils::HitBoxUtils::getHitBox(position, attackerHurtBoxRect, attackerScale);
+		SDL_FRect attackerBodyRect = Utils::HitBoxUtils::getHitBoxFacing(
+		    position, attackerHitBox.bodyHitBox, attackerReferenceBox, attackerScale, facingLeft);
 		for (const auto victim : victimView) {
 			if (!isValidVictim(registry, attacker, victim)) {
 				continue;
@@ -109,17 +122,45 @@ void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
 			const auto &[victimHurtBox] = victimView.get<HurtBoxComponent>(victim);
 			const auto victimTransform = registry.tryGet<TransformComponent>(victim);
 			const auto victimScale = victimTransform ? &victimTransform->get().scale : nullptr;
-			SDL_FRect victimHurtBoxRect = Utils::HitBoxUtils::getHitBox(victimPos, victimHurtBox, victimScale);
+			SDL_FRect victimReferenceBox = victimHurtBox;
+			if (const auto sprite = registry.tryGet<SpriteComponent>(victim)) {
+				const auto &tileSize = sprite->get().tileSize;
+				victimReferenceBox = {0.0f, 0.0f, static_cast<float>(tileSize.x), static_cast<float>(tileSize.y)};
+			} else if (const auto collision = registry.tryGet<CollisionComponent>(victim)) {
+				victimReferenceBox = collision->get().collisionBox;
+			}
+			bool victimFacingLeft = false;
+			if (const auto victimRender = registry.tryGet<RenderComponent>(victim)) {
+				victimFacingLeft = victimRender->get().isFacingLeft();
+			}
+			SDL_FRect victimHurtBoxRect = Utils::HitBoxUtils::getHitBoxFacing(
+			    victimPos, victimHurtBox, victimReferenceBox, victimScale, victimFacingLeft);
 
-			bool hit = false;
-
-			if (isAttacking && checkCollision(attackerWeaponRect, victimHurtBoxRect)) {
-				hit = true;
-				onHit(attacker, victim);
+			bool isInvulnerable = false;
+			if (const auto health = registry.tryGet<HealthComponent>(victim)) {
+				isInvulnerable = HealthSystem::isInvulnerable(health->get());
 			}
 
-			if (!hit && registry.has<EnemyTag>(attacker) && checkCollision(attackerBodyRect, victimHurtBoxRect)) {
-				hit = true;
+			bool hit = false;
+			bool bodyHit = false;
+
+			if (isWeaponActive && SDL_HasRectIntersectionFloat(&attackerWeaponRect, &victimHurtBoxRect)) {
+				if (!isInvulnerable) {
+					hit = true;
+					onHit(attacker, victim);
+				}
+			}
+
+			if (!hit && registry.has<EnemyTag>(attacker)
+			    && SDL_HasRectIntersectionFloat(&attackerBodyRect, &victimHurtBoxRect)) {
+				bodyHit = true;
+				if (!isInvulnerable) {
+					hit = true;
+				}
+			}
+
+			if (bodyHit && isInvulnerable) {
+				continue;
 			}
 
 			if (hit) {
@@ -135,16 +176,16 @@ void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
 
 void resolveProjectileHits(Registry &registry)
 {
-	auto projectileView = registry.view<ProjectileTag, ProjectileComponent, PositionComponent, HurtBoxComponent>();
+	auto projectileView = registry.view<ProjectileTag, ProjectileComponent, PositionComponent, HitBoxComponent>();
 	auto victimView = registry.view<HurtBoxComponent, PositionComponent, HealthComponent>();
 
 	for (const auto projectile : projectileView) {
 		auto &[position, previousPosition] = projectileView.get<PositionComponent>(projectile);
-		auto &projectileHurtBox = projectileView.get<HurtBoxComponent>(projectile).hurtBox;
+		auto &projectileHitBox = projectileView.get<HitBoxComponent>(projectile).bodyHitBox;
 
 		const auto transform = registry.tryGet<TransformComponent>(projectile);
 		const auto scale = transform ? &transform->get().scale : nullptr;
-		SDL_FRect projectileHurtBoxRect = Utils::HitBoxUtils::getHitBox(position, projectileHurtBox, scale);
+		SDL_FRect projectileHurtBoxRect = Utils::HitBoxUtils::getHitBox(position, projectileHitBox, scale);
 
 		for (const auto victim : victimView) {
 			if (!isValidVictim(registry, projectile, victim)) {
@@ -159,7 +200,8 @@ void resolveProjectileHits(Registry &registry)
 
 			SDL_FRect victimHurtBoxRect = Utils::HitBoxUtils::getHitBox(victimPos.position, victimHurtBox, victimScale);
 
-			if (registry.has<EnemyTag>(projectile) && checkCollision(projectileHurtBoxRect, victimHurtBoxRect)) {
+			if (registry.has<EnemyTag>(projectile)
+			    && SDL_HasRectIntersectionFloat(&projectileHurtBoxRect, &victimHurtBoxRect)) {
 				applyDamage(registry, victim);
 				registry.deleteEntity(projectile);
 			}

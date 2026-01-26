@@ -36,7 +36,6 @@
          "objectgroup":
             {
              "draworder":"index",
-             "id":2,
              "name":"",
              "objects":[
                     {
@@ -171,6 +170,11 @@
          "id":21,
          "properties":[
                 {
+                 "name":"damageActive",
+                 "type":"bool",
+                 "value":true
+                }, 
+                {
                  "name":"state",
                  "propertytype":"State",
                  "type":"int",
@@ -180,6 +184,11 @@
         {
          "id":22,
          "properties":[
+                {
+                 "name":"damageActive",
+                 "type":"bool",
+                 "value":true
+                }, 
                 {
                  "name":"state",
                  "propertytype":"State",
@@ -216,6 +225,11 @@
          "id":23,
          "properties":[
                 {
+                 "name":"damageActive",
+                 "type":"bool",
+                 "value":true
+                }, 
+                {
                  "name":"state",
                  "propertytype":"State",
                  "type":"int",
@@ -224,5 +238,5 @@
         }],
  "tilewidth":64,
  "type":"tileset",
- "version":"1.10"
+ "version":"1.11"
 }
