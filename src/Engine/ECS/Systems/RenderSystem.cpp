@@ -5,7 +5,7 @@
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
-#include "Engine/ECS/Components/Render/AlreadySeenComponent.hpp"
+#include "Engine/ECS/Components/Tags/AlreadySeenTag.hpp"
 #include "Engine/ECS/Components/Render/BackgroundComponent.hpp"
 #include "Engine/ECS/Components/Render/BlinkComponent.hpp"
 #include "Engine/ECS/Components/Render/CenterCameraComponent.hpp"
@@ -66,13 +66,13 @@ void RenderSystem::update(Registry &registry)
 				if (registry.has<MovementComponent>(entity))
 					continue;
 
-				if (!registry.has<AlreadySeenComponent>(entity)) {
+				if (!registry.has<AlreadySeenTag>(entity)) {
 					entitiesToCache.push_back(entity);
 				}
 			}
 		}
 		for (auto entity : entitiesToCache) {
-			registry.registerComponent(entity, AlreadySeenComponent{});
+			registry.registerComponent(entity, AlreadySeenTag{});
 		}
 	}
 
@@ -115,7 +115,7 @@ void RenderSystem::updateIngameMap(Registry &registry)
 		renderer.centerCameraOn(posLvl.position + level.levelSize / 2.0f, posLvl.position, level.levelSize);
 	}
 
-	auto view = registry.view<AlreadySeenComponent, RenderComponent, PositionComponent, SpriteComponent>()
+	auto view = registry.view<AlreadySeenTag, RenderComponent, PositionComponent, SpriteComponent>()
 	                .exclude<InactiveTag>();
 	renderItems.reserve(view.size());
 	const SDL_FRect &viewport = renderer.getViewport();

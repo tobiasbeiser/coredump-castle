@@ -4,6 +4,9 @@
 #include "Engine/ECS/Components/Gameplay/JumpComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/KeyComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/LockComponent.hpp"
+#include "Engine/ECS/Components/Tags/AlreadySeenTag.hpp"
+#include "Engine/ECS/Components/Render/RenderComponent.hpp"
+#include "Engine/ECS/Components/Render/SpriteComponent.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
@@ -53,6 +56,11 @@ class SaveSystem {
 
   private:
 	std::unique_ptr<ISaveStorage> saveStorage;
+	static constexpr std::string keyLabel = "keys";
+	static constexpr std::string maxJumpsLabel = "maxJumps";
+	static constexpr std::string positionXLabel = "positionX";
+	static constexpr std::string positionYLabel = "positionY";
+	static constexpr std::string seenPositionsLabel = "seenPositions";
 
 	void initNewGameSave() const
 	{
@@ -110,6 +118,14 @@ class SaveSystem {
 		saveData["positionY"] = position.y;
 		saveData["keys"] = keys;
 
+		std::set<std::pair<int, int>> visitedPositions;
+		for (auto view = registry.view<AlreadySeenTag, PositionComponent>().exclude<PlayerTag>();
+		     const auto entity : view) {
+			const auto &[tilePos, _] = view.get<PositionComponent>(entity);
+			visitedPositions.emplace(tilePos.x, tilePos.y);
+		}
+		saveData["seenPositions"] = visitedPositions;
+
 		return saveData;
 	}
 
@@ -126,22 +142,38 @@ class SaveSystem {
 		auto &[position, previousPosition] = playerView.get<PositionComponent>(playerEntity);
 		auto &[keys] = playerView.get<InventoryComponent>(playerEntity);
 
-		jumpComponent.maxJumps = gameData.at("maxJumps").get<int>();
-		position.x = gameData.at("positionX").get<float>();
-		position.y = gameData.at("positionY").get<float>();
-		keys = gameData.at("keys").get<std::vector<int>>();
+		if (gameData.contains(maxJumpsLabel))
+			jumpComponent.maxJumps = gameData.at(maxJumpsLabel).get<int>();
 
-		for (auto lockView = registry.view<LockComponent>(); const auto lockEntity : lockView) {
-			if (const auto &[lockId] = lockView.get<LockComponent>(lockEntity);
-			    std::ranges::find(keys, lockId) != keys.end()) {
-				registry.deleteEntity(lockEntity);
+		if (gameData.contains(positionXLabel) && gameData.contains(positionYLabel)) {
+			position.x = gameData.at(positionXLabel).get<float>();
+			position.y = gameData.at(positionYLabel).get<float>();
+		}
+
+		if (gameData.contains(keyLabel)) {
+			keys = gameData.at(keyLabel).get<std::vector<int>>();
+			for (auto lockView = registry.view<LockComponent>(); const auto lockEntity : lockView) {
+				if (const auto &[lockId] = lockView.get<LockComponent>(lockEntity);
+				    std::ranges::find(keys, lockId) != keys.end()) {
+					registry.deleteEntity(lockEntity);
+				}
+			}
+
+			for (auto keyView = registry.view<KeyComponent>(); const auto keyEntity : keyView) {
+				if (const auto &[keyId] = keyView.get<KeyComponent>(keyEntity);
+				    std::ranges::find(keys, keyId) != keys.end()) {
+					registry.deleteEntity(keyEntity);
+				}
 			}
 		}
 
-		for (auto keyView = registry.view<KeyComponent>(); const auto keyEntity : keyView) {
-			if (const auto &[keyId] = keyView.get<KeyComponent>(keyEntity);
-			    std::ranges::find(keys, keyId) != keys.end()) {
-				registry.deleteEntity(keyEntity);
+		if (gameData.contains(seenPositionsLabel)) {
+			const std::set<std::pair<int, int>> tilesSeen = gameData.at(seenPositionsLabel);
+			for (auto view = registry.view<RenderComponent, PositionComponent, SpriteComponent>(); auto entity : view) {
+				if (const auto [spritePos, prevPos] = view.get<PositionComponent>(entity);
+				    tilesSeen.contains(std::pair(spritePos.x, spritePos.y))) {
+					registry.registerComponent(entity, AlreadySeenTag{});
+				}
 			}
 		}
 	}

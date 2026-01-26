@@ -148,7 +148,7 @@ std::unique_ptr<Widget> createSettingsMenu(const UIContext &ctx, const SettingsM
 	auto root = makeMenuRoot(ctx, "Settings");
 
 	std::unordered_map<std::string, std::string> keyMapping = {
-	    {"Left", "[A]"}, {"Right", "[D]"}, {"Jump", "[Space]"}, {"Attack", "[K]"}, {"Interact", "[E]"},
+	    {"Left", "[A]"}, {"Right", "[D]"}, {"Jump", "[Space]"}, {"Attack", "[K]"}, {"Interact", "[E]"}, {"Toggle Map", "[M]"}
 	};
 
 	auto container = std::make_unique<LinearLayout>();
@@ -163,11 +163,11 @@ std::unique_ptr<Widget> createSettingsMenu(const UIContext &ctx, const SettingsM
 		auto listElement = std::make_unique<LinearLayout>();
 		listElement->setOrientation(Orientation::Horizontal);
 		auto actionLabel = std::make_unique<Label>(action, ctx.textFont);
-		actionLabel->setLayoutWeight(0.40f);
+		actionLabel->setLayoutWeight(0.5);
 		listElement->addWidget(std::move(actionLabel));
-		listElement->addWidget(makeSpacer());
+		listElement->addWidget(makeSpacer(0.8));
 		auto keyLabel = std::make_unique<Label>(key, ctx.textFont);
-		keyLabel->setLayoutWeight(0.35f);
+		keyLabel->setLayoutWeight(0.30f);
 		listElement->addWidget(std::move(keyLabel));
 
 		content->addWidget(std::move(listElement));

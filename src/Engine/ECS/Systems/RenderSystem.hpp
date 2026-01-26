@@ -12,6 +12,7 @@
 
 namespace GameEngine::ECS::Systems {
 
+// NOLINTBEGIN
 struct BackgroundRenderContext {
 	const BackgroundComponent &bgComp;
 	const PositionComponent &posComp;
@@ -24,6 +25,7 @@ struct SpriteRenderContext {
 	const RenderComponent &renderComp;
 	const std::optional<std::reference_wrapper<TransformComponent>> transformComp;
 };
+// NOLINTEND
 struct RenderItem {
 	int layer = 0;
 	SDL_Texture *texture = nullptr;
@@ -59,6 +61,7 @@ class RenderSystem {
 
 	[[nodiscard]] static std::optional<RenderItem> createBackgroundItem(const BackgroundRenderContext &ctx);
 
-	[[nodiscard]] static std::optional<RenderItem> createSpriteItem(const SpriteRenderContext &ctx, const SDL_FRect &viewport);
+	[[nodiscard]] static std::optional<RenderItem> createSpriteItem(const SpriteRenderContext &ctx,
+	                                                                const SDL_FRect &viewport);
 };
 } // namespace GameEngine::ECS::Systems
