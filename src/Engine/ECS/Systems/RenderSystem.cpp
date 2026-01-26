@@ -140,7 +140,7 @@ void RenderSystem::centerCamera(Registry &registry) const
 
 std::optional<RenderUtils::RenderItem> RenderSystem::createBackgroundItem(const BackgroundRenderContext &ctx)
 {
-	const auto &[layer, flipX] = ctx.renderComp;
+	const auto &render = ctx.renderComp;
 	const auto &[position, previousPosition] = ctx.posComp;
 	const auto &[texture, scrollSpeed, scrollPos, yOffset, repeatX] = ctx.bgComp;
 
@@ -150,11 +150,11 @@ std::optional<RenderUtils::RenderItem> RenderSystem::createBackgroundItem(const 
 	if (repeatX) {
 		dstOpt = SDL_FRect{.x = position.x, .y = yOffset + position.y, .h = static_cast<float>(texture->h)};
 	}
-	return RenderItem{.layer = layer,
+	return RenderItem{.layer = render.layer,
 	                  .texture = texture,
 	                  .src = srcOpt,
 	                  .dst = dstOpt,
 	                  .parallax = repeatX,
 	                  .scrollFactor = scrollSpeed,
-	                  .flipX = flipX};
+	                  .flipX = render.flipX};
 }

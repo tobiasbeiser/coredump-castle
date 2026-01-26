@@ -28,7 +28,7 @@ class MapMenuState final : public GameState {
 	TextureManager &textureManager;
 	Ui::GuiManager &guiManager;
 	Renderer &renderer;
-	static constexpr float initialScalingFactor = 0.45;
+	static constexpr float initialScalingFactor = 0.30;
 	ECS::Systems::MapRenderSystem mapRenderSystem{renderer, initialScalingFactor};
 	ECS::Systems::InputSystem inputSystem{inputManager};
 	std::unique_ptr<Ui::Widget> rootWidget{};

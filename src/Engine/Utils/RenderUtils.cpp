@@ -57,7 +57,7 @@ GameEngine::Utils::RenderUtils::createSpriteItem(const SpriteRenderContext &ctx,
 	// Tiles, Player
 	const auto &[position, previousPosition] = ctx.posComp;
 	const auto &[texture, TileSize, TileMapPosition, spriteColorMod] = ctx.spriteComp;
-	const auto &[layer, flipX] = ctx.renderComp;
+	const auto &render = ctx.renderComp;
 
 	const glm::vec2 scale = ctx.transformComp ? ctx.transformComp->get().scale : glm::vec2{1.0f, 1.0f};
 	const double rotation = ctx.transformComp ? ctx.transformComp->get().rotation : 0.0;
@@ -75,12 +75,12 @@ GameEngine::Utils::RenderUtils::createSpriteItem(const SpriteRenderContext &ctx,
 	if (!SDL_HasRectIntersectionFloat(&dst, &viewport))
 		return std::nullopt;
 
-	return RenderItem{.layer = layer,
+	return RenderItem{.layer = render.layer,
 	                  .texture = texture,
 	                  .src = src,
 	                  .dst = dst,
 	                  .parallax = false,
-	                  .flipX = flipX,
+	                  .flipX = render.flipX,
 	                  .angle = rotation,
 	                  .colorMod = spriteColorMod};
 }

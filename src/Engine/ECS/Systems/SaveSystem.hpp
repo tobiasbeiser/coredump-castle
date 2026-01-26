@@ -58,13 +58,13 @@ class SaveSystem {
 
   private:
 	std::unique_ptr<ISaveStorage> saveStorage;
-	static constexpr std::string keyLabel = "keys";
-	static constexpr std::string maxJumpsLabel = "maxJumps";
-	static constexpr std::string positionXLabel = "positionX";
-	static constexpr std::string positionYLabel = "positionY";
-	static constexpr std::string seenPositionsLabel = "seenPositions";
-	static constexpr std::string defeatedBossesLabel = "defeatedBosses";
-	static constexpr std::string unlockedAbilitiesLabel = "unlockedAbilities";
+	static constexpr std::string_view keyLabel = "keys";
+	static constexpr std::string_view maxJumpsLabel = "maxJumps";
+	static constexpr std::string_view positionXLabel = "positionX";
+	static constexpr std::string_view positionYLabel = "positionY";
+	static constexpr std::string_view seenPositionsLabel = "seenPositions";
+	static constexpr std::string_view defeatedBossesLabel = "defeatedBosses";
+	static constexpr std::string_view unlockedAbilitiesLabel = "unlockedAbilities";
 
 	void initNewGameSave() const
 	{

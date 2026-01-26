@@ -14,6 +14,7 @@ class RenderSystem {
 
   public:
 	explicit RenderSystem(Renderer &renderer);
+	auto getRenderRank(const RenderItem &item);
 
 	RenderSystem(const RenderSystem &) = delete;
 	RenderSystem &operator=(RenderSystem &&) = delete;
