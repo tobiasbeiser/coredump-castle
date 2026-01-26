@@ -94,7 +94,6 @@ void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
 			attackerReferenceBox = collision->get().collisionBox;
 		}
 
-
 		const auto attackerTransform = registry.tryGet<TransformComponent>(attacker);
 		const auto attackerScale = attackerTransform ? &attackerTransform->get().scale : nullptr;
 
@@ -105,16 +104,15 @@ void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
 		if (isWeaponActive) {
 			SDL_FRect localHurtBox = attackerHurtBoxRect;
 			if (facingLeft) {
-				localHurtBox.x = attackerReferenceBox.x + attackerReferenceBox.w
-				                 - (attackerHurtBoxRect.x + attackerHurtBoxRect.w);
+				localHurtBox.x =
+				    attackerReferenceBox.x + attackerReferenceBox.w - (attackerHurtBoxRect.x + attackerHurtBoxRect.w);
 			}
-			attackerWeaponRect =
-			    Utils::HitBoxUtils::getWeaponHitBoxRect(position, attackerHitBox, localHurtBox, attackerScale, facingLeft);
+			attackerWeaponRect = Utils::HitBoxUtils::getWeaponHitBoxRect(position, attackerHitBox, localHurtBox,
+			                                                             attackerScale, facingLeft);
 		}
 
-		SDL_FRect attackerBodyRect = Utils::HitBoxUtils::getHitBoxFacing(position, attackerHitBox.bodyHitBox,
-		                                                                 attackerReferenceBox, attackerScale,
-		                                                                 facingLeft);
+		SDL_FRect attackerBodyRect = Utils::HitBoxUtils::getHitBoxFacing(
+		    position, attackerHitBox.bodyHitBox, attackerReferenceBox, attackerScale, facingLeft);
 		for (const auto victim : victimView) {
 			if (!isValidVictim(registry, attacker, victim)) {
 				continue;
@@ -135,9 +133,8 @@ void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
 			if (const auto victimRender = registry.tryGet<RenderComponent>(victim)) {
 				victimFacingLeft = victimRender->get().isFacingLeft();
 			}
-			SDL_FRect victimHurtBoxRect = Utils::HitBoxUtils::getHitBoxFacing(victimPos, victimHurtBox,
-			                                                                  victimReferenceBox, victimScale,
-			                                                                  victimFacingLeft);
+			SDL_FRect victimHurtBoxRect = Utils::HitBoxUtils::getHitBoxFacing(
+			    victimPos, victimHurtBox, victimReferenceBox, victimScale, victimFacingLeft);
 
 			bool isInvulnerable = false;
 			if (const auto health = registry.tryGet<HealthComponent>(victim)) {

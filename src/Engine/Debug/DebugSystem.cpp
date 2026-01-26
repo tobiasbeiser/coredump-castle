@@ -344,8 +344,8 @@ void DebugSystem::drawHitBoxes() const
 
 		const SDL_FRect bodyHitBoxRect = GameEngine::Utils::HitBoxUtils::getHitBoxFacing(
 		    position, hitbox.bodyHitBox, referenceBox, scale, facingLeft);
-		const SDL_FRect hurtBoxRect = GameEngine::Utils::HitBoxUtils::getHitBoxFacing(position, hurtbox.hurtBox,
-		                                                                              referenceBox, scale, facingLeft);
+		const SDL_FRect hurtBoxRect =
+		    GameEngine::Utils::HitBoxUtils::getHitBoxFacing(position, hurtbox.hurtBox, referenceBox, scale, facingLeft);
 		constexpr SDL_Color bodyHitBoxColor = {255, 0, 0, 255};
 		addRect(bodyHitBoxRect, bodyHitBoxColor);
 
