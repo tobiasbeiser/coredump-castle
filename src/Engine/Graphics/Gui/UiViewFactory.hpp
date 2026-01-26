@@ -4,6 +4,10 @@
 
 #include "Engine/FileIO/ISaveStorage.hpp"
 
+namespace GameEngine {
+class GameEngine;
+}
+
 struct MainMenuActions {
 	std::function<void()> onStartNewGame;
 	std::function<void()> onShowContinue;
@@ -31,4 +35,7 @@ std::unique_ptr<Widget> createContinueMenu(const UIContext &ctx, const ContinueM
 std::unique_ptr<Widget> createSettingsMenu(const UIContext &ctx, const SettingsMenuActions &actions);
 
 std::unique_ptr<Widget> createLoadingScreen(const UIContext &ctx);
+
+std::unique_ptr<Widget> createMapScreen(const UIContext &ctx, std::function<void()> &drawCallback,
+                                        GameEngine::GameEngine &game);
 }; // namespace UiViewFactory

@@ -1,12 +1,17 @@
 
 #include "UiViewFactory.hpp"
 
+#include "Engine/GameEngine.hpp"
+
 #include <utility>
 
+#include "Engine/Graphics/TextureManager.hpp"
 #include "Engine/Utils/SaveGameFormatter.hpp"
 #include "Layouts/AnchorLayout.hpp"
 #include "Layouts/LinearLayout.hpp"
 #include "Widgets/Button.hpp"
+#include "Widgets/LambdaWidget.hpp"
+#include "Widgets/Frame.hpp"
 #include "Widgets/Label.hpp"
 #include "Widgets/Spacer.hpp"
 
@@ -196,6 +201,24 @@ std::unique_ptr<Widget> createLoadingScreen(const UIContext &ctx)
 	auto root = std::make_unique<AnchorLayout>();
 	auto loadingLabel = std::make_unique<Label>("Loading...", ctx.bigFont);
 	root->addChild(std::move(loadingLabel), AnchorParams::bottomCenter);
+	return root;
+}
+
+std::unique_ptr<Widget> createMapScreen(const UIContext &ctx, std::function<void()> &drawCallback,
+                                        GameEngine::GameEngine &game)
+{
+	const auto [width, height] = ctx.renderer->getLogicalResolution();
+	auto root = std::make_unique<AnchorLayout>();
+	auto mapFrame = std::make_unique<Frame>();
+	mapFrame->setFixedSize({width * 0.8f, height * 0.8f});
+	mapFrame->setBackground(&game.getTextureManager().getTexture("assets/tiled/background/layer_1.png"));
+
+	root->addChild(std::move(mapFrame), AnchorParams::center);
+	auto clipWidget = std::make_unique<LambdaWidget>(drawCallback);
+	clipWidget->setContentZoom(0.3);
+	clipWidget->setFixedSize({width * 0.8f, height * 0.8f});
+	root->addChild(std::move(clipWidget), AnchorParams::center);
+
 	return root;
 }
 } // namespace UiViewFactory
