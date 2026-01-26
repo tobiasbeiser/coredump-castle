@@ -106,63 +106,63 @@
         {
          "animation":[
                 {
-                 "duration":50,
+                 "duration":35,
                  "tileid":44
                 }, 
                 {
-                 "duration":50,
+                 "duration":35,
                  "tileid":45
                 }, 
                 {
-                 "duration":50,
+                 "duration":35,
                  "tileid":46
                 }, 
                 {
-                 "duration":50,
+                 "duration":35,
                  "tileid":47
                 }, 
                 {
-                 "duration":50,
+                 "duration":35,
                  "tileid":48
                 }, 
                 {
-                 "duration":50,
+                 "duration":35,
                  "tileid":49
                 }, 
                 {
-                 "duration":50,
+                 "duration":35,
                  "tileid":50
                 }, 
                 {
-                 "duration":50,
+                 "duration":35,
                  "tileid":51
                 }, 
                 {
-                 "duration":50,
+                 "duration":35,
                  "tileid":52
                 }, 
                 {
-                 "duration":50,
+                 "duration":35,
                  "tileid":53
                 }, 
                 {
-                 "duration":50,
+                 "duration":35,
                  "tileid":54
                 }, 
                 {
-                 "duration":50,
+                 "duration":35,
                  "tileid":55
                 }, 
                 {
-                 "duration":50,
+                 "duration":35,
                  "tileid":56
                 }, 
                 {
-                 "duration":50,
+                 "duration":35,
                  "tileid":57
                 }, 
                 {
-                 "duration":50,
+                 "duration":35,
                  "tileid":58
                 }],
          "id":44,
@@ -172,6 +172,33 @@
                  "propertytype":"State",
                  "type":"int",
                  "value":2
+                }]
+        }, 
+        {
+         "id":50,
+         "properties":[
+                {
+                 "name":"damageActive",
+                 "type":"bool",
+                 "value":true
+                }]
+        }, 
+        {
+         "id":51,
+         "properties":[
+                {
+                 "name":"damageActive",
+                 "type":"bool",
+                 "value":true
+                }]
+        }, 
+        {
+         "id":52,
+         "properties":[
+                {
+                 "name":"damageActive",
+                 "type":"bool",
+                 "value":true
                 }]
         }, 
         {

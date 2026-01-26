@@ -12,7 +12,7 @@
 
 struct DebugRenderOptions {
 	bool showBoundingBoxes = false;
-	bool showHitBoxes = true;
+	bool showHitBoxes = false;
 	bool showRaycasts = false;
 	bool showTooltipBoxes = false;
 	bool vSync = true;

@@ -246,7 +246,7 @@
                  "y":155.132520376669
                 }, 
                 {
-                 "id":26,
+                 "id":29,
                  "properties":[
                         {
                          "name":"area",
@@ -254,28 +254,13 @@
                          "value":23
                         }, 
                         {
-                         "name":"hurtBox",
-                         "type":"string",
-                         "value":"130,90,35,70"
-                        }, 
-                        {
-                         "name":"maxHealth",
-                         "type":"int",
-                         "value":10
-                        }, 
-                        {
                          "name":"touchDamageBox",
                          "type":"string",
-                         "value":"130,130,35,40"
-                        }, 
-                        {
-                         "name":"unlockAbility",
-                         "type":"string",
-                         "value":"double_jump"
+                         "value":"130,110,35,50"
                         }],
                  "template":"..\/objects\/demonBoss.tj",
-                 "x":975.257206019896,
-                 "y":183.65785222345
+                 "x":996.513901879092,
+                 "y":181.107048720347
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -404,7 +389,7 @@
          "y":0
         }],
  "nextlayerid":17,
- "nextobjectid":29,
+ "nextobjectid":30,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",

@@ -35,6 +35,7 @@ struct PlayerContext {
 	glm::vec2 center = glm::vec2(0.0f);
 	SDL_FRect hurtBox = {0, 0, 0, 0};
 	glm::vec2 scale = glm::vec2(1.0f, 1.0f);
+	glm::vec2 position = glm::vec2(0.0f);
 	bool isGrounded = false;
 	const StateComponent *state = nullptr;
 };
@@ -53,6 +54,8 @@ struct EnemyContext {
 	glm::vec2 center;
 	glm::vec2 scale;
 	glm::vec2 position;
+	PositionComponent *posComp = nullptr;
+	VelocityComponent *velComp = nullptr;
 };
 
 float getDirectionToPlayer(const EnemyContext &enemy, const PlayerContext &player)
@@ -104,13 +107,32 @@ bool updateCharging(ChargeComponent &charge, const EnemyContext &enemy, const Pl
 	enemy.movement->maxSpeedX = chase.chaseSpeed * charge.chargeSpeedMultiplier;
 
 	SDL_FRect enemyHurtBoxRect = Utils::HitBoxUtils::getHitBox(enemy.position, enemy.hurtBox, &enemy.scale);
-	SDL_FRect playerHurtBoxRect = Utils::HitBoxUtils::getHitBox(player.center, player.hurtBox, &player.scale);
+	SDL_FRect playerHurtBoxRect = Utils::HitBoxUtils::getHitBox(player.position, player.hurtBox, &player.scale);
 
-	const float passThroughDistance = player.hurtBox.w * player.scale.x * charge.chargePassThroughFactor;
-	const bool passedThrough = directionToPlayer > 0.0f ? enemy.center.x >= player.center.x + passThroughDistance
-	                                                    : enemy.center.x <= player.center.x - passThroughDistance;
+	if (SDL_HasRectIntersectionFloat(&enemyHurtBoxRect, &playerHurtBoxRect)) {
+		bool chargingRight = directionToPlayer > 0;
+		if (enemy.velComp && std::abs(enemy.velComp->velocity.x) > 0.1f) {
+			chargingRight = enemy.velComp->velocity.x > 0;
+		}
 
-	if (SDL_HasRectIntersectionFloat(&enemyHurtBoxRect, &playerHurtBoxRect) && passedThrough) {
+		if (chargingRight) {
+			const float snapPositionX = playerHurtBoxRect.x - enemyHurtBoxRect.w;
+			const float diff = snapPositionX - enemyHurtBoxRect.x;
+			if (enemy.posComp) {
+				enemy.posComp->position.x += diff;
+			}
+		} else {
+			const float snapPositionX = playerHurtBoxRect.x + playerHurtBoxRect.w;
+			const float diff = snapPositionX - enemyHurtBoxRect.x;
+			if (enemy.posComp) {
+				enemy.posComp->position.x += diff;
+			}
+		}
+
+		if (enemy.velComp) {
+			enemy.velComp->velocity.x = 0.0f;
+		}
+
 		charge.chargeTimer.reset();
 		charge.chargePauseTimer.reset();
 		charge.chargePauseTimer.step(std::chrono::duration<float>(0.0f), false);
@@ -163,8 +185,12 @@ std::optional<PlayerContext> getPlayerContext(Registry &registry)
 		const auto &ground = view.get<GroundedComponent>(entity);
 		const auto &state = view.get<StateComponent>(entity);
 
-		return PlayerContext{Utils::DetectionRangeUtils::calculateCenter(pos, hurtBox, transform.scale), hurtBox,
-		                     transform.scale, ground.grounded, &state};
+		return PlayerContext{Utils::DetectionRangeUtils::calculateCenter(pos, hurtBox, transform.scale),
+		                     hurtBox,
+		                     transform.scale,
+		                     pos,
+		                     ground.grounded,
+		                     &state};
 	}
 	return std::nullopt;
 }
@@ -330,10 +356,11 @@ void update(Registry &registry, const float deltaTime)
 
 	auto enemyView = registry.view<EnemyTag, InputComponent, PatrolComponent, ChaseComponent, PositionComponent,
 	                               HitBoxComponent, HurtBoxComponent, CollisionComponent, MovementComponent,
-	                               GroundedComponent, AttackComponent, RenderComponent>();
+	                               GroundedComponent, AttackComponent, RenderComponent, VelocityComponent>();
 
 	for (const auto entity : enemyView) {
-		const auto &pos = enemyView.get<PositionComponent>(entity);
+		auto &pos = enemyView.get<PositionComponent>(entity);
+		auto &vel = enemyView.get<VelocityComponent>(entity);
 		const auto &enemyHurtBox = enemyView.get<HitBoxComponent>(entity).bodyHitBox;
 		const auto &enemyHitBox = enemyView.get<HitBoxComponent>(entity).weaponHitBox;
 
@@ -354,7 +381,9 @@ void update(Registry &registry, const float deltaTime)
 		                      enemyHurtBox,
 		                      Utils::DetectionRangeUtils::calculateCenter(pos.position, enemyHurtBox, enemyScale),
 		                      enemyScale,
-		                      pos.position};
+		                      pos.position,
+		                      &pos,
+		                      &vel};
 
 		chase.reactionDelay.step(std::chrono::duration<float>(deltaTime), false);
 

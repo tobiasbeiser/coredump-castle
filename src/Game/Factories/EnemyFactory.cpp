@@ -220,7 +220,6 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 	const auto chargeDuration = getFloatProp(enemyObj, "chargeDuration", 0.75f);
 	const auto chargePauseDuration = getFloatProp(enemyObj, "chargePauseDuration", 1.0f);
 	const auto chargeSpeedMultiplier = getFloatProp(enemyObj, "chargeSpeedMultiplier", 1.5f);
-	const auto chargePassThroughFactor = getFloatProp(enemyObj, "chargePassThroughFactor", 0.35f);
 
 	glm::vec2 projectileOffset = {0.0f, 0.0f};
 	if (const auto offsetStr = getStringProp(enemyObj, "projectileOffset", "")) {
@@ -252,8 +251,7 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 		    entity, ChargeComponent{.chargeTimer = Timer{std::chrono::duration<float>(chargeDuration)},
 		                            .chargePauseTimer = Timer{std::chrono::duration<float>(chargePauseDuration)},
 		                            .chargeChance = chargeChance,
-		                            .chargeSpeedMultiplier = chargeSpeedMultiplier,
-		                            .chargePassThroughFactor = chargePassThroughFactor});
+		                            .chargeSpeedMultiplier = chargeSpeedMultiplier});
 	}
 
 	SDL_FRect weaponHitBox = {0.f, 0.f, 0.f, 0.f};

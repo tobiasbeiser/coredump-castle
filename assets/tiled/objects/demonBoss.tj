@@ -28,22 +28,22 @@
             {
              "name":"chargeDuration",
              "type":"float",
-             "value":0.75
+             "value":0.8
             }, 
             {
              "name":"chargePauseDuration",
              "type":"float",
-             "value":0.1
+             "value":0.05
             }, 
             {
              "name":"chargeSpeedMultiplier",
              "type":"float",
-             "value":2
+             "value":1.7
             }, 
             {
              "name":"chaseSpeed",
              "type":"float",
-             "value":60
+             "value":80
             }, 
             {
              "name":"collisionBox",
@@ -63,7 +63,7 @@
             {
              "name":"hitBox",
              "type":"string",
-             "value":"0,-5,60,90"
+             "value":"0,-15,90,100"
             }, 
             {
              "name":"hurtBox",
@@ -103,7 +103,7 @@
             {
              "name":"touchDamageBox",
              "type":"string",
-             "value":"130,115,35,45"
+             "value":"125,140,40,20"
             }, 
             {
              "name":"unlockAbility",

@@ -10,5 +10,4 @@ struct ChargeComponent {
 	Timer chargeCooldown{std::chrono::duration<float>(3.0f)};
 	float chargeChance = 0.35f;
 	float chargeSpeedMultiplier = 2.0f;
-	float chargePassThroughFactor = 0.35f;
 };
