@@ -71,6 +71,12 @@ class Registry {
 	}
 
 	template <typename T>
+	T &get(Entity entity)
+	{
+		return getStorage<T>().get(entity);
+	}
+
+	template <typename T>
 	std::optional<std::reference_wrapper<T>> tryGet(Entity entity)
 	{
 		const size_t id = ComponentId<T>::value;

@@ -2,6 +2,7 @@
 
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/HealthComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
@@ -53,10 +54,17 @@ void DebugSystem::clear()
 
 void DebugSystem::renderGameOverlay(SDL_Renderer *renderer, const SDL_FRect &viewport)
 {
+	PROFILE_SCOPE("Debug::Debug Overlay");
+
 	DebugSystem &sys = instance();
-	sys.drawCollisionBoxes();
-	sys.drawHitBoxes();
-	sys.drawTooltopBoxes();
+	if (sys.render.showBoundingBoxes)
+		sys.drawCollisionBoxes();
+
+	if (sys.render.showHitBoxes)
+		sys.drawHitBoxes();
+
+	if (sys.render.showTooltipBoxes)
+		sys.drawTooltipBoxes();
 
 	for (const auto &[rect, color] : sys.debugRects) {
 		SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
@@ -79,9 +87,21 @@ void DebugSystem::renderGameOverlay(SDL_Renderer *renderer, const SDL_FRect &vie
 		}
 	}
 }
+void DebugSystem::updateSettings(SDL_Renderer *renderer)
+{
+	PROFILE_SCOPE("Debug::Update Settings");
+
+	static bool lastVSync;
+	if (lastVSync != instance().getRenderOptions().vSync) {
+		SDL_SetRenderVSync(renderer, instance().getRenderOptions().vSync);
+		lastVSync = instance().getRenderOptions().vSync;
+	}
+}
 
 void DebugSystem::drawUI()
 {
+	PROFILE_SCOPE("Debug::Construct imGui");
+
 	DebugSystem &sys = instance();
 
 	if (!sys.enabled)
@@ -100,19 +120,37 @@ void DebugSystem::drawUI()
 		ImGui::Separator();
 
 		if (ImGui::CollapsingHeader("Render Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
-			ImGui::Checkbox("Show Bounding Boxes", &sys.render.showBoundingBoxes);
+			ImGui::Checkbox("Show Collision Boxes", &sys.render.showBoundingBoxes);
 			ImGui::Checkbox("Show Hit Boxes", &sys.render.showHitBoxes);
 			ImGui::Checkbox("Show Tooltip Boxes", &sys.render.showTooltipBoxes);
 			ImGui::Checkbox("Show Raycasts", &sys.render.showRaycasts);
+			ImGui::Checkbox("VSync", &sys.render.vSync);
 		}
 
-		if (ImGui::CollapsingHeader("Player Cheats", ImGuiTreeNodeFlags_DefaultOpen)) {
+		if (ImGui::CollapsingHeader("Player Debug Info", ImGuiTreeNodeFlags_DefaultOpen)) {
 			ImGui::Checkbox("Show State", &sys.player.showState);
 			ImGui::Checkbox("Show Position", &sys.player.showPosition);
-			ImGui::Checkbox("God Mode", &sys.player.godMode);
-			ImGui::Checkbox("No Clip", &sys.player.noClip);
+			ImGui::Checkbox("Show Health", &sys.player.showHP);
 		}
-		if (ImGui::CollapsingHeader("System Profiler", ImGuiTreeNodeFlags_DefaultOpen)) {
+		if (ImGui::CollapsingHeader("Cheats", ImGuiTreeNodeFlags_DefaultOpen)) {
+			ImGui::Checkbox("God Mode", &sys.cheats.godMode);
+			ImGui::Checkbox("No Clip", &sys.cheats.noClip);
+			ImGui::Checkbox("Unlimited Jumps", &sys.cheats.unlimitedJumps);
+		}
+		if (sys.player.showPosition) {
+			ImGui::SeparatorText("PlayerPosition");
+			auto playerView = sys.registry->view<PlayerTag, PositionComponent>();
+			const auto &pos = playerView.get<PositionComponent>(playerView.at(0)).position;
+			ImGui::Text("X: %.2f Y: %.2f", pos.x, pos.y);
+			// ImGui::Text("MaxEntity: %d", sys.registry->getMaxEntity());
+		}
+		if (sys.player.showHP) {
+			ImGui::SeparatorText("HP");
+			auto playerView = sys.registry->view<PlayerTag, HealthComponent>();
+			const auto &health = playerView.get<HealthComponent>(playerView.at(0));
+			ImGui::Text("%d/%d", health.health, health.maxHealth);
+		}
+		if (ImGui::CollapsingHeader("System Profiler")) {
 			auto &[results] = Profiler::instance();
 
 			if (results.empty()) {
@@ -127,10 +165,11 @@ void DebugSystem::drawUI()
 				    (average < 1.0f) ? ImVec4(0, 1, 0, 1) : (average < 5.0f ? ImVec4(1, 1, 0, 1) : ImVec4(1, 0, 0, 1));
 
 				ImGui::PushStyleColor(ImGuiCol_Text, color);
-				ImGui::Text("%s: %f ns", name.c_str(), average * 1000);
+				ImGui::Text("%s: %f ns", std::string(name).c_str(), average * 1000);
 				ImGui::PopStyleColor();
 				// Draw the graph
-				ImGui::PlotLines(name.c_str(), data.history.data(), data.history.size(), data.offset, nullptr, 0.0f,
+				ImGui::PlotLines(std::string(name).c_str(), data.history.data(), data.history.size(), data.offset,
+				                 nullptr, 0.0f,
 				                 data.maxTime.count() * 1.1f, // <--- Passed as raw float here
 				                 ImVec2(0, 40));
 				ImGui::Spacing();
@@ -148,12 +187,6 @@ void DebugSystem::drawUI()
 			}
 			ImGui::EndChild();
 		}
-		if (sys.player.showPosition) {
-			ImGui::SeparatorText("PlayerPosition");
-			auto playerView = sys.registry->view<PlayerTag, PositionComponent>();
-			const auto &pos = playerView.get<PositionComponent>(playerView.at(0)).position;
-			ImGui::Text("X: %.2f Y: %.2f", pos.x, pos.y);
-		}
 	}
 	ImGui::End();
 }
@@ -167,8 +200,7 @@ void DebugSystem::drawCollisionBoxes() const
 		const auto &[collision] = view.get<CollisionComponent>(entity);
 
 		const auto transform = registry->tryGet<TransformComponent>(entity);
-		const glm::vec2 scale = transform ? transform->get().scale : glm::vec2{1.0f, 1.0f};
-
+		const auto scale = transform ? &transform->get().scale : nullptr;
 		SDL_FRect col = GameEngine::Utils::HitBoxUtils::getHitBox(position, collision, scale);
 
 		const SDL_Color color =
@@ -176,66 +208,77 @@ void DebugSystem::drawCollisionBoxes() const
 		addRect(col, color);
 	}
 }
-void DebugSystem::drawHitBoxes() const
+
+void DebugSystem::drawProjectileHitBox() const
 {
-	// if (!instance().getRenderOptions().showHitBoxes || registry == nullptr) {
-	// 	return;
-	// }
-	//
-	// for (auto view = registry->view<ProjectileComponent, HurtBoxComponent, PositionComponent>();
-	//      const auto entity : view) {
-	// 	SDL_FRect hurtBoxRect = GameEngine::Utils::HitBoxUtils::getHurtBoxRect(*registry, entity);
-	// 	constexpr SDL_Color projectileHurtBoxColor = {0, 255, 255, 255};
-	// 	addRect(hurtBoxRect, projectileHurtBoxColor);
-	// }
-	//
-	// for (auto view =
-	//          registry
-	//              ->view<HitBoxComponent, HurtBoxComponent, RenderComponent, TransformComponent, PositionComponent>();
-	// for (auto view = registry->view<HitBoxComponent, HurtBoxComponent, RenderComponent, PositionComponent>();
-	//      const auto entity : view) {
-	//
-	// 	const auto &[position, previousPosition] = view.get<PositionComponent>(entity);
-	// 	const auto &hitbox = view.get<HitBoxComponent>(entity);
-	// 	const auto &hurtbox = view.get<HurtBoxComponent>(entity);
-	// 	const auto &[renderLayer, flipX] = view.get<RenderComponent>(entity);
-	//
-	// 	const auto transform = registry->tryGet<TransformComponent>(entity);
-	// 	const glm::vec2 scale = transform ? transform->get().scale : glm::vec2{1.0f, 1.0f};
-	//
-	// 	const auto hitBoxRect =
-	// 	    GameEngine::Utils::HitBoxUtils::getWeaponHitBoxRect(position, hitbox, hurtbox.hurtBox, scale, flipX);
-	//
-	// 	constexpr SDL_Color hitboxColor = {0, 255, 0, 255};
-	// 	addRect(hitBoxRect, hitboxColor);
-	//
-	// 	SDL_FRect hurtBoxRect = GameEngine::Utils::HitBoxUtils::getHitBox(position, hurtbox.hurtBox, scale);
-	// 	constexpr SDL_Color hurtBoxColor = {255, 0, 255, 255};
-	// 	addRect(hurtBoxRect, hurtBoxColor);
-	//
-	// 	if (!registry->has<RangedAttackComponent>(entity) && registry->has<ChaseComponent>(entity)) {
-	// 		const auto &chase = registry->get<ChaseComponent>(entity);
-	// 		const auto &patrol = registry->get<PatrolComponent>(entity);
-	//
-	// 		SDL_FRect rangeRect = GameEngine::Utils::DetectionRangeUtils::getMeleeDetectionRect(patrol, chase);
-	//
-	// 		constexpr SDL_Color rangeColor = {255, 165, 0, 255}; // Orange
-	// 		addRect(rangeRect, rangeColor);
-	// 	}
-	//
-	// 	if (registry->has<RangedAttackComponent>(entity)) {
-	// 		const auto &chase = registry->get<ChaseComponent>(entity);
-	// 		const glm::vec2 center = GameEngine::Utils::DetectionRangeUtils::getRectCenter(hurtBoxRect);
-	//
-	// 		SDL_FRect rangeRect = GameEngine::Utils::DetectionRangeUtils::getRangedDetectionRect(chase, center);
-	//
-	// 		constexpr SDL_Color rangeColor = {255, 165, 0, 255}; // Orange
-	// 		addRect(rangeRect, rangeColor);
-	// 	}
-	// }
+	for (auto view = registry->view<ProjectileComponent, HurtBoxComponent, PositionComponent>();
+	     const auto entity : view) {
+		const auto &[position, previousPosition] = view.get<PositionComponent>(entity);
+		const auto &[hurtBox] = view.get<HurtBoxComponent>(entity);
+
+		const auto transform = registry->tryGet<TransformComponent>(entity);
+		const auto scale = transform ? &transform->get().scale : nullptr;
+		SDL_FRect hurtBoxRect = GameEngine::Utils::HitBoxUtils::getHitBox(position, hurtBox, scale);
+		constexpr SDL_Color projectileHurtBoxColor = {0, 255, 255, 255};
+		addRect(hurtBoxRect, projectileHurtBoxColor);
+	}
 }
 
-void DebugSystem::drawTooltopBoxes() const
+void DebugSystem::drawPatrolBoxes(const std::vector<unsigned>::value_type entity, SDL_FRect hurtBoxRect) const
+{
+	const auto ranged = registry->tryGet<RangedAttackComponent>(entity);
+	const auto chase = registry->tryGet<ChaseComponent>(entity);
+
+	if (const auto patrol = registry->tryGet<PatrolComponent>(entity); !ranged && chase && patrol) {
+		SDL_FRect rangeRect =
+		    GameEngine::Utils::DetectionRangeUtils::getMeleeDetectionRect(patrol->get(), chase->get());
+
+		constexpr SDL_Color rangeColor = {255, 165, 0, 255}; // Orange
+		addRect(rangeRect, rangeColor);
+	}
+
+	if (ranged && chase) {
+		const glm::vec2 center = GameEngine::Utils::DetectionRangeUtils::getRectCenter(hurtBoxRect);
+
+		SDL_FRect rangeRect = GameEngine::Utils::DetectionRangeUtils::getRangedDetectionRect(chase->get(), center);
+
+		constexpr SDL_Color rangeColor = {255, 165, 0, 255}; // Orange
+		addRect(rangeRect, rangeColor);
+	}
+}
+void DebugSystem::drawHitBoxes() const
+{
+	if (!instance().getRenderOptions().showHitBoxes || registry == nullptr) {
+		return;
+	}
+
+	drawProjectileHitBox();
+
+	for (auto view = registry->view<HitBoxComponent, HurtBoxComponent, RenderComponent, PositionComponent>();
+	     const auto entity : view) {
+
+		const auto &[position, previousPosition] = view.get<PositionComponent>(entity);
+		const auto &hitbox = view.get<HitBoxComponent>(entity);
+		const auto &hurtbox = view.get<HurtBoxComponent>(entity);
+		const auto &[renderLayer, flipX] = view.get<RenderComponent>(entity);
+
+		const auto transform = registry->tryGet<TransformComponent>(entity);
+		const auto scale = transform ? &transform->get().scale : nullptr;
+		const auto hitBoxRect =
+		    GameEngine::Utils::HitBoxUtils::getWeaponHitBoxRect(position, hitbox, hurtbox.hurtBox, scale, flipX);
+
+		constexpr SDL_Color hitboxColor = {0, 255, 0, 255};
+		addRect(hitBoxRect, hitboxColor);
+
+		SDL_FRect hurtBoxRect = GameEngine::Utils::HitBoxUtils::getHitBox(position, hurtbox.hurtBox, scale);
+		constexpr SDL_Color hurtBoxColor = {255, 0, 255, 255};
+		addRect(hurtBoxRect, hurtBoxColor);
+
+		drawPatrolBoxes(entity, hurtBoxRect);
+	}
+}
+
+void DebugSystem::drawTooltipBoxes() const
 {
 	if (!instance().getRenderOptions().showTooltipBoxes || registry == nullptr) {
 		return;

@@ -3,7 +3,6 @@
 #include <SDL3_ttf/SDL_ttf.h>
 #include <filesystem>
 #include <glm/vec2.hpp>
-#include <imgui.h>
 #include <memory>
 #include <optional>
 #include <stack>

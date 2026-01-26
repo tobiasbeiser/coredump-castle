@@ -10,10 +10,13 @@
 #endif
 
 struct ScopedProfiler {
-	std::string name;
+	std::string_view name;
 	std::chrono::high_resolution_clock::time_point start;
 
-	explicit ScopedProfiler(const std::string &name_) : name(name_), start(std::chrono::high_resolution_clock::now()) {}
+	explicit ScopedProfiler(const std::string_view &name_)
+	    : name(name_), start(std::chrono::high_resolution_clock::now())
+	{
+	}
 
 	ScopedProfiler(const ScopedProfiler &) = delete;
 	ScopedProfiler(ScopedProfiler &&) = delete;

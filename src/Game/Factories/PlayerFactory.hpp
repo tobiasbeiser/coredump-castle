@@ -1,12 +1,14 @@
 ﻿#pragma once
 #include "AnimationFactory.hpp"
+#include "Engine/Audio/AudioManager.hpp"
 #include "Engine/ECS/Components/Gameplay/Hazard/LastGroundedPositionComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/Graphics/TextureManager.hpp"
 
 class PlayerFactory {
   public:
-	PlayerFactory(GameEngine::ECS::Registry &registry, TextureManager &tex_mgr, AnimationFactory &animation_factory);
+	PlayerFactory(GameEngine::ECS::Registry &registry, TextureManager &tex_mgr, AnimationFactory &animation_factory,
+	              AudioManager &audio_manager);
 
 	PlayerFactory(PlayerFactory &&) = delete;
 	PlayerFactory(const PlayerFactory &) = delete;
@@ -19,4 +21,5 @@ class PlayerFactory {
 	GameEngine::ECS::Registry &registry;
 	TextureManager &texMgr;
 	AnimationFactory &animationFactory;
+	AudioManager &audioManager;
 };

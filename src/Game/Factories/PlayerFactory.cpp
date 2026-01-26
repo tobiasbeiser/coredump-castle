@@ -22,9 +22,11 @@
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 
+#include "Engine/ECS/Components/Core/SoundComponent.hpp"
+
 PlayerFactory::PlayerFactory(GameEngine::ECS::Registry &registry, TextureManager &tex_mgr,
-                             AnimationFactory &animation_factory)
-    : registry(registry), texMgr(tex_mgr), animationFactory(animation_factory)
+                             AnimationFactory &animation_factory, AudioManager &audioManager)
+    : registry(registry), texMgr(tex_mgr), animationFactory(animation_factory), audioManager(audioManager)
 {
 }
 GameEngine::ECS::Entity PlayerFactory::createPlayer(tson::Object &player, const glm::vec2 &levelPos) const
@@ -69,7 +71,7 @@ GameEngine::ECS::Entity PlayerFactory::createPlayer(tson::Object &player, const 
 		registry.registerComponent(e, MovementComponent{});
 		registry.registerComponent(e, MapToggleComponent{});
 
-		registry.registerComponent(e, JumpComponent{.maxJumps = 5, .coyoteTimer = Timer{0.08s}});
+		registry.registerComponent(e, JumpComponent{.maxJumps = 1, .coyoteTimer = Timer{0.08s}});
 		registry.registerComponent(e, BlinkComponent{.color = {50, 50, 50, 150}});
 
 		registry.registerComponent(e, InteractionComponent{19, 25, 21, 32});
@@ -77,7 +79,25 @@ GameEngine::ECS::Entity PlayerFactory::createPlayer(tson::Object &player, const 
 		constexpr int weaponHeight = 45;
 		constexpr int weaponOffsetY = -(weaponHeight - collisionBox.h) / 2;
 		registry.registerComponent(e, HitBoxComponent{.weaponHitBox = {0, weaponOffsetY, 35, weaponHeight}});
-		registry.registerComponent(e, HealthComponent{100, 300, 1.75s});
+		registry.registerComponent(e, HealthComponent{60, 60, 1.75s});
+
+		audioManager.loadSoundGroup("player_jump", "assets/audio/sound/player/jump");
+		audioManager.loadSoundGroup("player_land", "assets/audio/sound/player/landing");
+		audioManager.loadSoundGroup("player_atk", "assets/audio/sound/player/attack");
+		audioManager.loadSoundGroup("player_walk", "assets/audio/sound/player/walking");
+		audioManager.loadSoundGroup("player_hurt", "assets/audio/sound/player/hurt");
+		audioManager.loadSoundGroup("player_die", "assets/audio/sound/player/death");
+
+		SoundComponent soundComp;
+		soundComp.sounds[AnimationType::JumpStart] = "player_jump";
+		soundComp.sounds[AnimationType::Landing] = "player_land";
+		soundComp.sounds[AnimationType::Attacking] = "player_atk";
+		soundComp.sounds[AnimationType::Walking] = "player_walk";
+		soundComp.sounds[AnimationType::Hurting] = "player_hurt";
+		soundComp.sounds[AnimationType::Dead] = "player_die";
+		soundComp.stepTimer = Timer{0.35s};
+
+		registry.registerComponent<SoundComponent>(e, soundComp);
 
 		return e;
 	}

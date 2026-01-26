@@ -167,17 +167,25 @@ void Renderer::startFrame(const int red, const int green, const int blue, const 
 
 void Renderer::endFrame() const
 {
-	DebugSystem::renderGameOverlay(renderer.get(), viewport);
-	DebugSystem::drawUI();
+	{
+		DebugSystem::renderGameOverlay(renderer.get(), viewport);
+		DebugSystem::updateSettings(renderer.get());
+		DebugSystem::drawUI();
+	}
 
 	SDL_SetRenderLogicalPresentation(renderer.get(), 0, 0, SDL_LOGICAL_PRESENTATION_DISABLED);
 
-	ImGui::Render();
-	ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer.get());
-
+	{
+		PROFILE_SCOPE("Renderer::ImGui");
+		ImGui::Render();
+		ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer.get());
+	}
 	SDL_SetRenderLogicalPresentation(renderer.get(), logicalResolution.width, logicalResolution.height,
 	                                 SDL_LOGICAL_PRESENTATION_LETTERBOX);
-	SDL_RenderPresent(renderer.get());
+	{
+		PROFILE_SCOPE("Renderer::Present");
+		SDL_RenderPresent(renderer.get());
+	}
 }
 
 void Renderer::centerCameraOn(const glm::vec2 &position, const glm::vec2 &levelPos, const glm::vec2 &levelSize)

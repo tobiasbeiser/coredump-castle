@@ -13,7 +13,8 @@
 
 class LevelFactory {
   public:
-	LevelFactory(GameEngine::ECS::Registry &registry, TextureManager &textureManager, InputManager &inputManager);
+	LevelFactory(GameEngine::ECS::Registry &registry, TextureManager &textureManager, InputManager &inputManager,
+	             AudioManager &audioManager);
 
 	LevelFactory(LevelFactory &&) = delete;
 	LevelFactory &operator=(LevelFactory &&) = delete;

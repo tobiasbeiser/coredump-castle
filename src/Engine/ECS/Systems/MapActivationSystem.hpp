@@ -1,4 +1,5 @@
 #pragma once
+#include "CollisionSystem.hpp"
 #include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
@@ -50,7 +51,7 @@ class MapActivationSystem {
 					}
 				}
 			}
-			PhysicsSystem::initStaticCollision(registry);
+			CollisionSystem::buildStaticColliderGrid(registry);
 		}
 	};
 

@@ -17,7 +17,7 @@ struct CellHash {
 	}
 };
 
-enum class ColliderType { Normal, Hazard };
+enum class ColliderType { Normal, Hazard, Lock };
 
 class SpatialHash {
   public:

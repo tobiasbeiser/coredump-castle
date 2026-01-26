@@ -57,6 +57,7 @@ void GameEngine::popState()
 
 void GameEngine::handleEvents()
 {
+	PROFILE_SCOPE("GameEngine::handleEvents");
 	SDL_Event event{0};
 	while (SDL_PollEvent(&event)) {
 		ImGui_ImplSDL3_ProcessEvent(&event);
@@ -87,6 +88,7 @@ void GameEngine::handleEvents()
 
 void GameEngine::update(const float deltaTime)
 {
+	PROFILE_SCOPE("GameEngine::Update");
 	DebugSystem::clear();
 	for (const auto &state : states) {
 		state->update(*this, deltaTime);
@@ -131,6 +133,7 @@ void GameEngine::update(const float deltaTime)
 
 void GameEngine::render(const float alpha)
 {
+	PROFILE_SCOPE("GameEngine::Render");
 	constexpr int red = 12, green = 19, blue = 25;
 	constexpr int opacity = 255;
 	renderer.startFrame(red, green, blue, opacity);

@@ -11,6 +11,7 @@ int main()
 	Uint64 prevTime = SDL_GetTicks();
 
 	while (game.isRunning()) {
+		PROFILE_SCOPE("MainLoop");
 		const Uint64 currentTime = SDL_GetTicks();
 		const float deltaTime = static_cast<float>(currentTime - prevTime) / 1000.0f;
 		prevTime = currentTime;
