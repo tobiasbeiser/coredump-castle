@@ -46,6 +46,9 @@ GameEngine::ECS::Entity LevelFactory::createLevel(tson::Map &map, const glm::vec
 
 	int playerLayer = defaultPlayerLayer;
 	for (tson::Layer &layer : map.getLayers()) {
+		if (layer.getName() == "prototype") {
+			continue;
+		}
 		loadLayer(layer, layerIndex, pos, playerLayer, map);
 	}
 
