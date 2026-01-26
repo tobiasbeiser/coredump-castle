@@ -1,7 +1,18 @@
 
 #include "RenderUtils.hpp"
 
+#include "Engine/ECS/Components/Core/PositionComponent.hpp"
+#include "Engine/ECS/Components/Core/TransformComponent.hpp"
+#include "Engine/ECS/Components/Render/RenderComponent.hpp"
+#include "Engine/ECS/Components/Render/SpriteComponent.hpp"
+#include "Engine/Graphics/Renderer.hpp"
 #include "Engine/Debug/ScopedProfiler.hpp"
+
+#include <algorithm>
+#include <execution>
+#include <stdexcept>
+#include <vector>
+#include <optional>
 
 GameEngine::Utils::RenderUtils::ScopedClip::ScopedClip(SDL_Renderer *renderer, const SDL_Rect &newClip)
     : rendererPtr(renderer)
