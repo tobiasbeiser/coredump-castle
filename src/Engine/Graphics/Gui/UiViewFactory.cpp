@@ -208,12 +208,8 @@ std::unique_ptr<Widget> createMapScreen(const UIContext &ctx, GameEngine::GameEn
 {
 	const auto [width, height] = ctx.renderer->getLogicalResolution();
 	auto root = std::make_unique<AnchorLayout>();
-	// auto mapFrame = std::make_unique<Frame>();
-	// mapFrame->setFixedSize({width, height});
-	// root->addChild(std::move(mapFrame), AnchorParams::center);
 
 	auto mapContent = std::make_unique<Frame>();
-	mapContent->setBackground(&game.getTextureManager().getTexture("assets/tiled/background/layer_1.png"));
 	mapContent->setFixedSize({width * mapSizeFactor, height * mapSizeFactor});
 	root->addChild(std::move(mapContent), AnchorParams::center);
 

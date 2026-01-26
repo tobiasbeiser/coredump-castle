@@ -53,11 +53,6 @@ void MapRenderSystem::centerCamera(Registry &registry) const
 	}
 }
 
-void MapRenderSystem::setScalingFactor(const float newScalingFactor)
-{
-	scalingFactor = newScalingFactor;
-}
-
 void MapRenderSystem::setMapClipRect(const SDL_FRect newClipRect)
 {
 	clipRect = Utils::RenderUtils::rectFromFRect(newClipRect);
@@ -66,4 +61,15 @@ void MapRenderSystem::setMapClipRect(const SDL_FRect newClipRect)
 float MapRenderSystem::getMapSizeFactor()
 {
 	return mapSizeFactor;
+}
+
+void MapRenderSystem::handleZoom(const float wheelAmount)
+{
+	constexpr float zoomSpeed = 1.1f;
+	if (wheelAmount > 0) {
+		scalingFactor *= zoomSpeed;
+	} else if (wheelAmount < 0) {
+		scalingFactor /= zoomSpeed;
+	}
+	scalingFactor = std::clamp(scalingFactor, 0.1f, 5.0f);
 }

@@ -28,9 +28,9 @@ class MapRenderSystem {
 
 	void update(Registry &registry, GameEngine &game);
 	void centerCamera(Registry &registry) const;
-	void setScalingFactor(float newScalingFactor);
 	void setMapClipRect(SDL_FRect newClipRect);
 	static float getMapSizeFactor();
+	void handleZoom(float wheelAmount);
 
   private:
 	static constexpr float mapSizeFactor = 0.80f;

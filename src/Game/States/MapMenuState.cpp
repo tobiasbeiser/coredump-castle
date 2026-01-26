@@ -31,6 +31,9 @@ void MapMenuState::handleEvents(GameEngine &game, const SDL_Event &event)
 {
 	// check and passScrolling mouse event to mapMenuSystem
 	// Ui::Utils::passMouseEvent(rootWidget.get(), event, renderer);
+	if (event.type == SDL_EVENT_MOUSE_WHEEL) {
+		mapRenderSystem.handleZoom(event.wheel.y);
+	}
 }
 
 void MapMenuState::update(GameEngine &game, const float deltaTime)
