@@ -11,6 +11,7 @@
 #include "Parsers/EnemyParser.hpp"
 #include "Parsers/KeyParser.hpp"
 #include "Parsers/PlayerParser.hpp"
+#include "Parsers/SpawnPointParser.hpp"
 #include "Parsers/TooltipParser.hpp"
 
 #include <glm/vec2.hpp>
@@ -46,6 +47,9 @@ GameEngine::ECS::Entity LevelFactory::createLevel(tson::Map &map, const glm::vec
 
 	int playerLayer = defaultPlayerLayer;
 	for (tson::Layer &layer : map.getLayers()) {
+		if (layer.getName() == "prototype") {
+			continue;
+		}
 		loadLayer(layer, layerIndex, pos, playerLayer, map);
 	}
 
@@ -151,6 +155,7 @@ void LevelFactory::loadObjects(tson::Layer &layer, const int layerIndex, const g
 void LevelFactory::registerParsers()
 {
 	parsers.push_back(std::make_unique<PlayerParser>(playerFactory));
+	parsers.push_back(std::make_unique<SpawnPointParser>());
 	parsers.push_back(std::make_unique<EnemyParser>(enemyFactory));
 	parsers.push_back(std::make_unique<SavePointParser>(registry, tileFactory));
 	parsers.push_back(std::make_unique<KeyParser>(registry, tileFactory));

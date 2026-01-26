@@ -2,6 +2,7 @@
 
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
+#include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HealthComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
@@ -136,6 +137,66 @@ void DebugSystem::drawUI()
 			ImGui::Checkbox("God Mode", &sys.cheats.godMode);
 			ImGui::Checkbox("No Clip", &sys.cheats.noClip);
 			ImGui::Checkbox("Unlimited Jumps", &sys.cheats.unlimitedJumps);
+		}
+		// Replaced hardcoded buttons with dynamic area selection
+		if (ImGui::CollapsingHeader("Teleport", ImGuiTreeNodeFlags_DefaultOpen)) {
+			if (!sys.hasSpawnPoint) {
+				ImGui::TextDisabled("No SpawnPoint found in loaded maps");
+			}
+			ImGui::Separator();
+			if (!sys.maps.empty()) {
+				static int selectedMapIdx = 0;
+				if (selectedMapIdx >= static_cast<int>(sys.maps.size())) {
+					selectedMapIdx = 0;
+				}
+
+				const char *previewValue = sys.maps[selectedMapIdx].name.c_str();
+				if (ImGui::BeginCombo("Select Area", previewValue)) {
+					for (int n = 0; n < static_cast<int>(sys.maps.size()); n++) {
+						const bool isSelected = (selectedMapIdx == n);
+						if (ImGui::Selectable(sys.maps[n].name.c_str(), isSelected))
+							selectedMapIdx = n;
+						if (isSelected)
+							ImGui::SetItemDefaultFocus();
+					}
+					ImGui::EndCombo();
+				}
+				if (ImGui::Button("Teleport to Selected Area")) {
+					if (sys.registry) {
+						const auto &map = sys.maps[selectedMapIdx];
+						glm::vec2 target = {map.area.x, map.area.y}; // Default to map start
+						bool foundSpawn = false;
+
+						for (const auto &sp : sys.spawnPoints) {
+							if (sp.x >= map.area.x && sp.x <= map.area.x + map.area.w && sp.y >= map.area.y
+							    && sp.y <= map.area.y + map.area.h) {
+								target = sp;
+								foundSpawn = true;
+								break;
+							}
+						}
+
+						auto playerView = sys.registry->view<PlayerTag, PositionComponent>();
+						if (playerView.size() == 1U) {
+							const auto playerEntity = playerView.at(0U);
+							auto &playerPos = playerView.get<PositionComponent>(playerEntity);
+							playerPos.position = target;
+							playerPos.previousPosition = target;
+
+							if (auto velocity = sys.registry->tryGet<VelocityComponent>(playerEntity)) {
+								velocity->get().velocity = {0.0f, 0.0f};
+							}
+						}
+						if (foundSpawn) {
+							DebugSystem::debug("Teleported to spawn point in " + map.name);
+						} else {
+							DebugSystem::debug("No spawn point found in " + map.name + ", teleported to origin.");
+						}
+					}
+				}
+			} else {
+				ImGui::TextDisabled("No areas loaded from Tiled.");
+			}
 		}
 		if (sys.player.showPosition) {
 			ImGui::SeparatorText("PlayerPosition");

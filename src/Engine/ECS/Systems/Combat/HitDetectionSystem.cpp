@@ -133,9 +133,6 @@ void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
 			}
 
 			if (bodyHit && isInvulnerable) {
-				if (auto health = registry.tryGet<HealthComponent>(victim)) {
-					health->get().invulnerabilityTimer.reset();
-				}
 				continue;
 			}
 

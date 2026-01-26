@@ -1,0 +1,19 @@
+{ "object":
+    {
+     "height":0,
+     "id":1,
+     "name":"SpawnPoint",
+     "point":true,
+     "properties":[
+            {
+             "name":"spawnPoint",
+             "type":"bool",
+             "value":true
+            }],
+     "rotation":0,
+     "type":"",
+     "visible":true,
+     "width":0
+    },
+ "type":"template"
+}
