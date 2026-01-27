@@ -44,57 +44,6 @@ Renderer::~Renderer()
 	TTF_Quit();
 }
 
-Renderer::RenderScopeGuard::RenderScopeGuard(Renderer &r, const SDL_FRect &screenRect, const float zoom) : renderer(r)
-{
-	renderer.pushRenderScope(screenRect, zoom);
-}
-
-Renderer::RenderScopeGuard::~RenderScopeGuard()
-{
-	renderer.popRenderScope();
-}
-
-void Renderer::pushRenderScope(const SDL_FRect &screenRect, const float zoom)
-{
-	RenderScopeState currentState{
-	    .logicalViewport = viewport, .physicalClip = std::nullopt, .scaleX = 0.0f, .scaleY = 0.0f};
-
-	SDL_GetRenderScale(renderer.get(), &currentState.scaleX, &currentState.scaleY);
-
-	stateStack.push(currentState);
-
-	const float newLogicalWidth = screenRect.w / zoom;
-	const float newLogicalHeight = screenRect.h / zoom;
-
-	viewport.w = newLogicalWidth;
-	viewport.h = newLogicalHeight;
-
-	SDL_SetRenderScale(renderer.get(), zoom, zoom);
-}
-
-void Renderer::popRenderScope()
-{
-	if (stateStack.empty())
-		return;
-
-	const auto &previousState = stateStack.top();
-
-	viewport = previousState.logicalViewport;
-
-	if (stateStack.size() == 1) {
-		SDL_SetRenderViewport(renderer.get(), nullptr);
-		SDL_SetRenderClipRect(renderer.get(), nullptr);
-		SDL_SetRenderScale(renderer.get(), previousState.scaleX, previousState.scaleY);
-	}
-
-	stateStack.pop();
-}
-
-Renderer::RenderScopeGuard Renderer::createRenderScope(const SDL_FRect &screenRect, const float zoom)
-{
-	return RenderScopeGuard(*this, screenRect, zoom);
-}
-
 void Renderer::resize(const Resolution newResolution)
 {
 	currentResolution = newResolution;

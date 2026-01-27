@@ -12,7 +12,6 @@
 #include "Widgets/Button.hpp"
 #include "Widgets/Frame.hpp"
 #include "Widgets/Label.hpp"
-#include "Widgets/LambdaWidget.hpp"
 #include "Widgets/Spacer.hpp"
 
 namespace UiViewFactory {

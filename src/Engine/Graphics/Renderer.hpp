@@ -52,30 +52,6 @@ class Renderer {
 	Renderer &operator=(const Renderer &) = delete;
 	~Renderer();
 
-	struct RenderScopeState {
-		SDL_FRect logicalViewport{};
-		std::optional<SDL_FRect> physicalClip;
-		float scaleX = 0;
-		float scaleY = 0;
-	};
-
-	class RenderScopeGuard {
-	  public:
-		RenderScopeGuard(Renderer &r, const SDL_FRect &screenRect, float zoom);
-		~RenderScopeGuard();
-		RenderScopeGuard(const RenderScopeGuard &) = delete;
-		RenderScopeGuard(const RenderScopeGuard &&) = delete;
-		RenderScopeGuard &operator=(const RenderScopeGuard &) = delete;
-		RenderScopeGuard &operator=(const RenderScopeGuard &&) = delete;
-
-	  private:
-		Renderer &renderer;
-	};
-
-	void pushRenderScope(const SDL_FRect &screenRect, float zoom);
-	void popRenderScope();
-	[[nodiscard]] RenderScopeGuard createRenderScope(const SDL_FRect &screenRect, const float zoom);
-
 	void startFrame(int red, int green, int blue, int alpha) const;
 	void endFrame() const;
 	void setCameraCenter(const glm::vec2 &newCenter);
@@ -120,8 +96,6 @@ class Renderer {
 	                      .h = static_cast<float>(logicalResolution.height)};
 
 	std::vector<std::string> debugMessages{};
-
-	std::stack<RenderScopeState> stateStack;
 
 	struct SDLRendererDeleter {
 		void operator()(SDL_Renderer *r) const noexcept
