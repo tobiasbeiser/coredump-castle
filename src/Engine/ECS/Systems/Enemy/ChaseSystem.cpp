@@ -15,6 +15,7 @@
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
+#include "Engine/ECS/Components/States/StateMachineComponent.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Registry.hpp"
@@ -223,66 +224,6 @@ bool checkLineOfSight(const EnemyContext &enemy, const PlayerContext &player, Ra
 	return false;
 }
 
-void handleRangeAttack(const EnemyContext &enemy, const PlayerContext &player, Registry &registry,
-                       RangedAttackComponent &ranged)
-{
-
-	if (player.state->state == State::Dead) {
-		resetChaseState(enemy);
-		enemy.attack->attackTimer.reset();
-		ranged.targetSnapshot = glm::vec2(0.0f);
-		ranged.projectileSpawned = false;
-		return;
-	}
-
-	const float directionToPlayer = player.center.x > enemy.center.x ? 1.0f : -1.0f;
-	const bool withinRange =
-	    Utils::DetectionRangeUtils::isWithinDetectionRange(enemy.center, player.center, *enemy.chase);
-
-	if (!withinRange && !AttackSystem::isAttacking(*enemy.attack)) {
-		resetChaseState(enemy);
-		return;
-	}
-
-	if (withinRange) {
-		enemy.chase->lastKnownPlayerX = player.center.x;
-	}
-
-	float progress = 0.0f;
-	if (AttackSystem::isAttacking(*enemy.attack) && enemy.attack->attackTimer.getLength().count() > 0.0f) {
-		progress = enemy.attack->attackTimer.getTime().count() / enemy.attack->attackTimer.getLength().count();
-	}
-
-	if (progress <= enemy.attack->activeWindUpLimit) {
-		glm::vec2 projectileSize = {0.f, 0.f};
-		glm::vec2 hitboxOffset = {0.0f, 0.0f};
-		if (const auto pc = registry.tryGet<ProjectileComponent>(enemy.entity)) {
-			const auto &tilesetPath = pc->get().projectileTilesetPath;
-			if (!tilesetPath.empty()) {
-				const auto &projectileData = ProjectileFactory::getCachedProjectileData(tilesetPath);
-				projectileSize = {projectileData.hitbox.w, projectileData.hitbox.h};
-				hitboxOffset = {projectileData.hitbox.x, projectileData.hitbox.y};
-			}
-		}
-
-		if (!checkLineOfSight(enemy, player, ranged, projectileSize, hitboxOffset)) {
-			resetChaseState(enemy);
-			enemy.attack->attackTimer.reset();
-			return;
-		}
-	}
-
-	// player is close enough
-	enemy.chase->lastKnownPlayerX = player.center.x;
-	enemy.input->horizontalDirection = 0.0f;
-	enemy.render->setFacingLeft(directionToPlayer < 0);
-	if (enemy.chase->reactionDelay.isTimeout()) {
-		enemy.input->attackPressed = true;
-		enemy.attack->activeWindUpLimit =
-		    Utils::Random::getFloat(enemy.attack->windUpLimit * 0.5f, enemy.attack->windUpLimit);
-	}
-}
-
 void handleMeleeAttack(const EnemyContext &enemy, const PlayerContext &player)
 {
 	if (player.center.x < enemy.patrol->minBounds.x || player.center.x > enemy.patrol->maxBounds.x) {
@@ -359,6 +300,9 @@ void update(Registry &registry, const float deltaTime)
 	                               GroundedComponent, AttackComponent, RenderComponent, VelocityComponent>();
 
 	for (const auto entity : enemyView) {
+		if (registry.has<StateMachineComponent>(entity)) {
+			continue;
+		}
 		auto &pos = enemyView.get<PositionComponent>(entity);
 		auto &vel = enemyView.get<VelocityComponent>(entity);
 		const auto &enemyHurtBox = enemyView.get<HitBoxComponent>(entity).bodyHitBox;
@@ -430,11 +374,7 @@ void update(Registry &registry, const float deltaTime)
 			}
 		}
 
-		if (auto ranged = registry.tryGet<RangedAttackComponent>(entity)) {
-			handleRangeAttack(enemyCtx, playerCtx, registry, ranged->get());
-		} else {
-			handleMeleeAttack(enemyCtx, playerCtx);
-		}
+		handleMeleeAttack(enemyCtx, playerCtx);
 	}
 }
 } // namespace GameEngine::ECS::Systems::ChaseSystem

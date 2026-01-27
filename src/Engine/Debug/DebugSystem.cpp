@@ -13,6 +13,8 @@
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
+#include "Engine/ECS/Components/States/StateMachineComponent.hpp"
+#include "Engine/ECS/Components/States/StateTransitionsAndActions.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/View.hpp"
 #include "Engine/Utils/DetectionRangeUtils.hpp"
@@ -289,6 +291,7 @@ void DebugSystem::drawPatrolBoxes(const std::vector<unsigned>::value_type entity
 {
 	const auto ranged = registry->tryGet<RangedAttackComponent>(entity);
 	const auto chase = registry->tryGet<ChaseComponent>(entity);
+	const auto stateMachine = registry->tryGet<GameEngine::ECS::StateMachineComponent>(entity);
 
 	if (const auto patrol = registry->tryGet<PatrolComponent>(entity); !ranged && chase && patrol) {
 		SDL_FRect rangeRect =
@@ -305,6 +308,30 @@ void DebugSystem::drawPatrolBoxes(const std::vector<unsigned>::value_type entity
 
 		constexpr SDL_Color rangeColor = {255, 165, 0, 255}; // Orange
 		addRect(rangeRect, rangeColor);
+	}
+
+	// Draw detection range for state machine enemies (like wizard) even without ChaseComponent
+	if (stateMachine && !chase) {
+		const glm::vec2 center = GameEngine::Utils::DetectionRangeUtils::getRectCenter(hurtBoxRect);
+
+		for (auto& [name, state] : stateMachine->get().states) {
+			for (auto& transition : state->transitions) {
+				// Detection Range (Entry)
+				if (auto entry = dynamic_cast<GameEngine::ECS::ProximityEntryTransition*>(transition.get())) {
+					const float r = entry->radius;
+					SDL_FRect rangeRect = {center.x - r, center.y - r, r * 2.0f, r * 2.0f};
+					constexpr SDL_Color detectionColor = {0, 255, 0, 150}; // Semi-transparent green
+					addRect(rangeRect, detectionColor);
+				}
+				// Disengage Range (Exit)
+				if (auto exit = dynamic_cast<GameEngine::ECS::ProximityExitTransition*>(transition.get())) {
+					const float r = exit->radius;
+					SDL_FRect rangeRect = {center.x - r, center.y - r, r * 2.0f, r * 2.0f};
+					constexpr SDL_Color disengageColor = {255, 0, 0, 150}; // Semi-transparent red
+					addRect(rangeRect, disengageColor);
+				}
+			}
+		}
 	}
 }
 void DebugSystem::drawHitBoxes() const

@@ -1,4 +1,5 @@
 #include "DetectionRangeUtils.hpp"
+#include "Engine/ECS/Systems/CollisionSystem.hpp"
 
 #include <cmath>
 
@@ -48,6 +49,22 @@ SDL_FRect getRangedDetectionRect(const ChaseComponent &chase, const glm::vec2 &c
 	rangeRect.x = center.x - detectionWidth;
 	rangeRect.y = center.y - chase.detectionHeightRange;
 	return rangeRect;
+}
+
+bool checkLineOfSight(const glm::vec2 &start, const glm::vec2 &targetCenter, const SDL_FRect &targetBox, const glm::vec2 &targetScale, const glm::vec2 &projectileSize)
+{
+	// Target the center
+	if (!ECS::Systems::CollisionSystem::isPathObstructed(start, targetCenter, projectileSize)) {
+		return true;
+	}
+
+	// Target the top (head) - using 25% from top of hurtbox
+	const glm::vec2 targetTop = targetCenter - glm::vec2(0.0f, targetBox.h * targetScale.y * 0.25f);
+	if (!ECS::Systems::CollisionSystem::isPathObstructed(start, targetTop, projectileSize)) {
+		return true;
+	}
+
+	return false;
 }
 
 } // namespace GameEngine::Utils::DetectionRangeUtils

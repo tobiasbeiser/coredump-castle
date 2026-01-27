@@ -18,6 +18,7 @@
 #include "Engine/ECS/Systems/RenderSystem.hpp"
 #include "Engine/ECS/Systems/RespawnSystem.hpp"
 #include "Engine/ECS/Systems/SoundSystem.hpp"
+#include "Engine/ECS/Systems/StateMachineSystem.hpp"
 #include "Engine/ECS/Systems/StateSystem.hpp"
 #include "Engine/ECS/Systems/TooltipSystem.hpp"
 #include "Engine/ECS/Systems/VignetteSystem.hpp"
@@ -78,6 +79,7 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 	accumulator += deltaTime;
 	while (accumulator >= stepSize) {
 		accumulator -= stepSize;
+		ECS::Systems::StateMachineSystem::update(game.getRegistry(), stepSize);
 		ECS::Systems::PatrolSystem::update(game.getRegistry());
 		ECS::Systems::MovementSystem::update(game.getRegistry(), stepSize);
 		ECS::Systems::PhysicsSystem::update(game.getRegistry(), stepSize);

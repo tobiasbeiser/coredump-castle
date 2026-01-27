@@ -20,4 +20,6 @@ SDL_FRect getMeleeDetectionRect(const PatrolComponent &patrol, const ChaseCompon
 
 SDL_FRect getRangedDetectionRect(const ChaseComponent &chase, const glm::vec2 &center);
 
+bool checkLineOfSight(const glm::vec2 &start, const glm::vec2 &targetCenter, const SDL_FRect &targetBox, const glm::vec2 &targetScale, const glm::vec2 &projectileSize);
+
 } // namespace GameEngine::Utils::DetectionRangeUtils

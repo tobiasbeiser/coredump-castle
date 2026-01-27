@@ -27,6 +27,7 @@
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/View.hpp"
+#include "WizardEnemyFactory.hpp"
 #include <cctype>
 #include <tileson.hpp>
 
@@ -283,29 +284,32 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 		}
 	}
 	if (isRangedEnemy) {
-		std::string projectileTilesetPath;
-		if (const auto tilesetPathOpt = getStringProp(enemyObj, "projectileTileset", "")) {
-			const std::filesystem::path basePath = "assets/tiled/tilesets/";
-			projectileTilesetPath = (basePath / tilesetPathOpt.value()).string();
-		}
+		SDL_Log("[EnemyFactory] Creating ranged enemy at (%.1f, %.1f)", spawn.x, spawn.y);
 
-		registry.registerComponent(entity, ChaseComponent{
-		                                       .chaseSpeed = chaseSpeed,
-		                                       .originalPatrolSpeed = maxSpeedX,
-		                                       .reactionDelay = Timer{std::chrono::duration<float>(reactionDelay)},
-		                                       .detectionHeightRange = detectionHeightRange,
-		                                       .detectionWidthRange = detectionWidthRange,
-		                                   });
-		registry.registerComponent(entity, RangedAttackComponent{
-		                                       .projectileSpeed = projectileSpeed,
-		                                       .projectileOffset = projectileOffset,
-		                                   });
+		// Register ranged attack components
+		registry.registerComponent(
+		    entity, RangedAttackComponent{.projectileSpeed = projectileSpeed, .projectileOffset = projectileOffset});
+
+		// Get projectile tileset path - always use absolute path from project root
+		std::string projectileTilesetPath = "assets/tiled/tilesets/Projectile.tsj";
+
 		registry.registerComponent(entity, ProjectileComponent{
 		                                       .maxRange = 2000.0f,
 		                                       .speed = projectileSpeed,
 		                                       .spawnPosition = {0.f, 0.f},
 		                                       .projectileTilesetPath = projectileTilesetPath,
 		                                   });
+
+		SDL_Log("[EnemyFactory] Registered RangedAttackComponent (speed=%.1f, offset=(%.1f,%.1f))", projectileSpeed,
+		        projectileOffset.x, projectileOffset.y);
+		SDL_Log("[EnemyFactory] Registered ProjectileComponent (tileset=%s, range=%.1f)", projectileTilesetPath.c_str(),
+		        detectionWidthRange);
+		WizardConfig config;
+		config.patrolSpeed = maxSpeedX;
+		config.detectionRange = detectionWidthRange;
+		config.disengageRange = detectionWidthRange + 50.0f;
+		WizardEnemyFactory::addStateMachine(registry, entity, config);
+		SDL_Log("[EnemyFactory] State machine added to ranged enemy %u", static_cast<unsigned int>(entity));
 	}
 
 	animationFactory.loadAnimationsFromTileset(enemyObj, entity);
