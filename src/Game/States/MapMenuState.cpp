@@ -6,6 +6,7 @@
 #include "Engine/Graphics/Gui/UiViewFactory.hpp"
 #include "Engine/Graphics/Gui/Utils.hpp"
 #include "PlayState.hpp"
+#include "Engine/ECS/Systems/AnimationSystem.hpp"
 
 namespace GameEngine {
 
@@ -40,6 +41,7 @@ void MapMenuState::update(GameEngine &game, const float deltaTime)
 {
 	inputSystem.update(game.getRegistry());
 	ECS::Systems::MapToggleSystem::update(game.getRegistry(), game);
+	ECS::Systems::AnimationSystem::update(game.getRegistry(), deltaTime);
 }
 
 void MapMenuState::render(GameEngine &game, const float alpha)
