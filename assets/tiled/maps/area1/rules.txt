@@ -1,1 +1,1 @@
-..\Rules\AutoTile.json
+../rules.txt

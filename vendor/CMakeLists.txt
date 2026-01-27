@@ -2,13 +2,20 @@ add_library(vendor INTERFACE)
 target_include_directories(vendor SYSTEM INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/tileson")
 
 
-# Force consistent static, non-framework builds on macOS
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(CMAKE_MACOSX_RPATH ON)
 
-# SDL projects default to frameworks on macOS — disable explicitly
 set(SDL3MIXER_BUILD_FRAMEWORK OFF CACHE BOOL "" FORCE)
 set(SDL3MIXER_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(SDLMIXER_MIDI_NATIVE OFF)
+set(SDLMIXER_GME OFF)
+set(SDLMIXER_WAVPACK OFF)
+set(SDLMIXER_MOD OFF)
+set(SDLMIXER_MOD_XMP OFF)
+set(SDLMIXER_OPUS OFF)
+set(SDLMIXER_MP3_MPG123 OFF)
+set(SDLMIXER_VORBIS_VORBISFILE OFF)
+set(SDLMIXER_FLAC_LIBFLAC OFF)
 
 
 add_subdirectory(SDL3_mixer)

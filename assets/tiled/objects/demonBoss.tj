@@ -103,7 +103,7 @@
             {
              "name":"touchDamageBox",
              "type":"string",
-             "value":"110,135,70,25"
+             "value":"120,135,50,25"
             }, 
             {
              "name":"unlockAbility",
