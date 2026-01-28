@@ -27,7 +27,7 @@ class MapRenderSystem {
 	}
 
 	void update(Registry &registry, GameEngine &game);
-	void centerCamera(Registry &registry) const;
+	void initFocusPoint(Registry &registry);
 	void setMapClipRect(SDL_FRect newClipRect);
 	static float getMapSizeFactor();
 	void handleZoom(float wheelAmount);
@@ -37,6 +37,7 @@ class MapRenderSystem {
 	std::vector<Utils::RenderUtils::RenderItem> renderItems{};
 	Renderer &renderer;
 	float scalingFactor;
+	glm::vec2 focusPoint{0.f, 0.f};
 	static constexpr SDL_Color invalidColorMod{100, 100, 100, 200};
 	SDL_Rect clipRect{};
 };

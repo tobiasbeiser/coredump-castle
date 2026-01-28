@@ -56,9 +56,9 @@ void GameEngine::Utils::RenderUtils::applyScalingFactor(RenderItem &renderItem, 
 	}
 }
 
-glm::vec2 GameEngine::Utils::RenderUtils::getScaledVec(const glm::vec2 vect2D, const float scalingFactor)
+glm::vec2 GameEngine::Utils::RenderUtils::getScaledVec(const glm::vec2 vect2D, const float scaling)
 {
-	return vect2D * scalingFactor;
+	return vect2D * scaling;
 }
 
 std::optional<GameEngine::Utils::RenderUtils::RenderItem>

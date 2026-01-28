@@ -12,6 +12,7 @@ namespace GameEngine {
 
 void MapMenuState::init(GameEngine &game)
 {
+	mapRenderSystem.initFocusPoint(game.getRegistry());
 	rootWidget = UiViewFactory::createMapScreen(guiManager.getContext(), game, mapRenderSystem.getMapSizeFactor());
 	guiManager.updateLayout(rootWidget.get());
 }
@@ -30,8 +31,6 @@ void MapMenuState::resume()
 
 void MapMenuState::handleEvents(GameEngine &game, const SDL_Event &event)
 {
-	// check and passScrolling mouse event to mapMenuSystem
-	// Ui::Utils::passMouseEvent(rootWidget.get(), event, renderer);
 	if (event.type == SDL_EVENT_MOUSE_WHEEL) {
 		mapRenderSystem.handleZoom(event.wheel.y);
 	}

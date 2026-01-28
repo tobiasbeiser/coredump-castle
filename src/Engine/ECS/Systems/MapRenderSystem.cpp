@@ -12,7 +12,7 @@ void MapRenderSystem::update(Registry &registry, GameEngine &game)
 {
 	Utils::RenderUtils::withClipRect(game.getRenderer().getNativeRenderer(), clipRect, [&] {
 		renderItems.clear();
-		centerCamera(registry);
+		game.getRenderer().setCameraCenter(Utils::RenderUtils::getScaledVec(focusPoint, scalingFactor));
 
 		auto view = registry.view<AlreadySeenTag, RenderComponent, PositionComponent, SpriteComponent>()
 		                .exclude<EnemyTag>()
@@ -41,15 +41,14 @@ void MapRenderSystem::update(Registry &registry, GameEngine &game)
 	});
 }
 
-void MapRenderSystem::centerCamera(Registry &registry) const
+void MapRenderSystem::initFocusPoint(Registry &registry)
 {
 	auto playerView = registry.view<PlayerTag, PositionComponent, SpriteComponent>();
 	if (playerView.size() == 1) {
 		const auto playerEntity = playerView.at(0);
 		const auto &playerPos = playerView.get<PositionComponent>(playerEntity);
 		const auto &tile = playerView.get<SpriteComponent>(playerEntity);
-		renderer.setCameraCenter(Utils::RenderUtils::getScaledVec(
-		    playerPos.position + static_cast<glm::vec2>(tile.tileSize / 2), scalingFactor));
+		focusPoint =  playerPos.position + static_cast<glm::vec2>(tile.tileSize / 2);
 	}
 }
 
