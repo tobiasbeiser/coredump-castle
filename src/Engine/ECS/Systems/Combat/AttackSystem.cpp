@@ -82,6 +82,7 @@ void update(Registry &registry, const float deltaTime, const AttackCallback &onA
 		updateCoolDown(attack, deltaTime);
 
 		if (input.attackPressed && !isAttacking(attack) && isCoolDown(attack)) {
+			SDL_Log("starting attack");
 			startAttack(attack, deltaTime);
 			onAttack(entity);
 		} else if (isAttacking(attack)) {

@@ -24,6 +24,7 @@
 #include "PlayerFactory.hpp"
 
 #include "Engine/ECS/Components/Core/SoundComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/MeleeAttackComponent.hpp"
 
 PlayerFactory::PlayerFactory(GameEngine::ECS::Registry &registry, TextureManager &tex_mgr,
                              AnimationFactory &animation_factory, AudioManager &audioManager)
@@ -79,7 +80,8 @@ GameEngine::ECS::Entity PlayerFactory::createPlayer(tson::Object &player, const 
 		registry.registerComponent(e, HurtBoxComponent{collisionBox});
 		constexpr int weaponHeight = 45;
 		constexpr int weaponOffsetY = -(weaponHeight - collisionBox.h) / 2;
-		registry.registerComponent(e, HitBoxComponent{.weaponHitBox = {0, weaponOffsetY, 35, weaponHeight}});
+		registry.registerComponent(e, HitBoxComponent{collisionBox});
+		registry.registerComponent<MeleeAttackComponent>(e, {.weaponHitBox = {0, weaponOffsetY, 35, weaponHeight}});
 		registry.registerComponent(e, HealthComponent{60, 60, 1.75s});
 
 		audioManager.loadSoundGroup("player_jump", "assets/audio/sound/player/jump");

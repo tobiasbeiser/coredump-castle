@@ -6,8 +6,10 @@
 #include "Engine/ECS/Components/Gameplay/Combat/HealthComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/MeleeAttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/RangedAttackComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Enemy/VisionComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/TooltipComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
@@ -37,6 +39,11 @@ void DebugSystem::addLine(const glm::vec2 &start, const glm::vec2 &end, const SD
 	instance().debugLines.push_back({start, end, color});
 }
 
+void DebugSystem::addCircle(const glm::vec2 &center, const float radius, const SDL_Color &color)
+{
+	instance().debugCircles.push_back({center, radius, color});
+}
+
 void DebugSystem::addRaycast(const glm::vec2 &start, const glm::vec2 &end, bool obstructed)
 {
 	DebugSystem &sys = instance();
@@ -52,6 +59,7 @@ void DebugSystem::clear()
 	instance().debugRects.clear();
 	instance().debugLines.clear();
 	instance().debugMessages.clear();
+	instance().debugCircles.clear();
 }
 
 void DebugSystem::renderGameOverlay(SDL_Renderer *renderer, const SDL_FRect &viewport)
@@ -86,6 +94,13 @@ void DebugSystem::renderGameOverlay(SDL_Renderer *renderer, const SDL_FRect &vie
 			const float x2 = end.x - viewport.x;
 			const float y2 = end.y - viewport.y;
 			SDL_RenderLine(renderer, x1, y1, x2, y2);
+		}
+	}
+
+	if (sys.render.showVision) {
+		sys.drawVision();
+		for (auto circle : sys.debugCircles) {
+			renderDebugCircle(renderer, circle, viewport);
 		}
 	}
 }
@@ -126,6 +141,7 @@ void DebugSystem::drawUI()
 			ImGui::Checkbox("Show Hit Boxes", &sys.render.showHitBoxes);
 			ImGui::Checkbox("Show Tooltip Boxes", &sys.render.showTooltipBoxes);
 			ImGui::Checkbox("Show Raycasts", &sys.render.showRaycasts);
+			ImGui::Checkbox("Show vision", &sys.render.showVision);
 			ImGui::Checkbox("VSync", &sys.render.vSync);
 		}
 
@@ -285,28 +301,6 @@ void DebugSystem::drawProjectileHitBox() const
 	}
 }
 
-void DebugSystem::drawPatrolBoxes(const std::vector<unsigned>::value_type entity, SDL_FRect hurtBoxRect) const
-{
-	const auto ranged = registry->tryGet<RangedAttackComponent>(entity);
-	const auto chase = registry->tryGet<ChaseComponent>(entity);
-
-	if (const auto patrol = registry->tryGet<PatrolComponent>(entity); !ranged && chase && patrol) {
-		SDL_FRect rangeRect =
-		    GameEngine::Utils::DetectionRangeUtils::getMeleeDetectionRect(patrol->get(), chase->get());
-
-		constexpr SDL_Color rangeColor = {255, 165, 0, 255}; // Orange
-		addRect(rangeRect, rangeColor);
-	}
-
-	if (ranged && chase) {
-		const glm::vec2 center = GameEngine::Utils::DetectionRangeUtils::getRectCenter(hurtBoxRect);
-
-		SDL_FRect rangeRect = GameEngine::Utils::DetectionRangeUtils::getRangedDetectionRect(chase->get(), center);
-
-		constexpr SDL_Color rangeColor = {255, 165, 0, 255}; // Orange
-		addRect(rangeRect, rangeColor);
-	}
-}
 void DebugSystem::drawHitBoxes() const
 {
 	if (!instance().getRenderOptions().showHitBoxes || registry == nullptr) {
@@ -336,11 +330,13 @@ void DebugSystem::drawHitBoxes() const
 		if (facingLeft) {
 			localHurtBox.x = referenceBox.x + referenceBox.w - (hurtbox.hurtBox.x + hurtbox.hurtBox.w);
 		}
-		const auto hitBoxRect =
-		    GameEngine::Utils::HitBoxUtils::getWeaponHitBoxRect(position, hitbox, localHurtBox, scale, facingLeft);
 
-		constexpr SDL_Color hitboxColor = {0, 255, 0, 255};
-		addRect(hitBoxRect, hitboxColor);
+		if (const auto weapon = registry->tryGet<MeleeAttackComponent>(entity)) {
+			const auto hitBoxRect = GameEngine::Utils::HitBoxUtils::getWeaponHitBoxRect(
+			    position, weapon->get().weaponHitBox, localHurtBox, scale, facingLeft);
+			constexpr SDL_Color hitboxColor = {0, 255, 0, 255};
+			addRect(hitBoxRect, hitboxColor);
+		}
 
 		const SDL_FRect bodyHitBoxRect = GameEngine::Utils::HitBoxUtils::getHitBoxFacing(
 		    position, hitbox.bodyHitBox, referenceBox, scale, facingLeft);
@@ -351,8 +347,6 @@ void DebugSystem::drawHitBoxes() const
 
 		constexpr SDL_Color hurtBoxColor = {255, 0, 255, 255};
 		addRect(hurtBoxRect, hurtBoxColor);
-
-		drawPatrolBoxes(entity, hurtBoxRect);
 	}
 }
 
@@ -368,9 +362,56 @@ void DebugSystem::drawTooltipBoxes() const
 		addRect(box, tooltipBoxColor);
 	}
 }
+void DebugSystem::drawVision() const
+{
+	if (!instance().getRenderOptions().showVision || registry == nullptr) {
+		return;
+	}
+	auto view = registry->view<VisionComponent, PositionComponent, HitBoxComponent>();
+
+	for (const auto entity : view) {
+		const auto &[position, previousPosition] = view.get<PositionComponent>(entity);
+		const auto &hitBox = view.get<HitBoxComponent>(entity).bodyHitBox;
+		const auto &[visionRange] = view.get<VisionComponent>(entity);
+		const auto transform = registry->tryGet<TransformComponent>(entity);
+		const auto scale = transform ? &transform->get().scale : nullptr;
+
+		SDL_FRect sourceHitBox = GameEngine::Utils::HitBoxUtils::getHitBox(position, hitBox, scale);
+		const glm::vec2 center = GameEngine::Utils::DetectionRangeUtils::getRectCenter(sourceHitBox);
+
+		constexpr SDL_Color visionColor = {0, 255, 255, 100};
+		addCircle(center, visionRange, visionColor);
+	}
+}
 
 void DebugSystem::updateFPS()
 {
 	fpsHistory.at(fpsOffset) = ImGui::GetIO().Framerate;
 	fpsOffset = (fpsOffset + 1) % fpsHistorySize;
+}
+
+void DebugSystem::renderDebugCircle(SDL_Renderer *renderer, const DebugCircle &circle, const SDL_FRect &viewport,
+                                    const int segments)
+{
+	SDL_SetRenderDrawColor(renderer, circle.color.r, circle.color.g, circle.color.b, circle.color.a);
+
+	const float cx = circle.center.x - viewport.x;
+	const float cy = circle.center.y - viewport.y;
+
+	const float step = 2.0f * SDL_PI_F / segments;
+
+	float prevX = cx + std::cos(0.0f) * circle.radius;
+	float prevY = cy + std::sin(0.0f) * circle.radius;
+
+	for (int i = 1; i <= segments; ++i) {
+		const float theta = i * step;
+
+		const float x = cx + std::cos(theta) * circle.radius;
+		const float y = cy + std::sin(theta) * circle.radius;
+
+		SDL_RenderLine(renderer, prevX, prevY, x, y);
+
+		prevX = x;
+		prevY = y;
+	}
 }

@@ -35,4 +35,7 @@ void updateGroundedState(const EntityPhysicsState &state, GroundedComponent &gro
 
 bool isPathObstructed(const glm::vec2 &start, const glm::vec2 &end, const glm::vec2 &projectileSize = {0.0f, 0.0f});
 
+bool canContinueMovingHorizontally(const glm::vec2 &position, const SDL_FRect &collisionBox,
+                                   std::optional<const glm::vec2> scale, float direction);
+
 } // namespace GameEngine::ECS::Systems::CollisionSystem

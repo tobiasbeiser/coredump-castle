@@ -53,7 +53,7 @@ void ProjectileFactory::createProjectile(const glm::vec2 &startPosition, const g
 	finalHitbox.y = data.hitbox.y;
 
 	reg.registerComponent(entity, HurtBoxComponent{.hurtBox = finalHitbox});
-	reg.registerComponent(entity, HitBoxComponent{.bodyHitBox = finalHitbox, .weaponHitBox = {0.0f, 0.0f, 0.0f, 0.0f}});
+	reg.registerComponent(entity, HitBoxComponent(finalHitbox));
 	reg.registerComponent(entity, CollisionComponent{.collisionBox = finalHitbox});
 	reg.registerComponent(entity, ProjectileComponent{.maxRange = range,
 	                                                  .speed = speed,

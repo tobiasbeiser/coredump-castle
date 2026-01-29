@@ -10,12 +10,15 @@
 #include "Engine/ECS/Components/Gameplay/Combat/HealthComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/MeleeAttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/PoiseComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/RangedAttackComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Enemy/AiStateComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/ChargeComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/ChaseComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Enemy/VisionComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
 #include "Engine/ECS/Components/Physics/AccelerationComponent.hpp"
@@ -27,14 +30,11 @@
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/View.hpp"
+
 #include <cctype>
 #include <tileson.hpp>
 
 namespace {
-struct PatrolRect {
-	glm::vec2 min;
-	glm::vec2 max;
-};
 float getFloatProp(tson::Object &obj, const std::string &name, const float defaultValue)
 {
 	const auto prop = obj.getProp(name);
@@ -146,32 +146,6 @@ SDL_FRect parseCollisionBox(const std::string &value)
 	}
 	return {0.f, 0.f, 0.f, 0.f};
 }
-
-std::optional<PatrolRect> findPatrolRect(tson::Object &enemyObj, const glm::vec2 &levelPos, tson::Map &map)
-{
-	auto *pathLayer = map.getLayer("Enemies");
-	if (!pathLayer) {
-		return std::nullopt;
-	}
-
-	const auto areaProp = enemyObj.getProp("area");
-	if (areaProp == nullptr || areaProp->getType() != tson::Type::Object) {
-		return std::nullopt;
-	}
-	const auto areaID = areaProp->getValue<uint32_t>();
-	for (const auto &obj : pathLayer->getObjects()) {
-		if (obj.getId() == areaID) {
-			const tson::Vector2 pos = obj.getPosition();
-			const tson::Vector2 size = obj.getSize();
-			return PatrolRect{
-			    .min = glm::vec2(pos.x, pos.y) + levelPos,
-			    .max = glm::vec2(pos.x + size.x, pos.y + size.y) + levelPos,
-			};
-		}
-	}
-
-	return std::nullopt;
-}
 } // namespace
 
 GameEngine::ECS::EnemyFactory::EnemyFactory(Registry &registry, AnimationFactory &animationFactory)
@@ -200,6 +174,7 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 	const auto canPatrol = getBoolProp(enemyObj, "canPatrol");
 	const auto collisionStr = getStringProp(enemyObj, "collisionBox", "0,0,0,0");
 	const auto hurtBoxStr = getStringProp(enemyObj, "hurtBox", "");
+	const auto weaponHitBoxStr = getStringProp(enemyObj, "weaponHitBox", "");
 	const auto touchDamageBoxStr = getStringProp(enemyObj, "touchDamageBox", "");
 	const auto hitBoxStr = getStringProp(enemyObj, "hitBox", "");
 	const auto maxHealth = getIntProp(enemyObj, "maxHealth", 100);
@@ -207,8 +182,6 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 	const auto reactionDelay = getFloatProp(enemyObj, "reactionDelay", 0.5);
 	const auto isRangedEnemy = getBoolProp(enemyObj, "isRangedEnemy");
 	const auto projectileSpeed = getFloatProp(enemyObj, "projectileSpeed", 300.0f);
-	const auto detectionWidthRange = getFloatProp(enemyObj, "detectionWidthRange", 300.0f);
-	const auto detectionHeightRange = getFloatProp(enemyObj, "detectionHeightRange", 50.0f);
 	const auto windUpLimit = getFloatProp(enemyObj, "windUpLimit", 0.0f);
 	const auto flipXOffset = getBoolProp(enemyObj, "flipXOffset");
 	const auto poise = getFloatProp(enemyObj, "poise", 0.0f);
@@ -220,6 +193,8 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 	const auto chargeDuration = getFloatProp(enemyObj, "chargeDuration", 0.75f);
 	const auto chargePauseDuration = getFloatProp(enemyObj, "chargePauseDuration", 1.0f);
 	const auto chargeSpeedMultiplier = getFloatProp(enemyObj, "chargeSpeedMultiplier", 1.5f);
+	const auto detectionRange = getFloatProp(enemyObj, "detectionRange", -1);
+	const auto attackRange = getFloatProp(enemyObj, "attackRange", -1);
 
 	glm::vec2 projectileOffset = {0.0f, 0.0f};
 	if (const auto offsetStr = getStringProp(enemyObj, "projectileOffset", "")) {
@@ -238,6 +213,7 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 	registry.registerComponent(entity, RenderComponent{.layer = layer, .flipX = false, .flipXOffset = flipXOffset});
 	registry.registerComponent(entity, TransformComponent{.scale = glm::vec2(scale, scale)});
 	registry.registerComponent(entity, StateComponent{});
+	registry.registerComponent(entity, AiStateComponent{});
 	using namespace std::chrono_literals;
 
 	registry.registerComponent(entity, InputComponent{});
@@ -254,33 +230,33 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 		                            .chargeSpeedMultiplier = chargeSpeedMultiplier});
 	}
 
-	SDL_FRect weaponHitBox = {0.f, 0.f, 0.f, 0.f};
-	if (hitBoxStr) {
-		weaponHitBox = parseCollisionBox(hitBoxStr.value());
+	if (weaponHitBoxStr) {
+		const auto weaponHitBox = parseCollisionBox(weaponHitBoxStr.value());
+
+		if (weaponHitBox.w >= 0.f && weaponHitBox.h >= 0.f) {
+			registry.registerComponent<MeleeAttackComponent>(
+			    entity, {weaponHitBox, attackRange > 0 ? attackRange : weaponHitBox.w});
+		}
 	}
 
 	if (collisionStr) {
 		const auto collisionBox = parseCollisionBox(collisionStr.value());
 		const auto touchDamageBox = touchDamageBoxStr ? parseCollisionBox(touchDamageBoxStr.value()) : collisionBox;
-		registry.registerComponent(entity, HitBoxComponent{.bodyHitBox = touchDamageBox, .weaponHitBox = weaponHitBox});
+		registry.registerComponent(entity, HitBoxComponent{.bodyHitBox = touchDamageBox});
 		registry.registerComponent(entity, CollisionComponent{collisionBox});
 		registry.registerComponent(entity,
 		                           HurtBoxComponent{hurtBoxStr ? parseCollisionBox(hurtBoxStr.value()) : collisionBox});
 	}
 
 	if (canPatrol) {
-		if (const auto patrolRect = findPatrolRect(enemyObj, levelPos, *map)) {
-			registry.registerComponent(entity,
-			                           PatrolComponent{.minBounds = patrolRect->min, .maxBounds = patrolRect->max});
-		}
-		if (chaseSpeed > 0.0f) {
-			registry.registerComponent(entity, ChaseComponent{
-			                                       .chaseSpeed = chaseSpeed,
-			                                       .originalPatrolSpeed = maxSpeedX,
-			                                       .reactionDelay = Timer{std::chrono::duration<float>(reactionDelay)},
-			                                       .detectionHeightRange = detectionHeightRange,
-			                                   });
-		}
+		registry.registerComponent<PatrolComponent>(entity, {maxSpeedX});
+	}
+
+	if (chaseSpeed > 0.0f) {
+		registry.registerComponent(entity, ChaseComponent{
+		                                       .chaseSpeed = chaseSpeed,
+		                                       .reactionDelay = Timer{std::chrono::duration<float>(reactionDelay)},
+		                                   });
 	}
 	if (isRangedEnemy) {
 		std::string projectileTilesetPath;
@@ -291,14 +267,12 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 
 		registry.registerComponent(entity, ChaseComponent{
 		                                       .chaseSpeed = chaseSpeed,
-		                                       .originalPatrolSpeed = maxSpeedX,
 		                                       .reactionDelay = Timer{std::chrono::duration<float>(reactionDelay)},
-		                                       .detectionHeightRange = detectionHeightRange,
-		                                       .detectionWidthRange = detectionWidthRange,
 		                                   });
 		registry.registerComponent(entity, RangedAttackComponent{
 		                                       .projectileSpeed = projectileSpeed,
 		                                       .projectileOffset = projectileOffset,
+		                                       .attackRange = attackRange,
 		                                   });
 		registry.registerComponent(entity, ProjectileComponent{
 		                                       .maxRange = 2000.0f,
@@ -345,6 +319,10 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 	                            .attackCoolDownTimer = Timer{std::chrono::duration<float>(attackCooldown)},
 	                            .windUpLimit = windUpLimit,
 	                            .activeWindUpLimit = windUpLimit});
+
+	if (detectionRange > 0.0f) {
+		registry.registerComponent(entity, VisionComponent{.visionRange = detectionRange});
+	}
 
 	ensureSafeSpawn(entity);
 

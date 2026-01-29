@@ -21,6 +21,11 @@
              "value":0.6
             }, 
             {
+             "name":"attackRange",
+             "type":"float",
+             "value":45
+            }, 
+            {
              "name":"canPatrol",
              "type":"bool",
              "value":true
@@ -51,9 +56,9 @@
              "value":"119,70,50,90"
             }, 
             {
-             "name":"detectionHeightRange",
+             "name":"detectionRange",
              "type":"float",
-             "value":50
+             "value":300
             }, 
             {
              "name":"flipXOffset",
@@ -110,6 +115,11 @@
              "propertytype":"Ability",
              "type":"int",
              "value":1
+            }, 
+            {
+             "name":"weaponHitBox",
+             "type":"string",
+             "value":"0,45,90,25"
             }, 
             {
              "name":"windUpLimit",
