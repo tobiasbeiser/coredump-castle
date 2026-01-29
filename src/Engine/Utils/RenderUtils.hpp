@@ -24,6 +24,12 @@ struct SpriteRenderContext {
 	const RenderComponent &renderComp;
 	const std::optional<std::reference_wrapper<TransformComponent>> transformComp;
 };
+
+struct DstRectContext {
+	const PositionComponent &posComp;
+	const SpriteComponent &spriteComp;
+	const std::optional<std::reference_wrapper<TransformComponent>> transformComp;
+};
 // NOLINTEND
 
 struct RenderItem {
@@ -68,6 +74,7 @@ glm::vec2 getScaledVec(glm::vec2 vect2D, float scaling);
 
 std::optional<RenderItem> createSpriteItem(const SpriteRenderContext &ctx, const SDL_FRect &viewport,
                                            float globalScaling = 1.f);
+SDL_FRect getTileDstFRect(const DstRectContext &ctx, float globalScaling = 1.f);
 void sortRenderItems(std::vector<RenderItem> &renderItems);
 void submitRenderItems(std::vector<RenderItem> &renderItems, const Renderer &renderer);
 

@@ -9,12 +9,10 @@
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
 #include "Engine/ECS/Components/Render/VignetteComponent.hpp"
-#include "Engine/ECS/Components/Tags/AlreadySeenTag.hpp"
 #include "Engine/ECS/Components/Tags/InactiveTag.hpp"
 #include "Engine/ECS/View.hpp"
 #include "Engine/Utils/RenderUtils.hpp"
 
-#include <algorithm>
 #include <execution>
 #include <stdexcept>
 #include <vector>
@@ -23,12 +21,6 @@ using namespace GameEngine::ECS::Systems;
 using namespace GameEngine::Utils;
 
 RenderSystem::RenderSystem(Renderer &renderer) : renderer(renderer) {}
-
-auto RenderSystem::getRenderRank(const RenderItem &item)
-{
-	return std::tie(item.layer, item.texture, item.colorMod.r, item.colorMod.g, item.colorMod.b, item.colorMod.a,
-					item.flipX);
-}
 
 void RenderSystem::update(Registry &registry)
 {
@@ -58,7 +50,6 @@ void RenderSystem::update(Registry &registry)
 				renderItems.push_back(item.value());
 		}
 
-		std::vector<Entity> entitiesToCache;
 		const SDL_FRect &viewport = renderer.getViewport();
 		// Tiles, Player
 		for (const auto entity : view) {
@@ -69,14 +60,7 @@ void RenderSystem::update(Registry &registry)
 
 			if (const auto item = RenderUtils::createSpriteItem({pos, sprite, render, transform}, viewport)) {
 				renderItems.push_back(item.value());
-
-				if (!registry.has<AlreadySeenTag>(entity)) {
-					entitiesToCache.push_back(entity);
-				}
 			}
-		}
-		for (auto entity : entitiesToCache) {
-			registry.registerComponent(entity, AlreadySeenTag{});
 		}
 	}
 

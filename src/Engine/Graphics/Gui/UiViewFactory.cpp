@@ -103,7 +103,7 @@ std::unique_ptr<Widget> createMainMenu(const UIContext &ctx, const MainMenuActio
 }
 
 std::unique_ptr<Widget> createContinueMenu(const UIContext &ctx, const ContinueMenuActions &actions,
-                                           std::vector<GameEngine::ECS::SaveMetaData> savesData)
+                                           const std::vector<GameEngine::ECS::SaveMetaData>& savesData)
 {
 	auto root = makeMenuRoot(ctx, "Continue Game");
 
@@ -113,7 +113,7 @@ std::unique_ptr<Widget> createContinueMenu(const UIContext &ctx, const ContinueM
 
 	auto buttonContainer = makeButtonContainer();
 
-	for (const auto saveData : savesData) {
+	for (const auto& saveData : savesData) {
 		auto buttonRow = std::make_unique<LinearLayout>();
 		buttonRow->setOrientation(Orientation::Horizontal);
 
@@ -203,13 +203,14 @@ std::unique_ptr<Widget> createLoadingScreen(const UIContext &ctx)
 	return root;
 }
 
-std::unique_ptr<Widget> createMapScreen(const UIContext &ctx, GameEngine::GameEngine &game, const float mapSizeFactor)
+std::unique_ptr<Widget> createMapScreen(const UIContext &ctx, const float mapSizeFactor)
 {
+	static constexpr int bleedingGuard = 3;
 	const auto [width, height] = ctx.renderer->getLogicalResolution();
 	auto root = std::make_unique<AnchorLayout>();
 
 	auto mapContent = std::make_unique<Frame>();
-	mapContent->setFixedSize({width * mapSizeFactor, height * mapSizeFactor});
+	mapContent->setFixedSize({width * mapSizeFactor + bleedingGuard, height * mapSizeFactor + bleedingGuard});
 	root->addChild(std::move(mapContent), AnchorParams::center);
 
 	return root;

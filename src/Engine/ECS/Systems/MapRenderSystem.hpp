@@ -23,6 +23,7 @@ class MapRenderSystem {
 		const auto [width, height] = renderer.getLogicalResolution();
 		const glm::vec2 resVector{width, height};
 		const SDL_FRect targetRect = Ui::LayoutEngine::positionCentered(resVector, resVector * mapSizeFactor);
+		// SDL3 only allows clipping with integer rects https://github.com/libsdl-org/sdl/issues/14654
 		clipRect = Utils::RenderUtils::rectFromFRect(targetRect);
 	}
 

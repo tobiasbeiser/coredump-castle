@@ -13,7 +13,7 @@ namespace GameEngine {
 void MapMenuState::init(GameEngine &game)
 {
 	mapRenderSystem.initFocusPoint(game.getRegistry());
-	rootWidget = UiViewFactory::createMapScreen(guiManager.getContext(), game, mapRenderSystem.getMapSizeFactor());
+	rootWidget = UiViewFactory::createMapScreen(guiManager.getContext(), mapRenderSystem.getMapSizeFactor());
 	guiManager.updateLayout(rootWidget.get());
 }
 

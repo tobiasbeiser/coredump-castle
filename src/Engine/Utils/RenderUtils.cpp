@@ -10,7 +10,6 @@
 
 #include <algorithm>
 #include <execution>
-#include <stdexcept>
 #include <vector>
 #include <optional>
 
@@ -18,6 +17,7 @@ GameEngine::Utils::RenderUtils::ScopedClip::ScopedClip(SDL_Renderer *renderer, c
     : rendererPtr(renderer)
 {
 	SDL_GetRenderClipRect(renderer, &oldClip);
+	//NOLINTNEXTLINE
 	wasClipping = !SDL_RectEmpty(&oldClip);
 	SDL_SetRenderClipRect(renderer, &newClip);
 }
@@ -34,26 +34,16 @@ GameEngine::Utils::RenderUtils::ScopedClip::~ScopedClip()
 SDL_Rect GameEngine::Utils::RenderUtils::rectFromFRect(const SDL_FRect &source)
 {
 	return SDL_Rect{
-	    static_cast<int>(source.x),
-	    static_cast<int>(source.y),
-	    static_cast<int>(source.w),
-	    static_cast<int>(source.h),
+	    static_cast<int>(std::round(source.x)),
+	    static_cast<int>(std::round(source.y)),
+	    static_cast<int>(std::round(source.w)),
+	    static_cast<int>(std::round(source.h)),
 	};
 }
 
 void GameEngine::Utils::RenderUtils::setColorMod(RenderItem &renderItem, const SDL_Color colorMod)
 {
 	renderItem.colorMod = colorMod;
-}
-
-void GameEngine::Utils::RenderUtils::applyScalingFactor(RenderItem &renderItem, const float scalingFactor)
-{
-	if (renderItem.dst) {
-		renderItem.dst->x *= scalingFactor;
-		renderItem.dst->y *= scalingFactor;
-		renderItem.dst->w *= scalingFactor;
-		renderItem.dst->h *= scalingFactor;
-	}
 }
 
 glm::vec2 GameEngine::Utils::RenderUtils::getScaledVec(const glm::vec2 vect2D, const float scaling)
@@ -66,25 +56,20 @@ GameEngine::Utils::RenderUtils::createSpriteItem(const SpriteRenderContext &ctx,
                                                  const float globalScaling)
 {
 	// Tiles, Player
-	const auto &[position, previousPosition] = ctx.posComp;
-	const auto &[texture, TileSize, TileMapPosition, spriteColorMod] = ctx.spriteComp;
-	const auto &render = ctx.renderComp;
+	const SDL_FRect dst = getTileDstFRect({ctx.posComp, ctx.spriteComp, ctx.transformComp}, globalScaling);
 
-	const glm::vec2 scale = ctx.transformComp ? ctx.transformComp->get().scale : glm::vec2{1.0f, 1.0f};
-	const double rotation = ctx.transformComp ? ctx.transformComp->get().rotation : 0.0;
-
-	const SDL_FRect src{.x = static_cast<float>(TileMapPosition.x),
-	                    .y = static_cast<float>(TileMapPosition.y),
-	                    .w = static_cast<float>(TileSize.x),
-	                    .h = static_cast<float>(TileSize.y)};
-
-	// non interpolation
-	SDL_FRect dst{.x = position.x * globalScaling,
-	              .y = position.y * globalScaling,
-	              .w = static_cast<float>(TileSize.x) * scale.x * globalScaling,
-	              .h = static_cast<float>(TileSize.y) * scale.y * globalScaling};
 	if (!SDL_HasRectIntersectionFloat(&dst, &viewport))
 		return std::nullopt;
+
+	const auto &[texture, tileSize, tileMapPosition, spriteColorMod] = ctx.spriteComp;
+	const auto &render = ctx.renderComp;
+	const double rotation = ctx.transformComp ? ctx.transformComp->get().rotation : 0.0;
+
+	const SDL_FRect src{.x = static_cast<float>(tileMapPosition.x),
+	                    .y = static_cast<float>(tileMapPosition.y),
+	                    .w = static_cast<float>(tileSize.x),
+	                    .h = static_cast<float>(tileSize.y)};
+
 
 	return RenderItem{.layer = render.layer,
 	                  .texture = texture,
@@ -94,6 +79,19 @@ GameEngine::Utils::RenderUtils::createSpriteItem(const SpriteRenderContext &ctx,
 	                  .flipX = render.flipX,
 	                  .angle = rotation,
 	                  .colorMod = spriteColorMod};
+}
+
+SDL_FRect GameEngine::Utils::RenderUtils::getTileDstFRect(const DstRectContext &ctx, const float globalScaling)
+{
+	const auto &[position, previousPosition] = ctx.posComp;
+	const auto &[texture, tileSize, tileMapPosition, spriteColorMod] = ctx.spriteComp;
+
+	const glm::vec2 scale = ctx.transformComp ? ctx.transformComp->get().scale : glm::vec2{1.0f, 1.0f};
+	return {.x = position.x * globalScaling,
+				  .y = position.y * globalScaling,
+				  .w = static_cast<float>(tileSize.x) * scale.x * globalScaling,
+				  .h = static_cast<float>(tileSize.y) * scale.y * globalScaling};
+
 }
 
 void GameEngine::Utils::RenderUtils::sortRenderItems(std::vector<RenderItem> &renderItems)

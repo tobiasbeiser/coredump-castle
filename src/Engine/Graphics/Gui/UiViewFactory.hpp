@@ -30,11 +30,11 @@ using namespace Ui;
 std::unique_ptr<Widget> createMainMenu(const UIContext &ctx, const MainMenuActions &actions);
 
 std::unique_ptr<Widget> createContinueMenu(const UIContext &ctx, const ContinueMenuActions &actions,
-                                           std::vector<GameEngine::ECS::SaveMetaData> savesData);
+                                           const std::vector<GameEngine::ECS::SaveMetaData>& savesData);
 
 std::unique_ptr<Widget> createSettingsMenu(const UIContext &ctx, const SettingsMenuActions &actions);
 
 std::unique_ptr<Widget> createLoadingScreen(const UIContext &ctx);
 
-std::unique_ptr<Widget> createMapScreen(const UIContext &ctx, GameEngine::GameEngine &game, float mapSizeFactor);
+std::unique_ptr<Widget> createMapScreen(const UIContext &ctx, float mapSizeFactor);
 }; // namespace UiViewFactory
