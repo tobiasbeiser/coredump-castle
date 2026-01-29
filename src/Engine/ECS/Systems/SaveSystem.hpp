@@ -44,6 +44,11 @@ class SaveSystem {
 		reinitializePlayerGameData(registry, savedGameData);
 	}
 
+	void clearCurrentSaveName() const
+	{
+		saveStorage->clearSaveName();
+	}
+
 	void setCurrentSaveName(const std::string_view saveName, const bool overwrite = false) const
 	{
 		saveStorage->setSaveName(std::string(saveName));
@@ -198,6 +203,10 @@ class SaveSystem {
 		}
 
 		if (gameData.contains(seenPositionsLabel)) {
+			for (auto view = registry.view<AlreadySeenTag>(); auto entity : view) {
+				registry.remove<AlreadySeenTag>(entity);
+			}
+
 			const std::set<std::pair<int, int>> tilesSeen = gameData.at(seenPositionsLabel);
 			for (auto view = registry.view<RenderComponent, PositionComponent, SpriteComponent>(); auto entity : view) {
 				if (const auto [spritePos, prevPos] = view.get<PositionComponent>(entity);

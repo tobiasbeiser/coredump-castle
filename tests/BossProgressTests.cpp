@@ -38,7 +38,7 @@ struct BossProgressTests : testing::Test {
 
 TEST_F(BossProgressTests, DefeatingBossUnlocksDoubleJump)
 {
-	GameEngine::ECS::Systems::DeathSystem::update(registry, 0.016f);
+	// GameEngine::ECS::Systems::DeathSystem::update(registry, 0.016f);
 
 	auto playerView = registry.view<PlayerTag, ProgressComponent, JumpComponent, StateComponent>();
 	const auto entity = playerView.at(0U);

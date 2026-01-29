@@ -11,6 +11,8 @@
 #include "Engine/ECS/Components/Render/AnimationComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
+#include "Engine/ECS/Components/Tags/PendingReviveTag.hpp"
+
 namespace {
 const std::unordered_map<State, AnimationType> blockingStateAnimations = {
     {State::Hurting, AnimationType::Hurting}, {State::Interacting, AnimationType::Interacting}};
@@ -29,6 +31,10 @@ void GameEngine::ECS::Systems::StateSystem::update(Registry &registry)
 			if (HealthSystem::isDead(health->get())) {
 				state.state = State::Dead;
 				continue;
+			}
+			if (registry.has<PendingReviveTag>(entity)) {
+				state.state = State::Idle;
+				registry.remove<PendingReviveTag>(entity);
 			}
 		}
 

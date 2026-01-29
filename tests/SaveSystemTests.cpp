@@ -41,6 +41,7 @@ class FakeSaveStorage final : public ISaveStorage {
         deletionCalled = true;
     }
 
+    void clearSaveName() override{ currentSaveName = ""; }
     [[nodiscard]] std::string getSaveName() const override { return currentSaveName; }
     void setSaveName(std::string saveName) override { currentSaveName = std::move(saveName); }
 
@@ -424,5 +425,23 @@ TEST_F(SaveSystemTest, DeleteAllSaves_DelegatesToStorage)
     EXPECT_TRUE(storagePtr->wasDeleteCalled());
     EXPECT_TRUE(storagePtr->getSavesData().empty());
 }
+
+
+TEST_F(SaveSystemTest, ClearSaveName_DelegatesToStorage)
+{
+	auto storage = std::make_unique<FakeSaveStorage>();
+	auto *storagePtr = storage.get();
+	storage->setSaveName("Test");
+
+
+	const SaveSystem saveSystem{std::move(storage)};
+
+	// Act
+	saveSystem.clearCurrentSaveName();
+
+	// Verify
+	EXPECT_TRUE(storagePtr->getSaveName().empty());
+}
+
 
 } // namespace

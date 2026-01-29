@@ -98,6 +98,7 @@ class FileSaveStorage final : public ISaveStorage {
 			std::filesystem::remove_all(entry.path());
 	}
 
+	void clearSaveName() override { saveName = ""; }
 	[[nodiscard]] std::string getSaveName() const override { return saveName; }
 
 	void setSaveName(const std::string newSaveName) override { saveName = newSaveName; }

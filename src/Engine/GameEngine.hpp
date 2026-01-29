@@ -35,6 +35,7 @@ class GameEngine {
 	void changeState(std::unique_ptr<GameState> state);
 	void pushState(std::unique_ptr<GameState> state);
 	void popState();
+	void resetToState(std::unique_ptr<GameState> state);
 
 	void handleEvents();
 	void update(float deltaTime);
@@ -77,7 +78,7 @@ class GameEngine {
 	std::unique_ptr<Ui::GuiManager> guiManager;
 	ECS::Systems::SaveSystem saveSystem;
 	struct PendingAction {
-		enum class Type { Push, Pop, Change };
+		enum class Type { Push, Pop, Change, Reset};
 		Type type;
 		std::optional<std::unique_ptr<GameState>> state;
 	};
