@@ -72,6 +72,7 @@ class Renderer {
 	loadTexture(const std::filesystem::path &filePath) const;
 	static std::unique_ptr<TTF_Font, TTFFontCloser> loadFont(const std::filesystem::path &filePath, int fontSize);
 	std::unique_ptr<TTF_Text, TTFTextDestroyer> createText(TTF_Font *font, const std::string &text) const;
+	glm::vec2 measureText(TTF_Text *text) const;
 	void drawRectShape(SDL_FRect rect, SDL_Color fillColor, SDL_Color outlineColor) const;
 	void drawText(TTF_Text *textObject, float x, float y) const;
 	void renderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, float scrollFactor) const;

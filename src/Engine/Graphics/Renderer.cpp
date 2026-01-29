@@ -103,6 +103,14 @@ std::unique_ptr<TTF_Text, TTFTextDestroyer> Renderer::createText(TTF_Font *font,
 	return std::unique_ptr<TTF_Text, TTFTextDestroyer>(ttfText);
 }
 
+glm::vec2 Renderer::measureText(TTF_Text *text) const
+{
+	int w = 0;
+	int h = 0;
+	TTF_GetTextSize(text, &w, &h);
+	return {w, h};
+}
+
 void Renderer::startFrame(const int red, const int green, const int blue, const int alpha) const
 {
 	SDL_SetRenderLogicalPresentation(renderer.get(), 0, 0, SDL_LOGICAL_PRESENTATION_DISABLED);

@@ -8,6 +8,7 @@
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
+#include "Engine/ECS/Components/Render/TextDisplayComponent.hpp"
 
 #include <SDL3/SDL_log.h>
 
@@ -28,8 +29,11 @@ void GameEngine::ECS::Systems::TooltipSystem::update(Registry &registry)
 		                               playerHitbox.w, playerHitbox.h};
 
 		if (SDL_HasRectIntersectionFloat(&playerInteractionBox, &box)) {
-			// TODO use GUI Manager to show tooltip
+			registry.registerComponent(entity, TextDisplayComponent{});
 			DebugSystem::debug("Tooltip: " + text);
+		} else if (registry.has<TextDisplayComponent>(entity)) {
+			registry.remove<TextDisplayComponent>(entity);
 		}
+
 	}
 }

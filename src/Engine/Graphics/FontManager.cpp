@@ -8,7 +8,7 @@ TTF_Font* FontManager::getFont(const std::filesystem::path& filePath, const int 
 		return &*iterator->second;
 	}
 
-	fonts[key] = renderer.loadFont(filePath, fontSize);
+	fonts[key] = Renderer::loadFont(filePath, fontSize);
 
 	return fonts[key].get();
 }

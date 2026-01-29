@@ -34,9 +34,10 @@ std::string TooltipParser::getTooltipText(const std::string &name) const
 
 	if (name == "movement") {
 		return "Welcome to Coredump Castle!\n"
-		       "The C++ Wizard has been corrupted by ancient C forces, leaving his magic unsafe and shattering the "
-		       "castle's core.\n"
-		       "Fight your way through the castle, confront the Wizard, and restore the core!\n\n"
+		       "The C++ Wizard has been corrupted by ancient C forces,\n"
+		       "leaving his magic unsafe and shattering the castle's core.\n"
+		       "Fight your way through the castle,\n"
+		       "confront the Wizard, and restore the core!\n\n"
 		       "Press "
 		       + inputManager.getHumanReadableKey(Key::Left) + " and " + inputManager.getHumanReadableKey(Key::Right)
 		       + " to move.";
