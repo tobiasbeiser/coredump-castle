@@ -5,6 +5,7 @@
 #include "Engine/ECS/Components/Gameplay/Combat/HealthComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/MeleeAttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/PendingDamageComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
 #include "Engine/ECS/Components/Render/AnimationComponent.hpp"
@@ -17,6 +18,7 @@
 #include "Engine/ECS/Systems/Combat/HealthSystem.hpp"
 #include "Engine/ECS/Systems/StateSystem.hpp"
 #include "Engine/ECS/View.hpp"
+
 #include <gtest/gtest.h>
 
 using namespace std::chrono_literals;
@@ -33,8 +35,8 @@ struct HitDetectionTest : testing::Test {
 
 		registry.registerComponent<PlayerTag>(attacker, {});
 		registry.registerComponent<PositionComponent>(attacker, {{0.f, 0.f}});
-		registry.registerComponent<HitBoxComponent>(
-		    attacker, {.bodyHitBox = {0.f, 0.f, 20.f, 20.f}, .weaponHitBox = {0.f, 0.f, 20.f, 20.f}});
+		registry.registerComponent<HitBoxComponent>(attacker, {.bodyHitBox = {0.f, 0.f, 20.f, 20.f}});
+		registry.registerComponent<MeleeAttackComponent>(attacker, {0.f, 0.f, 20.f, 20.f});
 		registry.registerComponent<HurtBoxComponent>(attacker, {.hurtBox = {0.f, 0.f, 20.f, 20.f}});
 		registry.registerComponent<AttackComponent>(attacker, {Timer{1s}, Timer{1s}});
 		registry.registerComponent<StateComponent>(attacker, {});
@@ -133,8 +135,8 @@ TEST_F(HitDetectionTest, BodyHitBoxShouldAlwaysDealDamage)
 {
 	auto view = registry.view<PositionComponent>();
 	auto &passivePos = view.get<PositionComponent>(enemy);
-	registry.registerComponent<HitBoxComponent>(
-	    enemy, {.bodyHitBox = {0.f, 0.f, 20.f, 20.f}, .weaponHitBox = {0.f, 0.f, 0.f, 0.f}});
+	registry.registerComponent<HitBoxComponent>(enemy, {.bodyHitBox = {0.f, 0.f, 20.f, 20.f}});
+	registry.registerComponent<MeleeAttackComponent>(enemy, {0.f, 0.f, 0.f, 0.f});
 	passivePos.position = {0.f, 0.f};
 
 	bool callbackCalled = false;
@@ -157,8 +159,9 @@ TEST_F(HitDetectionTest, PlayerAboveBodyHitBoxShouldNotTakeDamage)
 {
 	auto view = registry.view<PositionComponent>();
 	auto &enemyPos = view.get<PositionComponent>(enemy);
-	registry.registerComponent<HitBoxComponent>(
-	    enemy, {.bodyHitBox = {0.f, 0.f, 20.f, 20.f}, .weaponHitBox = {0.f, 0.f, 0.f, 0.f}});
+	registry.registerComponent<HitBoxComponent>(enemy, {.bodyHitBox = {0.f, 0.f, 20.f, 20.f}});
+	registry.registerComponent<MeleeAttackComponent>(enemy, {0.f, 0.f, 0.f, 0.f});
+
 	enemyPos.position = {0.f, 0.f};
 
 	auto &playerPos = view.get<PositionComponent>(attacker);
@@ -177,9 +180,9 @@ TEST_F(HitDetectionTest, VictimIsDeadShouldNotApplyDamage)
 {
 	auto view = registry.view<PositionComponent, StateComponent>();
 	auto &passivePos = view.get<PositionComponent>(enemy);
-	registry.registerComponent<HitBoxComponent>(
-	    enemy, {.bodyHitBox = {0.f, 0.f, 20.f, 20.f}, .weaponHitBox = {0.f, 0.f, 0.f, 0.f}});
+	registry.registerComponent<HitBoxComponent>(enemy, {.bodyHitBox = {0.f, 0.f, 20.f, 20.f}});
 	passivePos.position = {0.f, 0.f};
+	registry.registerComponent<MeleeAttackComponent>(enemy, {0.f, 0.f, 0.f, 0.f});
 	auto &[victimState] = view.get<StateComponent>(enemy);
 	victimState = State::Dead;
 
@@ -234,8 +237,8 @@ TEST_F(HitDetectionTest, EnemyShouldNotDamageEnemy)
 	registry.registerComponent<HurtBoxComponent>(enemy2, {.hurtBox = {0.f, 0.f, 20.f, 20.f}});
 	registry.registerComponent<StateComponent>(enemy2, {});
 
-	registry.registerComponent<HitBoxComponent>(
-	    enemy, {.bodyHitBox = {0.f, 0.f, 20.f, 20.f}, .weaponHitBox = {0.f, 0.f, 0.f, 0.f}});
+	registry.registerComponent<HitBoxComponent>(enemy, {.bodyHitBox = {0.f, 0.f, 20.f, 20.f}});
+	registry.registerComponent<MeleeAttackComponent>(enemy, {0.f, 0.f, 0.f, 0.f});
 	auto view = registry.view<PositionComponent>();
 	auto &enemyPos = view.get<PositionComponent>(enemy);
 	enemyPos.position = {0.f, 0.f};
@@ -334,8 +337,9 @@ TEST_F(HitDetectionTest, FacingLeftShouldOffsetHitboxCorrectly)
 
 TEST_F(HitDetectionTest, BodyHitShouldSetVictimStateToHurting)
 {
-	registry.registerComponent<HitBoxComponent>(
-	    enemy, {.bodyHitBox = {0.f, 0.f, 20.f, 20.f}, .weaponHitBox = {0.f, 0.f, 0.f, 0.f}});
+	registry.registerComponent<HitBoxComponent>(enemy, {.bodyHitBox = {0.f, 0.f, 20.f, 20.f}});
+	registry.registerComponent<MeleeAttackComponent>(enemy, {0.f, 0.f, 0.f, 0.f});
+
 	auto view = registry.view<PositionComponent, StateComponent>();
 	auto &enemyPos = view.get<PositionComponent>(enemy);
 	enemyPos.position = {0.f, 0.f};
@@ -358,8 +362,8 @@ TEST_F(HitDetectionTest, BodyHitShouldSetVictimStateToHurting)
 
 TEST_F(HitDetectionTest, PendingDamageIsRemovedAfterProcessing)
 {
-	registry.registerComponent<HitBoxComponent>(
-	    enemy, {.bodyHitBox = {0.f, 0.f, 20.f, 20.f}, .weaponHitBox = {0.f, 0.f, 0.f, 0.f}});
+	registry.registerComponent<HitBoxComponent>(enemy, {.bodyHitBox = {0.f, 0.f, 20.f, 20.f}});
+	registry.registerComponent<MeleeAttackComponent>(enemy, {0.f, 0.f, 0.f, 0.f});
 	auto view = registry.view<PositionComponent>();
 	auto &enemyPos = view.get<PositionComponent>(enemy);
 	enemyPos.position = {0.f, 0.f};

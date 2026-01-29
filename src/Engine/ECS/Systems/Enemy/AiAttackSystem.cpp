@@ -120,7 +120,6 @@ void GameEngine::ECS::Systems::AiAttackSystem::update(Registry &registry, const 
 				ranged->get().targetSnapshot = player.center;
 				input.attackPressed = true;
 			} else {
-				SDL_Log("No line of sight!");
 				input.attackPressed = false;
 			}
 		} else {

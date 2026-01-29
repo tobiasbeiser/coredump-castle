@@ -112,8 +112,6 @@ void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
 			}
 			attackerWeaponRect = Utils::HitBoxUtils::getWeaponHitBoxRect(position, weaponHitBox, localHurtBox,
 			                                                             attackerScale, facingLeft);
-		} else {
-			continue;
 		}
 
 		SDL_FRect attackerBodyRect = Utils::HitBoxUtils::getHitBoxFacing(
@@ -148,7 +146,7 @@ void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
 			bool hit = false;
 			bool bodyHit = false;
 
-			if (SDL_HasRectIntersectionFloat(&attackerWeaponRect, &victimHurtBoxRect)) {
+			if (isWeaponActive && SDL_HasRectIntersectionFloat(&attackerWeaponRect, &victimHurtBoxRect)) {
 				if (!isInvulnerable) {
 					hit = true;
 					onHit(attacker, victim);
