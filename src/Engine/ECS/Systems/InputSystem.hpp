@@ -2,6 +2,7 @@
 #include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Gameplay/Hazard/PendingRespawnComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/MapToggleComponent.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
@@ -30,7 +31,8 @@ class InputSystem {
 			horizontalDirection += 1;
 		}
 
-		for (auto view = registry.view<InputComponent>().exclude<EnemyTag, PendingRespawnComponent>();
+		for (auto view =
+		         registry.view<InputComponent, MapToggleComponent>().exclude<EnemyTag, PendingRespawnComponent>();
 		     const auto entity : view) {
 			auto &[horizontalDirectionTarget, jumpPressed, attackPressed, interactPressed, interactConsumed] =
 			    view.get<InputComponent>(entity);
@@ -38,6 +40,9 @@ class InputSystem {
 			jumpPressed = inputManager.isKeyPressed(Key::Up);
 			attackPressed = inputManager.isKeyPressed(Key::Attack);
 			interactPressed = inputManager.isKeyPressed(Key::Interact);
+
+			auto &[mapToggled, _] = view.get<MapToggleComponent>(entity);
+			mapToggled = inputManager.isKeyPressed(Key::ToggleMap);
 		}
 
 		for (auto view = registry.view<InputComponent, PendingRespawnComponent>(); const auto entity : view) {

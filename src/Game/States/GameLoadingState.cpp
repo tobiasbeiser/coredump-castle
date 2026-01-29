@@ -6,8 +6,8 @@ namespace GameEngine {
 
 void GameLoadingState::init(GameEngine &game)
 {
-	guiManager.setRoot(UiViewFactory::createLoadingScreen(guiManager.getContext()));
-	guiManager.updateLayout();
+	rootWidget = UiViewFactory::createLoadingScreen(guiManager.getContext());
+	guiManager.updateLayout(rootWidget.get());
 }
 
 void GameLoadingState::update(GameEngine &game, float deltaTime)
@@ -19,7 +19,7 @@ void GameLoadingState::update(GameEngine &game, float deltaTime)
 
 void GameLoadingState::render(GameEngine &game, float alpha)
 {
-	guiManager.render();
+	rootWidget->draw(guiManager.getContext(), {0, 0});
 	hasRenderedOnce = true;
 }
 } // namespace GameEngine

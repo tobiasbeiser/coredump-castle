@@ -32,6 +32,7 @@ class PlayState final : public GameState {
 	ECS::Systems::InputSystem inputSystem{inputManager};
 	ECS::Systems::MapActivationSystem mapActivationSystem{};
 	EffectFactory &effectFactory;
+	std::unique_ptr<Ui::Widget> rootWidget{};
 	bool paused = false;
 	float accumulator = 0.0f;
 	static constexpr float stepSize = 1.0f / 120.0f;

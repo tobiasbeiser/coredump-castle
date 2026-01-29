@@ -20,7 +20,7 @@ template <typename Clock, typename Duration>
 	}
 }
 
-[[nodiscard]] inline std::tm toLocalTime(std::chrono::system_clock::time_point tp)
+[[nodiscard]] inline std::tm toLocalTime(const std::chrono::system_clock::time_point tp)
 {
 	std::time_t timeT = std::chrono::system_clock::to_time_t(tp);
 	std::tm tm{};
