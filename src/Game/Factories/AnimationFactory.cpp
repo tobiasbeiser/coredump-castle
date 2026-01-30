@@ -47,16 +47,12 @@ AnimationType AnimationFactory::getAnimationType(const std::string &string)
 	}
 	throw std::runtime_error("Unknown state: " + string);
 }
-void AnimationFactory::loadAnimation(tson::Tile *const &tile, const GameEngine::ECS::Entity entity) const
+AnimationFactory::AnimationData AnimationFactory::loadAnimation(tson::Tile *const &tile) const
 {
 	auto imageSize = glm::ivec2(tile->getImageSize().x, tile->getImageSize().y);
 
 	const auto &animation = tile->getAnimation();
 	const auto tileset = tile->getTileset();
-
-	if (!registry.has<AnimationComponent>(entity)) {
-		registry.registerComponent(entity, AnimationComponent{});
-	}
 
 	std::vector<AnimationFrame> frames;
 	std::vector<bool> damageFrames;
@@ -101,37 +97,32 @@ void AnimationFactory::loadAnimation(tson::Tile *const &tile, const GameEngine::
 
 		frames.push_back(animFrame);
 	}
-	auto animComp = registry.tryGet<AnimationComponent>(entity);
-
-	if (!animComp) {
-		throw std::runtime_error("Animation component does not exist");
-	}
-
 	if (const tson::Property *prop = tile->getProp("state"); prop && prop->getType() == tson::Type::Enum) {
 
 		const tson::EnumValue &enumValue = prop->getValue<tson::EnumValue>();
 		const AnimationType state = getAnimationType(enumValue.getValueName());
 
-		animComp->get().addAnimation(state, frames, damageFrames, duration);
-	} else {
-		animComp->get().addAnimation(AnimationType::None, frames, damageFrames, duration);
+		return {state, frames, damageFrames, duration};
 	}
 
-	if (!registry.has<SpriteComponent>(entity)) {
-		registry.registerComponent(entity, SpriteComponent{.texture = nullptr, // to be set by AnimationSystem
-		                                                   .tileSize = imageSize,
-		                                                   .tileMapPosition = {0, 0}});
-	}
+	return {AnimationType::None, frames, damageFrames, duration};
+
+	// if (!registry.has<SpriteComponent>(entity)) {
+	// 	registry.registerComponent(entity, SpriteComponent{.texture = nullptr, // to be set by AnimationSystem
+	// 	                                                   .tileSize = imageSize,
+	// 	                                                   .tileMapPosition = {0, 0}});
+	// }
 }
 
-void AnimationFactory::loadAnimationsFromTileset(tson::Object &object, const GameEngine::ECS::Entity entity) const
+std::optional<std::tuple<AnimationComponent, SpriteComponent>>
+AnimationFactory::loadAnimationsFromTileset(tson::Object &object) const
 {
 	if (!map) {
 		throw std::runtime_error("Map is null");
 	}
 	const auto prop = object.getProp("animations");
 	if (prop == nullptr || prop->getType() != tson::Type::File) {
-		return;
+		return std::nullopt;
 	}
 
 	const auto tilesetPath = basePath / prop->getValue<std::filesystem::path>();
@@ -141,28 +132,45 @@ void AnimationFactory::loadAnimationsFromTileset(tson::Object &object, const Gam
 	json.parse(tilesetPath);
 	tileset.parse(json, map);
 
-	for (auto tile : tileset.getTiles()) {
+	std::optional<SpriteComponent> spriteComponent;
+	AnimationComponent animComponent;
+
+	for (auto &tile : tileset.getTiles()) {
 		if (auto anim = tile.getAnimation(); anim.any()) {
-			loadAnimation(&tile, entity);
+			auto [type, frames, damageFrames, duration] = loadAnimation(&tile);
+
+			if (!frames.empty() && !spriteComponent) {
+				const auto &frame = frames.back();
+				spriteComponent.emplace();
+				spriteComponent->texture = frame.texture;
+				spriteComponent->tileSize = frame.tileSize;
+				spriteComponent->tileMapPosition = {0, 0};
+			}
+
+			animComponent.addAnimation(type, frames, damageFrames, duration);
 		}
 	}
+
+	if (!spriteComponent) {
+		return std::nullopt;
+	}
+
+	return std::tuple{animComponent, *spriteComponent};
 }
 
 // Load animation from a standalone tileset (without map context)
-void AnimationFactory::loadAnimationFromStandaloneTileset(GameEngine::ECS::Registry &registry,
-                                                          TextureManager &textureManager, tson::Tileset &tileset,
-                                                          const std::string &tilesetPath,
-                                                          GameEngine::ECS::Entity entity)
+std::optional<std::tuple<AnimationComponent, SpriteComponent>>
+AnimationFactory::loadAnimationFromStandaloneTileset(tson::Tileset &tileset, const std::string &tilesetPath) const
 {
 	if (tileset.getTiles().empty()) {
-		return;
+		return std::nullopt;
 	}
 
 	auto &firstTile = tileset.getTiles()[0];
 	auto &animation = firstTile.getAnimation();
 
 	if (!animation.any()) {
-		return;
+		return std::nullopt;
 	}
 
 	const std::string imageFile = tileset.getImage().string();
@@ -180,34 +188,33 @@ void AnimationFactory::loadAnimationFromStandaloneTileset(GameEngine::ECS::Regis
 
 	auto &texture = textureManager.getTexture(texturePath);
 
-	if (!registry.has<AnimationComponent>(entity)) {
-		registry.registerComponent(entity, AnimationComponent{});
-	}
+	auto animComp = AnimationComponent{};
 
-	const auto animComp = registry.tryGet<AnimationComponent>(entity);
-	if (!animComp) {
-		throw std::runtime_error("Animation component does not exist");
-	}
-	animComp->get().addAnimationFromSpritesheet(
-	    AnimationType::Idle, frameCount, std::chrono::duration<float>(animationDuration), &texture, frameSize, {0, 0});
-	animComp->get().setAnimation(AnimationType::Idle);
+	animComp.addAnimationFromSpritesheet(AnimationType::Idle, frameCount,
+	                                     std::chrono::duration<float>(animationDuration), &texture, frameSize, {0, 0});
+	animComp.setAnimation(AnimationType::Idle);
+	auto spriteComp = SpriteComponent{.texture = &texture, .tileSize = frameSize, .tileMapPosition = {0, 0}};
 
-	if (!registry.has<SpriteComponent>(entity)) {
-		registry.registerComponent(
-		    entity, SpriteComponent{.texture = &texture, .tileSize = frameSize, .tileMapPosition = {0, 0}});
-	}
+	return std::tuple{animComp, spriteComp};
 }
 
-void AnimationFactory::loadProjectileAnimation(GameEngine::ECS::Registry &registry, TextureManager &textureManager,
-                                               const std::string &tilesetPath, const GameEngine::ECS::Entity entity)
+std::optional<std::tuple<AnimationComponent, SpriteComponent>>
+AnimationFactory::loadProjectileAnimation(const std::string &tilesetPath) const
 {
 	tson::Tileset tileset;
 	tson::Json11 json;
 	if (!json.parse(tilesetPath)) {
 		SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Failed to parse: %s", tilesetPath.c_str());
-		return;
+		return std::nullopt;
 	}
 	tileset.parse(json, nullptr);
 
-	loadAnimationFromStandaloneTileset(registry, textureManager, tileset, tilesetPath, entity);
+	return loadAnimationFromStandaloneTileset(tileset, tilesetPath);
+}
+AnimationComponent AnimationFactory::loadTileAnimation(tson::Tile *const &tile) const
+{
+	const auto [type, frames, damageFrames, duration] = loadAnimation(tile);
+	AnimationComponent animComponent;
+	animComponent.addAnimation(type, frames, damageFrames, duration);
+	return animComponent;
 }

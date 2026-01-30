@@ -281,27 +281,30 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 		});
 	}
 
-	animationFactory.loadAnimationsFromTileset(enemyObj, entity);
-
 	using namespace std::chrono_literals;
 	std::chrono::duration<float> attackDuration = 100ms;
 	std::chrono::duration<float> invulnerabilityTime = 300ms;
 
-	if (auto animComp = registry.tryGet<AnimationComponent>(entity)) {
-		if (animComp->get().hasAnimation(AnimationType::Attacking)) {
-			attackDuration = animComp->get().getAnimationDuration(AnimationType::Attacking);
+	if (const auto animComp = animationFactory.loadAnimationsFromTileset(enemyObj)) {
+		auto &[animationComponent, spriteComponent] = *animComp;
+
+		spawner.addBlueprint(animationComponent);
+		spawner.addBlueprint(spriteComponent);
+
+		if (animationComponent.hasAnimation(AnimationType::Attacking)) {
+			attackDuration = animationComponent.getAnimationDuration(AnimationType::Attacking);
 		}
 
-		if (animComp->get().hasAnimation(AnimationType::Charge)) {
-			attackDuration = animComp->get().getAnimationDuration(AnimationType::Charge);
-			if (animComp->get().hasAnimation(AnimationType::Fire)) {
-				attackDuration += animComp->get().getAnimationDuration(AnimationType::Fire);
+		if (animationComponent.hasAnimation(AnimationType::Charge)) {
+			attackDuration = animationComponent.getAnimationDuration(AnimationType::Charge);
+			if (animationComponent.hasAnimation(AnimationType::Fire)) {
+				attackDuration += animationComponent.getAnimationDuration(AnimationType::Fire);
 			}
-		} else if (animComp->get().hasAnimation(AnimationType::Fire)) {
-			attackDuration = animComp->get().getAnimationDuration(AnimationType::Fire);
+		} else if (animationComponent.hasAnimation(AnimationType::Fire)) {
+			attackDuration = animationComponent.getAnimationDuration(AnimationType::Fire);
 		}
-		if (animComp->get().hasAnimation(AnimationType::Hurting)) {
-			invulnerabilityTime = animComp->get().getAnimationDuration(AnimationType::Hurting) + 200ms;
+		if (animationComponent.hasAnimation(AnimationType::Hurting)) {
+			invulnerabilityTime = animationComponent.getAnimationDuration(AnimationType::Hurting) + 200ms;
 		}
 	}
 
@@ -329,14 +332,14 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 void GameEngine::ECS::EnemyFactory::ensureSafeSpawn(const Entity entity) const
 {
 
-	auto position = registry.tryGet<PositionComponent>(entity);
-	auto collision = registry.tryGet<CollisionComponent>(entity);
+	auto position = registry.get().tryGet<PositionComponent>(entity);
+	auto collision = registry.get().tryGet<CollisionComponent>(entity);
 
 	if (!position || !collision) {
 		return;
 	}
 
-	const auto transform = registry.tryGet<TransformComponent>(entity);
+	const auto transform = registry.get().tryGet<TransformComponent>(entity);
 	const auto scale = transform ? transform->get().scale : glm::vec2{1.0f, 1.0f};
 
 	position->get().position.x -=
@@ -353,7 +356,8 @@ void GameEngine::ECS::EnemyFactory::ensureSafeSpawn(const Entity entity) const
 		                       position->get().position.y + collision->get().collisionBox.y * scale.y,
 		                       collision->get().collisionBox.w * scale.x, collision->get().collisionBox.h * scale.y};
 
-		for (auto staticColliders = registry.view<PositionComponent, CollisionComponent>()
+		for (auto staticColliders = registry.get()
+		                                .view<PositionComponent, CollisionComponent>()
 		                                .exclude<EnemyTag>()
 		                                .exclude<PlayerTag>()
 		                                .exclude<ProjectileComponent>();
@@ -363,7 +367,7 @@ void GameEngine::ECS::EnemyFactory::ensureSafeSpawn(const Entity entity) const
 			const auto &staticColliderCollisionBox =
 			    staticColliders.get<CollisionComponent>(staticCollider).collisionBox;
 			glm::vec2 staticColliderScale = {1.0f, 1.0f};
-			if (const auto staticTransform = registry.tryGet<TransformComponent>(staticCollider)) {
+			if (const auto staticTransform = registry.get().tryGet<TransformComponent>(staticCollider)) {
 				staticColliderScale = staticTransform->get().scale;
 			}
 

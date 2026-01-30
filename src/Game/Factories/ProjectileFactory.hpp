@@ -1,5 +1,6 @@
 #pragma once
 
+#include "AnimationFactory.hpp"
 #include "SDL3/SDL_rect.h"
 #include <functional>
 #include <glm/vec2.hpp>
@@ -17,7 +18,13 @@ struct ProjectileData {
 
 class ProjectileFactory {
   public:
-	ProjectileFactory(GameEngine::ECS::Registry &registry, TextureManager &textureManager);
+	ProjectileFactory(GameEngine::ECS::Registry &registry, AnimationFactory &animationFactory);
+
+	ProjectileFactory(const ProjectileFactory &) = delete;
+	ProjectileFactory &operator=(const ProjectileFactory &) = delete;
+	ProjectileFactory(ProjectileFactory &&) = delete;
+	ProjectileFactory &operator=(ProjectileFactory &&) = delete;
+	~ProjectileFactory() = default;
 
 	void createProjectile(const glm::vec2 &startPosition, const glm::vec2 &direction, float speed, float range,
 	                      const std::string &tilesetPath, double rotation = 0.0) const;
@@ -25,6 +32,6 @@ class ProjectileFactory {
 	static const ProjectileData &getCachedProjectileData(const std::string &path);
 
   private:
-	std::reference_wrapper<GameEngine::ECS::Registry> registry;
-	std::reference_wrapper<TextureManager> textureManager;
+	GameEngine::ECS::Registry &registry;
+	AnimationFactory &animationFactory;
 };

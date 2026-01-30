@@ -1,4 +1,5 @@
 #pragma once
+#include "Engine/ECS/Systems/Enemy/ProjectileSystem.hpp"
 #include "Engine/ECS/Systems/InputSystem.hpp"
 #include "Engine/ECS/Systems/MapActivationSystem.hpp"
 #include "Engine/ECS/Systems/RenderSystem.hpp"
@@ -12,9 +13,9 @@ class PlayState final : public GameState {
 	// Inherited via GameState
   public:
 	PlayState(InputManager &input, TextureManager &textureManager, Ui::GuiManager &guiManager, Renderer &renderer,
-	          EffectFactory &effectFactory)
+	          EffectFactory &effectFactory, ProjectileFactory &projectileFactory)
 	    : inputManager(input), textureManager(textureManager), guiManager(guiManager), renderer(renderer),
-	      effectFactory(effectFactory)
+	      effectFactory(effectFactory), projectileSystem(projectileFactory)
 	{
 	}
 	void init(GameEngine &game) override;
@@ -33,6 +34,7 @@ class PlayState final : public GameState {
 	ECS::Systems::RenderSystem renderSystem{renderer};
 	ECS::Systems::InputSystem inputSystem{inputManager};
 	ECS::Systems::MapActivationSystem mapActivationSystem{};
+	ECS::Systems::ProjectileSystem projectileSystem;
 	EffectFactory &effectFactory;
 	std::vector<EnemySpawner> spawners{};
 	bool paused = false;
