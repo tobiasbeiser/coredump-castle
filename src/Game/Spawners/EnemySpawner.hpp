@@ -1,11 +1,7 @@
 #pragma once
-#include "Engine/ECS/Components/Gameplay/ProgressComponent.hpp"
 #include "Engine/ECS/Entity.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "tileson.hpp"
-
-#include <SDL3/SDL_rect.h>
-#include <glm/vec2.hpp>
 
 class AnimationFactory;
 
