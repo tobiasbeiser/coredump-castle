@@ -17,9 +17,15 @@ struct ButtonStyle {
 	Paint disabled;
 };
 
+struct FrameStyle {
+	SDL_Color fill{};
+	SDL_Color outline{};
+};
+
 struct UiTheme {
 	SDL_Color titleTextColor{};
-	ButtonStyle button;
+	ButtonStyle button{};
+	FrameStyle frame{};
 };
 
 struct UIContext {

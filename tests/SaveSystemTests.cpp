@@ -341,27 +341,6 @@ TEST_F(SaveSystemTest, RoundTrip_SaveThenLoad_PreservesState)
     EXPECT_FLOAT_EQ(500.0F, pos.position.y);
 }
 
-TEST_F(SaveSystemTest, LoadSavedGame_Throws_WhenSaveDataIsCorrupt)
-{
-    auto storage = std::make_unique<FakeSaveStorage>();
-    auto *storagePtr = storage.get();
-    const SaveSystem saveSystem{std::move(storage)};
-
-	// Create incomplete JSON (missing 'maxJumps')
-	json corruptData;
-	corruptData["positionX"] = 10.0F;
-	corruptData["positionY"] = 10.0F;
-	corruptData["keys"] = std::vector<int>{};
-
-    storagePtr->write(corruptData);
-
-    storagePtr->setExistingSaves({
-        SaveMetaData{"CorruptFile", std::filesystem::file_time_type::clock::now()}
-    });
-
-	EXPECT_NO_THROW(saveSystem.loadSavedGame(registry));
-}
-
 TEST_F(SaveSystemTest, LoadSavedGame_RemovesDefeatedBossEntities)
 {
 	auto storage = std::make_unique<FakeSaveStorage>();

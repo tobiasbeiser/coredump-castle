@@ -24,21 +24,24 @@ class Widget {
 
 	void setSizeMode(SizeMode w, SizeMode h);
 	void setFixedSize(glm::vec2 size);
+	void setBackground(SDL_Texture *background);
 
 	[[nodiscard]] SDL_FRect getBounds() const { return bounds; }
 	[[nodiscard]] SizeMode getWidthMode() const { return widthMode; }
 	[[nodiscard]] SizeMode getHeightMode() const { return heightMode; }
 	[[nodiscard]] glm::vec2 getRelativePosition() const { return {bounds.x, bounds.y}; }
+	[[nodiscard]] SDL_FRect getScreenRect(glm::vec2 parentOffset) const noexcept;
 
   protected:
 	Widget() = default;
-	[[nodiscard]] SDL_FRect getScreenRect(glm::vec2 parentOffset) const noexcept;
 	virtual glm::vec2 performMeasure(const UIContext &ctx, BoxConstraints constraints) const = 0;
 	void invalidate() { isDirty = true; };
+	void drawBackground(const UIContext &ctx, glm::vec2 parentOffset) const;
 
   private:
 	SDL_FRect bounds = {0.0f, 0.0f, 0.0f, 0.0f}; // Position is relative to Parent
 
+	SDL_Texture *backgroundTex = nullptr;
 	float layoutWeight = 0.0f;
 	SizeMode widthMode = SizeMode::WrapContent;
 	SizeMode heightMode = SizeMode::WrapContent;

@@ -1,12 +1,15 @@
 #include "InputManager.hpp"
 #include "Engine/Debug/DebugSystem.hpp"
 
+#include <ranges>
+
 InputManager::InputManager()
 {
-	scancodeMapping = {{SDL_SCANCODE_A, Key::Left}, {SDL_SCANCODE_D, Key::Right},    {SDL_SCANCODE_SPACE, Key::Up},
-	                   {SDL_SCANCODE_S, Key::Down}, {SDL_SCANCODE_E, Key::Interact}, {SDL_SCANCODE_K, Key::Attack}};
+	scancodeMapping = {{SDL_SCANCODE_A, Key::Left},     {SDL_SCANCODE_D, Key::Right},    {SDL_SCANCODE_SPACE, Key::Up},
+	                   {SDL_SCANCODE_S, Key::Down},     {SDL_SCANCODE_E, Key::Interact}, {SDL_SCANCODE_K, Key::Attack},
+	                   {SDL_SCANCODE_M, Key::ToggleMap}};
 
-	for (auto &[code, key] : scancodeMapping) {
+	for (auto &key : scancodeMapping | std::views::values) {
 		previousKeyStates[key] = false;
 		currentKeyStates[key] = false;
 	}
@@ -25,17 +28,17 @@ void InputManager::update()
 	previousKeyStates = currentKeyStates;
 }
 
-bool InputManager::isKeyDown(Key key) const
+bool InputManager::isKeyDown(const Key key) const
 {
 	return currentKeyStates.at(key);
 }
 
-bool InputManager::isKeyPressed(Key key) const
+bool InputManager::isKeyPressed(const Key key) const
 {
 	return currentKeyStates.at(key) && !previousKeyStates.at(key);
 }
 
-bool InputManager::isKeyReleased(Key key) const
+bool InputManager::isKeyReleased(const Key key) const
 {
 	return !currentKeyStates.at(key) && previousKeyStates.at(key);
 }
