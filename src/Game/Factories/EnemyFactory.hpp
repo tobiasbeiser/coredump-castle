@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Engine/ECS/Entity.hpp"
+#include "Game/Spawners/EnemySpawner.hpp"
+
 #include <glm/vec2.hpp>
 
 class AnimationFactory;
@@ -26,7 +28,7 @@ class EnemyFactory {
 
 	void setMap(tson::Map &tsonMap);
 
-	Entity createEnemy(tson::Object &enemyObj, const glm::vec2 &levelPos, int layer) const;
+	EnemySpawner createEnemy(tson::Object &enemyObj, const glm::vec2 &levelPos, int layer) const;
 
   private:
 	void ensureSafeSpawn(Entity entity) const;

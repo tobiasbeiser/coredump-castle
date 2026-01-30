@@ -4,6 +4,8 @@
 #include "Engine/ECS/Systems/RenderSystem.hpp"
 #include "Engine/GameState.hpp"
 #include "Game/Factories/EffectFactory.hpp"
+#include "Game/Spawners/EnemySpawner.hpp"
+#include <vector>
 namespace GameEngine {
 
 class PlayState final : public GameState {
@@ -32,6 +34,7 @@ class PlayState final : public GameState {
 	ECS::Systems::InputSystem inputSystem{inputManager};
 	ECS::Systems::MapActivationSystem mapActivationSystem{};
 	EffectFactory &effectFactory;
+	std::vector<EnemySpawner> spawners{};
 	bool paused = false;
 	float accumulator = 0.0f;
 	static constexpr float stepSize = 1.0f / 120.0f;
