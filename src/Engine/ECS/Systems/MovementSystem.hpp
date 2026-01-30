@@ -21,8 +21,9 @@ class MovementSystem {
 			auto &[velocity] = view.get<VelocityComponent>(entity);
 			auto &[acceleration] = view.get<AccelerationComponent>(entity);
 			const auto &[accelerationRate, maxSpeedX] = view.get<MovementComponent>(entity);
+			const auto &input = view.get<InputComponent>(entity);
 
-			if (const auto &input = view.get<InputComponent>(entity); input.horizontalDirection != 0.0f) {
+			if (input.horizontalDirection != 0.0f) {
 				if ((velocity.x > 0 && input.horizontalDirection < 0)
 				    || (velocity.x < 0 && input.horizontalDirection > 0)) {
 					// Directional change, apply stronger acceleration
@@ -45,8 +46,9 @@ class MovementSystem {
 				}
 			}
 
-			if (const auto renderComp = registry.tryGet<RenderComponent>(entity); renderComp && velocity.x) {
-				const bool facingLeft = velocity.x < 0;
+			if (const auto renderComp = registry.tryGet<RenderComponent>(entity);
+			    renderComp && input.horizontalDirection != 0.0f) {
+				const bool facingLeft = input.horizontalDirection < 0;
 				renderComp->get().setFacingLeft(facingLeft);
 			}
 		}

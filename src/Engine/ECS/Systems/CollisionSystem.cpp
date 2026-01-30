@@ -211,5 +211,58 @@ bool isPathObstructed(const glm::vec2 &start, const glm::vec2 &end, const glm::v
 
 	return obstructed;
 }
+bool canContinueMovingHorizontally(const glm::vec2 &position, const SDL_FRect &collisionBox,
+                                   const std::optional<const glm::vec2> scale, const float direction)
+{
 
+	const auto entityBox =
+	    Utils::HitBoxUtils::getHitBox(position, collisionBox, scale.has_value() ? &scale.value() : nullptr);
+
+	constexpr float sensorDist = 4.0f;
+
+	SDL_FRect wallSensor = entityBox;
+	wallSensor.w = sensorDist;
+	wallSensor.y += 2.0f;
+	wallSensor.h -= 4.0f;
+
+	SDL_FRect floorSensor;
+	floorSensor.w = sensorDist;
+	floorSensor.h = sensorDist;
+	floorSensor.y = entityBox.y + entityBox.h;
+
+	if (direction > 0) {
+		wallSensor.x = entityBox.x + entityBox.w;
+		floorSensor.x = entityBox.x + entityBox.w;
+	} else {
+		wallSensor.x = entityBox.x - sensorDist;
+		floorSensor.x = entityBox.x - sensorDist;
+	}
+
+	bool hasWall = false;
+	bool hasFloor = false;
+
+	getStaticGrid().query(wallSensor, [&](const Entity, const SDL_FRect &tileBox, const Utils::ColliderType type) {
+		if (hasWall)
+			return;
+
+		if (type != Utils::ColliderType::Hazard && SDL_HasRectIntersectionFloat(&wallSensor, &tileBox)) {
+			hasWall = true;
+		}
+	});
+
+	if (hasWall) {
+		return false;
+	}
+
+	getStaticGrid().query(floorSensor, [&](const Entity, const SDL_FRect &tileBox, const Utils::ColliderType type) {
+		if (hasFloor)
+			return;
+
+		if (type != Utils::ColliderType::Hazard && SDL_HasRectIntersectionFloat(&floorSensor, &tileBox)) {
+			hasFloor = true;
+		}
+	});
+
+	return hasFloor;
+}
 } // namespace GameEngine::ECS::Systems::CollisionSystem

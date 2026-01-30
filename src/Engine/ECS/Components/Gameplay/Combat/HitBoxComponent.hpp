@@ -3,5 +3,4 @@
 
 struct HitBoxComponent {
 	SDL_FRect bodyHitBox{0, 0, 0, 0};
-	SDL_FRect weaponHitBox{0, 0, 0, 0};
 };

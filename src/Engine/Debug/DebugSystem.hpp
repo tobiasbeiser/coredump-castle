@@ -15,6 +15,7 @@ struct DebugRenderOptions {
 	bool showHitBoxes = false;
 	bool showRaycasts = false;
 	bool showTooltipBoxes = false;
+	bool showVision = false;
 	bool vSync = true;
 };
 
@@ -50,6 +51,12 @@ struct MapArea {
 	SDL_FRect area{};
 };
 
+struct DebugCircle {
+	glm::vec2 center{};
+	float radius{0.0f};
+	SDL_Color color{};
+};
+
 class DebugSystem {
   public:
 	static DebugSystem &instance()
@@ -59,9 +66,6 @@ class DebugSystem {
 	}
 
 	static void debug(const std::string &message);
-	static void addRect(const SDL_FRect &rect, const SDL_Color &color);
-	static void addLine(const glm::vec2 &start, const glm::vec2 &end, const SDL_Color &color);
-	static void addRaycast(const glm::vec2 &start, const glm::vec2 &end, bool obstructed);
 	static void clear();
 
 	static void renderGameOverlay(SDL_Renderer *renderer, const SDL_FRect &viewport);
@@ -84,10 +88,14 @@ class DebugSystem {
 	const DebugSkipMenuOptions &getSkipMenuOptions() const { return skipMenu; }
 	const Cheats &getCheats() const { return cheats; }
 
+	static void addRect(const SDL_FRect &rect, const SDL_Color &color);
+	static void addRaycast(const glm::vec2 &start, const glm::vec2 &end, bool obstructed);
+
   private:
 	bool enabled = false;
 	std::vector<DebugRect> debugRects{};
 	std::vector<DebugLine> debugLines{};
+	std::vector<DebugCircle> debugCircles{};
 	std::vector<std::string> debugMessages{};
 	std::vector<MapArea> maps{};
 	std::vector<glm::vec2> spawnPoints{};
@@ -100,10 +108,16 @@ class DebugSystem {
 	bool hasSpawnPoint = false;
 	void drawCollisionBoxes() const;
 	void drawProjectileHitBox() const;
-	void drawPatrolBoxes(std::vector<unsigned>::value_type entity, SDL_FRect hurtBoxRect) const;
 	void drawHitBoxes() const;
 	void drawTooltipBoxes() const;
+	void drawVision() const;
 	void updateFPS();
+
+	static void addLine(const glm::vec2 &start, const glm::vec2 &end, const SDL_Color &color);
+	static void addCircle(const glm::vec2 &center, const float radius, const SDL_Color &color);
+
+	static void renderDebugCircle(SDL_Renderer *renderer, const DebugCircle &circle, const SDL_FRect &viewport,
+	                              int segments = 64);
 
 	static constexpr int fpsHistorySize = 400;
 	std::array<float, fpsHistorySize> fpsHistory{};

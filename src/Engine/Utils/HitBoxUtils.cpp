@@ -3,21 +3,19 @@
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
 
-SDL_FRect GameEngine::Utils::HitBoxUtils::getWeaponHitBoxRect(const glm::vec2 &pos, const HitBoxComponent &hitBox,
-                                                              const SDL_FRect &hurtBox, const glm::vec2 *scale,
+SDL_FRect GameEngine::Utils::HitBoxUtils::getWeaponHitBoxRect(const glm::vec2 &pos, const SDL_FRect &weaponHitBox,
+                                                              const SDL_FRect &bodyHitBox, const glm::vec2 *scale,
                                                               const bool facingLeft)
 {
 	const auto actualScale = scale ? *scale : glm::vec2{1.0f, 1.0f};
 
-	const auto &[bodyHitBox, weaponHitBox] = hitBox;
-
 	SDL_FRect result = {0, 0, weaponHitBox.w * actualScale.x, weaponHitBox.h * actualScale.y};
 	if (facingLeft) {
-		result.x = pos.x + hurtBox.x * actualScale.x - weaponHitBox.w * actualScale.x;
+		result.x = pos.x + bodyHitBox.x * actualScale.x - weaponHitBox.w * actualScale.x;
 	} else {
-		result.x = pos.x + hurtBox.x * actualScale.x + hurtBox.w * actualScale.x;
+		result.x = pos.x + bodyHitBox.x * actualScale.x + bodyHitBox.w * actualScale.x;
 	}
-	result.y = pos.y + hurtBox.y * actualScale.y + weaponHitBox.y * actualScale.y;
+	result.y = pos.y + bodyHitBox.y * actualScale.y + weaponHitBox.y * actualScale.y;
 
 	return result;
 }
