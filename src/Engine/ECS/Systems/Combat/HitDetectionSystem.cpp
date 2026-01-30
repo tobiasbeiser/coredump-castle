@@ -77,17 +77,17 @@ void applyDamage(Registry &registry, const Entity victim, const int damage = 10)
 
 void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
 {
-	auto attackerView = registry.view<AttackComponent, HitBoxComponent, PositionComponent, HurtBoxComponent,
-	                                  MeleeAttackComponent, RenderComponent>();
+	auto attackerView =
+	    registry.view<AttackComponent, HitBoxComponent, PositionComponent, HurtBoxComponent, RenderComponent>();
 	auto victimView = registry.view<HurtBoxComponent, PositionComponent, HealthComponent>();
 
 	for (const auto attacker : attackerView) {
 		const auto &attackComponent = attackerView.get<AttackComponent>(attacker);
 		const auto &attackerHitBox = attackerView.get<HitBoxComponent>(attacker);
-		const auto &weaponHitBox = attackerView.get<MeleeAttackComponent>(attacker).weaponHitBox;
 		const auto &[position, previousPosition] = attackerView.get<PositionComponent>(attacker);
 		const auto &[attackerHurtBoxRect] = attackerView.get<HurtBoxComponent>(attacker);
 		const auto facingLeft = attackerView.get<RenderComponent>(attacker).isFacingLeft();
+		const auto &weaponHitBox = registry.tryGet<MeleeAttackComponent>(attacker);
 
 		SDL_FRect attackerReferenceBox = attackerHitBox.bodyHitBox;
 		if (const auto sprite = registry.tryGet<SpriteComponent>(attacker)) {
@@ -101,7 +101,7 @@ void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
 		const auto attackerScale = attackerTransform ? &attackerTransform->get().scale : nullptr;
 
 		const bool isAttackingState = AttackSystem::isAttacking(attackComponent);
-		bool isWeaponActive = isAttackingState && attackComponent.isDamageActive;
+		bool isWeaponActive = isAttackingState && attackComponent.isDamageActive && weaponHitBox;
 
 		SDL_FRect attackerWeaponRect = {0, 0, 0, 0};
 		if (isWeaponActive) {
@@ -110,8 +110,8 @@ void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
 				localHurtBox.x =
 				    attackerReferenceBox.x + attackerReferenceBox.w - (attackerHurtBoxRect.x + attackerHurtBoxRect.w);
 			}
-			attackerWeaponRect = Utils::HitBoxUtils::getWeaponHitBoxRect(position, weaponHitBox, localHurtBox,
-			                                                             attackerScale, facingLeft);
+			attackerWeaponRect = Utils::HitBoxUtils::getWeaponHitBoxRect(position, weaponHitBox->get().weaponHitBox,
+			                                                             localHurtBox, attackerScale, facingLeft);
 		}
 
 		SDL_FRect attackerBodyRect = Utils::HitBoxUtils::getHitBoxFacing(

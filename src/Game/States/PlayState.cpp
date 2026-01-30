@@ -39,6 +39,9 @@ void PlayState::init(GameEngine &game)
 	game.getSaveSystem().loadSavedGame(game.getRegistry());
 
 	game.getAudioManager().playMusic("assets/audio/music/main_theme.ogg", 2500);
+	for (auto &spawner : spawners) {
+		spawner.spawn();
+	}
 }
 
 void PlayState::cleanup() {}
@@ -65,7 +68,7 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 	inputSystem.update(game.getRegistry());
 	ECS::Systems::AiDecisionSystem::update(game.getRegistry());
 
-	ECS::Systems::ProjectileSystem::update(game.getRegistry(), deltaTime, game.getTextureManager());
+	projectileSystem.update(game.getRegistry(), deltaTime);
 	ECS::Systems::JumpSystem::update(game.getRegistry(), deltaTime);
 
 	accumulator += deltaTime;
