@@ -213,18 +213,7 @@
                         }],
                  "template":"..\/..\/objects\/demonBoss.tj",
                  "x":544,
-                 "y":480
-                }, 
-                {
-                 "height":64,
-                 "id":10,
-                 "name":"",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":256,
-                 "x":416,
-                 "y":480
+                 "y":544
                 }],
          "opacity":1,
          "type":"objectgroup",
