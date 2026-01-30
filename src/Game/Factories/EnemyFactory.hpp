@@ -33,7 +33,7 @@ class EnemyFactory {
   private:
 	void ensureSafeSpawn(Entity entity) const;
 
-	Registry &registry;
+	std::reference_wrapper<Registry> registry;
 	AnimationFactory &animationFactory;
 	tson::Map *map = nullptr;
 };

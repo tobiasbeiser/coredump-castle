@@ -58,11 +58,16 @@ GameEngine::ECS::Entity PlayerFactory::createPlayer(tson::Object &player, const 
 
 		using namespace std::chrono_literals;
 
-		animationFactory.loadAnimationsFromTileset(player, e);
 		std::chrono::duration<float> attackDuration = 1s;
-		if (const auto animComp = registry.tryGet<AnimationComponent>(e)) {
-			if (animComp->get().hasAnimation(AnimationType::Attacking)) {
-				attackDuration = animComp->get().getAnimationDuration(AnimationType::Attacking);
+
+		if (const auto animComp = animationFactory.loadAnimationsFromTileset(player)) {
+			auto &[animationComponent, spriteComponent] = *animComp;
+			registry.registerComponent(e, animationComponent);
+			if (animationComponent.hasAnimation(AnimationType::Attacking)) {
+				attackDuration = animationComponent.getAnimationDuration(AnimationType::Attacking);
+			}
+			if (!registry.has<SpriteComponent>(e)) {
+				registry.registerComponent(e, spriteComponent);
 			}
 		}
 

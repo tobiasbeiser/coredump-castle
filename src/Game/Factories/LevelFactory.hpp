@@ -38,7 +38,7 @@ class LevelFactory {
 	GameEngine::ECS::Registry &registry;
 	TextureManager &textureManager;
 	InputManager &inputManager;
-	AnimationFactory animationFactory{registry, textureManager};
+	AnimationFactory animationFactory{textureManager};
 	const std::filesystem::path basePath = "assets/tiled/tilesets/";
 	TileFactory tileFactory;
 	GameEngine::ECS::EnemyFactory enemyFactory;

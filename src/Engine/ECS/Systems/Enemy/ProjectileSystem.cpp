@@ -1,3 +1,5 @@
+#include "ProjectileSystem.hpp"
+
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
@@ -15,17 +17,13 @@
 #include "Engine/ECS/Systems/CollisionSystem.hpp"
 #include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
 #include "Engine/ECS/View.hpp"
-#include "Engine/Graphics/TextureManager.hpp"
 #include "Game/Factories/ProjectileFactory.hpp"
 #include <cmath>
 #include <numbers>
 
-namespace GameEngine::ECS::Systems::ProjectileSystem {
-
-namespace {
-glm::vec2 calculateProjectileSpawnPosition(const glm::vec2 &enemyPosition, const SDL_FRect &enemyHurtBox,
-                                           const glm::vec2 &enemyScale, const glm::vec2 &projectileOffset,
-                                           const bool facingLeft)
+glm::vec2 GameEngine::ECS::Systems::ProjectileSystem::calculateProjectileSpawnPosition(
+    const glm::vec2 &enemyPosition, const SDL_FRect &enemyHurtBox, const glm::vec2 &enemyScale,
+    const glm::vec2 &projectileOffset, const bool facingLeft)
 {
 	glm::vec2 projectileSpawnPosition = enemyPosition;
 
@@ -39,15 +37,17 @@ glm::vec2 calculateProjectileSpawnPosition(const glm::vec2 &enemyPosition, const
 	return projectileSpawnPosition;
 }
 
-glm::vec2 calculateProjectileDirection(const glm::vec2 &projectileSpawnPosition,
-                                       const glm::vec2 &targetSnapshotPosition)
+glm::vec2
+GameEngine::ECS::Systems::ProjectileSystem::calculateProjectileDirection(const glm::vec2 &projectileSpawnPosition,
+                                                                         const glm::vec2 &targetSnapshotPosition)
 {
 
 	return glm::normalize(targetSnapshotPosition - projectileSpawnPosition);
 }
 
-bool shouldSpawnProjectile(Registry &registry, const Entity entity, const AttackComponent &attack,
-                           const float deltaTime)
+bool GameEngine::ECS::Systems::ProjectileSystem::shouldSpawnProjectile(Registry &registry, const Entity entity,
+                                                                       const AttackComponent &attack,
+                                                                       const float deltaTime)
 {
 	if (const auto anim = registry.tryGet<AnimationComponent>(entity)) {
 		return anim->get().hasAnimation(AnimationType::Fire) && anim->get().getAnimation() == AnimationType::Fire;
@@ -55,7 +55,7 @@ bool shouldSpawnProjectile(Registry &registry, const Entity entity, const Attack
 
 	return attack.attackTimer.getTime() <= std::chrono::duration<float>(deltaTime * 2.0f);
 }
-void updateProjectileMovement(Registry &registry, const float deltaTime)
+void GameEngine::ECS::Systems::ProjectileSystem::updateProjectileMovement(Registry &registry, const float deltaTime)
 {
 	for (auto projectileView =
 	         registry.view<ProjectileTag, ProjectileComponent, VelocityComponent, PositionComponent>();
@@ -67,7 +67,7 @@ void updateProjectileMovement(Registry &registry, const float deltaTime)
 	}
 }
 
-void resolveProjectileWallCollisions(Registry &registry)
+void GameEngine::ECS::Systems::ProjectileSystem::resolveProjectileWallCollisions(Registry &registry)
 {
 	auto projectileView = registry.view<ProjectileTag, PositionComponent, CollisionComponent>();
 	for (const auto entity : projectileView) {
@@ -81,7 +81,7 @@ void resolveProjectileWallCollisions(Registry &registry)
 	}
 }
 
-void cleanUpOldProjectiles(Registry &registry)
+void GameEngine::ECS::Systems::ProjectileSystem::cleanUpOldProjectiles(Registry &registry)
 {
 	auto projectileView = registry.view<ProjectileTag, PositionComponent, ProjectileComponent>();
 	for (auto entity : projectileView) {
@@ -94,7 +94,7 @@ void cleanUpOldProjectiles(Registry &registry)
 	}
 }
 
-bool isPlayerAlive(Registry &registry)
+bool GameEngine::ECS::Systems::ProjectileSystem::isPlayerAlive(Registry &registry)
 {
 	auto playerView = registry.view<PlayerTag, StateComponent>();
 	for (const auto entity : playerView) {
@@ -104,7 +104,7 @@ bool isPlayerAlive(Registry &registry)
 	return false;
 }
 
-void cleanUpAllProjectiles(Registry &registry)
+void GameEngine::ECS::Systems::ProjectileSystem::cleanUpAllProjectiles(Registry &registry)
 {
 	auto projectileView = registry.view<ProjectileTag, ProjectileComponent>();
 	for (auto entity : projectileView) {
@@ -112,7 +112,7 @@ void cleanUpAllProjectiles(Registry &registry)
 	}
 }
 
-void handleEnemySpawning(Registry &registry, float deltaTime, const ProjectileFactory &factory)
+void GameEngine::ECS::Systems::ProjectileSystem::handleEnemySpawning(Registry &registry, float deltaTime)
 {
 	for (auto view = registry.view<EnemyTag, AttackComponent, RangedAttackComponent, PositionComponent,
 	                               HurtBoxComponent, ProjectileComponent>();
@@ -162,20 +162,24 @@ void handleEnemySpawning(Registry &registry, float deltaTime, const ProjectileFa
 
 			const double rotation = std::atan2(direction.y, direction.x) * (180.0 / std::numbers::pi);
 
-			factory.createProjectile(spawnPosition, direction, projectileSettings.speed, projectileSettings.maxRange,
-			                         projectileSettings.projectileTilesetPath, rotation);
+			projectileFactory.createProjectile(spawnPosition, direction, projectileSettings.speed,
+			                                   projectileSettings.maxRange, projectileSettings.projectileTilesetPath,
+			                                   rotation);
 			rangedAttack.projectileSpawned = true;
 		}
 	}
 }
-} // anonymous namespace
 
-void handleEnemyProjectileCollisions(Registry &registry)
+void GameEngine::ECS::Systems::ProjectileSystem::handleEnemyProjectileCollisions(Registry &registry)
 {
 	resolveProjectileWallCollisions(registry);
 }
 
-void update(Registry &registry, const float deltaTime, TextureManager &textureManager)
+GameEngine::ECS::Systems::ProjectileSystem::ProjectileSystem(ProjectileFactory &projectileFactory)
+    : projectileFactory(projectileFactory)
+{
+}
+void GameEngine::ECS::Systems::ProjectileSystem::update(Registry &registry, const float deltaTime)
 {
 	if (!isPlayerAlive(registry)) {
 		cleanUpAllProjectiles(registry);
@@ -184,11 +188,7 @@ void update(Registry &registry, const float deltaTime, TextureManager &textureMa
 
 	updateProjectileMovement(registry, deltaTime);
 
-	const ProjectileFactory factory(registry, textureManager);
-
-	handleEnemySpawning(registry, deltaTime, factory);
+	handleEnemySpawning(registry, deltaTime);
 
 	cleanUpOldProjectiles(registry);
 }
-
-} // namespace GameEngine::ECS::Systems::ProjectileSystem

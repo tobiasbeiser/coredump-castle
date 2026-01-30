@@ -4,12 +4,23 @@
 EnemySpawner::EnemySpawner(GameEngine::ECS::Registry &registry) : registry(registry), currentEntity(registry.create())
 {
 }
-void EnemySpawner::spawn() {}
-void EnemySpawner::despawn() {}
-bool EnemySpawner::isAlive() const {}
-
-template <typename T>
-void EnemySpawner::addBlueprint(T component)
+void EnemySpawner::spawn()
 {
-	blueprints.emplace_back([this, component](GameEngine::ECS::Entity e) { registry.registerComponent(e, component); });
+	if (currentEntity) {
+		despawn();
+	}
+	currentEntity = registry.get().create();
+	for (const auto &blueprint : blueprints) {
+		blueprint(*currentEntity);
+	}
+}
+void EnemySpawner::despawn() const
+{
+	if (currentEntity) {
+		registry.get().deleteEntity(*currentEntity);
+	}
+}
+bool EnemySpawner::isAlive() const
+{
+	return currentEntity && registry.get().exists(*currentEntity);
 }

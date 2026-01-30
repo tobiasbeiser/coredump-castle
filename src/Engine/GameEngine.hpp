@@ -3,6 +3,7 @@
 #include "ECS/Registry.hpp"
 #include "ECS/Systems/SaveSystem.hpp"
 #include "Game/Factories/EffectFactory.hpp"
+#include "Game/Factories/ProjectileFactory.hpp"
 #include "Graphics/FontManager.hpp"
 #include "Graphics/Gui/GuiManager.hpp"
 #include "Graphics/Renderer.hpp"
@@ -62,6 +63,7 @@ class GameEngine {
 	EffectFactory &getEffectFactory() { return effectFactory; };
 	ECS::Systems::SaveSystem &getSaveSystem() { return saveSystem; }
 	AudioManager &getAudioManager() { return audioManager; }
+	ProjectileFactory &getProjectileFactory() { return projectileFactory; }
 
   private:
 	std::vector<std::unique_ptr<GameState>> states{};
@@ -81,6 +83,8 @@ class GameEngine {
 	};
 	std::vector<PendingAction> actionQueue;
 	EffectFactory effectFactory{registry, textureManager};
+	AnimationFactory animationFactory{textureManager};
+	ProjectileFactory projectileFactory{registry, animationFactory};
 	AudioManager audioManager{};
 };
 } // namespace GameEngine
