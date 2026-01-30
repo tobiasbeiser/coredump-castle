@@ -30,8 +30,8 @@
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/View.hpp"
+#include "Game/Spawners/EnemySpawner.hpp"
 
-#include <cctype>
 #include <tileson.hpp>
 
 namespace {
@@ -158,15 +158,16 @@ void GameEngine::ECS::EnemyFactory::setMap(tson::Map &tsonMap)
 	map = &tsonMap;
 }
 
-GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, const glm::vec2 &levelPos,
-                                                                   const int layer) const
+EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, const glm::vec2 &levelPos,
+                                                        const int layer) const
 {
 	if (!map) {
 		throw std::runtime_error("Map is null");
 	}
 
-	const auto entity = registry.create();
-	registry.registerComponent(entity, EnemyTag{});
+	auto spawner = EnemySpawner(registry);
+
+	spawner.addBlueprint(EnemyTag{});
 
 	const auto scale = getFloatProp(enemyObj, "scale", 1.0f);
 	const auto maxSpeedX = getFloatProp(enemyObj, "maxSpeedX", 50.0f);
@@ -205,58 +206,56 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 	const tson::Vector2 pos = enemyObj.getPosition();
 	const glm::vec2 spawn = glm::vec2(pos.x, pos.y) + levelPos;
 
-	registry.registerComponent(entity, PositionComponent{.position = spawn});
-	registry.registerComponent(entity, VelocityComponent{.velocity = {0.0f, 0.0f}});
-	registry.registerComponent(entity, AccelerationComponent{.acceleration = {0.0f, 0.0f}});
-	registry.registerComponent(entity, GravityComponent{});
-	registry.registerComponent(entity, GroundedComponent{});
-	registry.registerComponent(entity, RenderComponent{.layer = layer, .flipX = false, .flipXOffset = flipXOffset});
-	registry.registerComponent(entity, TransformComponent{.scale = glm::vec2(scale, scale)});
-	registry.registerComponent(entity, StateComponent{});
-	registry.registerComponent(entity, AiStateComponent{});
+	spawner.addBlueprint(PositionComponent{.position = spawn});
+	spawner.addBlueprint(VelocityComponent{.velocity = {0.0f, 0.0f}});
+	spawner.addBlueprint(AccelerationComponent{.acceleration = {0.0f, 0.0f}});
+	spawner.addBlueprint(GravityComponent{});
+	spawner.addBlueprint(GroundedComponent{});
+	spawner.addBlueprint(RenderComponent{.layer = layer, .flipX = false, .flipXOffset = flipXOffset});
+	spawner.addBlueprint(TransformComponent{.scale = glm::vec2(scale, scale)});
+	spawner.addBlueprint(StateComponent{});
+	spawner.addBlueprint(AiStateComponent{});
 	using namespace std::chrono_literals;
 
-	registry.registerComponent(entity, InputComponent{});
-	registry.registerComponent(entity, MovementComponent{.maxSpeedX = maxSpeedX});
-	registry.registerComponent(entity, BlinkComponent{});
+	spawner.addBlueprint(InputComponent{});
+	spawner.addBlueprint(MovementComponent{.maxSpeedX = maxSpeedX});
+	spawner.addBlueprint(BlinkComponent{});
 
 	if (isBoss) {
 		const int bossId = bossIdProp == -1 ? static_cast<int>(enemyObj.getId()) : bossIdProp;
-		registry.registerComponent(entity, BossComponent{.bossId = bossId, .unlockAbility = unlockAbility});
-		registry.registerComponent(
-		    entity, ChargeComponent{.chargeTimer = Timer{std::chrono::duration<float>(chargeDuration)},
-		                            .chargePauseTimer = Timer{std::chrono::duration<float>(chargePauseDuration)},
-		                            .chargeChance = chargeChance,
-		                            .chargeSpeedMultiplier = chargeSpeedMultiplier});
+		spawner.addBlueprint(BossComponent{.bossId = bossId, .unlockAbility = unlockAbility});
+		spawner.addBlueprint(
+		    ChargeComponent{.chargeTimer = Timer{std::chrono::duration<float>(chargeDuration)},
+		                    .chargePauseTimer = Timer{std::chrono::duration<float>(chargePauseDuration)},
+		                    .chargeChance = chargeChance,
+		                    .chargeSpeedMultiplier = chargeSpeedMultiplier});
 	}
 
 	if (weaponHitBoxStr) {
 		const auto weaponHitBox = parseCollisionBox(weaponHitBoxStr.value());
 
 		if (weaponHitBox.w >= 0.f && weaponHitBox.h >= 0.f) {
-			registry.registerComponent<MeleeAttackComponent>(
-			    entity, {weaponHitBox, attackRange > 0 ? attackRange : weaponHitBox.w});
+			spawner.addBlueprint(MeleeAttackComponent{weaponHitBox, attackRange > 0 ? attackRange : weaponHitBox.w});
 		}
 	}
 
 	if (collisionStr) {
 		const auto collisionBox = parseCollisionBox(collisionStr.value());
 		const auto touchDamageBox = touchDamageBoxStr ? parseCollisionBox(touchDamageBoxStr.value()) : collisionBox;
-		registry.registerComponent(entity, HitBoxComponent{.bodyHitBox = touchDamageBox});
-		registry.registerComponent(entity, CollisionComponent{collisionBox});
-		registry.registerComponent(entity,
-		                           HurtBoxComponent{hurtBoxStr ? parseCollisionBox(hurtBoxStr.value()) : collisionBox});
+		spawner.addBlueprint(HitBoxComponent{.bodyHitBox = touchDamageBox});
+		spawner.addBlueprint(CollisionComponent{collisionBox});
+		spawner.addBlueprint(HurtBoxComponent{hurtBoxStr ? parseCollisionBox(hurtBoxStr.value()) : collisionBox});
 	}
 
 	if (canPatrol) {
-		registry.registerComponent<PatrolComponent>(entity, {maxSpeedX});
+		spawner.addBlueprint(PatrolComponent{maxSpeedX});
 	}
 
 	if (chaseSpeed > 0.0f) {
-		registry.registerComponent(entity, ChaseComponent{
-		                                       .chaseSpeed = chaseSpeed,
-		                                       .reactionDelay = Timer{std::chrono::duration<float>(reactionDelay)},
-		                                   });
+		spawner.addBlueprint(ChaseComponent{
+		    .chaseSpeed = chaseSpeed,
+		    .reactionDelay = Timer{std::chrono::duration<float>(reactionDelay)},
+		});
 	}
 	if (isRangedEnemy) {
 		std::string projectileTilesetPath;
@@ -265,81 +264,82 @@ GameEngine::ECS::Entity GameEngine::ECS::EnemyFactory::createEnemy(tson::Object 
 			projectileTilesetPath = (basePath / tilesetPathOpt.value()).string();
 		}
 
-		registry.registerComponent(entity, ChaseComponent{
-		                                       .chaseSpeed = chaseSpeed,
-		                                       .reactionDelay = Timer{std::chrono::duration<float>(reactionDelay)},
-		                                   });
-		registry.registerComponent(entity, RangedAttackComponent{
-		                                       .projectileSpeed = projectileSpeed,
-		                                       .projectileOffset = projectileOffset,
-		                                       .attackRange = attackRange,
-		                                   });
-		registry.registerComponent(entity, ProjectileComponent{
-		                                       .maxRange = 2000.0f,
-		                                       .speed = projectileSpeed,
-		                                       .spawnPosition = {0.f, 0.f},
-		                                       .projectileTilesetPath = projectileTilesetPath,
-		                                   });
+		spawner.addBlueprint(ChaseComponent{
+		    .chaseSpeed = chaseSpeed,
+		    .reactionDelay = Timer{std::chrono::duration<float>(reactionDelay)},
+		});
+		spawner.addBlueprint(RangedAttackComponent{
+		    .projectileSpeed = projectileSpeed,
+		    .projectileOffset = projectileOffset,
+		    .attackRange = attackRange,
+		});
+		spawner.addBlueprint(ProjectileComponent{
+		    .maxRange = 2000.0f,
+		    .speed = projectileSpeed,
+		    .spawnPosition = {0.f, 0.f},
+		    .projectileTilesetPath = projectileTilesetPath,
+		});
 	}
-
-	animationFactory.loadAnimationsFromTileset(enemyObj, entity);
 
 	using namespace std::chrono_literals;
 	std::chrono::duration<float> attackDuration = 100ms;
 	std::chrono::duration<float> invulnerabilityTime = 300ms;
 
-	if (auto animComp = registry.tryGet<AnimationComponent>(entity)) {
-		if (animComp->get().hasAnimation(AnimationType::Attacking)) {
-			attackDuration = animComp->get().getAnimationDuration(AnimationType::Attacking);
+	if (const auto animComp = animationFactory.loadAnimationsFromTileset(enemyObj)) {
+		auto &[animationComponent, spriteComponent] = *animComp;
+
+		spawner.addBlueprint(animationComponent);
+		spawner.addBlueprint(spriteComponent);
+
+		if (animationComponent.hasAnimation(AnimationType::Attacking)) {
+			attackDuration = animationComponent.getAnimationDuration(AnimationType::Attacking);
 		}
 
-		if (animComp->get().hasAnimation(AnimationType::Charge)) {
-			attackDuration = animComp->get().getAnimationDuration(AnimationType::Charge);
-			if (animComp->get().hasAnimation(AnimationType::Fire)) {
-				attackDuration += animComp->get().getAnimationDuration(AnimationType::Fire);
+		if (animationComponent.hasAnimation(AnimationType::Charge)) {
+			attackDuration = animationComponent.getAnimationDuration(AnimationType::Charge);
+			if (animationComponent.hasAnimation(AnimationType::Fire)) {
+				attackDuration += animationComponent.getAnimationDuration(AnimationType::Fire);
 			}
-		} else if (animComp->get().hasAnimation(AnimationType::Fire)) {
-			attackDuration = animComp->get().getAnimationDuration(AnimationType::Fire);
+		} else if (animationComponent.hasAnimation(AnimationType::Fire)) {
+			attackDuration = animationComponent.getAnimationDuration(AnimationType::Fire);
 		}
-		if (animComp->get().hasAnimation(AnimationType::Hurting)) {
-			invulnerabilityTime = animComp->get().getAnimationDuration(AnimationType::Hurting) + 200ms;
+		if (animationComponent.hasAnimation(AnimationType::Hurting)) {
+			invulnerabilityTime = animationComponent.getAnimationDuration(AnimationType::Hurting) + 200ms;
 		}
 	}
 
-	registry.registerComponent(entity, HealthComponent{maxHealth, maxHealth, invulnerabilityTime});
+	spawner.addBlueprint(HealthComponent{maxHealth, maxHealth, invulnerabilityTime});
 
 	if (poise > 0.0f) {
-		registry.registerComponent(
-		    entity,
+		spawner.addBlueprint(
 		    PoiseComponent{.maxPoise = poise, .recoveryTimer = Timer{std::chrono::duration<float>(recoveryTime)}});
 	}
 
-	registry.registerComponent(
-	    entity, AttackComponent{.attackTimer = Timer{attackDuration},
-	                            .attackCoolDownTimer = Timer{std::chrono::duration<float>(attackCooldown)},
-	                            .windUpLimit = windUpLimit,
-	                            .activeWindUpLimit = windUpLimit});
+	spawner.addBlueprint(AttackComponent{.attackTimer = Timer{attackDuration},
+	                                     .attackCoolDownTimer = Timer{std::chrono::duration<float>(attackCooldown)},
+	                                     .windUpLimit = windUpLimit,
+	                                     .activeWindUpLimit = windUpLimit});
 
 	if (detectionRange > 0.0f) {
-		registry.registerComponent(entity, VisionComponent{.visionRange = detectionRange});
+		spawner.addBlueprint(VisionComponent{.visionRange = detectionRange});
 	}
 
-	ensureSafeSpawn(entity);
+	// ensureSafeSpawn(entity);
 
-	return entity;
+	return spawner;
 }
 
-void GameEngine::ECS::EnemyFactory::ensureSafeSpawn(const GameEngine::ECS::Entity entity) const
+void GameEngine::ECS::EnemyFactory::ensureSafeSpawn(const Entity entity) const
 {
 
-	auto position = registry.tryGet<PositionComponent>(entity);
-	auto collision = registry.tryGet<CollisionComponent>(entity);
+	auto position = registry.get().tryGet<PositionComponent>(entity);
+	auto collision = registry.get().tryGet<CollisionComponent>(entity);
 
 	if (!position || !collision) {
 		return;
 	}
 
-	const auto transform = registry.tryGet<TransformComponent>(entity);
+	const auto transform = registry.get().tryGet<TransformComponent>(entity);
 	const auto scale = transform ? transform->get().scale : glm::vec2{1.0f, 1.0f};
 
 	position->get().position.x -=
@@ -356,7 +356,8 @@ void GameEngine::ECS::EnemyFactory::ensureSafeSpawn(const GameEngine::ECS::Entit
 		                       position->get().position.y + collision->get().collisionBox.y * scale.y,
 		                       collision->get().collisionBox.w * scale.x, collision->get().collisionBox.h * scale.y};
 
-		for (auto staticColliders = registry.view<PositionComponent, CollisionComponent>()
+		for (auto staticColliders = registry.get()
+		                                .view<PositionComponent, CollisionComponent>()
 		                                .exclude<EnemyTag>()
 		                                .exclude<PlayerTag>()
 		                                .exclude<ProjectileComponent>();
@@ -366,7 +367,7 @@ void GameEngine::ECS::EnemyFactory::ensureSafeSpawn(const GameEngine::ECS::Entit
 			const auto &staticColliderCollisionBox =
 			    staticColliders.get<CollisionComponent>(staticCollider).collisionBox;
 			glm::vec2 staticColliderScale = {1.0f, 1.0f};
-			if (const auto staticTransform = registry.tryGet<TransformComponent>(staticCollider)) {
+			if (const auto staticTransform = registry.get().tryGet<TransformComponent>(staticCollider)) {
 				staticColliderScale = staticTransform->get().scale;
 			}
 

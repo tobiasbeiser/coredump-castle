@@ -12,7 +12,8 @@ void MainMenuState::init(GameEngine &game)
 {
 	if (DebugSystem::instance().getSkipMenuOptions().skipMainMenu) {
 		game.pushState(std::make_unique<PlayState>(game.getInputManager(), game.getTextureManager(),
-		                                           game.getGuiManager(), game.getRenderer(), game.getEffectFactory()));
+		                                           game.getGuiManager(), game.getRenderer(), game.getEffectFactory(),
+		                                           game.getProjectileFactory()));
 	}
 
 	setupUI(game);
@@ -114,7 +115,7 @@ void MainMenuState::transitionToPlayState(GameEngine &game)
 {
 	auto playStateFactory = [&game]() {
 		return std::make_unique<PlayState>(game.getInputManager(), game.getTextureManager(), game.getGuiManager(),
-		                                   game.getRenderer(), game.getEffectFactory());
+		                                   game.getRenderer(), game.getEffectFactory(), game.getProjectileFactory());
 	};
 	game.changeState(std::make_unique<GameLoadingState>(std::move(playStateFactory), game.getGuiManager()));
 }

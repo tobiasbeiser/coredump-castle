@@ -32,13 +32,16 @@ void PlayState::init(GameEngine &game)
 {
 	const std::filesystem::path projectPath = "assets/tiled/CoredumpCastle.tiled-project";
 	auto factory = WorldFactory(game.getRegistry(), projectPath, game.getTextureManager(), game.getInputManager(),
-	                            game.getAudioManager());
+	                            game.getAudioManager(), spawners);
 
 	const std::filesystem::path worldPath = "assets/tiled/coredumpCastle.world";
 	factory.createWorld(worldPath);
 	game.getSaveSystem().loadSavedGame(game.getRegistry());
 
 	game.getAudioManager().playMusic("assets/audio/music/main_theme.ogg", 2500);
+	for (auto &spawner : spawners) {
+		spawner.spawn();
+	}
 }
 
 void PlayState::cleanup() {}
@@ -65,7 +68,7 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 	inputSystem.update(game.getRegistry());
 	ECS::Systems::AiDecisionSystem::update(game.getRegistry());
 
-	ECS::Systems::ProjectileSystem::update(game.getRegistry(), deltaTime, game.getTextureManager());
+	projectileSystem.update(game.getRegistry(), deltaTime);
 	ECS::Systems::JumpSystem::update(game.getRegistry(), deltaTime);
 
 	accumulator += deltaTime;
@@ -101,7 +104,7 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 
 	ECS::Systems::DeathSystem::update(game.getRegistry(), deltaTime);
 
-	ECS::Systems::InteractionSystem::update(game, game.getRegistry());
+	ECS::Systems::InteractionSystem::update(game, game.getRegistry(), spawners);
 	ECS::Systems::TooltipSystem::update(game.getRegistry());
 	ECS::Systems::RespawnSystem::update(game.getRegistry(), game, deltaTime);
 }

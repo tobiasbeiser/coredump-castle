@@ -161,6 +161,23 @@
         }, 
         {
          "draworder":"topdown",
+         "id":24,
+         "name":"Enemies",
+         "objects":[
+                {
+                 "id":3,
+                 "template":"..\/..\/objects\/baseEnemy.tj",
+                 "x":544,
+                 "y":512
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
          "id":10,
          "name":"Entities",
          "objects":[],
@@ -176,8 +193,8 @@
          "x":0,
          "y":0
         }],
- "nextlayerid":24,
- "nextobjectid":3,
+ "nextlayerid":25,
+ "nextobjectid":4,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",
