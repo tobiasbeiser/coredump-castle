@@ -14,7 +14,7 @@
 class LevelFactory {
   public:
 	LevelFactory(GameEngine::ECS::Registry &registry, TextureManager &textureManager, InputManager &inputManager,
-	             AudioManager &audioManager);
+	             AudioManager &audioManager, std::vector<EnemySpawner> &spawners);
 
 	LevelFactory(LevelFactory &&) = delete;
 	LevelFactory &operator=(LevelFactory &&) = delete;
@@ -44,5 +44,6 @@ class LevelFactory {
 	GameEngine::ECS::EnemyFactory enemyFactory;
 	PlayerFactory playerFactory;
 	std::vector<std::unique_ptr<IObjectParser>> parsers;
+	std::vector<EnemySpawner> &spawners;
 	void registerParsers();
 };

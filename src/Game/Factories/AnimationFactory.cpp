@@ -209,5 +209,5 @@ void AnimationFactory::loadProjectileAnimation(GameEngine::ECS::Registry &regist
 	}
 	tileset.parse(json, nullptr);
 
-	AnimationFactory::loadAnimationFromStandaloneTileset(registry, textureManager, tileset, tilesetPath, entity);
+	loadAnimationFromStandaloneTileset(registry, textureManager, tileset, tilesetPath, entity);
 }

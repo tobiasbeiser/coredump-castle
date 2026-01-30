@@ -32,7 +32,7 @@ void PlayState::init(GameEngine &game)
 {
 	const std::filesystem::path projectPath = "assets/tiled/CoredumpCastle.tiled-project";
 	auto factory = WorldFactory(game.getRegistry(), projectPath, game.getTextureManager(), game.getInputManager(),
-	                            game.getAudioManager());
+	                            game.getAudioManager(), spawners);
 
 	const std::filesystem::path worldPath = "assets/tiled/coredumpCastle.world";
 	factory.createWorld(worldPath);

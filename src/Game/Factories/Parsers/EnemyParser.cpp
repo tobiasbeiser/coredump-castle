@@ -1,6 +1,9 @@
 ﻿#include "EnemyParser.hpp"
 
-EnemyParser::EnemyParser(GameEngine::ECS::EnemyFactory &enemyFactory) : enemyFactory(enemyFactory) {}
+EnemyParser::EnemyParser(GameEngine::ECS::EnemyFactory &enemyFactory, std::vector<EnemySpawner> &spawners)
+    : enemyFactory(enemyFactory), spawners(spawners)
+{
+}
 bool EnemyParser::canParse(tson::Object &obj) const
 {
 	std::string name = obj.getName();
@@ -9,5 +12,5 @@ bool EnemyParser::canParse(tson::Object &obj) const
 }
 void EnemyParser::parse(tson::Object &obj, const glm::vec2 &levelPos, int layerIndex) const
 {
-	enemyFactory.createEnemy(obj, levelPos, layerIndex);
+	spawners.push_back(enemyFactory.createEnemy(obj, levelPos, layerIndex));
 }

@@ -3,6 +3,7 @@
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/Graphics/TextureManager.hpp"
 #include "Engine/Input/InputManager.hpp"
+#include "Game/Spawners/EnemySpawner.hpp"
 
 #include <filesystem>
 #include <tileson.hpp>
@@ -10,7 +11,8 @@
 class WorldFactory {
   public:
 	WorldFactory(GameEngine::ECS::Registry &registry, const std::filesystem::path &projectPath,
-	             TextureManager &textureManager, InputManager &inputManager, AudioManager &audioManager);
+	             TextureManager &textureManager, InputManager &inputManager, AudioManager &audioManager,
+	             std::vector<EnemySpawner> &spawners);
 
 	WorldFactory(const WorldFactory &) = delete;
 	WorldFactory &operator=(const WorldFactory &) = delete;
@@ -27,4 +29,5 @@ class WorldFactory {
 	TextureManager &textureManager;
 	InputManager &inputManager;
 	AudioManager &audioManager;
+	std::vector<EnemySpawner> &spawners;
 };
