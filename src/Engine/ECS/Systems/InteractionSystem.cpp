@@ -5,6 +5,7 @@
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/SavePointComponent.hpp"
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/HealthComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InteractionComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InventoryComponent.hpp"
@@ -12,16 +13,17 @@
 #include "Engine/ECS/Components/Gameplay/LockComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/GameEngine.hpp"
+#include "Game/Spawners/EnemySpawner.hpp"
 #include "PhysicsSystem.hpp"
 #include "SaveSystem.hpp"
 
-void GameEngine::ECS::Systems::InteractionSystem::update(GameEngine &game, Registry &registry)
+void GameEngine::ECS::Systems::InteractionSystem::update(GameEngine &game, Registry &registry,
+                                                         std::vector<EnemySpawner> &spawners)
 {
 	PROFILE_SCOPE("InteractionSystem");
 
-	for (auto playerView =
-	         registry
-	             .view<InventoryComponent, InteractionComponent, InputComponent, PositionComponent, StateComponent>();
+	for (auto playerView = registry.view<InventoryComponent, InteractionComponent, InputComponent, PositionComponent,
+	                                     StateComponent, HealthComponent>();
 	     const auto &entity : playerView) {
 		const auto &pInput = playerView.get<InputComponent>(entity);
 		auto &[state] = playerView.get<StateComponent>(entity);
@@ -64,7 +66,12 @@ void GameEngine::ECS::Systems::InteractionSystem::update(GameEngine &game, Regis
 					}
 				}
 				if (registry.has<SavePointComponent>(interactableObject)) {
+					auto &healthComponent = playerView.get<HealthComponent>(entity);
+					healthComponent.health = healthComponent.maxHealth;
 					game.getSaveSystem().saveGame(registry);
+					for (auto &spawner : spawners) {
+						spawner.spawn();
+					}
 				}
 			}
 		}

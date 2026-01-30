@@ -104,7 +104,7 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 
 	ECS::Systems::DeathSystem::update(game.getRegistry(), deltaTime);
 
-	ECS::Systems::InteractionSystem::update(game, game.getRegistry());
+	ECS::Systems::InteractionSystem::update(game, game.getRegistry(), spawners);
 	ECS::Systems::TooltipSystem::update(game.getRegistry());
 	ECS::Systems::RespawnSystem::update(game.getRegistry(), game, deltaTime);
 }
