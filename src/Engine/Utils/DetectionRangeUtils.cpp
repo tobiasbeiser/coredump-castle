@@ -15,7 +15,8 @@ glm::vec2 getRectCenter(const SDL_FRect &rect)
 {
 	return {rect.x + (rect.w * 0.5f), rect.y + (rect.h * 0.5f)};
 }
-bool checkLineOfSight(const glm::vec2 &start, const glm::vec2 &targetCenter, const SDL_FRect &targetBox, const glm::vec2 &targetScale, const glm::vec2 &projectileSize)
+bool checkLineOfSight(const glm::vec2 &start, const glm::vec2 &targetCenter, const SDL_FRect &targetBox,
+                      const glm::vec2 &targetScale, const glm::vec2 &projectileSize)
 {
 	// Target the center
 	if (!ECS::Systems::CollisionSystem::isPathObstructed(start, targetCenter, projectileSize)) {
@@ -31,7 +32,9 @@ bool checkLineOfSight(const glm::vec2 &start, const glm::vec2 &targetCenter, con
 	return false;
 }
 
-std::optional<glm::vec2> getTargetWithLineOfSight(const glm::vec2 &start, const glm::vec2 &targetCenter, const SDL_FRect &targetBox, const glm::vec2 &targetScale, const glm::vec2 &projectileSize)
+std::optional<glm::vec2> getTargetWithLineOfSight(const glm::vec2 &start, const glm::vec2 &targetCenter,
+                                                  const SDL_FRect &targetBox, const glm::vec2 &targetScale,
+                                                  const glm::vec2 &projectileSize)
 {
 	// Try center first
 	if (!ECS::Systems::CollisionSystem::isPathObstructed(start, targetCenter, projectileSize)) {

@@ -21,9 +21,12 @@ SDL_FRect getMeleeDetectionRect(const PatrolComponent &patrol, const ChaseCompon
 
 SDL_FRect getRangedDetectionRect(const ChaseComponent &chase, const glm::vec2 &center);
 
-bool checkLineOfSight(const glm::vec2 &start, const glm::vec2 &targetCenter, const SDL_FRect &targetBox, const glm::vec2 &targetScale, const glm::vec2 &projectileSize);
+bool checkLineOfSight(const glm::vec2 &start, const glm::vec2 &targetCenter, const SDL_FRect &targetBox,
+                      const glm::vec2 &targetScale, const glm::vec2 &projectileSize);
 
 // Returns the target position that has LOS - either center or head
-std::optional<glm::vec2> getTargetWithLineOfSight(const glm::vec2 &start, const glm::vec2 &targetCenter, const SDL_FRect &targetBox, const glm::vec2 &targetScale, const glm::vec2 &projectileSize);
+std::optional<glm::vec2> getTargetWithLineOfSight(const glm::vec2 &start, const glm::vec2 &targetCenter,
+                                                  const SDL_FRect &targetBox, const glm::vec2 &targetScale,
+                                                  const glm::vec2 &projectileSize);
 
 } // namespace GameEngine::Utils::DetectionRangeUtils

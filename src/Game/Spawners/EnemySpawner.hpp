@@ -27,10 +27,7 @@ class EnemySpawner {
 		    [&regRef, component](GameEngine::ECS::Entity e) { regRef.registerComponent(e, component); });
 	}
 
-	void addSetupStep(std::function<void(GameEngine::ECS::Entity)> step)
-	{
-		blueprints.emplace_back(step);
-	}
+	void addSetupStep(std::function<void(GameEngine::ECS::Entity)> step) { blueprints.emplace_back(step); }
 
   private:
 	std::reference_wrapper<GameEngine::ECS::Registry> registry;

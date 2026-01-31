@@ -1,14 +1,22 @@
 #pragma once
 
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
+#include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/RangedAttackComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
 #include "Engine/ECS/Components/Render/AnimationComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
+#include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/View.hpp"
+#include "Engine/Utils/DetectionRangeUtils.hpp"
 #include "Engine/Utils/HitBoxUtils.hpp"
+#include "Engine/Utils/Random.hpp"
 #include "StateMachineComponent.hpp"
 #include <SDL3/SDL.h>
 #include <glm/glm.hpp>
@@ -18,23 +26,6 @@ namespace GameEngine::ECS {
 // ============================================================================
 // TRANSITIONS
 // ============================================================================
-
-// Transition based on animation completion
-struct AnimationTransition : Transition {
-	std::string animationName;
-
-	AnimationTransition(std::string targetState, std::string animName) : animationName(std::move(animName))
-	{
-		this->targetState = std::move(targetState);
-	}
-
-	bool canTransition(Registry &registry, Entity entity, float deltaTime) const override
-	{
-		// TODO: Check if animation is complete
-		// This will need integration with your animation system
-		return false;
-	}
-};
 
 // Transition after a certain time duration
 struct TimerTransition : Transition {
@@ -127,6 +118,11 @@ struct RandomTransition : Transition {
 // STATE ACTIONS
 // ============================================================================
 
+// Execute patrol behavior via PatrolSystem
+struct PatrolAction : StateAction {
+	void execute(Registry &registry, Entity entity, float deltaTime) override;
+};
+
 // Action: Set velocity
 struct SetVelocityAction : StateAction {
 	glm::vec2 velocity;
@@ -138,19 +134,6 @@ struct SetVelocityAction : StateAction {
 		if (auto vel = registry.tryGet<VelocityComponent>(entity)) {
 			vel->get().velocity = velocity;
 		}
-	}
-};
-
-// Action: Set sprite/animation
-struct SetSpriteAction : StateAction {
-	int spriteIndex;
-
-	explicit SetSpriteAction(int index) : spriteIndex(index) {}
-
-	void execute(Registry &registry, Entity entity, float deltaTime) override
-	{
-		// TODO: Set sprite based on your rendering system
-		// This might need to set animation state or sprite sheet index
 	}
 };
 
@@ -260,6 +243,138 @@ struct ChargeStateData : StateData {
 	ChargeStateData(float speed, float distance) : chargeSpeed(speed), chargeDistance(distance), chargeDirection(0.0f)
 	{
 	}
+};
+
+// ============================================================================
+// RANGED ENEMY ACTIONS
+// ============================================================================
+
+// Stop moving and face the player
+struct StopAndFacePlayerAction final : StateAction {
+	void execute(Registry &registry, Entity entity, float deltaTime) override
+	{
+		auto posOpt = registry.tryGet<PositionComponent>(entity);
+		auto inputOpt = registry.tryGet<InputComponent>(entity);
+		auto renderOpt = registry.tryGet<RenderComponent>(entity);
+		auto hurtBoxOpt = registry.tryGet<HurtBoxComponent>(entity);
+		auto transformOpt = registry.tryGet<TransformComponent>(entity);
+
+		if (!posOpt || !inputOpt || !renderOpt || !hurtBoxOpt)
+			return;
+
+		const glm::vec2 scale = transformOpt ? transformOpt->get().scale : glm::vec2{1.0f, 1.0f};
+		const SDL_FRect enemyRect =
+		    Utils::HitBoxUtils::getHitBox(posOpt->get().position, hurtBoxOpt->get().hurtBox, &scale);
+		const glm::vec2 enemyCenter = {enemyRect.x + enemyRect.w * 0.5f, enemyRect.y + enemyRect.h * 0.5f};
+
+		auto playerView = registry.view<PlayerTag, PositionComponent, HurtBoxComponent>();
+		for (const auto playerEntity : playerView) {
+			const auto &playerPos = playerView.get<PositionComponent>(playerEntity);
+			const auto &playerHurtBox = playerView.get<HurtBoxComponent>(playerEntity);
+			auto playerTransformOpt = registry.tryGet<TransformComponent>(playerEntity);
+			const glm::vec2 playerScale = playerTransformOpt ? playerTransformOpt->get().scale : glm::vec2{1.0f, 1.0f};
+
+			const SDL_FRect playerRect =
+			    Utils::HitBoxUtils::getHitBox(playerPos.position, playerHurtBox.hurtBox, &playerScale);
+			const glm::vec2 playerCenter = {playerRect.x + playerRect.w * 0.5f, playerRect.y + playerRect.h * 0.5f};
+
+			renderOpt->get().setFacingLeft(playerCenter.x < enemyCenter.x);
+			inputOpt->get().horizontalDirection = 0.0f;
+			break;
+		}
+	}
+};
+
+// Move away from player at specified speed
+struct RetreatFromPlayerAction final : StateAction {
+	float speed;
+
+	explicit RetreatFromPlayerAction(float retreatSpeed) : speed(retreatSpeed) {}
+
+	void execute(Registry &registry, Entity entity, float deltaTime) override
+	{
+		auto enemyPos = registry.tryGet<PositionComponent>(entity);
+		auto enemyInput = registry.tryGet<InputComponent>(entity);
+		auto enemyMovement = registry.tryGet<MovementComponent>(entity);
+		auto enemyRender = registry.tryGet<RenderComponent>(entity);
+
+		if (!enemyPos || !enemyInput || !enemyMovement)
+			return;
+
+		auto playerView = registry.view<PlayerTag, PositionComponent>();
+		for (const auto playerEntity : playerView) {
+			const auto &playerPos = playerView.get<PositionComponent>(playerEntity);
+
+			// Move AWAY from player
+			const float direction = playerPos.position.x > enemyPos->get().position.x ? -1.0f : 1.0f;
+			enemyInput->get().horizontalDirection = direction;
+			enemyMovement->get().maxSpeedX = speed;
+
+			// Face player while retreating
+			if (enemyRender) {
+				enemyRender->get().setFacingLeft(playerPos.position.x < enemyPos->get().position.x);
+			}
+			break;
+		}
+	}
+};
+
+// Trigger ranged attack if valid target exists
+struct TriggerRangedAttackAction : StateAction {
+	void execute(Registry &registry, Entity entity, float deltaTime) override;
+};
+
+// Reset ranged attack state (use as onExit when leaving combat)
+struct CancelRangedAttackAction : StateAction {
+	void execute(Registry &registry, Entity entity, float deltaTime) override;
+};
+
+// Aim at player with LOS check - sets targetSnapshot
+struct AimAtPlayerWithLOSAction final : StateAction {
+	void execute(Registry &registry, Entity entity, float deltaTime) override;
+};
+
+// Composite action: stop, face, aim with LOS, and trigger attack
+struct RangedAttackAction final : StateAction {
+	StopAndFacePlayerAction stopAndFace;
+	AimAtPlayerWithLOSAction aimWithLOS;
+	TriggerRangedAttackAction triggerAttack;
+
+	void execute(Registry &registry, Entity entity, float deltaTime) override
+	{
+		stopAndFace.execute(registry, entity, deltaTime);
+		aimWithLOS.execute(registry, entity, deltaTime);
+		triggerAttack.execute(registry, entity, deltaTime);
+	}
+};
+
+// ============================================================================
+// LOS-BASED TRANSITIONS (for ranged enemies)
+// ============================================================================
+
+// Transition requiring BOTH proximity AND line of sight
+struct ProximityAndLosEntryTransition final : Transition {
+	float radius;
+
+	ProximityAndLosEntryTransition(std::string target, float proximityRadius) : radius(proximityRadius)
+	{
+		this->targetState = std::move(target);
+	}
+
+	bool canTransition(Registry &registry, Entity entity, float deltaTime) const override;
+};
+
+// Transition when LOS is lost for a duration
+struct LosLostTransition final : Transition {
+	mutable float losLostDuration = 0.0f;
+	float gracePeriod;
+
+	LosLostTransition(std::string target, float gracePeriodSeconds = 0.5f) : gracePeriod(gracePeriodSeconds)
+	{
+		this->targetState = std::move(target);
+	}
+
+	bool canTransition(Registry &registry, Entity entity, float deltaTime) const override;
 };
 
 } // namespace GameEngine::ECS

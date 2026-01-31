@@ -286,8 +286,8 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 		config.patrolSpeed = maxSpeedX;
 		config.detectionRange = detectionRange > 0 ? detectionRange : 300.0f;
 		config.disengageRange = config.detectionRange + 50.0f;
-		
-		auto* regPtr = &registry.get();
+
+		auto *regPtr = &registry.get();
 		spawner.addSetupStep([regPtr, config](GameEngine::ECS::Entity entity) {
 			WizardEnemyFactory::addStateMachine(*regPtr, entity, config);
 		});
