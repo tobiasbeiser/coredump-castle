@@ -5,6 +5,7 @@
 #include <glm/vec2.hpp>
 #include <memory>
 #include <optional>
+#include <stack>
 #include <string>
 #include <vector>
 
@@ -53,6 +54,7 @@ class Renderer {
 
 	void startFrame(int red, int green, int blue, int alpha) const;
 	void endFrame() const;
+	void setCameraCenter(const glm::vec2 &newCenter);
 	void centerCameraOn(const glm::vec2 &position, const glm::vec2 &levelPos, const glm::vec2 &levelSize);
 
 	void resize(Resolution newResolution);
@@ -63,6 +65,8 @@ class Renderer {
 	[[nodiscard]] TTF_TextEngine *getTextEngine() const;
 	void renderTexture(SDL_Texture &texture, const std::optional<SDL_FRect> &srcRect,
 	                   const std::optional<SDL_FRect> &dstRect, const bool flip, double angle = 0.0) const;
+	void renderAbsolutePositionTexture(SDL_Texture &texture, const std::optional<SDL_FRect> &srcRect,
+	                                   const std::optional<SDL_FRect> &dstRect, bool flip, double angle) const;
 
 	[[nodiscard]] std::unique_ptr<SDL_Texture, SDLTextureDeleter>
 	loadTexture(const std::filesystem::path &filePath) const;
@@ -74,8 +78,7 @@ class Renderer {
 	void renderCircularFade(float progress, SDL_FColor color = {0, 0, 0, 255});
 	void renderVignette(float intensity, const SDL_FColor &color,
 	                    const std::optional<glm::vec2> &focalPoint = std::nullopt) const;
-
-	SDL_FRect getViewport() const;
+	[[nodiscard]] SDL_FRect getViewport() const;
 
   private:
 	void setupImGui() const;
@@ -87,6 +90,11 @@ class Renderer {
 	                   .y = 0,
 	                   .w = static_cast<float>(logicalResolution.width),
 	                   .h = static_cast<float>(logicalResolution.height)};
+	SDL_FRect mapViewport{.x = 0,
+	                      .y = 0,
+	                      .w = static_cast<float>(logicalResolution.width),
+	                      .h = static_cast<float>(logicalResolution.height)};
+
 	std::vector<std::string> debugMessages{};
 
 	struct SDLRendererDeleter {

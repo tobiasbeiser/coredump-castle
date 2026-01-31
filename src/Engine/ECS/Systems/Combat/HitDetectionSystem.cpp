@@ -77,8 +77,8 @@ void applyDamage(Registry &registry, const Entity victim, const int damage = 10)
 
 void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
 {
-	auto attackerView =
-	    registry.view<AttackComponent, HitBoxComponent, PositionComponent, HurtBoxComponent, RenderComponent>();
+	auto attackerView = registry.view<AttackComponent, HitBoxComponent, PositionComponent, HurtBoxComponent,
+	                                   RenderComponent>();
 	auto victimView = registry.view<HurtBoxComponent, PositionComponent, HealthComponent>();
 
 	for (const auto attacker : attackerView) {

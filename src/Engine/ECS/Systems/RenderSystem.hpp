@@ -1,11 +1,17 @@
 #pragma once
-#include "../../Debug/DebugSystem.hpp"
-#include "Engine/ECS/Components/Render/BackgroundComponent.hpp"
+#include "Engine/Debug/DebugSystem.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/Graphics/Renderer.hpp"
+#include "Engine/Utils/RenderUtils.hpp"
+
+#include <optional>
 
 namespace GameEngine::ECS::Systems {
+
 class RenderSystem {
+	using RenderItem = Utils::RenderUtils::RenderItem;
+	using BackgroundRenderContext = Utils::RenderUtils::BackgroundRenderContext;
+
   public:
 	explicit RenderSystem(Renderer &renderer);
 
@@ -15,26 +21,14 @@ class RenderSystem {
 	RenderSystem &operator=(const RenderSystem &) = delete;
 	~RenderSystem() = default;
 
-	void update(Registry &registry, float alpha);
+	void update(Registry &registry);
 
   private:
-	struct RenderItem {
-		int layer = 0;
-		SDL_Texture *texture = nullptr;
-		std::optional<SDL_FRect> src{};
-		std::optional<SDL_FRect> dst{};
-		bool parallax = false;
-		float scrollFactor = 0;
-		bool flipX = false;
-		double angle = 0.0;
-		SDL_Color colorMod = {255, 255, 255, 255};
-	};
-
-	static auto getRenderRank(const RenderItem &item);
 	std::vector<RenderItem> renderItems{};
 
 	Renderer &renderer;
 
 	void centerCamera(Registry &registry) const;
+	[[nodiscard]] static std::optional<RenderItem> createBackgroundItem(const BackgroundRenderContext &ctx);
 };
 } // namespace GameEngine::ECS::Systems

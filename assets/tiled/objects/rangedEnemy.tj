@@ -21,6 +21,11 @@
              "value":300
             }, 
             {
+             "name":"attackRange",
+             "type":"float",
+             "value":300
+            }, 
+            {
              "name":"canPatrol",
              "type":"bool",
              "value":true

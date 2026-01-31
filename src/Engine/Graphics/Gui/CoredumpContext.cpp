@@ -19,7 +19,10 @@ std::unique_ptr<UIContext> getContext(GameEngine::GameEngine &game)
 	    Paint{{100, 100, 100, 255}, {200, 200, 200, 255}, {255, 255, 255, 255}},
 	    Paint{{150, 150, 150, 255}, {200, 200, 200, 255}, {215, 215, 215, 215}},
 	};
-	UiTheme theme = {{255, 215, 0, 255}, btnStyle};
+
+	FrameStyle frameStyle = {{50, 50, 50, 255}, {100, 100, 100, 255}};
+
+	UiTheme theme = {{255, 215, 0, 255}, btnStyle, frameStyle};
 
 	return std::make_unique<UIContext>(&game.getRenderer(),
 	                                   game.getFontManager().getFont("assets/fonts/upheaval/upheavtt.ttf", 60),
