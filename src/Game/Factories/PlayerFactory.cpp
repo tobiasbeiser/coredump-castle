@@ -11,6 +11,7 @@
 #include "Engine/ECS/Components/Gameplay/InteractionComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InventoryComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/JumpComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/MapToggleComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/ProgressComponent.hpp"
 #include "Engine/ECS/Components/Physics/AccelerationComponent.hpp"
@@ -21,9 +22,9 @@
 #include "Engine/ECS/Components/Render/CenterCameraComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
-#include "PlayerFactory.hpp"
 
 #include "Engine/ECS/Components/Core/SoundComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/MeleeAttackComponent.hpp"
 
 PlayerFactory::PlayerFactory(GameEngine::ECS::Registry &registry, TextureManager &tex_mgr,
                              AnimationFactory &animation_factory, AudioManager &audioManager)
@@ -58,11 +59,16 @@ GameEngine::ECS::Entity PlayerFactory::createPlayer(tson::Object &player, const 
 
 		using namespace std::chrono_literals;
 
-		animationFactory.loadAnimationsFromTileset(player, e);
 		std::chrono::duration<float> attackDuration = 1s;
-		if (const auto animComp = registry.tryGet<AnimationComponent>(e)) {
-			if (animComp->get().hasAnimation(AnimationType::Attacking)) {
-				attackDuration = animComp->get().getAnimationDuration(AnimationType::Attacking);
+
+		if (const auto animComp = animationFactory.loadAnimationsFromTileset(player)) {
+			auto &[animationComponent, spriteComponent] = *animComp;
+			registry.registerComponent(e, animationComponent);
+			if (animationComponent.hasAnimation(AnimationType::Attacking)) {
+				attackDuration = animationComponent.getAnimationDuration(AnimationType::Attacking);
+			}
+			if (!registry.has<SpriteComponent>(e)) {
+				registry.registerComponent(e, spriteComponent);
 			}
 		}
 
@@ -71,6 +77,7 @@ GameEngine::ECS::Entity PlayerFactory::createPlayer(tson::Object &player, const 
 
 		registry.registerComponent(e, InputComponent{});
 		registry.registerComponent(e, MovementComponent{});
+		registry.registerComponent(e, MapToggleComponent{});
 
 		registry.registerComponent(e, JumpComponent{.maxJumps = 1, .coyoteTimer = Timer{0.08s}});
 		registry.registerComponent(e, BlinkComponent{.color = {50, 50, 50, 150}});
@@ -79,7 +86,8 @@ GameEngine::ECS::Entity PlayerFactory::createPlayer(tson::Object &player, const 
 		registry.registerComponent(e, HurtBoxComponent{collisionBox});
 		constexpr int weaponHeight = 45;
 		constexpr int weaponOffsetY = -(weaponHeight - collisionBox.h) / 2;
-		registry.registerComponent(e, HitBoxComponent{.weaponHitBox = {0, weaponOffsetY, 35, weaponHeight}});
+		registry.registerComponent(e, HitBoxComponent{collisionBox});
+		registry.registerComponent<MeleeAttackComponent>(e, {.weaponHitBox = {0, weaponOffsetY, 35, weaponHeight}});
 		registry.registerComponent(e, HealthComponent{60, 60, 1.75s});
 
 		audioManager.loadSoundGroup("player_jump", "assets/audio/sound/player/jump");

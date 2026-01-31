@@ -17,10 +17,10 @@
 #include <glm/vec2.hpp>
 
 LevelFactory::LevelFactory(GameEngine::ECS::Registry &registry, TextureManager &textureManager,
-                           InputManager &inputManager, AudioManager &audioManager)
+                           InputManager &inputManager, AudioManager &audioManager, std::vector<EnemySpawner> &spawners)
     : registry(registry), textureManager(textureManager), inputManager(inputManager),
       tileFactory(registry, textureManager, animationFactory), enemyFactory(registry, animationFactory),
-      playerFactory(registry, textureManager, animationFactory, audioManager)
+      playerFactory(registry, textureManager, animationFactory, audioManager), spawners(spawners)
 {
 	registerParsers();
 };
@@ -156,7 +156,7 @@ void LevelFactory::registerParsers()
 {
 	parsers.push_back(std::make_unique<PlayerParser>(playerFactory));
 	parsers.push_back(std::make_unique<SpawnPointParser>());
-	parsers.push_back(std::make_unique<EnemyParser>(enemyFactory));
+	parsers.push_back(std::make_unique<EnemyParser>(enemyFactory, spawners));
 	parsers.push_back(std::make_unique<SavePointParser>(registry, tileFactory));
 	parsers.push_back(std::make_unique<KeyParser>(registry, tileFactory));
 	parsers.push_back(std::make_unique<TooltipParser>(registry, inputManager));

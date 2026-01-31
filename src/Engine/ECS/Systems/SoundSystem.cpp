@@ -16,14 +16,8 @@ void GameEngine::ECS::Systems::SoundSystem::update(Registry &registry, AudioMana
 		AnimationType current = anim.getAnimation();
 
 		if (current != lastAnimation) {
-			SDL_Log("Current animation: %d, Last animation: %d", static_cast<int>(current),
-			        static_cast<int>(lastAnimation));
-
 			if (sounds.contains(current)) {
-				SDL_Log("Playing sound for animation %d", static_cast<int>(current));
 				audioManager.playGroup(sounds[current]);
-			} else {
-				SDL_Log("Sound for animation %d not found", static_cast<int>(current));
 			}
 
 			stepTimer.reset();

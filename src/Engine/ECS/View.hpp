@@ -23,8 +23,8 @@ class View {
 		size_t smallestSize = smallestPool->getSize();
 
 		for (size_t i = 1; i < genericPools.size(); ++i) {
-			if (genericPools[i]->getSize() < smallestSize) {
-				smallestPool = genericPools[i];
+			if (genericPools.at(i)->getSize() < smallestSize) {
+				smallestPool = genericPools.at(i);
 				smallestSize = smallestPool->getSize();
 			}
 		}

@@ -48,7 +48,7 @@ GameEngine::ECS::Entity TileFactory::createTile(tson::Tile &tile, const glm::vec
 	registry.registerComponent(entity, positionComponent);
 
 	if (tile.getAnimation().any()) {
-		animationFactory.loadAnimation(&tile, entity);
+		registry.registerComponent<AnimationComponent>(entity, animationFactory.loadTileAnimation(&tile));
 	}
 
 	addProperties(entity, tile);

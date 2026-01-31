@@ -5,4 +5,4 @@ build
 /vcpkg_installed
 /.vscode
 /imgui.ini
-*/*.DS_Store
+.DS_Store

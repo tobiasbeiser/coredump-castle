@@ -6,4 +6,5 @@ enum class Key {
 	Right,
 	Attack,
 	Interact,
+	ToggleMap,
 };

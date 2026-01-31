@@ -1,290 +1,47 @@
+#include "ChaseSystem.hpp"
 #include "Engine/Debug/ScopedProfiler.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
-#include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
-#include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
-#include "Engine/ECS/Components/Gameplay/Combat/RangedAttackComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Enemy/AiStateComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/ChargeComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/ChaseComponent.hpp"
-#include "Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
-#include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
-#include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/States/StateMachineComponent.hpp"
-#include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/Systems/CollisionSystem.hpp"
 #include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
 #include "Engine/ECS/View.hpp"
-#include "Game/Factories/ProjectileFactory.hpp"
 
 #include "Engine/Utils/DetectionRangeUtils.hpp"
 #include "Engine/Utils/HitBoxUtils.hpp"
 #include "Engine/Utils/Random.hpp"
-#include "Engine/Utils/SpatialHash.hpp"
 
-namespace GameEngine::ECS::Systems::ChaseSystem {
 namespace {
-
 struct PlayerContext {
-	glm::vec2 center = glm::vec2(0.0f);
-	SDL_FRect hurtBox = {0, 0, 0, 0};
-	glm::vec2 scale = glm::vec2(1.0f, 1.0f);
-	glm::vec2 position = glm::vec2(0.0f);
-	bool isGrounded = false;
-	const StateComponent *state = nullptr;
-};
-
-struct EnemyContext {
-	Entity entity;
-	InputComponent *input = nullptr;
-	ChaseComponent *chase = nullptr;
-	MovementComponent *movement = nullptr;
-	RenderComponent *render = nullptr;
-	AttackComponent *attack = nullptr;
-	const PatrolComponent *patrol = nullptr;
-
-	SDL_FRect hitBox;
-	SDL_FRect hurtBox;
 	glm::vec2 center;
-	glm::vec2 scale;
-	glm::vec2 position;
-	PositionComponent *posComp = nullptr;
-	VelocityComponent *velComp = nullptr;
 };
 
-float getDirectionToPlayer(const EnemyContext &enemy, const PlayerContext &player)
+std::optional<PlayerContext> getPlayerContext(GameEngine::ECS::Registry &registry)
 {
-	return player.center.x > enemy.center.x ? 1.0f : -1.0f;
-}
-
-void resetChargeState(ChargeComponent &charge, const EnemyContext &enemy, const ChaseComponent &chase)
-{
-	charge.chargeTimer.reset();
-	charge.chargePauseTimer.reset();
-	enemy.input->attackPressed = false;
-	enemy.input->horizontalDirection = 0.0f;
-	enemy.movement->maxSpeedX = chase.chaseSpeed;
-}
-
-bool updateChargePaused(ChargeComponent &charge, const EnemyContext &enemy, const ChaseComponent &chase,
-                        const float deltaTime)
-{
-	const bool isChargePaused = charge.chargePauseTimer.isRunning() && !charge.chargePauseTimer.isTimeout();
-	if (!isChargePaused) {
-		return false;
-	}
-
-	charge.chargePauseTimer.step(std::chrono::duration<float>(deltaTime), false);
-
-	enemy.input->attackPressed = false;
-	enemy.input->horizontalDirection = 0.0f;
-
-	if (charge.chargePauseTimer.isTimeout()) {
-		enemy.movement->maxSpeedX = chase.chaseSpeed;
-	}
-	return true;
-}
-
-bool updateCharging(ChargeComponent &charge, const EnemyContext &enemy, const PlayerContext &player,
-                    const ChaseComponent &chase, const float deltaTime)
-{
-	if (const bool isCharging = charge.chargeTimer.isRunning() && !charge.chargeTimer.isTimeout(); !isCharging) {
-		return false;
-	}
-
-	charge.chargeTimer.step(std::chrono::duration<float>(deltaTime), false);
-
-	const float directionToPlayer = getDirectionToPlayer(enemy, player);
-	enemy.input->attackPressed = false;
-	enemy.input->horizontalDirection = directionToPlayer;
-	enemy.render->setFacingLeft(directionToPlayer < 0);
-	enemy.movement->maxSpeedX = chase.chaseSpeed * charge.chargeSpeedMultiplier;
-
-	SDL_FRect enemyHurtBoxRect = Utils::HitBoxUtils::getHitBox(enemy.position, enemy.hurtBox, &enemy.scale);
-	SDL_FRect playerHurtBoxRect = Utils::HitBoxUtils::getHitBox(player.position, player.hurtBox, &player.scale);
-
-	if (SDL_HasRectIntersectionFloat(&enemyHurtBoxRect, &playerHurtBoxRect)) {
-		bool chargingRight = directionToPlayer > 0;
-		if (enemy.velComp && std::abs(enemy.velComp->velocity.x) > 0.1f) {
-			chargingRight = enemy.velComp->velocity.x > 0;
-		}
-
-		if (chargingRight) {
-			const float snapPositionX = playerHurtBoxRect.x - enemyHurtBoxRect.w;
-			const float diff = snapPositionX - enemyHurtBoxRect.x;
-			if (enemy.posComp) {
-				enemy.posComp->position.x += diff;
-			}
-		} else {
-			const float snapPositionX = playerHurtBoxRect.x + playerHurtBoxRect.w;
-			const float diff = snapPositionX - enemyHurtBoxRect.x;
-			if (enemy.posComp) {
-				enemy.posComp->position.x += diff;
-			}
-		}
-
-		if (enemy.velComp) {
-			enemy.velComp->velocity.x = 0.0f;
-		}
-
-		charge.chargeTimer.reset();
-		charge.chargePauseTimer.reset();
-		charge.chargePauseTimer.step(std::chrono::duration<float>(0.0f), false);
-		enemy.input->attackPressed = false;
-		enemy.input->horizontalDirection = 0.0f;
-		return true;
-	}
-
-	if (charge.chargeTimer.isTimeout()) {
-		enemy.movement->maxSpeedX = chase.chaseSpeed;
-	}
-	return true;
-}
-void resetChaseState(const EnemyContext &enemy)
-{
-	enemy.input->attackPressed = false;
-	enemy.movement->maxSpeedX = enemy.chase->originalPatrolSpeed;
-	enemy.chase->reactionDelay.reset();
-	enemy.chase->lastKnownPlayerX = std::nullopt;
-}
-
-void beginCharge(ChargeComponent &charge, InputComponent &input, ChaseComponent &chase, MovementComponent &movement,
-                 RenderComponent &render, const float directionToPlayer)
-{
-	charge.chargeTimer.reset();
-	charge.chargeTimer.step(std::chrono::duration<float>(0.0f), false); // signal it started
-	charge.chargeCooldown.reset();
-	chase.reactionDelay.reset();
-	input.attackPressed = false;
-	input.horizontalDirection = directionToPlayer;
-	render.setFacingLeft(directionToPlayer < 0);
-	movement.maxSpeedX = chase.chaseSpeed * charge.chargeSpeedMultiplier;
-}
-
-bool shouldCharge(const ChargeComponent &charge, const ChaseComponent &chase, const float xDistance,
-                  const float chargeRange)
-{
-	return xDistance <= chargeRange && chase.reactionDelay.isTimeout() && charge.chargeCooldown.isTimeout()
-	       && Utils::Random::getFloat(0.0f, 1.0f) <= charge.chargeChance;
-}
-
-std::optional<PlayerContext> getPlayerContext(Registry &registry)
-{
-	for (auto view = registry.view<PlayerTag, PositionComponent, HurtBoxComponent, TransformComponent,
-	                               GroundedComponent, StateComponent>();
-	     const auto entity : view) {
+	auto view = registry.view<PlayerTag, PositionComponent, HurtBoxComponent, TransformComponent>();
+	for (const auto entity : view) {
 		const auto &pos = view.get<PositionComponent>(entity).position;
 		const auto &hurtBox = view.get<HurtBoxComponent>(entity).hurtBox;
 		const auto &transform = view.get<TransformComponent>(entity);
-		const auto &ground = view.get<GroundedComponent>(entity);
-		const auto &state = view.get<StateComponent>(entity);
 
-		return PlayerContext{Utils::DetectionRangeUtils::calculateCenter(pos, hurtBox, transform.scale),
-		                     hurtBox,
-		                     transform.scale,
-		                     pos,
-		                     ground.grounded,
-		                     &state};
+		return PlayerContext{GameEngine::Utils::DetectionRangeUtils::calculateCenter(pos, hurtBox, transform.scale)};
 	}
 	return std::nullopt;
 }
 } // namespace
 
-bool checkLineOfSight(const EnemyContext &enemy, const PlayerContext &player, RangedAttackComponent &ranged,
-                      const glm::vec2 &projectileSize, const glm::vec2 &hitboxOffset)
-{
-	const bool facingLeft = (player.center.x - enemy.center.x) < 0.0f;
-
-	glm::vec2 spawnPosition = enemy.position;
-	float xOffset = (enemy.hurtBox.x * enemy.scale.x);
-	xOffset += facingLeft ? -ranged.projectileOffset.x : ranged.projectileOffset.x;
-
-	spawnPosition.x += xOffset;
-	spawnPosition.y += ranged.projectileOffset.y;
-
-	const glm::vec2 rayStart = spawnPosition + hitboxOffset + (projectileSize * 0.5f);
-
-	const glm::vec2 playerTop = player.center - glm::vec2(0.0f, player.hurtBox.h * player.scale.y * 0.25f);
-
-	for (const std::vector targetPoints = {player.center, playerTop}; const auto &targetPoint : targetPoints) {
-
-		if (const bool obstructed = CollisionSystem::isPathObstructed(rayStart, targetPoint, projectileSize);
-		    !obstructed) {
-			ranged.targetSnapshot = targetPoint;
-			return true;
-		}
-	}
-	return false;
-}
-
-void handleMeleeAttack(const EnemyContext &enemy, const PlayerContext &player)
-{
-	if (player.center.x < enemy.patrol->minBounds.x || player.center.x > enemy.patrol->maxBounds.x) {
-		resetChaseState(enemy);
-		return;
-	}
-
-	const float verticalThreshold = Utils::DetectionRangeUtils::getVerticalThreshold(*enemy.chase, player.isGrounded);
-
-	if (std::abs(player.center.y - enemy.center.y) > verticalThreshold) {
-		resetChaseState(enemy);
-		return;
-	}
-
-	enemy.chase->lastKnownPlayerX = player.center.x;
-
-	if (AttackSystem::isAttacking(*enemy.attack)) {
-		float progress = 0.0f;
-		if (enemy.attack->attackTimer.getLength().count() > 0.0f) {
-			progress = enemy.attack->attackTimer.getTime().count() / enemy.attack->attackTimer.getLength().count();
-		}
-
-		if (progress <= enemy.attack->activeWindUpLimit) {
-			const float directionToPlayer = player.center.x > enemy.center.x ? 1.0f : -1.0f;
-			const bool facingLeft = directionToPlayer < 0;
-
-			enemy.render->setFacingLeft(facingLeft);
-		}
-
-		enemy.input->attackPressed = false;
-		enemy.input->horizontalDirection = 0.0f;
-		return;
-	}
-
-	const float xDistance = std::abs(player.center.x - enemy.center.x);
-	const float directionToPlayer = player.center.x > enemy.center.x ? 1.0f : -1.0f;
-
-	if (const float stopDistance =
-	        (player.hurtBox.w * player.scale.x * 0.5f) + (enemy.hurtBox.w * enemy.scale.x * 0.5f);
-	    xDistance <= stopDistance + enemy.hitBox.w * 0.5) {
-		enemy.input->horizontalDirection = 0.0f;
-		if (enemy.chase->reactionDelay.isTimeout()) {
-			enemy.input->attackPressed = true;
-			enemy.attack->activeWindUpLimit =
-			    Utils::Random::getFloat(enemy.attack->windUpLimit * 0.5f, enemy.attack->windUpLimit);
-		}
-		if (!enemy.input->attackPressed) {
-			const bool facingLeft = directionToPlayer < 0;
-			enemy.render->setFacingLeft(facingLeft);
-		}
-	} else {
-		enemy.input->horizontalDirection = directionToPlayer;
-		const bool facingLeft = directionToPlayer < 0;
-		enemy.render->setFacingLeft(facingLeft);
-		enemy.movement->maxSpeedX = enemy.chase->chaseSpeed;
-		enemy.input->attackPressed = false;
-		enemy.chase->reactionDelay.reset();
-	}
-}
-
-void update(Registry &registry, const float deltaTime)
+void GameEngine::ECS::Systems::ChaseSystem::update(Registry &registry, const float deltaTime)
 {
 	PROFILE_SCOPE("ChaseSystem");
 
@@ -295,86 +52,49 @@ void update(Registry &registry, const float deltaTime)
 	}
 	const PlayerContext &playerCtx = playerCtxOpt.value();
 
-	auto enemyView = registry.view<EnemyTag, InputComponent, PatrolComponent, ChaseComponent, PositionComponent,
-	                               HitBoxComponent, HurtBoxComponent, CollisionComponent, MovementComponent,
-	                               GroundedComponent, AttackComponent, RenderComponent, VelocityComponent>();
+	auto enemyView = registry.view<InputComponent, ChaseComponent, PositionComponent, HitBoxComponent,
+	                               CollisionComponent, MovementComponent, AiStateComponent>();
 
 	for (const auto entity : enemyView) {
+		// Skip entities with state machines - they handle their own behavior
 		if (registry.has<StateMachineComponent>(entity)) {
 			continue;
 		}
-		auto &pos = enemyView.get<PositionComponent>(entity);
-		auto &vel = enemyView.get<VelocityComponent>(entity);
-		const auto &enemyHurtBox = enemyView.get<HitBoxComponent>(entity).bodyHitBox;
-		const auto &enemyHitBox = enemyView.get<HitBoxComponent>(entity).weaponHitBox;
 
-		auto &chase = enemyView.get<ChaseComponent>(entity);
-
-		auto transform = registry.tryGet<TransformComponent>(entity);
-
-		glm::vec2 enemyScale = transform ? transform->get().scale : glm::vec2{1.0f, 1.0f};
-
-		EnemyContext enemyCtx{entity,
-		                      &enemyView.get<InputComponent>(entity),
-		                      &enemyView.get<ChaseComponent>(entity),
-		                      &enemyView.get<MovementComponent>(entity),
-		                      &enemyView.get<RenderComponent>(entity),
-		                      &enemyView.get<AttackComponent>(entity),
-		                      &enemyView.get<PatrolComponent>(entity),
-		                      enemyHitBox,
-		                      enemyHurtBox,
-		                      Utils::DetectionRangeUtils::calculateCenter(pos.position, enemyHurtBox, enemyScale),
-		                      enemyScale,
-		                      pos.position,
-		                      &pos,
-		                      &vel};
-
-		chase.reactionDelay.step(std::chrono::duration<float>(deltaTime), false);
-
-		if (auto chargeComp = registry.tryGet<ChargeComponent>(entity)) {
-			auto &charge = chargeComp->get();
-			charge.chargeCooldown.step(std::chrono::duration<float>(deltaTime), false);
-
-			if (playerCtx.state->state == State::Dead) {
-				resetChargeState(charge, enemyCtx, chase);
-				continue;
-			}
-
-			if (updateChargePaused(charge, enemyCtx, chase, deltaTime)) {
-				continue;
-			}
-
-			if (updateCharging(charge, enemyCtx, playerCtx, chase, deltaTime)) {
-				continue;
-			}
-
-			if (AttackSystem::isAttacking(*enemyCtx.attack)) {
-				continue;
-			}
-
-			const float verticalThreshold =
-			    Utils::DetectionRangeUtils::getVerticalThreshold(chase, playerCtx.isGrounded);
-			if (std::abs(playerCtx.center.y - enemyCtx.center.y) > verticalThreshold) {
-				continue;
-			}
-
-			if (!Utils::DetectionRangeUtils::isWithinDetectionRange(enemyCtx.center, playerCtx.center, chase)) {
-				continue;
-			}
-
-			const float xDistance = std::abs(playerCtx.center.x - enemyCtx.center.x);
-			const float stopDistance =
-			    (playerCtx.hurtBox.w * playerCtx.scale.x * 0.5f) + (enemyCtx.hurtBox.w * enemyCtx.scale.x * 0.5f);
-
-			if (const float chargeRange = chase.detectionWidthRange.value_or(stopDistance * 3.0f);
-			    shouldCharge(charge, chase, xDistance, chargeRange)) {
-				beginCharge(charge, *enemyCtx.input, chase, *enemyCtx.movement, *enemyCtx.render,
-				            getDirectionToPlayer(enemyCtx, playerCtx));
-				continue;
-			}
+		if (auto &[state] = enemyView.get<AiStateComponent>(entity); state != AiState::Chase) {
+			continue;
 		}
 
-		handleMeleeAttack(enemyCtx, playerCtx);
+		auto &pos = enemyView.get<PositionComponent>(entity);
+
+		auto &chase = enemyView.get<ChaseComponent>(entity);
+		auto &input = enemyView.get<InputComponent>(entity);
+		auto &movement = enemyView.get<MovementComponent>(entity);
+		auto &[hitBox] = enemyView.get<HitBoxComponent>(entity);
+		auto &[collisionBox] = enemyView.get<CollisionComponent>(entity);
+
+		const auto &transform = registry.tryGet<TransformComponent>(entity);
+
+		const auto enemyScale = transform ? &transform->get().scale : nullptr;
+
+		const auto entityHitBox = Utils::HitBoxUtils::getHitBox(pos.position, hitBox, enemyScale);
+
+		chase.reactionDelay.step(std::chrono::duration<float>(deltaTime), false);
+		if (!chase.reactionDelay.isTimeout()) {
+			input.horizontalDirection = 0.0f;
+			continue;
+		}
+
+		const float direction = playerCtx.center.x > entityHitBox.x + entityHitBox.w / 2 ? 1.0f : -1.0f;
+
+		const bool isEnvironmentBlocked =
+		    !CollisionSystem::canContinueMovingHorizontally(pos.position, collisionBox, *enemyScale, direction);
+
+		if (!isEnvironmentBlocked) {
+			input.horizontalDirection = direction;
+			movement.maxSpeedX = chase.chaseSpeed;
+		} else {
+			input.horizontalDirection = 0;
+		}
 	}
 }
-} // namespace GameEngine::ECS::Systems::ChaseSystem

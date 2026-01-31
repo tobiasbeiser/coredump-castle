@@ -16,6 +16,11 @@
              "value":0.1
             }, 
             {
+             "name":"attackRange",
+             "type":"float",
+             "value":300
+            }, 
+            {
              "name":"canPatrol",
              "type":"bool",
              "value":true
@@ -26,12 +31,7 @@
              "value":"23,27,17,20"
             }, 
             {
-             "name":"detectionHeightRange",
-             "type":"float",
-             "value":100
-            }, 
-            {
-             "name":"detectionWidthRange",
+             "name":"detectionRange",
              "type":"float",
              "value":300
             }, 

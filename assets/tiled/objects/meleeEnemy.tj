@@ -31,9 +31,9 @@
              "value":"23,9,16,22"
             }, 
             {
-             "name":"detectionHeightRange",
+             "name":"detectionRange",
              "type":"float",
-             "value":50
+             "value":150
             }, 
             {
              "name":"hitBox",
@@ -59,6 +59,11 @@
              "name":"scale",
              "type":"float",
              "value":1.7
+            }, 
+            {
+             "name":"weaponHitBox",
+             "type":"string",
+             "value":"0,0,12,22"
             }],
      "rotation":0,
      "type":"",

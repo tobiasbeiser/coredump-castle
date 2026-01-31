@@ -3,6 +3,7 @@
 #include "Engine/ECS/Components/Gameplay/Combat/HealthComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/MeleeAttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/PendingDamageComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
@@ -31,8 +32,8 @@ struct HitDetectionMultiTargetTest : testing::Test {
 
 		registry.registerComponent<PlayerTag>(attacker, {});
 		registry.registerComponent<PositionComponent>(attacker, {{0.f, 0.f}});
-		registry.registerComponent<HitBoxComponent>(
-		    attacker, {.bodyHitBox = {0.f, 0.f, 20.f, 20.f}, .weaponHitBox = {0.f, 0.f, 100.f, 100.f}});
+		registry.registerComponent<HitBoxComponent>(attacker, {.bodyHitBox = {0.f, 0.f, 20.f, 20.f}});
+		registry.registerComponent<MeleeAttackComponent>(attacker, {0.f, 0.f, 100.f, 100.f});
 		// Wide attack to hit both
 		registry.registerComponent<HurtBoxComponent>(attacker, {.hurtBox = {0.f, 0.f, 20.f, 20.f}});
 		registry.registerComponent<AttackComponent>(attacker, {Timer{1s}, Timer{1s}});

@@ -1,7 +1,5 @@
 #pragma once
-#include <glm/glm.hpp>
 
 struct PatrolComponent {
-	glm::vec2 minBounds{};
-	glm::vec2 maxBounds{};
+	float patrolSpeed{20.0f};
 };

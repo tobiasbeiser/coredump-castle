@@ -30,6 +30,7 @@ class GameLoadingState : public GameState {
   private:
 	StateFactory nextStateFactory;
 	Ui::GuiManager &guiManager;
+	std::unique_ptr<Ui::Widget> rootWidget{};
 	bool hasRenderedOnce = false;
 };
 } // namespace GameEngine

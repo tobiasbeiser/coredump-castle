@@ -18,47 +18,47 @@
 #include <iostream>
 #include <unordered_map>
 
-ProjectileFactory::ProjectileFactory(GameEngine::ECS::Registry &registry, TextureManager &textureManager)
-    : registry(registry), textureManager(textureManager)
+ProjectileFactory::ProjectileFactory(GameEngine::ECS::Registry &registry, AnimationFactory &animationFactory)
+    : registry(registry), animationFactory(animationFactory)
 {
 }
 
 void ProjectileFactory::createProjectile(const glm::vec2 &startPosition, const glm::vec2 &direction, float speed,
                                          float range, const std::string &tilesetPath, double rotation) const
 {
-	auto &reg = registry.get();
-	const auto entity = reg.create();
+	const auto entity = registry.create();
 
 	// avoid friendly fire
-	reg.registerComponent(entity, EnemyTag{});
-	reg.registerComponent(entity, ProjectileTag{});
+	registry.registerComponent(entity, EnemyTag{});
+	registry.registerComponent(entity, ProjectileTag{});
 
-	AnimationFactory::loadProjectileAnimation(reg, textureManager, tilesetPath, entity);
+	if (const auto animComponent = animationFactory.loadProjectileAnimation(tilesetPath)) {
+		auto [animationComponent, spriteComponent] = *animComponent;
+		registry.registerComponent<AnimationComponent>(entity, animationComponent);
+		if (!registry.has<SpriteComponent>(entity)) {
+			registry.registerComponent<SpriteComponent>(entity, spriteComponent);
+		}
+	}
 
-	reg.registerComponent(entity, PositionComponent{.position = startPosition, .previousPosition = startPosition});
-	reg.registerComponent(entity, VelocityComponent{.velocity = direction * speed});
-	reg.registerComponent(entity,
-	                      TransformComponent{.scale = glm::vec2(1.0f, 1.0f), .rotation = static_cast<float>(rotation)});
-	reg.registerComponent(entity, RenderComponent{.layer = 15, .flipX = false});
+	registry.registerComponent(entity, PositionComponent{.position = startPosition, .previousPosition = startPosition});
+	registry.registerComponent(entity, VelocityComponent{.velocity = direction * speed});
+	registry.registerComponent(
+	    entity, TransformComponent{.scale = glm::vec2(1.0f, 1.0f), .rotation = static_cast<float>(rotation)});
+	registry.registerComponent(entity, RenderComponent{.layer = 15, .flipX = false});
 
 	const ProjectileData &data = getCachedProjectileData(tilesetPath);
-	if (!reg.has<SpriteComponent>(entity) && !data.texturePath.empty()) {
-		auto &texture = textureManager.get().getTexture(data.texturePath);
-		reg.registerComponent(
-		    entity, SpriteComponent{.texture = &texture, .tileSize = data.tileSize, .tileMapPosition = {0, 0}});
-	}
 
 	SDL_FRect finalHitbox = data.hitbox;
 	finalHitbox.x = data.hitbox.x;
 	finalHitbox.y = data.hitbox.y;
 
-	reg.registerComponent(entity, HurtBoxComponent{.hurtBox = finalHitbox});
-	reg.registerComponent(entity, HitBoxComponent{.bodyHitBox = finalHitbox, .weaponHitBox = {0.0f, 0.0f, 0.0f, 0.0f}});
-	reg.registerComponent(entity, CollisionComponent{.collisionBox = finalHitbox});
-	reg.registerComponent(entity, ProjectileComponent{.maxRange = range,
-	                                                  .speed = speed,
-	                                                  .spawnPosition = startPosition,
-	                                                  .projectileTilesetPath = tilesetPath});
+	registry.registerComponent(entity, HurtBoxComponent{.hurtBox = finalHitbox});
+	registry.registerComponent(entity, HitBoxComponent(finalHitbox));
+	registry.registerComponent(entity, CollisionComponent{.collisionBox = finalHitbox});
+	registry.registerComponent(entity, ProjectileComponent{.maxRange = range,
+	                                                       .speed = speed,
+	                                                       .spawnPosition = startPosition,
+	                                                       .projectileTilesetPath = tilesetPath});
 }
 
 const ProjectileData &ProjectileFactory::getCachedProjectileData(const std::string &path)

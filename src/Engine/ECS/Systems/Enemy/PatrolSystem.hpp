@@ -1,4 +1,5 @@
 #pragma once
+#include "Engine/ECS/Entity.hpp"
 
 namespace GameEngine::ECS {
 class Registry;

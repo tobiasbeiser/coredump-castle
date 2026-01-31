@@ -32,6 +32,7 @@ class MainMenuState final : public GameState {
 	Ui::GuiManager &guiManager;
 	Renderer &renderer;
 	ECS::Systems::RenderSystem renderSystem{renderer};
+	std::unique_ptr<Ui::Widget> rootWidget{};
 	bool paused = false;
 };
 } // namespace GameEngine

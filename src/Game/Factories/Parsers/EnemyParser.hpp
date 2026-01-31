@@ -1,10 +1,11 @@
 ﻿#pragma once
 #include "Game/Factories/EnemyFactory.hpp"
 #include "IObjectParser.hpp"
+#include <vector>
 
 class EnemyParser final : public IObjectParser {
   public:
-	explicit EnemyParser(GameEngine::ECS::EnemyFactory &enemyFactory);
+	explicit EnemyParser(GameEngine::ECS::EnemyFactory &enemyFactory, std::vector<EnemySpawner> &spawners);
 
 	EnemyParser(EnemyParser &&) = delete;
 	EnemyParser(const EnemyParser &) = delete;
@@ -17,4 +18,5 @@ class EnemyParser final : public IObjectParser {
 
   private:
 	GameEngine::ECS::EnemyFactory &enemyFactory;
+	std::vector<EnemySpawner> &spawners;
 };

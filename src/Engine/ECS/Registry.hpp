@@ -6,6 +6,7 @@
 
 #include <atomic>
 #include <memory>
+#include <unordered_set>
 #include <vector>
 
 namespace GameEngine::ECS {
@@ -98,8 +99,12 @@ class Registry {
 		return View<Components...>(*this);
 	}
 
+	bool exists(const Entity entity) const { return entity < next && !deletedEntities.contains(entity); }
+
   private:
 	Entity next = 0;
+
+	std::unordered_set<Entity> deletedEntities;
 
 	struct ComponentCounter {
 		static inline std::atomic<size_t> counter = 0;

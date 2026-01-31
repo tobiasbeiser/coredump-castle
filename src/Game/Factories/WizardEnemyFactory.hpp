@@ -27,7 +27,9 @@ class WizardEnemyFactory {
   private:
 	static void createStateMachine(Registry &registry, Entity wizard, const WizardConfig &config)
 	{
+		SDL_Log("[WizardFactory] Registering StateMachineComponent for entity %u", static_cast<unsigned int>(wizard));
 		registry.registerComponent<StateMachineComponent>(wizard, StateMachineComponent{});
+		SDL_Log("[WizardFactory] Component registered successfully");
 		auto smOpt = registry.tryGet<StateMachineComponent>(wizard);
 		if (!smOpt)
 			return;
@@ -39,7 +41,7 @@ class WizardEnemyFactory {
 		    .onEnter<TriggerAnimationAction>("walk", true)
 		    .onUpdate<SetMovementSpeedAction>(config.patrolSpeed)
 		    .onUpdate<PatrolAction>()                               // Use core system for movement
-		    .transition<ProximityEntryTransition>("combat", config.detectionRange)
+		    .transition<ProximityAndLosEntryTransition>("combat", config.detectionRange)  // Requires LOS
 
 		    .addState("combat")
 		    .onEnter<TriggerAnimationAction>("idle", false)
@@ -47,6 +49,7 @@ class WizardEnemyFactory {
 		    .onUpdate<RangedAttackAction>()
 		    .onExit<ResetRangedAttackAction>()
 		    .transition<ProximityExitTransition>("patrol", config.disengageRange)
+		    .transition<LosLostTransition>("patrol", 0.5f)  // Return to patrol if LOS lost for 0.5s
 
 		    .setInitialState("patrol")
 		    .build();
