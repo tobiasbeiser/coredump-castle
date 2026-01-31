@@ -130,13 +130,13 @@
                 }, 
                 {
                  "gid":365,
-                 "height":48,
+                 "height":64,
                  "id":2,
                  "name":"",
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":48,
+                 "width":64,
                  "x":248,
                  "y":160
                 }],

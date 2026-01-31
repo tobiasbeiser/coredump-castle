@@ -80,14 +80,14 @@
         {
             "fileName": "maps/area1/area1_boss.json",
             "height": 576,
-            "width": 960,
-            "x": 2272,
+            "width": 672,
+            "x": 2368,
             "y": -192
         },
         {
             "fileName": "maps/area1/level11.json",
             "height": 576,
-            "width": 576,
+            "width": 672,
             "x": 1696,
             "y": 0
         },
