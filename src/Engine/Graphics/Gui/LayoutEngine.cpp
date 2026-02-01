@@ -12,7 +12,10 @@ SDL_FRect positionAnchored(const glm::vec2 allocatedSize, const glm::vec2 ownSiz
 	const glm::vec2 anchorPos = allocatedSize * anchor;
 	const glm::vec2 pivotPos = ownSize * pivot;
 	const glm::vec2 finalPos = anchorPos - pivotPos + offset;
-	return {finalPos.x, finalPos.y, ownSize.x, ownSize.y};
+	return {std::clamp(finalPos.x, 0.f, allocatedSize.x),
+		std::clamp(finalPos.y, 0.f, allocatedSize.y),
+		ownSize.x,
+		ownSize.y};
 }
 
 SDL_FRect positionCentered(const glm::vec2 allocatedSize, const glm::vec2 ownSize)

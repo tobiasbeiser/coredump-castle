@@ -13,8 +13,8 @@ class UiRenderSystem {
 public:
 	explicit UiRenderSystem(Renderer& renderer);
 	void update(Registry& registry, const GameEngine& game) const;
-	void initTextDisplayComp(const TooltipComponent &tooltip, TextDisplayComponent &textDisplay,
-	                         const GameEngine &game) const;
+	void initTextDisplayComp(const std::string& text,
+	                         TextDisplayComponent& textDisplay, const GameEngine& game) const;
 
 private:
 	Renderer &renderer;

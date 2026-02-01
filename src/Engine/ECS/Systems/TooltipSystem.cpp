@@ -12,7 +12,7 @@
 
 #include <SDL3/SDL_log.h>
 
-void GameEngine::ECS::Systems::TooltipSystem::update(Registry &registry)
+void GameEngine::ECS::Systems::TooltipSystem::update(Registry &registry, const float deltaTime)
 {
 	auto playerView = registry.view<PlayerTag, InteractionComponent, PositionComponent>();
 	if (playerView.size() == 0) {
@@ -29,7 +29,16 @@ void GameEngine::ECS::Systems::TooltipSystem::update(Registry &registry)
 		                               playerHitbox.w, playerHitbox.h};
 
 		if (SDL_HasRectIntersectionFloat(&playerInteractionBox, &box)) {
-			registry.registerComponent(entity, TextDisplayComponent{});
+			if (!registry.has<TextDisplayComponent>(entity)) {
+				registry.registerComponent(entity, TextDisplayComponent{});
+			}
+			auto &textDisp = registry.get<TextDisplayComponent>(entity);
+			if (textDisp.typewriterTimer.isTimeout() && textDisp.counter < text.size()) {
+				textDisp.counter++;
+				textDisp.typewriterTimer.reset();
+			} else {
+				textDisp.typewriterTimer.step(std::chrono::duration<float>(deltaTime), true);
+			}
 			DebugSystem::debug("Tooltip: " + text);
 		} else if (registry.has<TextDisplayComponent>(entity)) {
 			registry.remove<TextDisplayComponent>(entity);
