@@ -12,6 +12,9 @@
 void GameEngine::ECS::Systems::ReviveSystem::update(Registry &registry, GameEngine &game, const float deltaTime)
 {
 	for (auto view = registry.view<PendingReviveTag>(); const auto entity : view) {
+		if (view.size() > 1) {
+			throw std::runtime_error("There cannot be more than on entity with a PendingReviveTag");
+		}
 		auto respawnLogic = [&registry, entity]() {
 			auto lambdaView = registry.view<HealthComponent, SpriteComponent, CollisionComponent>();
 			auto &healthComp = lambdaView.get<HealthComponent>(entity);

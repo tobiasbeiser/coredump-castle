@@ -39,9 +39,11 @@ void GameOverState::handleEvents(GameEngine &game, const SDL_Event &event)
 
 void GameOverState::update(GameEngine &game, const float deltaTime)
 {
+	if (paused) {
+		return;
+	}
 	inputSystem.update(game.getRegistry());
 	ECS::Systems::ChaseSystem::update(game.getRegistry(), deltaTime);
-	ECS::Systems::ProjectileSystem::update(game.getRegistry(), deltaTime, game.getTextureManager());
 
 	accumulator += deltaTime;
 	while (accumulator >= stepSize) {
