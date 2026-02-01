@@ -1,6 +1,5 @@
 #include "PlayState.hpp"
 
-#include "MapMenuState.hpp"
 #include "Engine/ECS/Systems/AnimationSystem.hpp"
 #include "Engine/ECS/Systems/BlinkSystem.hpp"
 #include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
@@ -17,6 +16,8 @@
 #include "Engine/ECS/Systems/Hazard/SpikeSystem.hpp"
 #include "Engine/ECS/Systems/InteractionSystem.hpp"
 #include "Engine/ECS/Systems/JumpSystem.hpp"
+#include "Engine/ECS/Systems/MapToggleSystem.hpp"
+#include "Engine/ECS/Systems/MapTrackingSystem.hpp"
 #include "Engine/ECS/Systems/MovementSystem.hpp"
 #include "Engine/ECS/Systems/PhysicsSystem.hpp"
 #include "Engine/ECS/Systems/RenderSystem.hpp"
@@ -24,11 +25,10 @@
 #include "Engine/ECS/Systems/SoundSystem.hpp"
 #include "Engine/ECS/Systems/StateSystem.hpp"
 #include "Engine/ECS/Systems/TooltipSystem.hpp"
-#include "Engine/ECS/Systems/MapToggleSystem.hpp"
 #include "Engine/ECS/Systems/VignetteSystem.hpp"
 #include "Engine/GameEngine.hpp"
-#include "Engine/ECS/Systems/MapTrackingSystem.hpp"
 #include "Game/Factories/WorldFactory.hpp"
+#include "MapMenuState.hpp"
 
 namespace GameEngine {
 

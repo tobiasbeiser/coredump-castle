@@ -103,7 +103,7 @@ std::unique_ptr<TTF_Text, TTFTextDestroyer> Renderer::createText(TTF_Font *font,
 	return std::unique_ptr<TTF_Text, TTFTextDestroyer>(ttfText);
 }
 
-glm::vec2 Renderer::getStringSizeWrapped(TTF_Font *font, const std::string &text, const int wrapWidth) const
+glm::vec2 Renderer::getStringSizeWrapped(TTF_Font *font, const std::string &text, const int wrapWidth)
 {
 	int w = 0;
 	int h = 0;
@@ -111,7 +111,7 @@ glm::vec2 Renderer::getStringSizeWrapped(TTF_Font *font, const std::string &text
 	return {w, h};
 }
 
-glm::vec2 Renderer::measureText(TTF_Text *text) const
+glm::vec2 Renderer::measureText(TTF_Text *text)
 {
 	int w = 0;
 	int h = 0;

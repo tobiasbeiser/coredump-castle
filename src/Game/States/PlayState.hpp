@@ -3,8 +3,8 @@
 #include "Engine/ECS/Systems/InputSystem.hpp"
 #include "Engine/ECS/Systems/MapActivationSystem.hpp"
 #include "Engine/ECS/Systems/RenderSystem.hpp"
-#include "Engine/GameState.hpp"
 #include "Engine/ECS/Systems/Ui/UiRenderSystem.hpp"
+#include "Engine/GameState.hpp"
 #include "Game/Factories/EffectFactory.hpp"
 #include "Game/Spawners/EnemySpawner.hpp"
 #include <vector>

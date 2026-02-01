@@ -1,6 +1,6 @@
 #include "FontManager.hpp"
 
-TTF_Font* FontManager::getFont(const std::filesystem::path& filePath, const int fontSize)
+TTF_Font *FontManager::getFont(const std::filesystem::path &filePath, const int fontSize)
 {
 	const FontKey key{filePath, fontSize};
 
