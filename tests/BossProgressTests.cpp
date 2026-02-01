@@ -7,7 +7,7 @@
 #include "Engine/ECS/Components/Gameplay/ProgressComponent.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Registry.hpp"
-#include "Engine/ECS/Systems/Combat/DeathSystem.hpp"
+#include "Engine/ECS/Systems/Combat/ProgressSystem.hpp"
 
 #include <Engine/ECS/View.hpp>
 
@@ -38,7 +38,7 @@ struct BossProgressTests : testing::Test {
 
 TEST_F(BossProgressTests, DefeatingBossUnlocksDoubleJump)
 {
-	// GameEngine::ECS::Systems::DeathSystem::update(registry, 0.016f);
+	GameEngine::ECS::Systems::ProgressSystem::update(registry);
 
 	auto playerView = registry.view<PlayerTag, ProgressComponent, JumpComponent, StateComponent>();
 	const auto entity = playerView.at(0U);

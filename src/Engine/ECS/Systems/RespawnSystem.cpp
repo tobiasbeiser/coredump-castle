@@ -5,7 +5,6 @@
 #include "Engine/ECS/Components/Gameplay/Combat/HealthComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Hazard/LastGroundedPositionComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Hazard/PendingRespawnComponent.hpp"
-#include "Engine/ECS/Components/Physics/AccelerationComponent.hpp"
 #include "Engine/ECS/View.hpp"
 #include "Game/States/FadeTransitionState.hpp"
 

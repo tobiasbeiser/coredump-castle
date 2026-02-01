@@ -54,33 +54,6 @@ void GameEngine::ECS::Systems::DeathSystem::update(Registry &registry, GameEngin
 	for (auto view = registry.view<HealthComponent>(); const auto entity : view) {
 
 		if (auto &health = view.get<HealthComponent>(entity); HealthSystem::isDead(health)) {
-			if (const auto boss = registry.tryGet<BossComponent>(entity)) {
-				auto playerView = registry.view<PlayerTag, ProgressComponent, JumpComponent>();
-				if (playerView.size() == 1U) {
-					const Entity playerEntity = playerView.at(0U);
-					auto &progress = playerView.get<ProgressComponent>(playerEntity);
-					auto &jump = playerView.get<JumpComponent>(playerEntity);
-
-					if (const int bossId = boss->get().bossId; !progress.isBossDefeated(bossId)) {
-						progress.markBossDefeated(bossId);
-						progress.unlockAbility(boss->get().unlockAbility);
-
-						if (boss->get().unlockAbility == AbilityType::DoubleJump) {
-							jump.maxJumps = std::max(jump.maxJumps, 2);
-							jump.jumpsLeft = jump.maxJumps;
-						}
-
-						if (auto state = registry.tryGet<StateComponent>(playerEntity)) {
-							state->get().state = State::Interacting;
-						}
-						if (auto anim = registry.tryGet<AnimationComponent>(playerEntity);
-						    anim && anim->get().hasAnimation(AnimationType::Interacting)
-						    && anim->get().getAnimation() != AnimationType::Interacting) {
-							anim->get().setAnimation(AnimationType::Interacting);
-						}
-					}
-				}
-			}
 
 			removeComponents(registry, entity);
 			const auto simpleDeathComp = registry.tryGet<SimpleDeathComponent>(entity);

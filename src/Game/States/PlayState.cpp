@@ -28,6 +28,7 @@
 #include "Engine/ECS/Systems/VignetteSystem.hpp"
 #include "Engine/GameEngine.hpp"
 #include "Engine/ECS/Systems/MapTrackingSystem.hpp"
+#include "Engine/ECS/Systems/Combat/ProgressSystem.hpp"
 #include "Game/Factories/WorldFactory.hpp"
 
 namespace GameEngine {
@@ -106,6 +107,7 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 	ECS::Systems::VignetteSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::SoundSystem::update(game.getRegistry(), game.getAudioManager(), deltaTime);
 
+	ECS::Systems::ProgressSystem::update(game.getRegistry());
 	ECS::Systems::DeathSystem::update(game.getRegistry(), game, deltaTime);
 
 	ECS::Systems::InteractionSystem::update(game, game.getRegistry(), spawners);
