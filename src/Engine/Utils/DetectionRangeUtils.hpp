@@ -15,8 +15,6 @@ glm::vec2 getRectCenter(const SDL_FRect &rect);
 
 bool isWithinDetectionRange(const glm::vec2 &enemyCenter, const glm::vec2 &playerCenter, const ChaseComponent &chase);
 
-float getVerticalThreshold(const ChaseComponent &chase, bool playerGrounded);
-
 SDL_FRect getMeleeDetectionRect(const PatrolComponent &patrol, const ChaseComponent &chase);
 
 SDL_FRect getRangedDetectionRect(const ChaseComponent &chase, const glm::vec2 &center);

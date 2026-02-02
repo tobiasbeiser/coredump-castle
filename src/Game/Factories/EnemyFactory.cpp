@@ -14,7 +14,6 @@
 #include "Engine/ECS/Components/Gameplay/Combat/PoiseComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/RangedAttackComponent.hpp"
-#include "Engine/ECS/Components/Gameplay/Enemy/AiStateComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/ChargeComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/ChaseComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp"
@@ -27,11 +26,11 @@
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
 #include "Engine/ECS/Components/Render/BlinkComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
+#include "Engine/ECS/Components/States/EnemyStateMachineFactory.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/View.hpp"
 #include "Game/Spawners/EnemySpawner.hpp"
-#include "WizardEnemyFactory.hpp"
 
 #include <tileson.hpp>
 
@@ -215,7 +214,6 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 	spawner.addBlueprint(RenderComponent{.layer = layer, .flipX = false, .flipXOffset = flipXOffset});
 	spawner.addBlueprint(TransformComponent{.scale = glm::vec2(scale, scale)});
 	spawner.addBlueprint(StateComponent{});
-	spawner.addBlueprint(AiStateComponent{});
 	using namespace std::chrono_literals;
 
 	spawner.addBlueprint(InputComponent{});
@@ -253,8 +251,11 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 	}
 
 	if (chaseSpeed > 0.0f) {
+		const float effectiveDetectionRange = detectionRange > 0 ? detectionRange : 200.0f;
 		spawner.addBlueprint(ChaseComponent{
 		    .chaseSpeed = chaseSpeed,
+		    .detectionRange = effectiveDetectionRange,
+		    .giveUpRange = effectiveDetectionRange + 50.0f,
 		    .reactionDelay = Timer{std::chrono::duration<float>(reactionDelay)},
 		});
 	}
@@ -267,8 +268,11 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 			projectileTilesetPath = (basePath / tilesetPathOpt.value()).string();
 		}
 
+		const float effectiveDetectionRange = detectionRange > 0 ? detectionRange : 300.0f;
 		spawner.addBlueprint(ChaseComponent{
 		    .chaseSpeed = chaseSpeed,
+		    .detectionRange = effectiveDetectionRange,
+		    .giveUpRange = effectiveDetectionRange + 50.0f,
 		    .reactionDelay = Timer{std::chrono::duration<float>(reactionDelay)},
 		});
 		spawner.addBlueprint(RangedAttackComponent{
@@ -282,15 +286,20 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 		    .spawnPosition = {0.f, 0.f},
 		    .projectileTilesetPath = projectileTilesetPath,
 		});
-		WizardConfig config;
-		config.patrolSpeed = maxSpeedX;
-		config.detectionRange = detectionRange > 0 ? detectionRange : 300.0f;
-		config.disengageRange = config.detectionRange + 50.0f;
 
-		auto *regPtr = &registry.get();
-		spawner.addSetupStep([regPtr, config](GameEngine::ECS::Entity entity) {
-			WizardEnemyFactory::addStateMachine(*regPtr, entity, config);
-		});
+		auto reg = registry;
+		spawner.addSetupStep([reg](const Entity entity) { EnemyStateMachineFactory::createWizardEnemy(reg, entity); });
+	} else if (!isBoss && chaseSpeed > 0) {
+		// Melee enemy with AI (patrol -> chase -> attack)
+		// ChaseComponent already added above with proper detectionRange and giveUpRange
+
+		auto reg = registry;
+		spawner.addSetupStep([reg](const Entity entity) { EnemyStateMachineFactory::createMeleeEnemy(reg, entity); });
+	} else if (!isBoss) {
+		// Base patrol-only enemy (no chase, just walks back and forth, deals contact damage)
+		auto reg = registry;
+		spawner.addSetupStep(
+		    [reg](const Entity entity) { EnemyStateMachineFactory::createPatrolOnlyEnemy(reg, entity); });
 	}
 
 	using namespace std::chrono_literals;
@@ -336,22 +345,23 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 		spawner.addBlueprint(VisionComponent{.visionRange = detectionRange});
 	}
 
-	// ensureSafeSpawn(entity);
+	// Add safe spawn adjustment as a setup step (runs after entity is created)
+	auto reg = registry;
+	spawner.addSetupStep([reg](const Entity entity) { ensureSafeSpawn(reg, entity); });
 
 	return spawner;
 }
 
-void GameEngine::ECS::EnemyFactory::ensureSafeSpawn(const Entity entity) const
+void GameEngine::ECS::EnemyFactory::ensureSafeSpawn(Registry &registry, const Entity entity)
 {
-
-	auto position = registry.get().tryGet<PositionComponent>(entity);
-	auto collision = registry.get().tryGet<CollisionComponent>(entity);
+	auto position = registry.tryGet<PositionComponent>(entity);
+	auto collision = registry.tryGet<CollisionComponent>(entity);
 
 	if (!position || !collision) {
 		return;
 	}
 
-	const auto transform = registry.get().tryGet<TransformComponent>(entity);
+	const auto transform = registry.tryGet<TransformComponent>(entity);
 	const auto scale = transform ? transform->get().scale : glm::vec2{1.0f, 1.0f};
 
 	position->get().position.x -=
@@ -368,8 +378,7 @@ void GameEngine::ECS::EnemyFactory::ensureSafeSpawn(const Entity entity) const
 		                       position->get().position.y + collision->get().collisionBox.y * scale.y,
 		                       collision->get().collisionBox.w * scale.x, collision->get().collisionBox.h * scale.y};
 
-		for (auto staticColliders = registry.get()
-		                                .view<PositionComponent, CollisionComponent>()
+		for (auto staticColliders = registry.view<PositionComponent, CollisionComponent>()
 		                                .exclude<EnemyTag>()
 		                                .exclude<PlayerTag>()
 		                                .exclude<ProjectileComponent>();
@@ -379,7 +388,7 @@ void GameEngine::ECS::EnemyFactory::ensureSafeSpawn(const Entity entity) const
 			const auto &staticColliderCollisionBox =
 			    staticColliders.get<CollisionComponent>(staticCollider).collisionBox;
 			glm::vec2 staticColliderScale = {1.0f, 1.0f};
-			if (const auto staticTransform = registry.get().tryGet<TransformComponent>(staticCollider)) {
+			if (const auto staticTransform = registry.tryGet<TransformComponent>(staticCollider)) {
 				staticColliderScale = staticTransform->get().scale;
 			}
 

@@ -2,6 +2,7 @@
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HealthComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/MeleeAttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/PoiseComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/RangedAttackComponent.hpp"
@@ -11,213 +12,149 @@
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Physics/GravityComponent.hpp"
+#include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
 #include "Engine/ECS/Components/Render/AnimationComponent.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
+#include "Engine/ECS/Systems/Enemy/ChaseSystem.hpp"
 #include "Engine/ECS/Systems/Enemy/PatrolSystem.hpp"
 #include "Engine/Utils/Random.hpp"
 #include "Game/Factories/ProjectileFactory.hpp"
 #include <SDL3/SDL_log.h>
 #include <cmath>
+#include <optional>
 
 namespace GameEngine::ECS {
 
-// ============================================================================
-// STATE ACTION IMPLEMENTATIONS
-// ============================================================================
+namespace {
+
+struct EntityInfo {
+	glm::vec2 position;
+	SDL_FRect rect;
+	glm::vec2 center;
+	glm::vec2 scale;
+};
+
+std::optional<EntityInfo> getEntityInfo(Registry &registry, Entity entity)
+{
+	auto posOpt = registry.tryGet<PositionComponent>(entity);
+	auto hurtBoxOpt = registry.tryGet<HurtBoxComponent>(entity);
+
+	if (!posOpt || !hurtBoxOpt)
+		return std::nullopt;
+
+	auto transformOpt = registry.tryGet<TransformComponent>(entity);
+	glm::vec2 scale = transformOpt ? transformOpt->get().scale : glm::vec2{1.0f, 1.0f};
+	SDL_FRect rect = Utils::HitBoxUtils::getHitBox(posOpt->get().position, hurtBoxOpt->get().hurtBox, &scale);
+
+	return EntityInfo{posOpt->get().position, rect, {rect.x + rect.w * 0.5f, rect.y + rect.h * 0.5f}, scale};
+}
+
+std::optional<EntityInfo> getPlayerInfo(Registry &registry)
+{
+	auto playerView = registry.view<PlayerTag, PositionComponent, HurtBoxComponent>();
+	for (const auto entity : playerView) {
+		return getEntityInfo(registry, entity);
+	}
+	return std::nullopt;
+}
+
+struct ProjectileInfo {
+	glm::vec2 size{0.0f, 0.0f};
+	glm::vec2 offset{0.0f, 0.0f};
+};
+
+ProjectileInfo getProjectileInfo(const ProjectileComponent *projComp)
+{
+	if (!projComp || projComp->projectileTilesetPath.empty())
+		return {};
+
+	const auto &data = ProjectileFactory::getCachedProjectileData(projComp->projectileTilesetPath);
+	return {{data.hitbox.w, data.hitbox.h}, {data.hitbox.x, data.hitbox.y}};
+}
+
+// Logic for calculating start position and checking LOS
+struct LosResult {
+	bool hasLos;
+	glm::vec2 spawnPos;
+	glm::vec2 rayStart;
+	std::optional<glm::vec2> targetPoint;
+};
+
+LosResult checkEnemyLos(const EntityInfo &enemy, const EntityInfo &player, const RangedAttackComponent *ranged,
+                        const ProjectileComponent *proj)
+{
+	auto projInfo = getProjectileInfo(proj);
+
+	bool facingLeft = (player.center.x - enemy.position.x) < 0.0f;
+
+	glm::vec2 spawnPos = enemy.position;
+	float relativeHurtboxX = enemy.rect.x - enemy.position.x;
+	float xOffset = relativeHurtboxX;
+
+	if (ranged) {
+		xOffset += facingLeft ? -ranged->projectileOffset.x : ranged->projectileOffset.x;
+		spawnPos.y += ranged->projectileOffset.y;
+	}
+	spawnPos.x += xOffset;
+
+	const glm::vec2 rayStart = spawnPos + projInfo.offset + (projInfo.size * 0.5f);
+
+	auto targetOpt = Utils::DetectionRangeUtils::getTargetWithLineOfSight(rayStart, player.center, player.rect,
+	                                                                      player.scale, projInfo.size);
+
+	return {targetOpt.has_value(), spawnPos, rayStart, targetOpt};
+}
+
+} // namespace
 
 void PatrolAction::execute(Registry &registry, Entity entity, float deltaTime)
 {
 	Systems::PatrolSystem::updateEntity(registry, entity);
 }
 
-// ============================================================================
-// TRANSITION IMPLEMENTATIONS
-// ============================================================================
-
-bool ProximityEntryTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
-{
-	// Get enemy position
-	auto enemyPos = registry.tryGet<PositionComponent>(entity);
-	auto enemyHurtBox = registry.tryGet<HurtBoxComponent>(entity);
-	auto enemyTransform = registry.tryGet<TransformComponent>(entity);
-
-	if (!enemyPos || !enemyHurtBox)
-		return false;
-
-	glm::vec2 enemyScale = enemyTransform ? enemyTransform->get().scale : glm::vec2{1.0f, 1.0f};
-	SDL_FRect enemyRect =
-	    Utils::HitBoxUtils::getHitBox(enemyPos->get().position, enemyHurtBox->get().hurtBox, &enemyScale);
-	glm::vec2 enemyCenter = {enemyRect.x + enemyRect.w * 0.5f, enemyRect.y + enemyRect.h * 0.5f};
-
-	// Find player
-	auto playerView = registry.view<PlayerTag, PositionComponent, HurtBoxComponent>();
-	for (const auto playerEntity : playerView) {
-		auto &playerPos = playerView.get<PositionComponent>(playerEntity);
-		auto &playerHurtBox = playerView.get<HurtBoxComponent>(playerEntity);
-
-		auto playerTransform = registry.tryGet<TransformComponent>(playerEntity);
-		glm::vec2 playerScale = playerTransform ? playerTransform->get().scale : glm::vec2{1.0f, 1.0f};
-
-		SDL_FRect playerRect = Utils::HitBoxUtils::getHitBox(playerPos.position, playerHurtBox.hurtBox, &playerScale);
-		glm::vec2 playerCenter = {playerRect.x + playerRect.w * 0.5f, playerRect.y + playerRect.h * 0.5f};
-
-		float distance = glm::distance(enemyCenter, playerCenter);
-		return distance <= radius;
-	}
-
-	return false;
-}
-
-bool ProximityExitTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
-{
-	// Get enemy position
-	auto enemyPos = registry.tryGet<PositionComponent>(entity);
-	auto enemyHurtBox = registry.tryGet<HurtBoxComponent>(entity);
-	auto enemyTransform = registry.tryGet<TransformComponent>(entity);
-
-	if (!enemyPos || !enemyHurtBox)
-		return false;
-
-	glm::vec2 enemyScale = enemyTransform ? enemyTransform->get().scale : glm::vec2{1.0f, 1.0f};
-	SDL_FRect enemyRect =
-	    Utils::HitBoxUtils::getHitBox(enemyPos->get().position, enemyHurtBox->get().hurtBox, &enemyScale);
-	glm::vec2 enemyCenter = {enemyRect.x + enemyRect.w * 0.5f, enemyRect.y + enemyRect.h * 0.5f};
-
-	// Find player
-	auto playerView = registry.view<PlayerTag, PositionComponent, HurtBoxComponent>();
-	for (const auto playerEntity : playerView) {
-		auto &playerPos = playerView.get<PositionComponent>(playerEntity);
-		auto &playerHurtBox = playerView.get<HurtBoxComponent>(playerEntity);
-
-		auto playerTransform = registry.tryGet<TransformComponent>(playerEntity);
-		glm::vec2 playerScale = playerTransform ? playerTransform->get().scale : glm::vec2{1.0f, 1.0f};
-
-		SDL_FRect playerRect = Utils::HitBoxUtils::getHitBox(playerPos.position, playerHurtBox.hurtBox, &playerScale);
-		glm::vec2 playerCenter = {playerRect.x + playerRect.w * 0.5f, playerRect.y + playerRect.h * 0.5f};
-
-		float distance = glm::distance(enemyCenter, playerCenter);
-		return distance > radius;
-	}
-
-	return true; // No player found, consider it "exited"
-}
-
-bool HealthThresholdTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
-{
-	auto health = registry.tryGet<HealthComponent>(entity);
-	if (!health)
-		return false;
-
-	float currentPercent = health->get().health / static_cast<float>(health->get().maxHealth);
-
-	if (lessThan) {
-		return currentPercent < healthPercentage;
-	} else {
-		return currentPercent > healthPercentage;
-	}
-}
-
-bool PoiseBreakTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
-{
-	auto poise = registry.tryGet<PoiseComponent>(entity);
-	if (!poise)
-		return false;
-
-	// Check if poise was just broken
-	return poise->get().currentPoise <= 0.0f && poise->get().maxPoise > 0.0f;
-}
-
-bool PlayerStationaryTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
-{
-	// Find player
-	auto playerView = registry.view<PlayerTag, VelocityComponent>();
-	for (const auto playerEntity : playerView) {
-		auto &playerVel = playerView.get<VelocityComponent>(playerEntity);
-
-		// Check if player is stationary
-		float velocityMagnitude = glm::length(playerVel.velocity);
-		if (velocityMagnitude < 0.1f) {
-			// TODO: Track time stationary - might need a component for this
-			return true;
-		}
-	}
-
-	return false;
-}
-
-bool RandomTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
-{
-	return Utils::Random::getFloat(0.0f, 1.0f) <= chance;
-}
-
-// ============================================================================
-// STATE ACTION IMPLEMENTATIONS
-// ============================================================================
-
 void ToggleComponentAction::execute(Registry &registry, Entity entity, float deltaTime)
 {
+	auto toggle = [&](auto tag) {
+		using T = decltype(tag);
+		if (enable && !registry.has<T>(entity)) {
+			registry.registerComponent<T>(entity, T{});
+		} else if (!enable && registry.has<T>(entity)) {
+			registry.remove<T>(entity);
+		}
+	};
+
 	switch (component) {
-	case ComponentType::Chase:
-		if (enable && !registry.has<ChaseComponent>(entity)) {
-			// Would need to know default values to add it
-		} else if (!enable && registry.has<ChaseComponent>(entity)) {
-			registry.remove<ChaseComponent>(entity);
-		}
-		break;
-
-	case ComponentType::Patrol:
-		if (enable && !registry.has<PatrolComponent>(entity)) {
-			// Would need to know default values to add it
-		} else if (!enable && registry.has<PatrolComponent>(entity)) {
-			registry.remove<PatrolComponent>(entity);
-		}
-		break;
-
 	case ComponentType::Charge:
-		if (enable && !registry.has<ChargeComponent>(entity)) {
-			registry.registerComponent<ChargeComponent>(entity, ChargeComponent{});
-		} else if (!enable && registry.has<ChargeComponent>(entity)) {
-			registry.remove<ChargeComponent>(entity);
-		}
+		toggle(ChargeComponent{});
 		break;
-
+	case ComponentType::Chase:
+		toggle(ChaseComponent{});
+		break;
+	case ComponentType::Patrol:
+		toggle(PatrolComponent{});
+		break;
 	case ComponentType::Gravity:
-		if (enable && !registry.has<GravityComponent>(entity)) {
-			registry.registerComponent<GravityComponent>(entity, GravityComponent{});
-		} else if (!enable && registry.has<GravityComponent>(entity)) {
-			registry.remove<GravityComponent>(entity);
-		}
+		toggle(GravityComponent{});
 		break;
-
 	case ComponentType::Collision:
-		// CollisionComponent doesn't have an 'enabled' field
-		// If you need to disable collision, remove CollisionComponent from entity
-		if (enable && !registry.has<CollisionComponent>(entity)) {
-			// Add collision if enabling (need proper collision box data)
-		} else if (!enable && registry.has<CollisionComponent>(entity)) {
-			registry.remove<CollisionComponent>(entity);
-		}
+		toggle(CollisionComponent{});
 		break;
 	}
 }
 
 void FacePlayerAction::execute(Registry &registry, Entity entity, float deltaTime)
 {
-	auto enemyPos = registry.tryGet<PositionComponent>(entity);
 	auto enemyRender = registry.tryGet<RenderComponent>(entity);
-
-	if (!enemyPos || !enemyRender)
+	if (!enemyRender)
 		return;
 
-	// Find player
-	auto playerView = registry.view<PlayerTag, PositionComponent>();
-	for (const auto playerEntity : playerView) {
-		auto &playerPos = playerView.get<PositionComponent>(playerEntity);
+	auto enemy = getEntityInfo(registry, entity);
+	auto player = getPlayerInfo(registry);
 
-		bool facingLeft = playerPos.position.x < enemyPos->get().position.x;
-		enemyRender->get().setFacingLeft(facingLeft);
-		break; // Only one player
+	if (enemy && player) {
+		const bool shouldFaceLeft = player->center.x < enemy->center.x;
+		enemyRender->get().setFacingLeft(shouldFaceLeft);
 	}
 }
 
@@ -230,18 +167,15 @@ void MoveTowardsPlayerAction::execute(Registry &registry, Entity entity, float d
 	if (!enemyPos || !enemyInput)
 		return;
 
-	// Find player
-	auto playerView = registry.view<PlayerTag, PositionComponent>();
-	for (const auto playerEntity : playerView) {
-		auto &playerPos = playerView.get<PositionComponent>(playerEntity);
+	auto player = getPlayerInfo(registry);
+	if (!player)
+		return;
 
-		float direction = playerPos.position.x > enemyPos->get().position.x ? 1.0f : -1.0f;
-		enemyInput->get().horizontalDirection = direction;
+	float direction = player->center.x > enemyPos->get().position.x ? 1.0f : -1.0f;
+	enemyInput->get().horizontalDirection = direction;
 
-		if (enemyRender) {
-			enemyRender->get().setFacingLeft(direction < 0);
-		}
-		break;
+	if (enemyRender) {
+		enemyRender->get().setFacingLeft(direction < 0);
 	}
 }
 
@@ -249,9 +183,12 @@ void ExecuteAttackAction::execute(Registry &registry, Entity entity, float delta
 {
 	if (auto input = registry.tryGet<InputComponent>(entity)) {
 		input->get().attackPressed = true;
-		SDL_Log("[ExecuteAttackAction] Entity %u attackPressed set to true", static_cast<unsigned int>(entity));
-	} else {
-		SDL_Log("[ExecuteAttackAction] Entity %u has no InputComponent!", static_cast<unsigned int>(entity));
+	}
+
+	if (auto attack = registry.tryGet<AttackComponent>(entity)) {
+		// Set random windup to vary attack timing
+		attack->get().activeWindUpLimit =
+		    Utils::Random::getFloat(attack->get().windUpLimit * 0.5f, attack->get().windUpLimit);
 	}
 }
 
@@ -264,13 +201,12 @@ void ResetPoiseAction::execute(Registry &registry, Entity entity, float deltaTim
 
 void SetInvulnerabilityAction::execute(Registry &registry, Entity entity, float deltaTime)
 {
-	// TODO: Implement invulnerability component/flag
-	// This might be a flag in HealthComponent or a separate InvulnerabilityComponent
+	// TODO: Implement invulnerability
 }
 
-// ============================================================================
-// Animation Trigger
-// ============================================================================
+// ===================================
+// ANIMATION IMPLEMENTATIONS
+// ===================================
 
 AnimationType stringToAnimationType(const std::string &animName)
 {
@@ -292,7 +228,7 @@ AnimationType stringToAnimationType(const std::string &animName)
 		return AnimationType::Attacking;
 	if (animName == "hurting" || animName == "hurt")
 		return AnimationType::Hurting;
-	if (animName == "dead" || animName == "death" || animName == "dying")
+	if (animName == "dead" || animName == "dying")
 		return AnimationType::Dead;
 	if (animName == "charge" || animName == "charging")
 		return AnimationType::Charge;
@@ -307,25 +243,58 @@ AnimationType stringToAnimationType(const std::string &animName)
 void TriggerAnimationAction::execute(Registry &registry, Entity entity, float deltaTime)
 {
 	auto animComp = registry.tryGet<AnimationComponent>(entity);
-	if (!animComp) {
-		SDL_Log("[TriggerAnimation] Entity %u has no AnimationComponent!", static_cast<unsigned int>(entity));
+	if (!animComp)
 		return;
-	}
 
 	const AnimationType animType = stringToAnimationType(animationName);
 	if (animType != AnimationType::None) {
-		SDL_Log("[TriggerAnimation] Entity %u setting animation '%s' (type %d)", static_cast<unsigned int>(entity),
-		        animationName.c_str(), static_cast<int>(animType));
 		animComp->get().setAnimation(animType);
-	} else {
-		SDL_Log("[TriggerAnimation] Entity %u - unknown animation name '%s'", static_cast<unsigned int>(entity),
-		        animationName.c_str());
 	}
 }
 
-// ============================================================================
-// RANGED ENEMY ACTION IMPLEMENTATIONS
-// ============================================================================
+void StopAndFacePlayerAction::execute(Registry &registry, Entity entity, float deltaTime)
+{
+	auto enemyRender = registry.tryGet<RenderComponent>(entity);
+	auto inputOpt = registry.tryGet<InputComponent>(entity);
+
+	if (!enemyRender || !inputOpt)
+		return;
+
+	auto enemy = getEntityInfo(registry, entity);
+	auto player = getPlayerInfo(registry);
+
+	if (enemy && player) {
+		enemyRender->get().setFacingLeft(player->center.x < enemy->center.x);
+		inputOpt->get().horizontalDirection = 0.0f;
+	}
+}
+
+void RetreatFromPlayerAction::execute(Registry &registry, Entity entity, float deltaTime)
+{
+	auto enemy = getEntityInfo(registry, entity);
+	if (!enemy)
+		return;
+
+	auto enemyInput = registry.tryGet<InputComponent>(entity);
+	auto enemyMovement = registry.tryGet<MovementComponent>(entity);
+	auto enemyRender = registry.tryGet<RenderComponent>(entity);
+
+	if (!enemyInput || !enemyMovement)
+		return;
+
+	auto player = getPlayerInfo(registry);
+	if (!player)
+		return;
+
+	// Move AWAY
+	float direction = player->position.x > enemy->position.x ? -1.0f : 1.0f;
+	enemyInput->get().horizontalDirection = direction;
+	enemyMovement->get().maxSpeedX = speed;
+
+	if (enemyRender) {
+		enemyRender->get().setFacingLeft(player->position.x < enemy->position.x);
+	}
+}
 
 void TriggerRangedAttackAction::execute(Registry &registry, Entity entity, float deltaTime)
 {
@@ -340,7 +309,7 @@ void TriggerRangedAttackAction::execute(Registry &registry, Entity entity, float
 	auto &attack = attackOpt->get();
 	auto &ranged = rangedOpt->get();
 
-	// Check if player is dead
+	// Check dead players
 	auto playerView = registry.view<PlayerTag, StateComponent>();
 	for (const auto playerEntity : playerView) {
 		if (playerView.get<StateComponent>(playerEntity).state == State::Dead) {
@@ -353,7 +322,7 @@ void TriggerRangedAttackAction::execute(Registry &registry, Entity entity, float
 		break;
 	}
 
-	// No valid target - cancel attack
+	// No valid target
 	if (ranged.targetSnapshot == glm::vec2(0.0f)) {
 		input.attackPressed = false;
 		attack.attackTimer.reset();
@@ -368,199 +337,266 @@ void TriggerRangedAttackAction::execute(Registry &registry, Entity entity, float
 
 void CancelRangedAttackAction::execute(Registry &registry, Entity entity, float deltaTime)
 {
-	if (auto inputOpt = registry.tryGet<InputComponent>(entity)) {
-		inputOpt->get().attackPressed = false;
+	if (auto input = registry.tryGet<InputComponent>(entity))
+		input->get().attackPressed = false;
+	if (auto attack = registry.tryGet<AttackComponent>(entity))
+		attack->get().attackTimer.reset();
+	if (auto ranged = registry.tryGet<RangedAttackComponent>(entity)) {
+		ranged->get().targetSnapshot = glm::vec2(0.0f);
+		ranged->get().projectileSpawned = false;
 	}
-	if (auto attackOpt = registry.tryGet<AttackComponent>(entity)) {
-		attackOpt->get().attackTimer.reset();
-	}
-	if (auto rangedOpt = registry.tryGet<RangedAttackComponent>(entity)) {
-		rangedOpt->get().targetSnapshot = glm::vec2(0.0f);
-		rangedOpt->get().projectileSpawned = false;
+}
+
+void CancelMeleeAttackAction::execute(Registry &registry, Entity entity, float deltaTime)
+{
+	if (auto input = registry.tryGet<InputComponent>(entity))
+		input->get().attackPressed = false;
+	if (auto attack = registry.tryGet<AttackComponent>(entity)) {
+		attack->get().attackTimer.reset();
+		attack->get().isDamageActive = false;
 	}
 }
 
 void AimAtPlayerWithLOSAction::execute(Registry &registry, Entity entity, float deltaTime)
 {
-	auto posOpt = registry.tryGet<PositionComponent>(entity);
-	auto rangedOpt = registry.tryGet<RangedAttackComponent>(entity);
-	auto hurtBoxOpt = registry.tryGet<HurtBoxComponent>(entity);
-	auto transformOpt = registry.tryGet<TransformComponent>(entity);
-	auto projectileOpt = registry.tryGet<ProjectileComponent>(entity);
-	auto renderOpt = registry.tryGet<RenderComponent>(entity);
-
-	if (!posOpt || !rangedOpt || !hurtBoxOpt || !renderOpt)
+	auto enemy = getEntityInfo(registry, entity);
+	if (!enemy)
 		return;
 
-	const glm::vec2 scale = transformOpt ? transformOpt->get().scale : glm::vec2{1.0f, 1.0f};
+	auto rangedOpt = registry.tryGet<RangedAttackComponent>(entity);
+	if (!rangedOpt)
+		return;
 
-	glm::vec2 projectileSize = {0.0f, 0.0f};
-	glm::vec2 hitboxOffset = {0.0f, 0.0f};
-	if (projectileOpt && !projectileOpt->get().projectileTilesetPath.empty()) {
-		const auto &projectileData =
-		    ProjectileFactory::getCachedProjectileData(projectileOpt->get().projectileTilesetPath);
-		projectileSize = {projectileData.hitbox.w, projectileData.hitbox.h};
-		hitboxOffset = {projectileData.hitbox.x, projectileData.hitbox.y};
+	auto projOpt = registry.tryGet<ProjectileComponent>(entity);
+	auto renderOpt = registry.tryGet<RenderComponent>(entity);
+	if (!renderOpt)
+		return;
+
+	auto player = getPlayerInfo(registry);
+	if (!player) {
+		rangedOpt->get().targetSnapshot = glm::vec2(0.0f);
+		return;
 	}
 
-	auto playerView = registry.view<PlayerTag, PositionComponent, HurtBoxComponent>();
-	for (const auto playerEntity : playerView) {
-		const auto &playerPos = playerView.get<PositionComponent>(playerEntity);
-		const auto &playerHurtBox = playerView.get<HurtBoxComponent>(playerEntity);
-		auto playerTransformOpt = registry.tryGet<TransformComponent>(playerEntity);
-		const glm::vec2 playerScale = playerTransformOpt ? playerTransformOpt->get().scale : glm::vec2{1.0f, 1.0f};
+	auto projInfo = getProjectileInfo(projOpt ? &projOpt->get() : nullptr);
+	bool facingLeft = renderOpt->get().isFacingLeft();
 
-		const SDL_FRect playerRect =
-		    Utils::HitBoxUtils::getHitBox(playerPos.position, playerHurtBox.hurtBox, &playerScale);
-		const glm::vec2 playerCenter = {playerRect.x + playerRect.w * 0.5f, playerRect.y + playerRect.h * 0.5f};
+	glm::vec2 spawnPos = enemy->position;
+	float relativeHurtboxX = enemy->rect.x - enemy->position.x;
+	float xOffset = relativeHurtboxX;
 
-		// Use actual facing direction (same as ProjectileSystem)
-		const bool facingLeft = renderOpt->get().isFacingLeft();
-		glm::vec2 spawnPosition = posOpt->get().position;
-		if (facingLeft) {
-			spawnPosition.x += (hurtBoxOpt->get().hurtBox.x * scale.x) - rangedOpt->get().projectileOffset.x;
-		} else {
-			spawnPosition.x += (hurtBoxOpt->get().hurtBox.x * scale.x) + rangedOpt->get().projectileOffset.x;
-		}
-		spawnPosition.y += rangedOpt->get().projectileOffset.y;
+	xOffset += facingLeft ? -rangedOpt->get().projectileOffset.x : rangedOpt->get().projectileOffset.x;
+	spawnPos.y += rangedOpt->get().projectileOffset.y;
+	spawnPos.x += xOffset;
 
-		const glm::vec2 rayStart = spawnPosition + hitboxOffset + (projectileSize * 0.5f);
+	const glm::vec2 rayStart = spawnPos + projInfo.offset + (projInfo.size * 0.5f);
 
-		auto targetOpt = Utils::DetectionRangeUtils::getTargetWithLineOfSight(rayStart, playerCenter,
-		                                                                       playerHurtBox.hurtBox, playerScale, projectileSize);
-		if (targetOpt.has_value()) {
-			rangedOpt->get().targetSnapshot = targetOpt.value();
-			return;
-		}
+	auto targetOpt = Utils::DetectionRangeUtils::getTargetWithLineOfSight(rayStart, player->center, player->rect,
+	                                                                      player->scale, projInfo.size);
+
+	if (targetOpt) {
+		rangedOpt->get().targetSnapshot = *targetOpt;
+	} else {
 		rangedOpt->get().targetSnapshot = glm::vec2(0.0f);
-		break;
 	}
 }
 
-// ============================================================================
-// LOS TRANSITION IMPLEMENTATIONS
-// ============================================================================
+void MeleeChaseAction::execute(Registry &registry, Entity entity, float deltaTime)
+{
+	Systems::ChaseSystem::updateEntity(registry, entity, deltaTime);
+}
+
+bool MeleeAttackTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
+{
+	auto enemy = getEntityInfo(registry, entity);
+	if (!enemy)
+		return false;
+
+	auto enemyChase = registry.tryGet<ChaseComponent>(entity);
+	if (!enemyChase)
+		return false;
+
+	auto player = getPlayerInfo(registry);
+	if (!player)
+		return false;
+
+	// Check if reaction delay has passed
+	if (!enemyChase->get().reactionDelay.isTimeout()) {
+		return false;
+	}
+
+	// Get weapon range from MeleeAttackComponent
+	auto meleeAttack = registry.tryGet<MeleeAttackComponent>(entity);
+	if (!meleeAttack)
+		return false;
+
+	// Calculate the gap between enemy body edge and player body edge
+	const float xDistance = std::abs(player->center.x - enemy->center.x);
+	const float combinedHalfWidths = (player->rect.w * 0.5f) + (enemy->rect.w * 0.5f);
+	const float edgeGap = xDistance - combinedHalfWidths;
+
+	// Only attack if the weapon can reach the player
+	// The weapon extends from the enemy's body edge by weaponHitBox width
+	const float weaponReach = meleeAttack->get().weaponHitBox.w;
+	return edgeGap <= weaponReach;
+}
+
+bool ProximityEntryTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
+{
+	auto enemy = getEntityInfo(registry, entity);
+	if (!enemy)
+		return false;
+
+	auto player = getPlayerInfo(registry);
+	if (!player)
+		return false;
+
+	return glm::distance(enemy->center, player->center) <= radius;
+}
+
+bool ProximityExitTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
+{
+	auto enemy = getEntityInfo(registry, entity);
+	if (!enemy)
+		return false;
+
+	auto player = getPlayerInfo(registry);
+	if (!player)
+		return true; // No player = exited
+
+	return glm::distance(enemy->center, player->center) > radius;
+}
+
+bool HealthThresholdTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
+{
+	auto health = registry.tryGet<HealthComponent>(entity);
+	if (!health)
+		return false;
+
+	float currentPercent = health->get().health / static_cast<float>(health->get().maxHealth);
+	return lessThan ? (currentPercent < healthPercentage) : (currentPercent > healthPercentage);
+}
+
+bool PoiseBreakTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
+{
+	auto poise = registry.tryGet<PoiseComponent>(entity);
+	return poise && poise->get().currentPoise <= 0.0f && poise->get().maxPoise > 0.0f;
+}
+
+bool PlayerStationaryTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
+{
+	auto playerView = registry.view<PlayerTag, VelocityComponent>();
+	for (const auto entity : playerView) {
+		auto &vel = playerView.get<VelocityComponent>(entity);
+		if (glm::length(vel.velocity) < 0.1f)
+			return true;
+	}
+	return false;
+}
+
+bool RandomTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
+{
+	return Utils::Random::getFloat(0.0f, 1.0f) <= chance;
+}
 
 bool ProximityAndLosEntryTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
 {
-	auto posOpt = registry.tryGet<PositionComponent>(entity);
-	auto hurtBoxOpt = registry.tryGet<HurtBoxComponent>(entity);
-	auto transformOpt = registry.tryGet<TransformComponent>(entity);
-	auto rangedOpt = registry.tryGet<RangedAttackComponent>(entity);
-	auto projectileOpt = registry.tryGet<ProjectileComponent>(entity);
-
-	if (!posOpt || !hurtBoxOpt)
+	auto enemy = getEntityInfo(registry, entity);
+	if (!enemy)
 		return false;
 
-	const glm::vec2 scale = transformOpt ? transformOpt->get().scale : glm::vec2{1.0f, 1.0f};
-	const SDL_FRect enemyRect =
-	    Utils::HitBoxUtils::getHitBox(posOpt->get().position, hurtBoxOpt->get().hurtBox, &scale);
-	const glm::vec2 enemyCenter = {enemyRect.x + enemyRect.w * 0.5f, enemyRect.y + enemyRect.h * 0.5f};
+	auto player = getPlayerInfo(registry);
+	if (!player)
+		return false;
 
-	glm::vec2 projectileSize = {0.0f, 0.0f};
-	glm::vec2 hitboxOffset = {0.0f, 0.0f};
-	if (projectileOpt && !projectileOpt->get().projectileTilesetPath.empty()) {
-		const auto &projectileData =
-		    ProjectileFactory::getCachedProjectileData(projectileOpt->get().projectileTilesetPath);
-		projectileSize = {projectileData.hitbox.w, projectileData.hitbox.h};
-		hitboxOffset = {projectileData.hitbox.x, projectileData.hitbox.y};
-	}
+	if (glm::distance(enemy->center, player->center) > radius)
+		return false;
 
-	auto playerView = registry.view<PlayerTag, PositionComponent, HurtBoxComponent>();
-	for (const auto playerEntity : playerView) {
-		const auto &playerPos = playerView.get<PositionComponent>(playerEntity);
-		const auto &playerHurtBox = playerView.get<HurtBoxComponent>(playerEntity);
-		auto playerTransformOpt = registry.tryGet<TransformComponent>(playerEntity);
-		const glm::vec2 playerScale = playerTransformOpt ? playerTransformOpt->get().scale : glm::vec2{1.0f, 1.0f};
+	auto rangedOpt = registry.tryGet<RangedAttackComponent>(entity);
+	auto projOpt = registry.tryGet<ProjectileComponent>(entity);
 
-		const SDL_FRect playerRect =
-		    Utils::HitBoxUtils::getHitBox(playerPos.position, playerHurtBox.hurtBox, &playerScale);
-		const glm::vec2 playerCenter = {playerRect.x + playerRect.w * 0.5f, playerRect.y + playerRect.h * 0.5f};
-
-		// Check proximity first
-		if (glm::distance(enemyCenter, playerCenter) > radius) {
-			return false;
-		}
-
-		// Check LOS
-		glm::vec2 spawnPosition = posOpt->get().position;
-		const bool facingLeft = (playerCenter.x - posOpt->get().position.x) < 0.0f;
-		float xOffset = (hurtBoxOpt->get().hurtBox.x * scale.x);
-		if (rangedOpt) {
-			xOffset += facingLeft ? -rangedOpt->get().projectileOffset.x : rangedOpt->get().projectileOffset.x;
-			spawnPosition.y += rangedOpt->get().projectileOffset.y;
-		}
-		spawnPosition.x += xOffset;
-
-		const glm::vec2 rayStart = spawnPosition + hitboxOffset + (projectileSize * 0.5f);
-		return Utils::DetectionRangeUtils::checkLineOfSight(rayStart, playerCenter, playerHurtBox.hurtBox,
-		                                                    playerScale, projectileSize);
-	}
-
-	return false;
+	auto result =
+	    checkEnemyLos(*enemy, *player, rangedOpt ? &rangedOpt->get() : nullptr, projOpt ? &projOpt->get() : nullptr);
+	return result.hasLos;
 }
 
 bool LosLostTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
 {
-	auto posOpt = registry.tryGet<PositionComponent>(entity);
-	auto hurtBoxOpt = registry.tryGet<HurtBoxComponent>(entity);
-	auto transformOpt = registry.tryGet<TransformComponent>(entity);
+	auto enemy = getEntityInfo(registry, entity);
+	if (!enemy)
+		return false;
+
+	auto player = getPlayerInfo(registry);
+	if (!player)
+		return true; // No player = lost
+
 	auto rangedOpt = registry.tryGet<RangedAttackComponent>(entity);
-	auto projectileOpt = registry.tryGet<ProjectileComponent>(entity);
+	auto projOpt = registry.tryGet<ProjectileComponent>(entity);
 
-	if (!posOpt || !hurtBoxOpt)
+	auto result =
+	    checkEnemyLos(*enemy, *player, rangedOpt ? &rangedOpt->get() : nullptr, projOpt ? &projOpt->get() : nullptr);
+
+	if (result.hasLos) {
+		losLostDuration = 0.0f;
 		return false;
-
-	const glm::vec2 scale = transformOpt ? transformOpt->get().scale : glm::vec2{1.0f, 1.0f};
-
-	glm::vec2 projectileSize = {0.0f, 0.0f};
-	glm::vec2 hitboxOffset = {0.0f, 0.0f};
-	if (projectileOpt && !projectileOpt->get().projectileTilesetPath.empty()) {
-		const auto &projectileData =
-		    ProjectileFactory::getCachedProjectileData(projectileOpt->get().projectileTilesetPath);
-		projectileSize = {projectileData.hitbox.w, projectileData.hitbox.h};
-		hitboxOffset = {projectileData.hitbox.x, projectileData.hitbox.y};
 	}
 
-	auto playerView = registry.view<PlayerTag, PositionComponent, HurtBoxComponent>();
+	losLostDuration += deltaTime;
+	return losLostDuration >= gracePeriod;
+}
+
+bool PlayerNotGroundedTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
+{
+	auto playerView = registry.view<PlayerTag, GroundedComponent>();
 	for (const auto playerEntity : playerView) {
-		const auto &playerPos = playerView.get<PositionComponent>(playerEntity);
-		const auto &playerHurtBox = playerView.get<HurtBoxComponent>(playerEntity);
-		auto playerTransformOpt = registry.tryGet<TransformComponent>(playerEntity);
-		const glm::vec2 playerScale = playerTransformOpt ? playerTransformOpt->get().scale : glm::vec2{1.0f, 1.0f};
-
-		const SDL_FRect playerRect =
-		    Utils::HitBoxUtils::getHitBox(playerPos.position, playerHurtBox.hurtBox, &playerScale);
-		const glm::vec2 playerCenter = {playerRect.x + playerRect.w * 0.5f, playerRect.y + playerRect.h * 0.5f};
-
-		glm::vec2 spawnPosition = posOpt->get().position;
-		const bool facingLeft = (playerCenter.x - posOpt->get().position.x) < 0.0f;
-		float xOffset = (hurtBoxOpt->get().hurtBox.x * scale.x);
-		if (rangedOpt) {
-			xOffset += facingLeft ? -rangedOpt->get().projectileOffset.x : rangedOpt->get().projectileOffset.x;
-			spawnPosition.y += rangedOpt->get().projectileOffset.y;
-		}
-		spawnPosition.x += xOffset;
-
-		const glm::vec2 rayStart = spawnPosition + hitboxOffset + (projectileSize * 0.5f);
-
-		bool hasLOS = Utils::DetectionRangeUtils::checkLineOfSight(rayStart, playerCenter, playerHurtBox.hurtBox,
-		                                                           playerScale, projectileSize);
-
-		if (hasLOS) {
-			losLostDuration = 0.0f;
-			return false;
-		}
-
-		losLostDuration += deltaTime;
-		if (losLostDuration >= gracePeriod) {
-			losLostDuration = 0.0f;
-			return true;
-		}
-		return false;
+		const auto &grounded = playerView.get<GroundedComponent>(playerEntity);
+		return !grounded.grounded;
 	}
+	return true; // No player found, return to patrol
+}
 
-	return true;  // No player found - transition
+bool PlayerUnreachableTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
+{
+	auto enemy = getEntityInfo(registry, entity);
+	if (!enemy)
+		return false;
+
+	auto player = getPlayerInfo(registry);
+	if (!player)
+		return true; // No player = unreachable
+
+	// Check if player is too far above the enemy (on a platform)
+	// In screen coordinates, lower Y means higher position
+	const float playerBottom = player->rect.y + player->rect.h;
+	const float enemyBottom = enemy->rect.y + enemy->rect.h;
+
+	// If player's feet are significantly above enemy's feet, player is unreachable
+	return (enemyBottom - playerBottom) > maxHeightDifference;
+}
+
+bool MeleeProximityEntryTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
+{
+	auto enemy = getEntityInfo(registry, entity);
+	if (!enemy)
+		return false;
+
+	auto player = getPlayerInfo(registry);
+	if (!player)
+		return false;
+
+	// Check distance
+	if (glm::distance(enemy->center, player->center) > radius)
+		return false;
+
+	// Check if player is reachable (on roughly the same height)
+	const float playerBottom = player->rect.y + player->rect.h;
+	const float enemyBottom = enemy->rect.y + enemy->rect.h;
+
+	// Don't chase if player is on a different platform (too high above OR too far below)
+	if (std::abs(enemyBottom - playerBottom) > maxHeightDifference)
+		return false;
+
+	return true;
 }
 
 } // namespace GameEngine::ECS

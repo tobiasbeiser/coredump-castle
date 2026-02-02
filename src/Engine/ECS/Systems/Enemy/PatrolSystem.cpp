@@ -1,32 +1,19 @@
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
-#include "Engine/ECS/Components/Gameplay/Enemy/AiStateComponent.hpp"
-#include "Engine/ECS/Components/Gameplay/Enemy/ChaseComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
-#include "Engine/ECS/Components/States/StateMachineComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/Systems/CollisionSystem.hpp"
 #include "Engine/ECS/View.hpp"
 
 namespace GameEngine::ECS::Systems::PatrolSystem {
 
-// Reusable logic for patrol movement
+// Reusable logic for patrol movement - called by PatrolAction in state machines
 void updateEntity(Registry &registry, Entity entity)
 {
-	// Skip AiStateComponent check for entities with state machines - they handle their own state
-	if (!registry.has<StateMachineComponent>(entity)) {
-		// Only process entities in Patrol state if they have one
-		if (const auto stateComp = registry.tryGet<AiStateComponent>(entity)) {
-			if (stateComp->get().state != AiState::Patrol) {
-				return;
-			}
-		}
-	}
-
 	const auto patrolComp = registry.tryGet<PatrolComponent>(entity);
 	if (!patrolComp)
 		return;
@@ -56,7 +43,6 @@ void updateEntity(Registry &registry, Entity entity)
 	const auto transform = registry.tryGet<TransformComponent>(entity);
 	const std::optional<const glm::vec2> scale = transform ? std::optional(transform->get().scale) : std::nullopt;
 
-	// Ensure moving if stopped
 	if (input.horizontalDirection == 0.0f) {
 		input.horizontalDirection = 1.0f;
 	}
@@ -71,16 +57,9 @@ void updateEntity(Registry &registry, Entity entity)
 
 void update(Registry &registry)
 {
-	for (auto view = registry.view<PositionComponent, PatrolComponent, InputComponent, CollisionComponent>();
-	     const auto entity : view) {
-
-		// Skip entities with state machines - they handle patrol in their own states
-		if (registry.has<StateMachineComponent>(entity)) {
-			continue;
-		}
-
-		updateEntity(registry, entity);
-	}
-};
+	// All patrol enemies now use state machines
+	// This function is kept for backwards compatibility but does nothing
+	// Patrol logic is handled via PatrolAction in state machine updates
+}
 
 } // namespace GameEngine::ECS::Systems::PatrolSystem

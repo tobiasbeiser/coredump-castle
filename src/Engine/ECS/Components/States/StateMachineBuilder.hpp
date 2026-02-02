@@ -6,35 +6,10 @@
 
 namespace GameEngine::ECS {
 
-/**
- * Builder for constructing state machines fluently
- * Example usage:
- *
- * auto& sm = registry.registerComponent<StateMachineComponent>(entity, StateMachineComponent{});
- *
- * StateMachineBuilder(sm)
- *     .addState("idle")
- *         .onEnter<SetVelocityAction>(glm::vec2{0, 0})
- *         .onUpdate<FacePlayerAction>()
- *         .transition<ProximityEntryTransition>("telegraphing", 150.0f)
- *     .addState("telegraphing")
- *         .onEnter<TriggerAnimationAction>("windup", false)
- *         .onUpdate<FacePlayerAction>()
- *         .transition<AnimationTransition>("attacking", "windup")
- *     .addState("attacking")
- *         .onEnter<TriggerAnimationAction>("attack", false)
- *         .onEnter<ExecuteAttackAction>()
- *         .transition<AnimationTransition>("recover", "attack")
- *     .addState("recover")
- *         .onEnter<SetVelocityAction>(glm::vec2{0, 0})
- *         .transition<TimerTransition>("idle", 1.0f)
- *     .build();
- */
 class StateMachineBuilder {
   public:
 	explicit StateMachineBuilder(StateMachineComponent &machine) : stateMachine(machine), currentStateName("") {}
 
-	// Add a new state and make it the current context for building
 	StateMachineBuilder &addState(const std::string &stateName)
 	{
 		currentStateName = stateName;
@@ -42,7 +17,6 @@ class StateMachineBuilder {
 		return *this;
 	}
 
-	// Add an action to execute when entering the current state
 	template <typename ActionType, typename... Args>
 	StateMachineBuilder &onEnter(Args &&...args)
 	{
@@ -56,7 +30,6 @@ class StateMachineBuilder {
 		return *this;
 	}
 
-	// Add an action to execute while in the current state (every frame)
 	template <typename ActionType, typename... Args>
 	StateMachineBuilder &onUpdate(Args &&...args)
 	{
@@ -70,7 +43,6 @@ class StateMachineBuilder {
 		return *this;
 	}
 
-	// Add an action to execute when exiting the current state
 	template <typename ActionType, typename... Args>
 	StateMachineBuilder &onExit(Args &&...args)
 	{
@@ -84,7 +56,6 @@ class StateMachineBuilder {
 		return *this;
 	}
 
-	// Add a transition from the current state
 	template <typename TransitionType, typename... Args>
 	StateMachineBuilder &transition(Args &&...args)
 	{
@@ -98,7 +69,6 @@ class StateMachineBuilder {
 		return *this;
 	}
 
-	// Set custom state data
 	template <typename DataType, typename... Args>
 	StateMachineBuilder &withData(Args &&...args)
 	{
@@ -112,7 +82,6 @@ class StateMachineBuilder {
 		return *this;
 	}
 
-	// Set the initial state
 	StateMachineBuilder &setInitialState(const std::string &stateName)
 	{
 		stateMachine.currentState = stateName;
@@ -122,7 +91,6 @@ class StateMachineBuilder {
 		return *this;
 	}
 
-	// Finish building (returns reference for convenience)
 	StateMachineComponent &build() { return stateMachine; }
 
   private:

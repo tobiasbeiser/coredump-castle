@@ -1,53 +1,158 @@
 #pragma once
 
+#include "Engine/ECS/Components/Gameplay/Combat/MeleeAttackComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/RangedAttackComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Enemy/ChaseComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "StateMachineBuilder.hpp"
 
 namespace GameEngine::ECS {
 
-/**
- * Factory for creating common enemy state machines
- */
 class EnemyStateMachineFactory {
   public:
 	/**
-	 * Create a simple melee enemy state machine
-	 * States: idle, chase, attacking, recover
+	 * Adds a patrol state that transitions to combat when player is detected.
+	 * Requires: PatrolComponent, ChaseComponent (for detectionRange)
 	 */
-	static void createSimpleMeleeEnemy(Registry &registry, Entity entity)
+	static StateMachineBuilder &addPatrolState(StateMachineBuilder &builder, Registry &registry, Entity entity,
+	                                           const std::string &nextState = "combat")
 	{
-		auto &sm = registry.registerComponent<StateMachineComponent>(entity, StateMachineComponent{});
+		const auto &patrol = registry.get<PatrolComponent>(entity);
+		const auto &chase = registry.get<ChaseComponent>(entity);
 
-		StateMachineBuilder(sm)
-		    .addState("idle")
-		    .onUpdate<SetVelocityAction>(glm::vec2{0, 0})
-		    .transition<ProximityEntryTransition>("chase", 200.0f)
-
-		    .addState("chase")
-		    .onUpdate<MoveTowardsPlayerAction>(100.0f)
-		    .transition<ProximityEntryTransition>("attacking", 50.0f)
-		    .transition<ProximityExitTransition>("idle", 250.0f)
-
-		    .addState("attacking")
-		    .onEnter<ExecuteAttackAction>()
-		    .onUpdate<FacePlayerAction>()
-		    .transition<TimerTransition>("recover", 0.8f)
-
-		    .addState("recover")
-		    .onEnter<SetVelocityAction>(glm::vec2{0, 0})
-		    .transition<TimerTransition>("idle", 0.5f)
-
-		    .setInitialState("idle")
-		    .build();
+		return builder.addState("patrol")
+		    .onEnter<TriggerAnimationAction>("walk", true)
+		    .onUpdate<SetMovementSpeedAction>(patrol.patrolSpeed)
+		    .onUpdate<PatrolAction>()
+		    .transition<ProximityAndLosEntryTransition>(nextState, chase.detectionRange);
 	}
 
 	/**
-	 * Create a boss enemy state machine with more complex states
-	 * States: idle, telegraphing, attacking, charge, recover, stagger
+	 * Adds a ranged combat state for wizard-type enemies.
+	 * Requires: ChaseComponent (for giveUpRange as disengageRange)
 	 */
+	static StateMachineBuilder &addRangedCombatState(StateMachineBuilder &builder, Registry &registry, Entity entity,
+	                                                 const std::string &returnState = "patrol")
+	{
+		const auto &chase = registry.get<ChaseComponent>(entity);
+
+		return builder.addState("combat")
+		    .onEnter<TriggerAnimationAction>("idle", false)
+		    .onEnter<SetVelocityAction>(glm::vec2{0, 0})
+		    .onUpdate<StopAndFacePlayerAction>()
+		    .onUpdate<AimAtPlayerWithLOSAction>()
+		    .onUpdate<TriggerRangedAttackAction>()
+		    .onExit<CancelRangedAttackAction>()
+		    .transition<ProximityExitTransition>(returnState, chase.giveUpRange)
+		    .transition<LosLostTransition>(returnState, 0.5f);
+	}
+
+	/**
+	 * Create a wizard/ranged enemy (patrol -> ranged combat)
+	 * Requires: PatrolComponent, ChaseComponent
+	 */
+	static void createWizardEnemy(Registry &registry, Entity entity)
+	{
+		const auto &patrol = registry.get<PatrolComponent>(entity);
+		const auto &chase = registry.get<ChaseComponent>(entity);
+
+		registry.registerComponent<StateMachineComponent>(entity, StateMachineComponent{});
+		auto &sm = registry.get<StateMachineComponent>(entity);
+
+		StateMachineBuilder builder(sm);
+		addPatrolState(builder, registry, entity, "combat");
+		addRangedCombatState(builder, registry, entity, "patrol");
+
+		builder.setInitialState("patrol").build();
+	}
+
+	/**
+	 * Adds a standard melee combat state that chases and attacks.
+	 * Requires: ChaseComponent (for chaseSpeed, giveUpRange)
+	 */
+	static StateMachineBuilder &addMeleeCombatState(StateMachineBuilder &builder, Registry &registry, Entity entity,
+	                                                const std::string &returnState = "patrol")
+	{
+		const auto &chase = registry.get<ChaseComponent>(entity);
+
+		return builder.addState("chase")
+		    .onUpdate<MeleeChaseAction>(chase.chaseSpeed)
+		    .transition<MeleeAttackTransition>("attacking")
+		    .transition<PlayerUnreachableTransition>(returnState, 32.0f)
+		    .transition<ProximityExitTransition>(returnState, chase.giveUpRange)
+
+		    .addState("attacking")
+		    .onEnter<TriggerAnimationAction>("attack", false)
+		    .onEnter<StopMovementAction>()
+		    .onEnter<FacePlayerAction>()
+		    .onEnter<ExecuteAttackAction>()
+		    .onUpdate<StopMovementAction>()
+		    .onUpdate<FacePlayerAction>()
+		    .transition<PlayerUnreachableTransition>(returnState, 32.0f)
+		    .transition<TimerTransition>("recover", 0.8f)
+
+		    .addState("recover")
+		    .onEnter<StopMovementAction>()
+		    .onUpdate<StopMovementAction>()
+		    .onUpdate<FacePlayerAction>()
+		    .transition<PlayerUnreachableTransition>(returnState, 32.0f)
+		    .transition<TimerTransition>("chase", 0.5f); // Go back to chase to re-evaluate
+	}
+
+	/**
+	 * Create a patrol-only enemy (just walks back and forth, no chase/attack)
+	 * Deals contact damage only via collision, no AI combat behavior.
+	 * Requires: PatrolComponent
+	 */
+	static void createPatrolOnlyEnemy(Registry &registry, Entity entity)
+	{
+		const auto &patrol = registry.get<PatrolComponent>(entity);
+
+		registry.registerComponent<StateMachineComponent>(entity, StateMachineComponent{});
+		auto &sm = registry.get<StateMachineComponent>(entity);
+
+		StateMachineBuilder builder(sm);
+
+		builder.addState("patrol")
+		    .onEnter<TriggerAnimationAction>("walk", true)
+		    .onUpdate<SetMovementSpeedAction>(patrol.patrolSpeed)
+		    .onUpdate<PatrolAction>();
+		// No transitions - just patrol forever
+
+		builder.setInitialState("patrol").build();
+	}
+
+	/**
+	 * Create a melee enemy (patrol -> chase -> attack)
+	 * Requires: PatrolComponent, ChaseComponent
+	 */
+	static void createMeleeEnemy(Registry &registry, Entity entity)
+	{
+		const auto &patrol = registry.get<PatrolComponent>(entity);
+		const auto &chase = registry.get<ChaseComponent>(entity);
+
+		registry.registerComponent<StateMachineComponent>(entity, StateMachineComponent{});
+		auto &sm = registry.get<StateMachineComponent>(entity);
+
+		StateMachineBuilder builder(sm);
+
+		builder.addState("patrol")
+		    .onEnter<CancelMeleeAttackAction>()
+		    .onEnter<TriggerAnimationAction>("walk", true)
+		    .onUpdate<SetMovementSpeedAction>(patrol.patrolSpeed)
+		    .onUpdate<PatrolAction>()
+		    .transition<MeleeProximityEntryTransition>("chase", chase.detectionRange, 32.0f);
+
+		addMeleeCombatState(builder, registry, entity, "patrol");
+
+		builder.setInitialState("patrol").build();
+	}
+
 	static void createBossEnemy(Registry &registry, Entity entity)
 	{
-		auto &sm = registry.registerComponent<StateMachineComponent>(entity, StateMachineComponent{});
+		registry.registerComponent<StateMachineComponent>(entity, StateMachineComponent{});
+		auto &sm = registry.get<StateMachineComponent>(entity);
 
 		StateMachineBuilder(sm)
 		    // Idle state - deciding what to do next
@@ -103,13 +208,10 @@ class EnemyStateMachineFactory {
 		    .build();
 	}
 
-	/**
-	 * Create a ranged enemy state machine
-	 * States: idle, chase, aiming, shooting, retreat
-	 */
 	static void createRangedEnemy(Registry &registry, Entity entity)
 	{
-		auto &sm = registry.registerComponent<StateMachineComponent>(entity, StateMachineComponent{});
+		registry.registerComponent<StateMachineComponent>(entity, StateMachineComponent{});
+		auto &sm = registry.get<StateMachineComponent>(entity);
 
 		StateMachineBuilder(sm)
 		    .addState("idle")
@@ -146,7 +248,8 @@ class EnemyStateMachineFactory {
 	 */
 	static void createFlyingEnemy(Registry &registry, Entity entity)
 	{
-		auto &sm = registry.registerComponent<StateMachineComponent>(entity, StateMachineComponent{});
+		registry.registerComponent<StateMachineComponent>(entity, StateMachineComponent{});
+		auto &sm = registry.get<StateMachineComponent>(entity);
 
 		StateMachineBuilder(sm)
 		    .addState("patrol")
@@ -186,7 +289,8 @@ class EnemyStateMachineFactory {
 	 */
 	static void createTankEnemy(Registry &registry, Entity entity)
 	{
-		auto &sm = registry.registerComponent<StateMachineComponent>(entity, StateMachineComponent{});
+		registry.registerComponent<StateMachineComponent>(entity, StateMachineComponent{});
+		auto &sm = registry.get<StateMachineComponent>(entity);
 
 		StateMachineBuilder(sm)
 		    .addState("idle")

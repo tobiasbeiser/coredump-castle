@@ -75,8 +75,8 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 	accumulator += deltaTime;
 	while (accumulator >= stepSize) {
 		accumulator -= stepSize;
-		ECS::Systems::ChaseSystem::update(game.getRegistry(), deltaTime);
 		ECS::Systems::StateMachineSystem::update(game.getRegistry(), stepSize);
+		ECS::Systems::ChaseSystem::update(game.getRegistry(), stepSize);
 		ECS::Systems::PatrolSystem::update(game.getRegistry());
 		ECS::Systems::MovementSystem::update(game.getRegistry(), stepSize);
 		ECS::Systems::PhysicsSystem::update(game.getRegistry(), stepSize);

@@ -10,6 +10,7 @@
 #include "Engine/ECS/Components/Gameplay/Combat/RangedAttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
+#include "Engine/ECS/Components/Physics/AccelerationComponent.hpp"
 #include "Engine/ECS/Components/Render/AnimationComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
@@ -23,11 +24,6 @@
 
 namespace GameEngine::ECS {
 
-// ============================================================================
-// TRANSITIONS
-// ============================================================================
-
-// Transition after a certain time duration
 struct TimerTransition : Transition {
 	float duration;
 
@@ -45,7 +41,6 @@ struct TimerTransition : Transition {
 	}
 };
 
-// Transition based on player proximity (entry)
 struct ProximityEntryTransition : Transition {
 	float radius;
 
@@ -57,7 +52,6 @@ struct ProximityEntryTransition : Transition {
 	bool canTransition(Registry &registry, Entity entity, float deltaTime) const override;
 };
 
-// Transition based on player proximity (exit)
 struct ProximityExitTransition : Transition {
 	float radius;
 
@@ -69,7 +63,6 @@ struct ProximityExitTransition : Transition {
 	bool canTransition(Registry &registry, Entity entity, float deltaTime) const override;
 };
 
-// Transition based on health percentage
 struct HealthThresholdTransition : Transition {
 	float healthPercentage;
 	bool lessThan; // true for <, false for >
@@ -83,14 +76,12 @@ struct HealthThresholdTransition : Transition {
 	bool canTransition(Registry &registry, Entity entity, float deltaTime) const override;
 };
 
-// Transition based on poise break (stagger)
 struct PoiseBreakTransition : Transition {
 	PoiseBreakTransition(std::string targetState) { this->targetState = std::move(targetState); }
 
 	bool canTransition(Registry &registry, Entity entity, float deltaTime) const override;
 };
 
-// Transition based on player being stationary
 struct PlayerStationaryTransition : Transition {
 	float stationaryTime;
 
@@ -102,7 +93,6 @@ struct PlayerStationaryTransition : Transition {
 	bool canTransition(Registry &registry, Entity entity, float deltaTime) const override;
 };
 
-// Random chance transition (useful for AI variety)
 struct RandomTransition : Transition {
 	float chance; // 0.0 to 1.0
 
@@ -114,16 +104,9 @@ struct RandomTransition : Transition {
 	bool canTransition(Registry &registry, Entity entity, float deltaTime) const override;
 };
 
-// ============================================================================
-// STATE ACTIONS
-// ============================================================================
-
-// Execute patrol behavior via PatrolSystem
 struct PatrolAction : StateAction {
 	void execute(Registry &registry, Entity entity, float deltaTime) override;
 };
-
-// Action: Set velocity
 struct SetVelocityAction : StateAction {
 	glm::vec2 velocity;
 
@@ -137,7 +120,21 @@ struct SetVelocityAction : StateAction {
 	}
 };
 
-// Action: Trigger animation
+struct StopMovementAction : StateAction {
+	void execute(Registry &registry, Entity entity, float deltaTime) override
+	{
+		if (auto vel = registry.tryGet<VelocityComponent>(entity)) {
+			vel->get().velocity.x = 0.0f; // Keep vertical for gravity
+		}
+		if (auto acc = registry.tryGet<AccelerationComponent>(entity)) {
+			acc->get().acceleration.x = 0.0f;
+		}
+		if (auto input = registry.tryGet<InputComponent>(entity)) {
+			input->get().horizontalDirection = 0.0f;
+		}
+	}
+};
+
 struct TriggerAnimationAction : StateAction {
 	std::string animationName;
 	bool loop;
@@ -150,22 +147,19 @@ struct TriggerAnimationAction : StateAction {
 	void execute(Registry &registry, Entity entity, float deltaTime) override;
 };
 
-// Forward declare the helper function
 AnimationType stringToAnimationType(const std::string &animName);
 
-// Action: Enable/disable a component
 struct ToggleComponentAction : StateAction {
 	enum class ComponentType { Chase, Patrol, Charge, Gravity, Collision };
 
 	ComponentType component;
 	bool enable;
 
-	ToggleComponentAction(ComponentType comp, bool shouldEnable) : component(comp), enable(shouldEnable) {}
+	ToggleComponentAction(ComponentType comp, const bool shouldEnable) : component(comp), enable(shouldEnable) {}
 
 	void execute(Registry &registry, Entity entity, float deltaTime) override;
 };
 
-// Action: Set movement speed
 struct SetMovementSpeedAction : StateAction {
 	float speed;
 
@@ -179,12 +173,9 @@ struct SetMovementSpeedAction : StateAction {
 	}
 };
 
-// Action: Face player
 struct FacePlayerAction : StateAction {
 	void execute(Registry &registry, Entity entity, float deltaTime) override;
 };
-
-// Action: Move towards player
 struct MoveTowardsPlayerAction : StateAction {
 	float speed;
 
@@ -193,17 +184,13 @@ struct MoveTowardsPlayerAction : StateAction {
 	void execute(Registry &registry, Entity entity, float deltaTime) override;
 };
 
-// Action: Execute attack
 struct ExecuteAttackAction : StateAction {
 	void execute(Registry &registry, Entity entity, float deltaTime) override;
 };
-
-// Action: Reset poise
 struct ResetPoiseAction : StateAction {
 	void execute(Registry &registry, Entity entity, float deltaTime) override;
 };
 
-// Action: Make invulnerable
 struct SetInvulnerabilityAction : StateAction {
 	bool invulnerable;
 
@@ -212,11 +199,6 @@ struct SetInvulnerabilityAction : StateAction {
 	void execute(Registry &registry, Entity entity, float deltaTime) override;
 };
 
-// ============================================================================
-// STATE DATA (for storing state-specific information)
-// ============================================================================
-
-// Data for telegraphing/windup states
 struct TelegraphStateData : StateData {
 	std::string nextAttackState;
 	float windupDuration;
@@ -227,14 +209,12 @@ struct TelegraphStateData : StateData {
 	}
 };
 
-// Data for attack states
 struct AttackStateData : StateData {
 	float damageMultiplier = 1.0f;
 	float knockbackMultiplier = 1.0f;
 	std::string recoveryState = "recover";
 };
 
-// Data for charge states
 struct ChargeStateData : StateData {
 	float chargeSpeed;
 	float chargeDistance;
@@ -245,114 +225,46 @@ struct ChargeStateData : StateData {
 	}
 };
 
-// ============================================================================
-// RANGED ENEMY ACTIONS
-// ============================================================================
-
-// Stop moving and face the player
 struct StopAndFacePlayerAction final : StateAction {
-	void execute(Registry &registry, Entity entity, float deltaTime) override
-	{
-		auto posOpt = registry.tryGet<PositionComponent>(entity);
-		auto inputOpt = registry.tryGet<InputComponent>(entity);
-		auto renderOpt = registry.tryGet<RenderComponent>(entity);
-		auto hurtBoxOpt = registry.tryGet<HurtBoxComponent>(entity);
-		auto transformOpt = registry.tryGet<TransformComponent>(entity);
-
-		if (!posOpt || !inputOpt || !renderOpt || !hurtBoxOpt)
-			return;
-
-		const glm::vec2 scale = transformOpt ? transformOpt->get().scale : glm::vec2{1.0f, 1.0f};
-		const SDL_FRect enemyRect =
-		    Utils::HitBoxUtils::getHitBox(posOpt->get().position, hurtBoxOpt->get().hurtBox, &scale);
-		const glm::vec2 enemyCenter = {enemyRect.x + enemyRect.w * 0.5f, enemyRect.y + enemyRect.h * 0.5f};
-
-		auto playerView = registry.view<PlayerTag, PositionComponent, HurtBoxComponent>();
-		for (const auto playerEntity : playerView) {
-			const auto &playerPos = playerView.get<PositionComponent>(playerEntity);
-			const auto &playerHurtBox = playerView.get<HurtBoxComponent>(playerEntity);
-			auto playerTransformOpt = registry.tryGet<TransformComponent>(playerEntity);
-			const glm::vec2 playerScale = playerTransformOpt ? playerTransformOpt->get().scale : glm::vec2{1.0f, 1.0f};
-
-			const SDL_FRect playerRect =
-			    Utils::HitBoxUtils::getHitBox(playerPos.position, playerHurtBox.hurtBox, &playerScale);
-			const glm::vec2 playerCenter = {playerRect.x + playerRect.w * 0.5f, playerRect.y + playerRect.h * 0.5f};
-
-			renderOpt->get().setFacingLeft(playerCenter.x < enemyCenter.x);
-			inputOpt->get().horizontalDirection = 0.0f;
-			break;
-		}
-	}
+	void execute(Registry &registry, Entity entity, float deltaTime) override;
 };
-
-// Move away from player at specified speed
 struct RetreatFromPlayerAction final : StateAction {
 	float speed;
 
 	explicit RetreatFromPlayerAction(float retreatSpeed) : speed(retreatSpeed) {}
 
-	void execute(Registry &registry, Entity entity, float deltaTime) override
-	{
-		auto enemyPos = registry.tryGet<PositionComponent>(entity);
-		auto enemyInput = registry.tryGet<InputComponent>(entity);
-		auto enemyMovement = registry.tryGet<MovementComponent>(entity);
-		auto enemyRender = registry.tryGet<RenderComponent>(entity);
-
-		if (!enemyPos || !enemyInput || !enemyMovement)
-			return;
-
-		auto playerView = registry.view<PlayerTag, PositionComponent>();
-		for (const auto playerEntity : playerView) {
-			const auto &playerPos = playerView.get<PositionComponent>(playerEntity);
-
-			// Move AWAY from player
-			const float direction = playerPos.position.x > enemyPos->get().position.x ? -1.0f : 1.0f;
-			enemyInput->get().horizontalDirection = direction;
-			enemyMovement->get().maxSpeedX = speed;
-
-			// Face player while retreating
-			if (enemyRender) {
-				enemyRender->get().setFacingLeft(playerPos.position.x < enemyPos->get().position.x);
-			}
-			break;
-		}
-	}
+	void execute(Registry &registry, Entity entity, float deltaTime) override;
 };
 
-// Trigger ranged attack if valid target exists
 struct TriggerRangedAttackAction : StateAction {
 	void execute(Registry &registry, Entity entity, float deltaTime) override;
 };
 
-// Reset ranged attack state (use as onExit when leaving combat)
 struct CancelRangedAttackAction : StateAction {
 	void execute(Registry &registry, Entity entity, float deltaTime) override;
 };
 
-// Aim at player with LOS check - sets targetSnapshot
+struct CancelMeleeAttackAction : StateAction {
+	void execute(Registry &registry, Entity entity, float deltaTime) override;
+};
+
 struct AimAtPlayerWithLOSAction final : StateAction {
 	void execute(Registry &registry, Entity entity, float deltaTime) override;
 };
 
-// Composite action: stop, face, aim with LOS, and trigger attack
-struct RangedAttackAction final : StateAction {
-	StopAndFacePlayerAction stopAndFace;
-	AimAtPlayerWithLOSAction aimWithLOS;
-	TriggerRangedAttackAction triggerAttack;
+struct MeleeChaseAction final : StateAction {
+	float speed;
+	explicit MeleeChaseAction(float chaseSpeed) : speed(chaseSpeed) {}
 
-	void execute(Registry &registry, Entity entity, float deltaTime) override
-	{
-		stopAndFace.execute(registry, entity, deltaTime);
-		aimWithLOS.execute(registry, entity, deltaTime);
-		triggerAttack.execute(registry, entity, deltaTime);
-	}
+	void execute(Registry &registry, Entity entity, float deltaTime) override;
 };
 
-// ============================================================================
-// LOS-BASED TRANSITIONS (for ranged enemies)
-// ============================================================================
+struct MeleeAttackTransition final : Transition {
+	MeleeAttackTransition(std::string target) { this->targetState = std::move(target); }
 
-// Transition requiring BOTH proximity AND line of sight
+	bool canTransition(Registry &registry, Entity entity, float deltaTime) const override;
+};
+
 struct ProximityAndLosEntryTransition final : Transition {
 	float radius;
 
@@ -364,12 +276,41 @@ struct ProximityAndLosEntryTransition final : Transition {
 	bool canTransition(Registry &registry, Entity entity, float deltaTime) const override;
 };
 
-// Transition when LOS is lost for a duration
 struct LosLostTransition final : Transition {
 	mutable float losLostDuration = 0.0f;
 	float gracePeriod;
 
 	LosLostTransition(std::string target, float gracePeriodSeconds = 0.5f) : gracePeriod(gracePeriodSeconds)
+	{
+		this->targetState = std::move(target);
+	}
+
+	bool canTransition(Registry &registry, Entity entity, float deltaTime) const override;
+};
+
+struct PlayerNotGroundedTransition final : Transition {
+	PlayerNotGroundedTransition(std::string target) { this->targetState = std::move(target); }
+
+	bool canTransition(Registry &registry, Entity entity, float deltaTime) const override;
+};
+
+struct PlayerUnreachableTransition final : Transition {
+	float maxHeightDifference;
+
+	PlayerUnreachableTransition(std::string target, float maxHeight = 32.0f) : maxHeightDifference(maxHeight)
+	{
+		this->targetState = std::move(target);
+	}
+
+	bool canTransition(Registry &registry, Entity entity, float deltaTime) const override;
+};
+
+struct MeleeProximityEntryTransition final : Transition {
+	float radius;
+	float maxHeightDifference;
+
+	MeleeProximityEntryTransition(std::string target, float proximityRadius, float maxHeight = 32.0f)
+	    : radius(proximityRadius), maxHeightDifference(maxHeight)
 	{
 		this->targetState = std::move(target);
 	}

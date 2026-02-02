@@ -52,6 +52,9 @@ MIX_Audio *AudioManager::loadAudio(const std::filesystem::path &filePath)
 
 void AudioManager::playMusic(const std::filesystem::path &filePath, const int fadeMs)
 {
+	if (isAudioDisabled)
+		return;
+
 	MIX_Audio *audio = loadAudio(filePath);
 	if (!audio)
 		return;
@@ -96,6 +99,9 @@ void AudioManager::resumeMusic() const
 
 void AudioManager::playSound(const std::filesystem::path &filePath, float volume)
 {
+	if (isAudioDisabled)
+		return;
+
 	MIX_Audio *audio = loadAudio(filePath);
 	if (!audio)
 		return;
@@ -132,6 +138,9 @@ void AudioManager::loadSoundGroup(const std::string &groupId, const std::filesys
 
 void AudioManager::playGroup(const std::string &groupId)
 {
+	if (isAudioDisabled)
+		return;
+
 	if (!soundGroups.contains(groupId) || soundGroups[groupId].empty())
 		return;
 
