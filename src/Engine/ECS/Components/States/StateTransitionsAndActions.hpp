@@ -24,6 +24,12 @@
 
 namespace GameEngine::ECS {
 
+struct AnimationFinishedTransition : Transition {
+	AnimationFinishedTransition(std::string targetState) { this->targetState = std::move(targetState); }
+
+	bool canTransition(Registry &registry, Entity entity, float deltaTime) const override;
+};
+
 struct TimerTransition : Transition {
 	float duration;
 
@@ -135,11 +141,19 @@ struct StopMovementAction : StateAction {
 	}
 };
 
+struct SetStateComponentAction : StateAction {
+	State state;
+
+	explicit SetStateComponentAction(State s) : state(s) {}
+
+	void execute(Registry &registry, Entity entity, float deltaTime) override;
+};
+
 struct TriggerAnimationAction : StateAction {
 	std::string animationName;
 	bool loop;
 
-	TriggerAnimationAction(std::string animName, bool shouldLoop = false)
+	TriggerAnimationAction(std::string animName, const bool shouldLoop = false)
 	    : animationName(std::move(animName)), loop(shouldLoop)
 	{
 	}
@@ -160,14 +174,14 @@ struct ToggleComponentAction : StateAction {
 	void execute(Registry &registry, Entity entity, float deltaTime) override;
 };
 
-struct SetMovementSpeedAction : StateAction {
+struct SetMovementSpeedAction final : StateAction {
 	float speed;
 
-	explicit SetMovementSpeedAction(float newSpeed) : speed(newSpeed) {}
+	explicit SetMovementSpeedAction(const float newSpeed) : speed(newSpeed) {}
 
-	void execute(Registry &registry, Entity entity, float deltaTime) override
+	void execute(Registry &registry, const Entity entity, float deltaTime) override
 	{
-		if (auto movement = registry.tryGet<MovementComponent>(entity)) {
+		if (const auto movement = registry.tryGet<MovementComponent>(entity)) {
 			movement->get().maxSpeedX = speed;
 		}
 	}
@@ -176,6 +190,10 @@ struct SetMovementSpeedAction : StateAction {
 struct FacePlayerAction : StateAction {
 	void execute(Registry &registry, Entity entity, float deltaTime) override;
 };
+struct FacePlayerDuringWindupAction : StateAction {
+	void execute(Registry &registry, Entity entity, float deltaTime) override;
+};
+
 struct MoveTowardsPlayerAction : StateAction {
 	float speed;
 
@@ -240,11 +258,11 @@ struct TriggerRangedAttackAction : StateAction {
 	void execute(Registry &registry, Entity entity, float deltaTime) override;
 };
 
-struct CancelRangedAttackAction : StateAction {
+struct CancelRangedAttackAction final : StateAction {
 	void execute(Registry &registry, Entity entity, float deltaTime) override;
 };
 
-struct CancelMeleeAttackAction : StateAction {
+struct CancelMeleeAttackAction final : StateAction {
 	void execute(Registry &registry, Entity entity, float deltaTime) override;
 };
 
@@ -268,7 +286,7 @@ struct MeleeAttackTransition final : Transition {
 struct ProximityAndLosEntryTransition final : Transition {
 	float radius;
 
-	ProximityAndLosEntryTransition(std::string target, float proximityRadius) : radius(proximityRadius)
+	ProximityAndLosEntryTransition(std::string target, const float proximityRadius) : radius(proximityRadius)
 	{
 		this->targetState = std::move(target);
 	}
@@ -298,6 +316,17 @@ struct PlayerUnreachableTransition final : Transition {
 	float maxHeightDifference;
 
 	PlayerUnreachableTransition(std::string target, float maxHeight = 32.0f) : maxHeightDifference(maxHeight)
+	{
+		this->targetState = std::move(target);
+	}
+
+	bool canTransition(Registry &registry, Entity entity, float deltaTime) const override;
+};
+
+struct PlayerUnreachableAndGroundedTransition final : Transition {
+	float maxHeightDifference;
+
+	PlayerUnreachableAndGroundedTransition(std::string target, float maxHeight = 32.0f) : maxHeightDifference(maxHeight)
 	{
 		this->targetState = std::move(target);
 	}

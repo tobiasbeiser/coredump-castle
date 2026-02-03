@@ -20,7 +20,7 @@ void update(Registry &registry, float deltaTime)
 	}
 
 	for (const auto entity : view) {
-		auto smOpt = registry.tryGet<StateMachineComponent>(entity);
+		const auto smOpt = registry.tryGet<StateMachineComponent>(entity);
 		if (!smOpt)
 			continue;
 
@@ -34,7 +34,7 @@ void update(Registry &registry, float deltaTime)
 			continue;
 		}
 
-		MachineState *currentState = sm.states[sm.currentState].get();
+		const MachineState *currentState = sm.states[sm.currentState].get();
 
 		// Execute onEnter actions if just entered
 		if (sm.justEnteredState) {

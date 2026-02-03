@@ -11,7 +11,6 @@
 
 namespace GameEngine::ECS::Systems::PatrolSystem {
 
-// Reusable logic for patrol movement - called by PatrolAction in state machines
 void updateEntity(Registry &registry, Entity entity)
 {
 	const auto patrolComp = registry.tryGet<PatrolComponent>(entity);

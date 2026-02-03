@@ -143,6 +143,13 @@ void ToggleComponentAction::execute(Registry &registry, Entity entity, float del
 	}
 }
 
+void SetStateComponentAction::execute(Registry &registry, Entity entity, float deltaTime)
+{
+	if (auto stateComp = registry.tryGet<StateComponent>(entity)) {
+		stateComp->get().state = state;
+	}
+}
+
 void FacePlayerAction::execute(Registry &registry, Entity entity, float deltaTime)
 {
 	auto enemyRender = registry.tryGet<RenderComponent>(entity);
@@ -156,6 +163,22 @@ void FacePlayerAction::execute(Registry &registry, Entity entity, float deltaTim
 		const bool shouldFaceLeft = player->center.x < enemy->center.x;
 		enemyRender->get().setFacingLeft(shouldFaceLeft);
 	}
+}
+
+void FacePlayerDuringWindupAction::execute(Registry &registry, Entity entity, float deltaTime)
+{
+	auto attack = registry.tryGet<AttackComponent>(entity);
+	if (!attack)
+		return;
+
+	// Only face player if we are in the windup phase
+	if (attack->get().attackTimer.getTime() >= std::chrono::duration<float>(attack->get().activeWindUpLimit)) {
+		return;
+	}
+
+	// Reuse FacePlayer logic
+	FacePlayerAction facePlayer;
+	facePlayer.execute(registry, entity, deltaTime);
 }
 
 void MoveTowardsPlayerAction::execute(Registry &registry, Entity entity, float deltaTime)
@@ -479,6 +502,12 @@ bool HealthThresholdTransition::canTransition(Registry &registry, Entity entity,
 
 bool PoiseBreakTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
 {
+	// Check for explicit "Hurting" state set by HealthSystem/CombatSystem
+	if (auto stateComp = registry.tryGet<StateComponent>(entity)) {
+		return stateComp->get().state == State::Hurting;
+	}
+
+	// Fallback to checking PoiseComponent directly (legacy or if HealthSystem doesn't set State)
 	auto poise = registry.tryGet<PoiseComponent>(entity);
 	return poise && poise->get().currentPoise <= 0.0f && poise->get().maxPoise > 0.0f;
 }
@@ -574,6 +603,34 @@ bool PlayerUnreachableTransition::canTransition(Registry &registry, Entity entit
 	return (enemyBottom - playerBottom) > maxHeightDifference;
 }
 
+bool PlayerUnreachableAndGroundedTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
+{
+	auto enemy = getEntityInfo(registry, entity);
+	if (!enemy)
+		return false;
+
+	auto player = getPlayerInfo(registry);
+	if (!player)
+		return true; // No player = unreachable
+
+	// 1. Check if unreachable (height difference)
+	const float playerBottom = player->rect.y + player->rect.h;
+	const float enemyBottom = enemy->rect.y + enemy->rect.h;
+	bool unreachable = (enemyBottom - playerBottom) > maxHeightDifference;
+
+	if (!unreachable)
+		return false;
+
+	// 2. Check if grounded (AND)
+	auto playerView = registry.view<PlayerTag, GroundedComponent>();
+	for (const auto playerEntity : playerView) {
+		const auto &grounded = playerView.get<GroundedComponent>(playerEntity);
+		return grounded.grounded;
+	}
+
+	return false;
+}
+
 bool MeleeProximityEntryTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
 {
 	auto enemy = getEntityInfo(registry, entity);
@@ -597,6 +654,15 @@ bool MeleeProximityEntryTransition::canTransition(Registry &registry, Entity ent
 		return false;
 
 	return true;
+}
+
+bool AnimationFinishedTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
+{
+	auto animComp = registry.tryGet<AnimationComponent>(entity);
+	if (!animComp)
+		return true; // No animation component, assume finished
+
+	return animComp->get().hasFinished(animComp->get().getAnimation());
 }
 
 } // namespace GameEngine::ECS

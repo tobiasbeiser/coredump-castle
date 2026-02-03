@@ -348,7 +348,9 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 	// Add safe spawn adjustment as a setup step (runs after entity is created)
 	auto reg = registry;
 	spawner.addSetupStep([reg](const Entity entity) { ensureSafeSpawn(reg, entity); });
-
+	if (isBoss) {
+		spawner.addSetupStep([reg](const Entity entity) { EnemyStateMachineFactory::createBossEnemy(reg, entity); });
+	}
 	return spawner;
 }
 
