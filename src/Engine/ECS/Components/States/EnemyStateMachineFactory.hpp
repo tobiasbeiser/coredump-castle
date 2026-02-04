@@ -50,35 +50,6 @@ class EnemyStateMachineFactory {
 		builder.setInitialState("patrol").build();
 	}
 
-	static StateMachineBuilder &addMeleeCombatState(StateMachineBuilder &builder, Registry &registry, Entity entity,
-	                                                const std::string &returnState = "patrol")
-	{
-		const auto &chase = registry.get<ChaseComponent>(entity);
-
-		return builder.addState("chase")
-		    .onUpdate<MeleeChaseAction>(chase.chaseSpeed)
-		    .transition<MeleeAttackTransition>("attacking")
-		    .transition<PlayerUnreachableTransition>(returnState, 32.0f)
-		    .transition<ProximityExitTransition>(returnState, chase.giveUpRange)
-
-		    .addState("attacking")
-		    .onEnter<TriggerAnimationAction>("attack", false)
-		    .onEnter<StopMovementAction>()
-		    .onEnter<FacePlayerAction>()
-		    .onEnter<ExecuteAttackAction>()
-		    .onUpdate<StopMovementAction>()
-		    .onUpdate<FacePlayerAction>()
-		    .transition<PlayerUnreachableTransition>(returnState, 32.0f)
-		    .transition<TimerTransition>("recover", 0.8f)
-
-		    .addState("recover")
-		    .onEnter<StopMovementAction>()
-		    .onUpdate<StopMovementAction>()
-		    .onUpdate<FacePlayerAction>()
-		    .transition<PlayerUnreachableTransition>(returnState, 32.0f)
-		    .transition<TimerTransition>("chase", 0.5f); // Go back to chase to re-evaluate
-	}
-
 	static void createPatrolOnlyEnemy(Registry &registry, Entity entity)
 	{
 		const auto &patrol = registry.get<PatrolComponent>(entity);
@@ -111,9 +82,30 @@ class EnemyStateMachineFactory {
 		    .onEnter<TriggerAnimationAction>("walk", true)
 		    .onUpdate<SetMovementSpeedAction>(patrol.patrolSpeed)
 		    .onUpdate<PatrolAction>()
-		    .transition<MeleeProximityEntryTransition>("chase", chase.detectionRange, 32.0f);
+		    .transition<MeleeProximityEntryTransition>("chase", chase.detectionRange, 32.0f)
 
-		addMeleeCombatState(builder, registry, entity, "patrol");
+		    .addState("chase")
+		    .onUpdate<MeleeChaseAction>(chase.chaseSpeed)
+		    .transition<MeleeAttackTransition>("attacking")
+		    .transition<PlayerUnreachableTransition>("patrol", 32.0f)
+		    .transition<ProximityExitTransition>("patrol", chase.giveUpRange)
+
+		    .addState("attacking")
+		    .onEnter<TriggerAnimationAction>("attack", false)
+		    .onEnter<StopMovementAction>()
+		    .onEnter<FacePlayerAction>()
+		    .onEnter<ExecuteAttackAction>()
+		    .onUpdate<StopMovementAction>()
+		    .onUpdate<FacePlayerAction>()
+		    .transition<PlayerUnreachableTransition>("patrol", 32.0f)
+		    .transition<TimerTransition>("recover", 0.8f)
+
+		    .addState("recover")
+		    .onEnter<StopMovementAction>()
+		    .onUpdate<StopMovementAction>()
+		    .onUpdate<FacePlayerAction>()
+		    .transition<PlayerUnreachableTransition>("patrol", 32.0f)
+		    .transition<TimerTransition>("chase", 0.5f);
 
 		builder.setInitialState("patrol").build();
 	}
@@ -139,9 +131,33 @@ class EnemyStateMachineFactory {
 		builder.addState("chase")
 		    .onUpdate<MeleeChaseAction>(chase.chaseSpeed)
 		    .onEnter<TriggerAnimationAction>("walk", true)
-		    .transition<MeleeAttackTransition>("attacking")
+		    .transition<MeleeAttackTransition>("combat_decision")
 		    .transition<PlayerUnreachableAndGroundedTransition>("patrol", 32.0f)
 		    .transition<ProximityExitTransition>("patrol", chase.giveUpRange)
+		    .transition<PoiseBreakTransition>("staggered")
+
+		    .addState("combat_decision")
+		    .transition<ChargeReadyTransition>("check_charge_chance")
+		    .transition<ImmediateTransition>("attacking")
+
+		    .addState("check_charge_chance")
+		    .transition<RandomTransition>("telegraph_charge", 0.5f)
+		    .transition<ImmediateTransition>("attacking")
+
+		    .addState("telegraph_charge")
+		    .onEnter<StartChargeTelegraphAction>()
+		    .onEnter<StopMovementAction>()
+		    .onEnter<FacePlayerAction>()
+		    .onEnter<TriggerAnimationAction>("idle", true)
+		    .onUpdate<StopMovementAction>()
+		    .transition<ChargeTelegraphFinishedTransition>("charging")
+		    .transition<PoiseBreakTransition>("staggered")
+
+		    .addState("charging")
+		    .onEnter<StartChargeAction>()
+		    .onEnter<TriggerAnimationAction>("walk", true)
+		    .onUpdate<ChargeAction>()
+		    .transition<ChargeFinishedTransition>("recover")
 		    .transition<PoiseBreakTransition>("staggered")
 
 		    .addState("attacking")
@@ -158,11 +174,11 @@ class EnemyStateMachineFactory {
 
 		    .addState("recover")
 		    .onEnter<StopMovementAction>()
-		    .onEnter<TriggerAnimationAction>("idle", true)
+		    .onEnter<TriggerAnimationAction>("idle", false)
 		    .onUpdate<StopMovementAction>()
 		    .onUpdate<FacePlayerAction>()
 		    .transition<PlayerUnreachableAndGroundedTransition>("patrol", 32.0f)
-		    .transition<TimerTransition>("chase", 0.1f)
+		    .transition<AnimationFinishedTransition>("chase")
 		    .transition<PoiseBreakTransition>("staggered")
 
 		    .addState("staggered")

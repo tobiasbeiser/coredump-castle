@@ -421,10 +421,10 @@
                  "y":896
                 }, 
                 {
-                 "id":49,
-                 "template":"..\/objects\/meleeEnemy.tj",
-                 "x":433.333333333333,
-                 "y":868.75
+                 "id":50,
+                 "template":"..\/objects\/demonBoss.tj",
+                 "x":425,
+                 "y":872.916666666667
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -479,7 +479,7 @@
          "y":0
         }],
  "nextlayerid":17,
- "nextobjectid":50,
+ "nextobjectid":51,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",

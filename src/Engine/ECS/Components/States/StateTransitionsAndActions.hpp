@@ -69,32 +69,8 @@ struct ProximityExitTransition : Transition {
 	bool canTransition(Registry &registry, Entity entity, float deltaTime) const override;
 };
 
-struct HealthThresholdTransition : Transition {
-	float healthPercentage;
-	bool lessThan; // true for <, false for >
-
-	HealthThresholdTransition(std::string targetState, float healthPercent, bool isLessThan = true)
-	    : healthPercentage(healthPercent), lessThan(isLessThan)
-	{
-		this->targetState = std::move(targetState);
-	}
-
-	bool canTransition(Registry &registry, Entity entity, float deltaTime) const override;
-};
-
 struct PoiseBreakTransition : Transition {
 	PoiseBreakTransition(std::string targetState) { this->targetState = std::move(targetState); }
-
-	bool canTransition(Registry &registry, Entity entity, float deltaTime) const override;
-};
-
-struct PlayerStationaryTransition : Transition {
-	float stationaryTime;
-
-	PlayerStationaryTransition(std::string targetState, float timeStationary) : stationaryTime(timeStationary)
-	{
-		this->targetState = std::move(targetState);
-	}
 
 	bool canTransition(Registry &registry, Entity entity, float deltaTime) const override;
 };
@@ -106,6 +82,24 @@ struct RandomTransition : Transition {
 	{
 		this->targetState = std::move(targetState);
 	}
+
+	bool canTransition(Registry &registry, Entity entity, float deltaTime) const override;
+};
+
+struct ImmediateTransition : Transition {
+	ImmediateTransition(std::string targetState) { this->targetState = std::move(targetState); }
+
+	bool canTransition(Registry &registry, Entity entity, float deltaTime) const override { return true; }
+};
+
+struct ChargeFinishedTransition : Transition {
+	ChargeFinishedTransition(std::string targetState) { this->targetState = std::move(targetState); }
+
+	bool canTransition(Registry &registry, Entity entity, float deltaTime) const override;
+};
+
+struct ChargeReadyTransition : Transition {
+	ChargeReadyTransition(std::string targetState) { this->targetState = std::move(targetState); }
 
 	bool canTransition(Registry &registry, Entity entity, float deltaTime) const override;
 };
@@ -205,17 +199,6 @@ struct MoveTowardsPlayerAction : StateAction {
 struct ExecuteAttackAction : StateAction {
 	void execute(Registry &registry, Entity entity, float deltaTime) override;
 };
-struct ResetPoiseAction : StateAction {
-	void execute(Registry &registry, Entity entity, float deltaTime) override;
-};
-
-struct SetInvulnerabilityAction : StateAction {
-	bool invulnerable;
-
-	explicit SetInvulnerabilityAction(bool isInvulnerable) : invulnerable(isInvulnerable) {}
-
-	void execute(Registry &registry, Entity entity, float deltaTime) override;
-};
 
 struct TelegraphStateData : StateData {
 	std::string nextAttackState;
@@ -246,13 +229,6 @@ struct ChargeStateData : StateData {
 struct StopAndFacePlayerAction final : StateAction {
 	void execute(Registry &registry, Entity entity, float deltaTime) override;
 };
-struct RetreatFromPlayerAction final : StateAction {
-	float speed;
-
-	explicit RetreatFromPlayerAction(float retreatSpeed) : speed(retreatSpeed) {}
-
-	void execute(Registry &registry, Entity entity, float deltaTime) override;
-};
 
 struct TriggerRangedAttackAction : StateAction {
 	void execute(Registry &registry, Entity entity, float deltaTime) override;
@@ -275,6 +251,24 @@ struct MeleeChaseAction final : StateAction {
 	explicit MeleeChaseAction(float chaseSpeed) : speed(chaseSpeed) {}
 
 	void execute(Registry &registry, Entity entity, float deltaTime) override;
+};
+
+struct StartChargeAction final : StateAction {
+	void execute(Registry &registry, Entity entity, float deltaTime) override;
+};
+
+struct ChargeAction final : StateAction {
+	void execute(Registry &registry, Entity entity, float deltaTime) override;
+};
+
+struct StartChargeTelegraphAction final : StateAction {
+	void execute(Registry &registry, Entity entity, float deltaTime) override;
+};
+
+struct ChargeTelegraphFinishedTransition final : Transition {
+	ChargeTelegraphFinishedTransition(std::string target) { this->targetState = std::move(target); }
+
+	bool canTransition(Registry &registry, Entity entity, float deltaTime) const override;
 };
 
 struct MeleeAttackTransition final : Transition {
@@ -302,12 +296,6 @@ struct LosLostTransition final : Transition {
 	{
 		this->targetState = std::move(target);
 	}
-
-	bool canTransition(Registry &registry, Entity entity, float deltaTime) const override;
-};
-
-struct PlayerNotGroundedTransition final : Transition {
-	PlayerNotGroundedTransition(std::string target) { this->targetState = std::move(target); }
 
 	bool canTransition(Registry &registry, Entity entity, float deltaTime) const override;
 };

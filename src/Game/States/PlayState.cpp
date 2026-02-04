@@ -1,14 +1,13 @@
 #include "PlayState.hpp"
 #include "Engine/ECS/Systems/AnimationSystem.hpp"
 #include "Engine/ECS/Systems/BlinkSystem.hpp"
+#include "Engine/ECS/Systems/ChargeTelegraphSystem.hpp"
 #include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
 #include "Engine/ECS/Systems/Combat/DeathSystem.hpp"
 #include "Engine/ECS/Systems/Combat/HealthSystem.hpp"
 #include "Engine/ECS/Systems/Combat/HitDetectionSystem.hpp"
 #include "Engine/ECS/Systems/Combat/PoiseSystem.hpp"
 #include "Engine/ECS/Systems/EffectSystem.hpp"
-#include "Engine/ECS/Systems/Enemy/ChaseSystem.hpp"
-#include "Engine/ECS/Systems/Enemy/PatrolSystem.hpp"
 #include "Engine/ECS/Systems/Enemy/ProjectileSystem.hpp"
 #include "Engine/ECS/Systems/Hazard/SpikeSystem.hpp"
 #include "Engine/ECS/Systems/InteractionSystem.hpp"
@@ -76,8 +75,6 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 	while (accumulator >= stepSize) {
 		accumulator -= stepSize;
 		ECS::Systems::StateMachineSystem::update(game.getRegistry(), stepSize);
-		// ECS::Systems::ChaseSystem::update(game.getRegistry(), stepSize);
-		// ECS::Systems::PatrolSystem::update(game.getRegistry());
 		ECS::Systems::MovementSystem::update(game.getRegistry(), stepSize);
 		ECS::Systems::PhysicsSystem::update(game.getRegistry(), stepSize);
 	}
@@ -99,6 +96,7 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 
 	ECS::Systems::AnimationSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::BlinkSystem::update(game.getRegistry());
+	ECS::Systems::ChargeTelegraphSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::EffectSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::VignetteSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::SoundSystem::update(game.getRegistry(), game.getAudioManager(), deltaTime);

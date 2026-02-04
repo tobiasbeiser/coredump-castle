@@ -14,13 +14,14 @@
 #include "Engine/ECS/Components/Physics/GravityComponent.hpp"
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
 #include "Engine/ECS/Components/Render/AnimationComponent.hpp"
+#include "Engine/ECS/Components/Render/ChargeTelegraphComponent.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
+#include "Engine/ECS/Systems/Enemy/ChargeSystem.hpp"
 #include "Engine/ECS/Systems/Enemy/ChaseSystem.hpp"
 #include "Engine/ECS/Systems/Enemy/PatrolSystem.hpp"
 #include "Engine/Utils/Random.hpp"
 #include "Game/Factories/ProjectileFactory.hpp"
-#include <SDL3/SDL_log.h>
 #include <cmath>
 #include <optional>
 
@@ -29,10 +30,10 @@ namespace GameEngine::ECS {
 namespace {
 
 struct EntityInfo {
-	glm::vec2 position;
-	SDL_FRect rect;
-	glm::vec2 center;
-	glm::vec2 scale;
+	glm::vec2 position{};
+	SDL_FRect rect{};
+	glm::vec2 center{};
+	glm::vec2 scale{};
 };
 
 std::optional<EntityInfo> getEntityInfo(Registry &registry, Entity entity)
@@ -73,16 +74,8 @@ ProjectileInfo getProjectileInfo(const ProjectileComponent *projComp)
 	return {{data.hitbox.w, data.hitbox.h}, {data.hitbox.x, data.hitbox.y}};
 }
 
-// Logic for calculating start position and checking LOS
-struct LosResult {
-	bool hasLos;
-	glm::vec2 spawnPos;
-	glm::vec2 rayStart;
-	std::optional<glm::vec2> targetPoint;
-};
-
-LosResult checkEnemyLos(const EntityInfo &enemy, const EntityInfo &player, const RangedAttackComponent *ranged,
-                        const ProjectileComponent *proj)
+bool hasLosToAttacker(const EntityInfo &enemy, const EntityInfo &player, const RangedAttackComponent *ranged,
+                      const ProjectileComponent *proj)
 {
 	auto projInfo = getProjectileInfo(proj);
 
@@ -103,7 +96,7 @@ LosResult checkEnemyLos(const EntityInfo &enemy, const EntityInfo &player, const
 	auto targetOpt = Utils::DetectionRangeUtils::getTargetWithLineOfSight(rayStart, player.center, player.rect,
 	                                                                      player.scale, projInfo.size);
 
-	return {targetOpt.has_value(), spawnPos, rayStart, targetOpt};
+	return targetOpt.has_value();
 }
 
 } // namespace
@@ -215,22 +208,6 @@ void ExecuteAttackAction::execute(Registry &registry, Entity entity, float delta
 	}
 }
 
-void ResetPoiseAction::execute(Registry &registry, Entity entity, float deltaTime)
-{
-	if (auto poise = registry.tryGet<PoiseComponent>(entity)) {
-		poise->get().currentPoise = poise->get().maxPoise;
-	}
-}
-
-void SetInvulnerabilityAction::execute(Registry &registry, Entity entity, float deltaTime)
-{
-	// TODO: Implement invulnerability
-}
-
-// ===================================
-// ANIMATION IMPLEMENTATIONS
-// ===================================
-
 AnimationType stringToAnimationType(const std::string &animName)
 {
 	if (animName == "idle")
@@ -289,33 +266,6 @@ void StopAndFacePlayerAction::execute(Registry &registry, Entity entity, float d
 	if (enemy && player) {
 		enemyRender->get().setFacingLeft(player->center.x < enemy->center.x);
 		inputOpt->get().horizontalDirection = 0.0f;
-	}
-}
-
-void RetreatFromPlayerAction::execute(Registry &registry, Entity entity, float deltaTime)
-{
-	auto enemy = getEntityInfo(registry, entity);
-	if (!enemy)
-		return;
-
-	auto enemyInput = registry.tryGet<InputComponent>(entity);
-	auto enemyMovement = registry.tryGet<MovementComponent>(entity);
-	auto enemyRender = registry.tryGet<RenderComponent>(entity);
-
-	if (!enemyInput || !enemyMovement)
-		return;
-
-	auto player = getPlayerInfo(registry);
-	if (!player)
-		return;
-
-	// Move AWAY
-	float direction = player->position.x > enemy->position.x ? -1.0f : 1.0f;
-	enemyInput->get().horizontalDirection = direction;
-	enemyMovement->get().maxSpeedX = speed;
-
-	if (enemyRender) {
-		enemyRender->get().setFacingLeft(player->position.x < enemy->position.x);
 	}
 }
 
@@ -429,6 +379,80 @@ void MeleeChaseAction::execute(Registry &registry, Entity entity, float deltaTim
 	Systems::ChaseSystem::updateEntity(registry, entity, deltaTime);
 }
 
+void StartChargeAction::execute(Registry &registry, Entity entity, float deltaTime)
+{
+	auto chargeOpt = registry.tryGet<ChargeComponent>(entity);
+	if (!chargeOpt) {
+		registry.registerComponent(entity, ChargeComponent{});
+		chargeOpt = registry.tryGet<ChargeComponent>(entity);
+	}
+
+	auto &charge = chargeOpt->get();
+
+	charge.chargeTimer.reset();
+	charge.chargeTimer.step(std::chrono::duration<float>(0.0f), false);
+
+	charge.chargePauseTimer.reset();
+
+	// Lock direction to player at start of charge
+	const auto posOpt = registry.tryGet<PositionComponent>(entity);
+	auto playerView = registry.view<PlayerTag, PositionComponent>();
+	if (posOpt) {
+		for (const auto playerEntity : playerView) {
+			const auto &playerPos = playerView.get<PositionComponent>(playerEntity);
+			charge.chargeDirection = (playerPos.position.x > posOpt->get().position.x) ? 1.0f : -1.0f;
+			break; // Found a player (single player game assumption for now)
+		}
+	} else {
+		charge.chargeDirection = 1.0f; // Default
+	}
+
+	// Reset cooldown timer in ChaseComponent
+	if (auto chaseOpt = registry.tryGet<ChaseComponent>(entity)) {
+		chaseOpt->get().chargeCooldown.reset();
+	}
+}
+
+bool ChargeReadyTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
+{
+	auto chaseOpt = registry.tryGet<ChaseComponent>(entity);
+	if (!chaseOpt)
+		return false;
+
+	return chaseOpt->get().chargeCooldown.isTimeout();
+}
+
+void ChargeAction::execute(Registry &registry, Entity entity, float deltaTime)
+{
+	Systems::ChargeSystem::updateEntity(registry, entity, deltaTime);
+}
+
+bool ChargeFinishedTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
+{
+	return !registry.has<ChargeComponent>(entity);
+}
+
+void StartChargeTelegraphAction::execute(Registry &registry, Entity entity, float deltaTime)
+{
+	// Register component if not present
+	if (!registry.has<ChargeTelegraphComponent>(entity)) {
+		registry.registerComponent(entity, ChargeTelegraphComponent{});
+	}
+
+	auto &telegraph = registry.get<ChargeTelegraphComponent>(entity);
+	telegraph.start();
+}
+
+bool ChargeTelegraphFinishedTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
+{
+	auto telegraphOpt = registry.tryGet<ChargeTelegraphComponent>(entity);
+	if (!telegraphOpt) {
+		return true; // No telegraph component means we can transition
+	}
+
+	return telegraphOpt->get().isFinished();
+}
+
 bool MeleeAttackTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
 {
 	auto enemy = getEntityInfo(registry, entity);
@@ -490,16 +514,6 @@ bool ProximityExitTransition::canTransition(Registry &registry, Entity entity, f
 	return glm::distance(enemy->center, player->center) > radius;
 }
 
-bool HealthThresholdTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
-{
-	auto health = registry.tryGet<HealthComponent>(entity);
-	if (!health)
-		return false;
-
-	float currentPercent = health->get().health / static_cast<float>(health->get().maxHealth);
-	return lessThan ? (currentPercent < healthPercentage) : (currentPercent > healthPercentage);
-}
-
 bool PoiseBreakTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
 {
 	// Check for explicit "Hurting" state set by HealthSystem/CombatSystem
@@ -510,17 +524,6 @@ bool PoiseBreakTransition::canTransition(Registry &registry, Entity entity, floa
 	// Fallback to checking PoiseComponent directly (legacy or if HealthSystem doesn't set State)
 	auto poise = registry.tryGet<PoiseComponent>(entity);
 	return poise && poise->get().currentPoise <= 0.0f && poise->get().maxPoise > 0.0f;
-}
-
-bool PlayerStationaryTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
-{
-	auto playerView = registry.view<PlayerTag, VelocityComponent>();
-	for (const auto entity : playerView) {
-		auto &vel = playerView.get<VelocityComponent>(entity);
-		if (glm::length(vel.velocity) < 0.1f)
-			return true;
-	}
-	return false;
 }
 
 bool RandomTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
@@ -544,9 +547,8 @@ bool ProximityAndLosEntryTransition::canTransition(Registry &registry, Entity en
 	auto rangedOpt = registry.tryGet<RangedAttackComponent>(entity);
 	auto projOpt = registry.tryGet<ProjectileComponent>(entity);
 
-	auto result =
-	    checkEnemyLos(*enemy, *player, rangedOpt ? &rangedOpt->get() : nullptr, projOpt ? &projOpt->get() : nullptr);
-	return result.hasLos;
+	return hasLosToAttacker(*enemy, *player, rangedOpt ? &rangedOpt->get() : nullptr,
+	                        projOpt ? &projOpt->get() : nullptr);
 }
 
 bool LosLostTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
@@ -562,26 +564,14 @@ bool LosLostTransition::canTransition(Registry &registry, Entity entity, float d
 	auto rangedOpt = registry.tryGet<RangedAttackComponent>(entity);
 	auto projOpt = registry.tryGet<ProjectileComponent>(entity);
 
-	auto result =
-	    checkEnemyLos(*enemy, *player, rangedOpt ? &rangedOpt->get() : nullptr, projOpt ? &projOpt->get() : nullptr);
-
-	if (result.hasLos) {
+	if (hasLosToAttacker(*enemy, *player, rangedOpt ? &rangedOpt->get() : nullptr,
+	                     projOpt ? &projOpt->get() : nullptr)) {
 		losLostDuration = 0.0f;
 		return false;
 	}
 
 	losLostDuration += deltaTime;
 	return losLostDuration >= gracePeriod;
-}
-
-bool PlayerNotGroundedTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
-{
-	auto playerView = registry.view<PlayerTag, GroundedComponent>();
-	for (const auto playerEntity : playerView) {
-		const auto &grounded = playerView.get<GroundedComponent>(playerEntity);
-		return !grounded.grounded;
-	}
-	return true; // No player found, return to patrol
 }
 
 bool PlayerUnreachableTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const

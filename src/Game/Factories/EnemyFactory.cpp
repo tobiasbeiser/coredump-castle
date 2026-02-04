@@ -190,10 +190,11 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 	const auto isBoss = getBoolProp(enemyObj, "isBoss");
 	const auto bossIdProp = getIntProp(enemyObj, "bossId", -1);
 	const auto unlockAbility = getAbilityProp(enemyObj, "unlockAbility", AbilityType::None);
-	const auto chargeChance = getFloatProp(enemyObj, "chargeChance", 0.25f);
+	const auto chargeChance = getFloatProp(enemyObj, "chargeChance", 0.35f);
 	const auto chargeDuration = getFloatProp(enemyObj, "chargeDuration", 0.75f);
 	const auto chargePauseDuration = getFloatProp(enemyObj, "chargePauseDuration", 1.0f);
 	const auto chargeSpeedMultiplier = getFloatProp(enemyObj, "chargeSpeedMultiplier", 1.5f);
+	const auto chargeCooldown = getFloatProp(enemyObj, "chargeCooldown", 3.0f);
 	const auto detectionRange = getFloatProp(enemyObj, "detectionRange", -1);
 	const auto attackRange = getFloatProp(enemyObj, "attackRange", -1);
 
@@ -226,7 +227,6 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 		spawner.addBlueprint(
 		    ChargeComponent{.chargeTimer = Timer{std::chrono::duration<float>(chargeDuration)},
 		                    .chargePauseTimer = Timer{std::chrono::duration<float>(chargePauseDuration)},
-		                    .chargeChance = chargeChance,
 		                    .chargeSpeedMultiplier = chargeSpeedMultiplier});
 	}
 
@@ -257,6 +257,7 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 		    .detectionRange = effectiveDetectionRange,
 		    .giveUpRange = effectiveDetectionRange + 50.0f,
 		    .reactionDelay = Timer{std::chrono::duration<float>(reactionDelay)},
+		    .chargeCooldown = Timer{std::chrono::duration<float>(chargeCooldown), true},
 		});
 	}
 	if (isRangedEnemy) {
@@ -345,7 +346,6 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 		spawner.addBlueprint(VisionComponent{.visionRange = detectionRange});
 	}
 
-	// Add safe spawn adjustment as a setup step (runs after entity is created)
 	auto reg = registry;
 	spawner.addSetupStep([reg](const Entity entity) { ensureSafeSpawn(reg, entity); });
 	if (isBoss) {
