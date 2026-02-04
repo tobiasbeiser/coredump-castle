@@ -43,11 +43,11 @@ void GameOverState::update(GameEngine &game, const float deltaTime)
 		return;
 	}
 	inputSystem.update(game.getRegistry());
-	ECS::Systems::ChaseSystem::update(game.getRegistry(), deltaTime);
 
 	accumulator += deltaTime;
 	while (accumulator >= stepSize) {
 		accumulator -= stepSize;
+		ECS::Systems::ChaseSystem::update(game.getRegistry(), deltaTime);
 		ECS::Systems::PatrolSystem::update(game.getRegistry());
 		ECS::Systems::MovementSystem::update(game.getRegistry(), stepSize);
 		ECS::Systems::PhysicsSystem::update(game.getRegistry(), stepSize);
@@ -60,7 +60,7 @@ void GameOverState::update(GameEngine &game, const float deltaTime)
 		game.resetToState(std::make_unique<MainMenuState>(game.getInputManager(), game.getTextureManager(), game.getGuiManager(), game.getRenderer()));
 	} else if (inputManager.isKeyDown(Key::Up)) {
 		game.popState();
-		ECS::Systems::ReviveSystem::update(game.getRegistry(), game, deltaTime);
+		ECS::Systems::ReviveSystem::update(game.getRegistry(), game, spawners);
 	}
 
 }

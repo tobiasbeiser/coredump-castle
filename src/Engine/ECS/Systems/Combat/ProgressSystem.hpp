@@ -1,11 +1,54 @@
 #pragma once
+#include "HealthSystem.hpp"
+#include "Engine/ECS/View.hpp"
+#include "Engine/ECS/Components/Core/StateComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/HealthComponent.hpp"
+#include "Engine/ECS/Components/Render/AnimationComponent.hpp"
 
-namespace GameEngine::ECS {
-class Registry;
-}
 
 namespace GameEngine::ECS::Systems::ProgressSystem {
 
-void update(Registry &registry);
+template<typename T>
+concept SaveSystemConcept = requires(const T& t, Registry& r) {
+	{ t.saveGame(r) } -> std::same_as<void>;
+};
+
+template <SaveSystemConcept TSaveSystem>
+void update(Registry& registry, const TSaveSystem& saveSystem)
+{
+	for (auto bossView = registry.view<BossComponent, HealthComponent>(); const auto entity : bossView) {
+		if (auto &health = bossView.get<HealthComponent>(entity); HealthSystem::isDead(health)) {
+			const auto &boss = bossView.get<BossComponent>(entity);
+
+			if (auto playerView = registry.view<PlayerTag, ProgressComponent, JumpComponent>(); playerView.size() == 1U) {
+
+				const Entity playerEntity = playerView.at(0U);
+				auto &progress = playerView.get<ProgressComponent>(playerEntity);
+				auto &jump = playerView.get<JumpComponent>(playerEntity);
+
+				if (const int bossId = boss.bossId; !progress.isBossDefeated(bossId)) {
+					progress.markBossDefeated(bossId);
+					progress.unlockAbility(boss.unlockAbility);
+
+					if (boss.unlockAbility == AbilityType::DoubleJump) {
+						jump.maxJumps = std::max(jump.maxJumps, 2);
+						jump.jumpsLeft = jump.maxJumps;
+					}
+
+					if (const auto state = registry.tryGet<StateComponent>(playerEntity)) {
+						state->get().state = State::Interacting;
+					}
+					if (const auto anim = registry.tryGet<AnimationComponent>(playerEntity);
+						anim && anim->get().hasAnimation(AnimationType::Interacting)
+						&& anim->get().getAnimation() != AnimationType::Interacting) {
+						anim->get().setAnimation(AnimationType::Interacting);
+						}
+
+					saveSystem.saveGame(registry);
+				}
+			}
+		}
+	}
+}
 
 } // namespace GameEngine::ECS::Systems::ProgressSystem

@@ -107,8 +107,8 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 	ECS::Systems::VignetteSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::SoundSystem::update(game.getRegistry(), game.getAudioManager(), deltaTime);
 
-	ECS::Systems::ProgressSystem::update(game.getRegistry());
-	ECS::Systems::DeathSystem::update(game.getRegistry(), game, deltaTime);
+	ECS::Systems::ProgressSystem::update(game.getRegistry(), game.getSaveSystem());
+	ECS::Systems::DeathSystem::update(game.getRegistry(), game, deltaTime, spawners);
 
 	ECS::Systems::InteractionSystem::update(game, game.getRegistry(), spawners);
 	ECS::Systems::TooltipSystem::update(game.getRegistry());

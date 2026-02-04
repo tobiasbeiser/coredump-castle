@@ -1,4 +1,7 @@
+
+
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
 
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/BossComponent.hpp"
@@ -13,11 +16,17 @@
 
 using namespace std::chrono_literals;
 
+class MockSaveSystem {
+public:
+	MOCK_CONST_METHOD1(saveGame, void(GameEngine::ECS::Registry& reg));
+};
+
 struct BossProgressTests : testing::Test {
 	GameEngine::ECS::Registry registry{};
 	GameEngine::ECS::Entity player{};
 	GameEngine::ECS::Entity boss{};
 
+	MockSaveSystem mockSaveSystem;
 	void SetUp() override
 	{
 		player = registry.create();
@@ -38,7 +47,9 @@ struct BossProgressTests : testing::Test {
 
 TEST_F(BossProgressTests, DefeatingBossUnlocksDoubleJump)
 {
-	GameEngine::ECS::Systems::ProgressSystem::update(registry);
+
+	EXPECT_CALL(mockSaveSystem, saveGame(testing::_));
+	GameEngine::ECS::Systems::ProgressSystem::update(registry, mockSaveSystem);
 
 	auto playerView = registry.view<PlayerTag, ProgressComponent, JumpComponent, StateComponent>();
 	const auto entity = playerView.at(0U);

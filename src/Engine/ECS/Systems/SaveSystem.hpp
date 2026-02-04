@@ -25,6 +25,11 @@ class SaveSystem {
   public:
 	explicit SaveSystem(std::unique_ptr<ISaveStorage> storage) : saveStorage{std::move(storage)} {}
 
+	bool isSaveNameSet() const
+	{
+		return !saveStorage->getSaveName().empty();
+	}
+
 	void saveGame(Registry &registry) const
 	{
 		const json saveData = buildSaveData(registry);
@@ -137,7 +142,7 @@ class SaveSystem {
 			const auto &[tilePos, _] = view.get<PositionComponent>(entity);
 			visitedPositions.emplace(tilePos.x, tilePos.y);
 		}
-		saveData["seenPositions"] = visitedPositions;
+		saveData[seenPositionsLabel] = visitedPositions;
 
 		return saveData;
 	}

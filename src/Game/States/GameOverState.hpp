@@ -7,14 +7,15 @@
 #include "Engine/ECS/Systems/MapRenderSystem.hpp"
 #include "Engine/Graphics/Gui/GuiManager.hpp"
 #include "Engine/Graphics/TextureManager.hpp"
+#include "Game/Spawners/EnemySpawner.hpp"
 
 namespace GameEngine {
 
 class GameOverState final : public GameState {
 	// Inherited via GameState
 public:
-	GameOverState(InputManager &input, TextureManager &textureManager, Ui::GuiManager &guiManager, Renderer &renderer)
-		: inputManager(input), textureManager(textureManager), guiManager(guiManager), renderer(renderer)
+	GameOverState(InputManager &input, TextureManager &textureManager, Ui::GuiManager &guiManager, Renderer &renderer, std::vector<EnemySpawner> &spawners)
+		: inputManager(input), textureManager(textureManager), guiManager(guiManager), renderer(renderer), spawners(spawners)
 	{
 	}
 	void init(GameEngine &game) override;
@@ -31,6 +32,7 @@ private:
 	Ui::GuiManager &guiManager;
 	Renderer &renderer;
 	ECS::Systems::InputSystem inputSystem{inputManager};
+	std::vector<EnemySpawner> &spawners;
 	std::unique_ptr<Ui::Widget> rootWidget{};
 	bool paused = false;
 	float accumulator = 0.0f;

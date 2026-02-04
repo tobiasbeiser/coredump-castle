@@ -17,6 +17,7 @@
 #include "Engine/ECS/View.hpp"
 #include "HealthSystem.hpp"
 #include "Engine/ECS/Components/Tags/PendingReviveTag.hpp"
+#include "Game/Spawners/EnemySpawner.hpp"
 #include "Game/States/GameOverState.hpp"
 
 #include <SDL3/SDL_log.h>
@@ -49,7 +50,7 @@ bool processSimpleDeathAnimation(SimpleDeathComponent &death, SpriteComponent &s
 
 } // namespace
 
-void GameEngine::ECS::Systems::DeathSystem::update(Registry &registry, GameEngine &game, const float deltaTime)
+void GameEngine::ECS::Systems::DeathSystem::update(Registry &registry, GameEngine &game, const float deltaTime, std::vector<EnemySpawner> &spawners)
 {
 	for (auto view = registry.view<HealthComponent>(); const auto entity : view) {
 
@@ -79,7 +80,7 @@ void GameEngine::ECS::Systems::DeathSystem::update(Registry &registry, GameEngin
 
 			if (registry.has<PlayerTag>(entity)) {
 				registry.registerComponent(entity, PendingReviveTag{});
-				game.pushState(std::make_unique<GameOverState>(game.getInputManager(), game.getTextureManager(), game.getGuiManager(), game.getRenderer()));
+				game.pushState(std::make_unique<GameOverState>(game.getInputManager(), game.getTextureManager(), game.getGuiManager(), game.getRenderer(), spawners));
 			} else {
 				registry.deleteEntity(entity);
 			}
