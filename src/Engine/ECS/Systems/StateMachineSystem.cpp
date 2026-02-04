@@ -1,11 +1,11 @@
 #include "StateMachineSystem.hpp"
-#include "Engine/ECS/Components/States/StateMachineComponent.hpp"
+#include "Engine/ECS/Components/StateMachine/StateMachineComponent.hpp"
 #include "Engine/ECS/View.hpp"
 #include <SDL3/SDL_log.h>
 
 namespace GameEngine::ECS::Systems::StateMachineSystem {
 
-void update(Registry &registry, float deltaTime)
+void update(Registry &registry, const float deltaTime)
 {
 	auto view = registry.view<StateMachineComponent>();
 
@@ -29,8 +29,13 @@ void update(Registry &registry, float deltaTime)
 		// Update timers
 		sm.timeInState += deltaTime;
 
+		// Execute global update actions
+		for (const auto &action : sm.globalUpdateActions) {
+			action->execute(registry, entity, deltaTime);
+		}
+
 		// Get current state
-		if (sm.currentState.empty() || sm.states.find(sm.currentState) == sm.states.end()) {
+		if (sm.currentState == AI::AIState::None || sm.states.find(sm.currentState) == sm.states.end()) {
 			continue;
 		}
 
@@ -39,7 +44,8 @@ void update(Registry &registry, float deltaTime)
 		// Execute onEnter actions if just entered
 		if (sm.justEnteredState) {
 			SDL_Log("[StateMachine] Entity %u entering state '%s', executing %zu onEnter actions",
-			        static_cast<unsigned int>(entity), sm.currentState.c_str(), currentState->onEnterActions.size());
+			        static_cast<unsigned int>(entity), AI::toString(sm.currentState).data(),
+			        currentState->onEnterActions.size());
 			for (const auto &action : currentState->onEnterActions) {
 				action->execute(registry, entity, deltaTime);
 			}
@@ -55,7 +61,7 @@ void update(Registry &registry, float deltaTime)
 		for (const auto &transition : currentState->transitions) {
 			if (transition->canTransition(registry, entity, deltaTime)) {
 				// Found valid transition - change state
-				const std::string newState = transition->targetState;
+				const AI::AIState newState = transition->targetState;
 
 				// Execute onExit actions
 				for (const auto &action : currentState->onExitActions) {

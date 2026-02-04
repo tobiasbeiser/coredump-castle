@@ -36,6 +36,7 @@ std::optional<StateComponent> getPlayerContext(Registry &registry)
 void endCharge(Registry &registry, const Entity entity, ChargeComponent &charge, ChaseComponent *chase,
                MovementComponent *movement, InputComponent *input)
 {
+	// Resetting the timer sets 'started' to false, effectively stopping the charge state
 	charge.chargeTimer.reset();
 	charge.chargePauseTimer.reset();
 	if (input) {
@@ -45,28 +46,20 @@ void endCharge(Registry &registry, const Entity entity, ChargeComponent &charge,
 	if (movement && chase) {
 		movement->maxSpeedX = chase->chaseSpeed;
 	}
-	registry.remove<ChargeComponent>(entity);
 }
 
 } // namespace
 
 void updateEntity(Registry &registry, Entity entity, float deltaTime)
 {
-	if (const auto playerState = getPlayerContext(registry);
-	    !playerState.has_value() || playerState->state == State::Dead) {
-		auto chargeOpt = registry.tryGet<ChargeComponent>(entity);
-		auto chaseOpt = registry.tryGet<ChaseComponent>(entity);
-		auto movementOpt = registry.tryGet<MovementComponent>(entity);
-		auto inputOpt = registry.tryGet<InputComponent>(entity);
-
-		if (chargeOpt) {
-			endCharge(registry, entity, chargeOpt->get(), chaseOpt ? &chaseOpt->get() : nullptr,
-			          movementOpt ? &movementOpt->get() : nullptr, inputOpt ? &inputOpt->get() : nullptr);
-		}
+	auto chargeOpt = registry.tryGet<ChargeComponent>(entity);
+	
+	// If timer is not running, we are not charging
+	if (!chargeOpt || !chargeOpt->get().chargeTimer.isRunning()) {
 		return;
 	}
 
-	auto chargeOpt = registry.tryGet<ChargeComponent>(entity);
+	auto &charge = chargeOpt->get();
 	auto chaseOpt = registry.tryGet<ChaseComponent>(entity);
 	auto inputOpt = registry.tryGet<InputComponent>(entity);
 	auto movementOpt = registry.tryGet<MovementComponent>(entity);
@@ -74,11 +67,12 @@ void updateEntity(Registry &registry, Entity entity, float deltaTime)
 	auto posOpt = registry.tryGet<PositionComponent>(entity);
 	auto velOpt = registry.tryGet<VelocityComponent>(entity);
 
-	if (!chargeOpt || !chaseOpt || !inputOpt || !movementOpt || !renderOpt || !posOpt || !velOpt) {
+	// Stop if dependencies missing
+	if (!chaseOpt || !inputOpt || !movementOpt || !renderOpt || !posOpt || !velOpt) {
+		charge.chargeTimer.reset(); // Ensure stopped
 		return;
 	}
 
-	auto *charge = &chargeOpt->get();
 	auto *chase = &chaseOpt->get();
 	auto *input = &inputOpt->get();
 	auto *movement = &movementOpt->get();
@@ -86,33 +80,37 @@ void updateEntity(Registry &registry, Entity entity, float deltaTime)
 	auto *pos = &posOpt->get();
 	auto *vel = &velOpt->get();
 
+	if (const auto playerState = getPlayerContext(registry);
+	    !playerState.has_value() || playerState->state == State::Dead) {
+		endCharge(registry, entity, charge, chase, movement, input);
+		return;
+	}
+
 	auto transform = registry.tryGet<TransformComponent>(entity);
 	glm::vec2 scale = transform ? transform->get().scale : glm::vec2{1.0f, 1.0f};
 
-	if (charge->chargePauseTimer.isRunning() && !charge->chargePauseTimer.isTimeout()) {
-		charge->chargePauseTimer.step(std::chrono::duration<float>(deltaTime), false);
+	if (charge.chargePauseTimer.isRunning() && !charge.chargePauseTimer.isTimeout()) {
+		charge.chargePauseTimer.step(std::chrono::duration<float>(deltaTime), false);
 		input->attackPressed = false;
 		input->horizontalDirection = 0.0f;
 
-		if (charge->chargePauseTimer.isTimeout()) {
+		if (charge.chargePauseTimer.isTimeout()) {
 			movement->maxSpeedX = chase->chaseSpeed;
-			endCharge(registry, entity, *charge, chase, movement, input);
+			endCharge(registry, entity, charge, chase, movement, input);
 		}
 		return;
 	}
 
+	if (charge.chargeTimer.isRunning() && !charge.chargeTimer.isTimeout()) {
+		charge.chargeTimer.step(std::chrono::duration<float>(deltaTime), false);
 
-
-	if (charge->chargeTimer.isRunning() && !charge->chargeTimer.isTimeout()) {
-		charge->chargeTimer.step(std::chrono::duration<float>(deltaTime), false);
-
-		float moveDirection = charge->chargeDirection;
+		float moveDirection = charge.chargeDirection;
 
 		input->attackPressed = false;
 		input->horizontalDirection = moveDirection;
 		render->setFacingLeft(moveDirection < 0);
 
-		float chargeSpeed = chase->chaseSpeed * charge->chargeSpeedMultiplier;
+		float chargeSpeed = chase->chaseSpeed * charge.chargeSpeedMultiplier;
 		movement->maxSpeedX = chargeSpeed;
 
 		if (std::abs(vel->velocity.x) < chargeSpeed) {
@@ -126,8 +124,7 @@ void updateEntity(Registry &registry, Entity entity, float deltaTime)
 		}
 
 		if (hitWall) {
-			charge->chargeTimer.reset();
-			endCharge(registry, entity, *charge, chase, movement, input);
+			endCharge(registry, entity, charge, chase, movement, input);
 			return;
 		}
 
@@ -137,15 +134,14 @@ void updateEntity(Registry &registry, Entity entity, float deltaTime)
 			    pos->position, collisionOpt->get().collisionBox, scale, moveDirection);
 
 			if (!canMove) {
-				charge->chargeTimer.reset();
 				vel->velocity.x = 0.0f;
-				endCharge(registry, entity, *charge, chase, movement, input);
+				endCharge(registry, entity, charge, chase, movement, input);
 				return;
 			}
 		}
 
-		if (charge->chargeTimer.isTimeout()) {
-			endCharge(registry, entity, *charge, chase, movement, input);
+		if (charge.chargeTimer.isTimeout()) {
+			endCharge(registry, entity, charge, chase, movement, input);
 		}
 	}
 }

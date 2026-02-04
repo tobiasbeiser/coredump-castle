@@ -11,7 +11,7 @@
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
-#include "Engine/ECS/Components/States/StateMachineComponent.hpp"
+#include "Engine/ECS/Components/StateMachine/StateMachineComponent.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/Systems/CollisionSystem.hpp"
@@ -67,14 +67,20 @@ void GameEngine::ECS::Systems::ChaseSystem::updateEntity(Registry &registry, con
 	const auto entityHitBox = Utils::HitBoxUtils::getHitBox(pos->get().position, hitBox->get().bodyHitBox, enemyScale);
 
 	chase->get().reactionDelay.step(std::chrono::duration<float>(deltaTime), false);
-	chase->get().chargeCooldown.step(std::chrono::duration<float>(deltaTime), false);
 
 	if (!chase->get().reactionDelay.isTimeout()) {
 		input->get().horizontalDirection = 0.0f;
 		return;
 	}
 
-	const float direction = playerCtx.center.x > entityHitBox.x + entityHitBox.w / 2 ? 1.0f : -1.0f;
+	const float enemyCenterX = entityHitBox.x + entityHitBox.w / 2;
+
+	if (playerCtx.center.x >= entityHitBox.x && playerCtx.center.x <= entityHitBox.x + entityHitBox.w) {
+		input->get().horizontalDirection = 0;
+		return;
+	}
+
+	const float direction = playerCtx.center.x > enemyCenterX ? 1.0f : -1.0f;
 
 	const bool isEnvironmentBlocked = !CollisionSystem::canContinueMovingHorizontally(
 	    pos->get().position, collision->get().collisionBox, actualScale, direction);

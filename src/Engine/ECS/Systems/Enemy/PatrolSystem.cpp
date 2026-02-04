@@ -54,11 +54,4 @@ void updateEntity(Registry &registry, Entity entity)
 	}
 }
 
-void update(Registry &registry)
-{
-	// All patrol enemies now use state machines
-	// This function is kept for backwards compatibility but does nothing
-	// Patrol logic is handled via PatrolAction in state machine updates
-}
-
 } // namespace GameEngine::ECS::Systems::PatrolSystem

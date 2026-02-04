@@ -26,10 +26,10 @@
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
 #include "Engine/ECS/Components/Render/BlinkComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
-#include "Engine/ECS/Components/States/EnemyStateMachineFactory.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/View.hpp"
+#include "Game/AI/StateMachine/EnemyStateMachineFactory.hpp"
 #include "Game/Spawners/EnemySpawner.hpp"
 
 #include <tileson.hpp>
@@ -225,9 +225,10 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 		const int bossId = bossIdProp == -1 ? static_cast<int>(enemyObj.getId()) : bossIdProp;
 		spawner.addBlueprint(BossComponent{.bossId = bossId, .unlockAbility = unlockAbility});
 		spawner.addBlueprint(
-		    ChargeComponent{.chargeTimer = Timer{std::chrono::duration<float>(chargeDuration)},
-		                    .chargePauseTimer = Timer{std::chrono::duration<float>(chargePauseDuration)},
-		                    .chargeSpeedMultiplier = chargeSpeedMultiplier});
+		    ChargeComponent{.chargeCooldown = Timer{std::chrono::duration<float>(chargeCooldown), true},
+		                    .chargeSpeedMultiplier = chargeSpeedMultiplier,
+		                    .chargeTimer = Timer{std::chrono::duration<float>(chargeDuration)},
+		                    .chargePauseTimer = Timer{std::chrono::duration<float>(chargePauseDuration)}});
 	}
 
 	if (weaponHitBoxStr) {
@@ -257,7 +258,6 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 		    .detectionRange = effectiveDetectionRange,
 		    .giveUpRange = effectiveDetectionRange + 50.0f,
 		    .reactionDelay = Timer{std::chrono::duration<float>(reactionDelay)},
-		    .chargeCooldown = Timer{std::chrono::duration<float>(chargeCooldown), true},
 		});
 	}
 	if (isRangedEnemy) {
@@ -291,13 +291,9 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 		auto reg = registry;
 		spawner.addSetupStep([reg](const Entity entity) { EnemyStateMachineFactory::createWizardEnemy(reg, entity); });
 	} else if (!isBoss && chaseSpeed > 0) {
-		// Melee enemy with AI (patrol -> chase -> attack)
-		// ChaseComponent already added above with proper detectionRange and giveUpRange
-
 		auto reg = registry;
 		spawner.addSetupStep([reg](const Entity entity) { EnemyStateMachineFactory::createMeleeEnemy(reg, entity); });
 	} else if (!isBoss) {
-		// Base patrol-only enemy (no chase, just walks back and forth, deals contact damage)
 		auto reg = registry;
 		spawner.addSetupStep(
 		    [reg](const Entity entity) { EnemyStateMachineFactory::createPatrolOnlyEnemy(reg, entity); });

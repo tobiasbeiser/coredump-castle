@@ -415,16 +415,16 @@
                  "y":703.64297426392
                 }, 
                 {
+                 "id":46,
+                 "template":"..\/objects\/baseEnemy.tj",
+                 "x":384,
+                 "y":896
+                }, 
+                {
                  "id":47,
                  "template":"..\/objects\/baseEnemy.tj",
                  "x":928,
                  "y":896
-                }, 
-                {
-                 "id":50,
-                 "template":"..\/objects\/demonBoss.tj",
-                 "x":425,
-                 "y":872.916666666667
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -479,7 +479,7 @@
          "y":0
         }],
  "nextlayerid":17,
- "nextobjectid":51,
+ "nextobjectid":48,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",

@@ -60,7 +60,7 @@ class AudioManager {
 	void setAudioDisabled(bool disabled) { isAudioDisabled = disabled; }
 
   private:
-	bool isAudioDisabled = true;
+	bool isAudioDisabled = false;
 	MIX_Audio *loadAudio(const std::filesystem::path &filePath);
 	std::map<std::string, std::vector<MIX_Audio *>> soundGroups;
 	mutable std::mt19937 rng{std::random_device{}()};
