@@ -22,6 +22,7 @@ class AnimationFactory {
 
 	void setMap(tson::Map &tsonMap) { map = &tsonMap; }
 	static AnimationType getAnimationType(const std::string &string);
+	static AnimationType getAnimationTypeFromId(int id);
 
 	std::optional<std::tuple<AnimationComponent, SpriteComponent>>
 	loadAnimationsFromTileset(tson::Object &object) const;

@@ -36,6 +36,10 @@ struct StartChargeTelegraphAction final : StateAction {
 	void execute(Registry &registry, Entity entity, float deltaTime) override;
 };
 
+struct StopChargeTelegraphAction final : StateAction {
+	void execute(Registry &registry, Entity entity, float deltaTime) override;
+};
+
 template <typename Component, typename TimerType>
 struct UpdateTimerAction final : StateAction {
 
@@ -97,8 +101,8 @@ struct PlayerReachableTransition final : AndTransition {
 	}
 };
 
-struct isPlayerUnreachableAndGroundedTransition final : AndTransition {
-	isPlayerUnreachableAndGroundedTransition(const AI::AIState target, float maxHeight) : AndTransition(target)
+struct IsPlayerUnreachableAndGroundedTransition final : AndTransition {
+	IsPlayerUnreachableAndGroundedTransition(const AI::AIState target, float maxHeight) : AndTransition(target)
 	{
 		add<PlayerUnreachableTransition>(maxHeight);
 		add<PlayerGroundedTransition>();

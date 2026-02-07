@@ -16,7 +16,7 @@ void updateEntity(Registry &registry, Entity entity)
 	const auto patrolComp = registry.tryGet<PatrolComponent>(entity);
 	if (!patrolComp)
 		return;
-	const auto &[patrolSpeed] = patrolComp->get();
+	const auto &[patrolSpeed, patrolCenter, minX, maxX] = patrolComp->get();
 
 	auto movementComp = registry.tryGet<MovementComponent>(entity);
 	if (!movementComp)

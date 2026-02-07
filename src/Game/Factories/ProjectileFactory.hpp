@@ -14,6 +14,7 @@ struct ProjectileData {
 	SDL_FRect hitbox{0, 0, 3.0f, 3.0f};
 	glm::ivec2 tileSize{32, 32};
 	std::string texturePath{};
+	glm::vec2 scale{1.0f, 1.0f};
 };
 
 class ProjectileFactory {

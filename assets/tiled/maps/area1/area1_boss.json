@@ -194,28 +194,6 @@
          "name":"Enemies",
          "objects":[
                 {
-                 "id":9,
-                 "properties":[
-                        {
-                         "name":"area",
-                         "type":"object",
-                         "value":10
-                        }, 
-                        {
-                         "name":"chargeChance",
-                         "type":"float",
-                         "value":0.15
-                        }, 
-                        {
-                         "name":"maxHealth",
-                         "type":"int",
-                         "value":200
-                        }],
-                 "template":"..\/..\/objects\/demonBoss.tj",
-                 "x":544,
-                 "y":480
-                }, 
-                {
                  "height":64,
                  "id":10,
                  "name":"",
@@ -225,6 +203,23 @@
                  "width":256,
                  "x":416,
                  "y":480
+                }, 
+                {
+                 "id":11,
+                 "properties":[
+                        {
+                         "name":"maxHealth",
+                         "type":"int",
+                         "value":200
+                        }, 
+                        {
+                         "name":"maxSpeedX",
+                         "type":"float",
+                         "value":49
+                        }],
+                 "template":"..\/..\/objects\/archerBoss.tj",
+                 "x":541.666666666667,
+                 "y":479.508196721311
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -256,7 +251,7 @@
          "y":0
         }],
  "nextlayerid":40,
- "nextobjectid":11,
+ "nextobjectid":12,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",

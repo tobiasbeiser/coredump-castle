@@ -1,4 +1,6 @@
 #include "MeleeActions.hpp"
+
+#include <math.h>
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/MeleeAttackComponent.hpp"
@@ -88,9 +90,16 @@ void StartChargeTelegraphAction::execute(Registry &registry, Entity entity, floa
 	telegraph.start();
 }
 
+void StopChargeTelegraphAction::execute(Registry &registry, const Entity entity, float deltaTime)
+{
+	if (const auto telegraphOpt = registry.tryGet<ChargeTelegraphComponent>(entity)) {
+		telegraphOpt->get().active = false;
+	}
+}
+
 void FacePlayerDuringWindupAction::execute(Registry &registry, Entity entity, float deltaTime)
 {
-	auto attack = registry.tryGet<AttackComponent>(entity);
+	const auto attack = registry.tryGet<AttackComponent>(entity);
 	if (!attack)
 		return;
 
@@ -129,7 +138,7 @@ bool MeleeAttackTransition::canTransition(Registry &registry, Entity entity, flo
 
 	const float weaponWidth = meleeAttack->get().weaponHitBox.w * enemy->scale.x;
 
-	float weaponCenterX;
+	float weaponCenterX = NAN;
 	if (player->center.x > enemy->center.x) {
 		weaponCenterX = enemy->hitBoxRect.x + enemy->hitBoxRect.w + (weaponWidth * 0.5f);
 	} else {

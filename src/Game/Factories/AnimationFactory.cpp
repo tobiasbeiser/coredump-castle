@@ -45,6 +45,9 @@ AnimationType AnimationFactory::getAnimationType(const std::string &string)
 	if (string == "Fire") {
 		return AnimationType::Fire;
 	}
+	if (string == "Roll") {
+		return AnimationType::Roll;
+	}
 	throw std::runtime_error("Unknown state: " + string);
 }
 AnimationFactory::AnimationData AnimationFactory::loadAnimation(tson::Tile *const &tile) const
@@ -173,11 +176,24 @@ AnimationFactory::loadAnimationFromStandaloneTileset(tson::Tileset &tileset, con
 		return std::nullopt;
 	}
 
-	const std::string imageFile = tileset.getImage().string();
 	const std::string tilesetDir = tilesetPath.substr(0, tilesetPath.find_last_of("/\\") + 1);
+	
+	// Handle both traditional tilesets (with top-level image) and "collection of images" tilesets (per-tile images)
+	std::string imageFile = tileset.getImage().string();
+	glm::ivec2 frameSize = {tileset.getTileSize().x, tileset.getTileSize().y};
+	
+	// If no top-level image, this is a "collection of images" tileset - get image from first tile
+	if (imageFile.empty() && !firstTile.getImage().empty()) {
+		imageFile = firstTile.getImage().string();
+		frameSize = {firstTile.getImageSize().x, firstTile.getImageSize().y};
+	}
+	
+	if (imageFile.empty()) {
+		SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "[AnimationFactory] No image found in tileset: %s", tilesetPath.c_str());
+		return std::nullopt;
+	}
+	
 	const std::string texturePath = tilesetDir + imageFile;
-
-	const glm::ivec2 frameSize = {tileset.getTileSize().x, tileset.getTileSize().y};
 
 	const int frameCount = static_cast<int>(animation.getFrames().size());
 	int totalDurationMs = 0;

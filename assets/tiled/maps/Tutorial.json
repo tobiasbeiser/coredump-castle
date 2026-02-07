@@ -252,18 +252,6 @@
          "name":"Enemies",
          "objects":[
                 {
-                 "id":4,
-                 "properties":[
-                        {
-                         "name":"area",
-                         "type":"object",
-                         "value":6
-                        }],
-                 "template":"..\/objects\/baseEnemy.tj",
-                 "x":976.5,
-                 "y":159.5
-                }, 
-                {
                  "gid":508,
                  "height":64,
                  "id":9,
@@ -274,6 +262,12 @@
                  "width":64,
                  "x":560,
                  "y":161.5
+                }, 
+                {
+                 "id":17,
+                 "template":"..\/objects\/archerBoss.tj",
+                 "x":969.891203508476,
+                 "y":176.267183941975
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -402,7 +396,7 @@
          "y":0
         }],
  "nextlayerid":26,
- "nextobjectid":17,
+ "nextobjectid":18,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",

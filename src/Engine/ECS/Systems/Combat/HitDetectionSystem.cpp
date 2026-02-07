@@ -5,6 +5,7 @@
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
+#include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
@@ -187,7 +188,17 @@ void resolveProjectileHits(Registry &registry)
 
 		const auto transform = registry.tryGet<TransformComponent>(projectile);
 		const auto scale = transform ? &transform->get().scale : nullptr;
-		SDL_FRect projectileHurtBoxRect = Utils::HitBoxUtils::getHitBox(position, projectileHitBox, scale);
+		
+		// Determine if projectile is flying left based on velocity
+		bool facingLeft = false;
+		if (const auto velocity = registry.tryGet<VelocityComponent>(projectile)) {
+			facingLeft = velocity->get().velocity.x < 0.0f;
+		}
+		
+		// Use facing-aware hitbox calculation so hitbox stays at the tip
+		SDL_FRect referenceBox = projectileHitBox; // Use hitbox as reference for flipping
+		SDL_FRect projectileHurtBoxRect = Utils::HitBoxUtils::getHitBoxFacing(
+		    position, projectileHitBox, referenceBox, scale, facingLeft);
 
 		for (const auto victim : victimView) {
 			if (!isValidVictim(registry, projectile, victim)) {

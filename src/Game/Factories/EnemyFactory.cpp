@@ -19,6 +19,7 @@
 #include "Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/VisionComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/JumpComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
 #include "Engine/ECS/Components/Physics/AccelerationComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
@@ -229,6 +230,42 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 		                    .chargeSpeedMultiplier = chargeSpeedMultiplier,
 		                    .chargeTimer = Timer{std::chrono::duration<float>(chargeDuration)},
 		                    .chargePauseTimer = Timer{std::chrono::duration<float>(chargePauseDuration)}});
+		// Add JumpComponent specifically for the Archer Boss (or bosses that might need to jump)
+		// Assuming Archer Boss needs to jump to evade
+		if (isRangedEnemy) {
+			spawner.addBlueprint(JumpComponent{.jumpStrength = 410.0f, .jumpsLeft = 1, .maxJumps = 1});
+		}
+	}
+
+	using namespace std::chrono_literals;
+	std::chrono::duration<float> attackDuration = 100ms;
+	std::chrono::duration<float> invulnerabilityTime = 300ms;
+
+	float spriteWidth = 0.0f;
+
+	if (const auto animComp = animationFactory.loadAnimationsFromTileset(enemyObj)) {
+		auto &[animationComponent, spriteComponent] = *animComp;
+
+		spawner.addBlueprint(animationComponent);
+		spawner.addBlueprint(spriteComponent);
+
+		spriteWidth = static_cast<float>(spriteComponent.tileSize.x);
+
+		if (animationComponent.hasAnimation(AnimationType::Attacking)) {
+			attackDuration = animationComponent.getAnimationDuration(AnimationType::Attacking);
+		}
+
+		if (animationComponent.hasAnimation(AnimationType::Charge)) {
+			attackDuration = animationComponent.getAnimationDuration(AnimationType::Charge);
+			if (animationComponent.hasAnimation(AnimationType::Fire)) {
+				attackDuration += animationComponent.getAnimationDuration(AnimationType::Fire);
+			}
+		} else if (animationComponent.hasAnimation(AnimationType::Fire)) {
+			attackDuration = animationComponent.getAnimationDuration(AnimationType::Fire);
+		}
+		if (animationComponent.hasAnimation(AnimationType::Hurting)) {
+			invulnerabilityTime = animationComponent.getAnimationDuration(AnimationType::Hurting) + 200ms;
+		}
 	}
 
 	if (weaponHitBoxStr) {
@@ -240,7 +277,11 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 	}
 
 	if (collisionStr) {
-		const auto collisionBox = parseCollisionBox(collisionStr.value());
+		auto collisionBox = parseCollisionBox(collisionStr.value());
+		if (spriteWidth > 0.0f && collisionBox.w > 0.0f) {
+			collisionBox.x = (spriteWidth - collisionBox.w) * 0.5f;
+		}
+
 		const auto touchDamageBox = touchDamageBoxStr ? parseCollisionBox(touchDamageBoxStr.value()) : collisionBox;
 		spawner.addBlueprint(HitBoxComponent{.bodyHitBox = touchDamageBox});
 		spawner.addBlueprint(CollisionComponent{collisionBox});
@@ -248,7 +289,7 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 	}
 
 	if (canPatrol) {
-		spawner.addBlueprint(PatrolComponent{maxSpeedX});
+		spawner.addBlueprint(PatrolComponent{.patrolSpeed = maxSpeedX, .patrolCenter = spawn});
 	}
 
 	if (chaseSpeed > 0.0f) {
@@ -265,8 +306,15 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 
 		std::string projectileTilesetPath;
 		if (const auto tilesetPathOpt = getStringProp(enemyObj, "projectileTileset", "")) {
-			const std::filesystem::path basePath = "assets/tiled/tilesets/";
-			projectileTilesetPath = (basePath / tilesetPathOpt.value()).string();
+			const std::string relPath = tilesetPathOpt.value();
+			if (!relPath.empty() && relPath.find(".tsj") != std::string::npos) {
+				const std::filesystem::path basePath = "assets/tiled/tilesets/";
+				projectileTilesetPath = (basePath / relPath).string();
+				SDL_Log("[EnemyFactory] Projectile tileset path: %s", projectileTilesetPath.c_str());
+			} else {
+				SDL_Log("[EnemyFactory] WARNING: Invalid or empty projectileTileset property for enemy %s: '%s'",
+				        enemyObj.getName().c_str(), relPath.c_str());
+			}
 		}
 
 		const float effectiveDetectionRange = detectionRange > 0 ? detectionRange : 300.0f;
@@ -289,7 +337,13 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 		});
 
 		auto reg = registry;
-		spawner.addSetupStep([reg](const Entity entity) { EnemyStateMachineFactory::createWizardEnemy(reg, entity); });
+		if (isBoss) {
+			spawner.addSetupStep(
+			    [reg](const Entity entity) { EnemyStateMachineFactory::createArcherBoss(reg, entity); });
+		} else {
+			spawner.addSetupStep(
+			    [reg](const Entity entity) { EnemyStateMachineFactory::createWizardEnemy(reg, entity); });
+		}
 	} else if (!isBoss && chaseSpeed > 0) {
 		auto reg = registry;
 		spawner.addSetupStep([reg](const Entity entity) { EnemyStateMachineFactory::createMeleeEnemy(reg, entity); });
@@ -297,33 +351,6 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 		auto reg = registry;
 		spawner.addSetupStep(
 		    [reg](const Entity entity) { EnemyStateMachineFactory::createPatrolOnlyEnemy(reg, entity); });
-	}
-
-	using namespace std::chrono_literals;
-	std::chrono::duration<float> attackDuration = 100ms;
-	std::chrono::duration<float> invulnerabilityTime = 300ms;
-
-	if (const auto animComp = animationFactory.loadAnimationsFromTileset(enemyObj)) {
-		auto &[animationComponent, spriteComponent] = *animComp;
-
-		spawner.addBlueprint(animationComponent);
-		spawner.addBlueprint(spriteComponent);
-
-		if (animationComponent.hasAnimation(AnimationType::Attacking)) {
-			attackDuration = animationComponent.getAnimationDuration(AnimationType::Attacking);
-		}
-
-		if (animationComponent.hasAnimation(AnimationType::Charge)) {
-			attackDuration = animationComponent.getAnimationDuration(AnimationType::Charge);
-			if (animationComponent.hasAnimation(AnimationType::Fire)) {
-				attackDuration += animationComponent.getAnimationDuration(AnimationType::Fire);
-			}
-		} else if (animationComponent.hasAnimation(AnimationType::Fire)) {
-			attackDuration = animationComponent.getAnimationDuration(AnimationType::Fire);
-		}
-		if (animationComponent.hasAnimation(AnimationType::Hurting)) {
-			invulnerabilityTime = animationComponent.getAnimationDuration(AnimationType::Hurting) + 200ms;
-		}
 	}
 
 	spawner.addBlueprint(HealthComponent{maxHealth, maxHealth, invulnerabilityTime});
@@ -344,7 +371,7 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 
 	auto reg = registry;
 	spawner.addSetupStep([reg](const Entity entity) { ensureSafeSpawn(reg, entity); });
-	if (isBoss) {
+	if (isBoss && !isRangedEnemy) {
 		spawner.addSetupStep([reg](const Entity entity) { EnemyStateMachineFactory::createBossEnemy(reg, entity); });
 	}
 	return spawner;
