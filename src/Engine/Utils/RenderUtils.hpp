@@ -42,6 +42,7 @@ struct RenderItem {
 	bool flipX = false;
 	double angle = 0.0;
 	SDL_Color colorMod = {255, 255, 255, 255};
+	bool isScreenSpace = false;
 };
 
 class ScopedClip {
@@ -74,6 +75,7 @@ glm::vec2 getScaledVec(glm::vec2 vect2D, float scaling);
 
 std::optional<RenderItem> createSpriteItem(const SpriteRenderContext &ctx, const SDL_FRect &viewport,
                                            float globalScaling = 1.f);
+std::optional<RenderItem> createUiItem(const SpriteRenderContext &ctx, float globalScaling);
 SDL_FRect getTileDstFRect(const DstRectContext &ctx, float globalScaling = 1.f);
 void sortRenderItems(std::vector<RenderItem> &renderItems);
 void submitRenderItems(std::vector<RenderItem> &renderItems, const Renderer &renderer);

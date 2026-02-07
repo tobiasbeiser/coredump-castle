@@ -33,9 +33,6 @@ struct TTFTextDestroyer {
 	}
 };
 
-class AnimatedGameObject;
-class GameObject;
-
 struct Resolution {
 	int width;
 	int height;
@@ -43,7 +40,7 @@ struct Resolution {
 
 class Renderer {
   public:
-	Renderer(const std::string &title, const Resolution resolution);
+	Renderer(const std::string &title, Resolution resolution);
 	// delete copy, move and assignments as we want only one instance of the renderer (create one at start that lives
 	// until shutdown) Cannot be copied as it manages a unique resource (the SDL_Renderer and SDL_Window)
 	Renderer(const Renderer &) = delete;
@@ -64,7 +61,7 @@ class Renderer {
 	[[nodiscard]] SDL_Renderer *getNativeRenderer() const;
 	[[nodiscard]] TTF_TextEngine *getTextEngine() const;
 	void renderTexture(SDL_Texture &texture, const std::optional<SDL_FRect> &srcRect,
-	                   const std::optional<SDL_FRect> &dstRect, const bool flip, double angle = 0.0) const;
+	                   const std::optional<SDL_FRect> &dstRect, bool flip, double angle = 0.0) const;
 	void renderAbsolutePositionTexture(SDL_Texture &texture, const std::optional<SDL_FRect> &srcRect,
 	                                   const std::optional<SDL_FRect> &dstRect, bool flip, double angle) const;
 
@@ -75,6 +72,8 @@ class Renderer {
 	void drawRectShape(SDL_FRect rect, SDL_Color fillColor, SDL_Color outlineColor) const;
 	void drawText(TTF_Text *textObject, float x, float y) const;
 	void renderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, float scrollFactor) const;
+	void renderUI(SDL_Texture &texture, const std::optional<SDL_FRect> &srcRect, const SDL_FRect &dstRect, bool flip,
+	              double angle) const;
 	void renderCircularFade(float progress, SDL_FColor color = {0, 0, 0, 255});
 	void renderVignette(float intensity, const SDL_FColor &color,
 	                    const std::optional<glm::vec2> &focalPoint = std::nullopt) const;

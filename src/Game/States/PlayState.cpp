@@ -1,6 +1,5 @@
 #include "PlayState.hpp"
 
-#include "MapMenuState.hpp"
 #include "Engine/ECS/Systems/AnimationSystem.hpp"
 #include "Engine/ECS/Systems/BlinkSystem.hpp"
 #include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
@@ -17,6 +16,8 @@
 #include "Engine/ECS/Systems/Hazard/SpikeSystem.hpp"
 #include "Engine/ECS/Systems/InteractionSystem.hpp"
 #include "Engine/ECS/Systems/JumpSystem.hpp"
+#include "Engine/ECS/Systems/MapToggleSystem.hpp"
+#include "Engine/ECS/Systems/MapTrackingSystem.hpp"
 #include "Engine/ECS/Systems/MovementSystem.hpp"
 #include "Engine/ECS/Systems/PhysicsSystem.hpp"
 #include "Engine/ECS/Systems/RenderSystem.hpp"
@@ -24,11 +25,12 @@
 #include "Engine/ECS/Systems/SoundSystem.hpp"
 #include "Engine/ECS/Systems/StateSystem.hpp"
 #include "Engine/ECS/Systems/TooltipSystem.hpp"
-#include "Engine/ECS/Systems/MapToggleSystem.hpp"
+#include "Engine/ECS/Systems/Ui/HudSystem.hpp"
 #include "Engine/ECS/Systems/VignetteSystem.hpp"
 #include "Engine/GameEngine.hpp"
-#include "Engine/ECS/Systems/MapTrackingSystem.hpp"
+#include "Game/Factories/OverlayFactory.hpp"
 #include "Game/Factories/WorldFactory.hpp"
+#include "MapMenuState.hpp"
 
 namespace GameEngine {
 
@@ -40,6 +42,10 @@ void PlayState::init(GameEngine &game)
 
 	const std::filesystem::path worldPath = "assets/tiled/coredumpCastle.world";
 	factory.createWorld(worldPath);
+
+	OverlayFactory overlayFactory(game.getRegistry(), game.getTextureManager());
+	overlayFactory.createOverlay("assets/tiled/maps/Ui/hud.json");
+
 	game.getSaveSystem().loadSavedGame(game.getRegistry());
 
 	game.getAudioManager().playMusic("assets/audio/music/main_theme.ogg", 2500);
@@ -112,6 +118,7 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 	ECS::Systems::TooltipSystem::update(game.getRegistry());
 	ECS::Systems::RespawnSystem::update(game.getRegistry(), game, deltaTime);
 	ECS::Systems::MapToggleSystem::update(game.getRegistry(), game);
+	ECS::Systems::HudSystem::update(game.getRegistry());
 }
 
 void PlayState::render(GameEngine &game, const float alpha)
