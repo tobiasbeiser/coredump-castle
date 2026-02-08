@@ -7,11 +7,12 @@
 #include "Engine/Graphics/Gui/Utils.hpp"
 #include "PlayState.hpp"
 #include "Engine/ECS/Systems/AnimationSystem.hpp"
+#include "Engine/ECS/Systems/BlinkSystem.hpp"
+#include "Engine/ECS/Systems/ChargeTelegraphSystem.hpp"
 #include "Engine/ECS/Systems/MovementSystem.hpp"
 #include "Engine/ECS/Systems/ReviveSystem.hpp"
-#include "Engine/ECS/Systems/Enemy/ChaseSystem.hpp"
-#include "Engine/ECS/Systems/Enemy/PatrolSystem.hpp"
-#include "Engine/ECS/Systems/Enemy/ProjectileSystem.hpp"
+#include "Engine/ECS/Systems/StateMachineSystem.hpp"
+#include "Engine/ECS/Systems/StateSystem.hpp"
 
 namespace GameEngine {
 
@@ -47,13 +48,17 @@ void GameOverState::update(GameEngine &game, const float deltaTime)
 	accumulator += deltaTime;
 	while (accumulator >= stepSize) {
 		accumulator -= stepSize;
-		ECS::Systems::ChaseSystem::update(game.getRegistry(), deltaTime);
-		ECS::Systems::PatrolSystem::update(game.getRegistry());
+		ECS::Systems::StateMachineSystem::update(game.getRegistry(), stepSize);
 		ECS::Systems::MovementSystem::update(game.getRegistry(), stepSize);
 		ECS::Systems::PhysicsSystem::update(game.getRegistry(), stepSize);
 	}
 
+	ECS::Systems::StateSystem::update(game.getRegistry());
+
 	ECS::Systems::AnimationSystem::update(game.getRegistry(), deltaTime);
+	ECS::Systems::BlinkSystem::update(game.getRegistry());
+	ECS::Systems::ChargeTelegraphSystem::update(game.getRegistry(), deltaTime);
+
 	if (inputManager.isKeyDown(Key::Escape)) {
 		game.getRegistry().clearAll();
 		game.getSaveSystem().clearCurrentSaveName();
