@@ -4,7 +4,7 @@
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
-#include "Engine/ECS/Components/Gameplay/Enemy/AiStateComponent.hpp"
+
 #include "Engine/ECS/Components/Gameplay/Enemy/ChaseComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
@@ -33,7 +33,7 @@ struct ChaseSystemTest : testing::Test {
 		registry.registerComponent<CollisionComponent>(enemy, {{0.0f, 0.0f, 20.0f, 20.0f}});
 		registry.registerComponent<MovementComponent>(enemy, {.maxSpeedX = 50.0f});
 		registry.registerComponent<TransformComponent>(enemy, {.scale = {1.0f, 1.0f}});
-		registry.registerComponent<AiStateComponent>(enemy, {.state = AiState::Chase});
+
 
 		player = registry.create();
 		registry.registerComponent<PlayerTag>(player, {});
@@ -60,7 +60,7 @@ TEST_F(ChaseSystemTest, MovesRightWhenPlayerIsRight)
 
 	registry.get<PositionComponent>(player).position = {150.0f, 0.0f};
 
-	GameEngine::ECS::Systems::ChaseSystem::update(registry, 0.1f);
+	GameEngine::ECS::Systems::ChaseSystem::updateEntity(registry, enemy, 0.1f);
 
 	EXPECT_FLOAT_EQ(enemyInput.horizontalDirection, 1.0f);
 	EXPECT_FLOAT_EQ(enemyMovement.maxSpeedX, enemyChase.chaseSpeed);
@@ -69,9 +69,12 @@ TEST_F(ChaseSystemTest, MovesRightWhenPlayerIsRight)
 TEST_F(ChaseSystemTest, MovesLeftWhenPlayerIsLeft)
 {
 	auto view = registry.view<InputComponent>();
+	auto &enemyChase = registry.get<ChaseComponent>(enemy);
+	enemyChase.reactionDelay.timeoutNow();
+	
 	registry.get<PositionComponent>(player).position = {40.0f, 0.0f};
 
-	GameEngine::ECS::Systems::ChaseSystem::update(registry, 0.6f);
+	GameEngine::ECS::Systems::ChaseSystem::updateEntity(registry, enemy, 0.1f);
 
 	EXPECT_FLOAT_EQ(view.get<InputComponent>(enemy).horizontalDirection, -1.0f);
 }
@@ -81,15 +84,18 @@ TEST_F(ChaseSystemTest, WaitsForReactionDelay)
 	auto view = registry.view<InputComponent>();
 	registry.get<PositionComponent>(player).position = {150.0f, 0.0f};
 
-	GameEngine::ECS::Systems::ChaseSystem::update(registry, 0.1f);
+	GameEngine::ECS::Systems::ChaseSystem::updateEntity(registry, enemy, 0.1f);
 	EXPECT_FLOAT_EQ(view.get<InputComponent>(enemy).horizontalDirection, 0.0f);
 
-	GameEngine::ECS::Systems::ChaseSystem::update(registry, 0.5f);
+	GameEngine::ECS::Systems::ChaseSystem::updateEntity(registry, enemy, 0.5f);
 	EXPECT_FLOAT_EQ(view.get<InputComponent>(enemy).horizontalDirection, 1.0f);
 }
 
 TEST_F(ChaseSystemTest, StopsWhenEnvironmentBlocked)
 {
+	auto &enemyChase = registry.get<ChaseComponent>(enemy);
+	enemyChase.reactionDelay.timeoutNow();
+	
 	auto wall = registry.create();
 	registry.registerComponent<PositionComponent>(wall, {{120.0f, 0.0f}});
 	registry.registerComponent<CollisionComponent>(wall, {{0.0f, -20.0f, 20.0f, 40.0f}}); // Wall covers enemy Y
@@ -98,7 +104,7 @@ TEST_F(ChaseSystemTest, StopsWhenEnvironmentBlocked)
 
 	registry.get<PositionComponent>(player).position = {150.0f, 0.0f};
 
-	GameEngine::ECS::Systems::ChaseSystem::update(registry, 0.6f);
+	GameEngine::ECS::Systems::ChaseSystem::updateEntity(registry, enemy, 0.1f);
 
 	EXPECT_FLOAT_EQ(registry.get<InputComponent>(enemy).horizontalDirection, 0.0f);
 }

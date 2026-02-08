@@ -6,6 +6,7 @@
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
 #include "Engine/ECS/Components/Render/BackgroundComponent.hpp"
 #include "Engine/ECS/Components/Render/CenterCameraComponent.hpp"
+#include "Engine/ECS/Components/Render/OutlineGlowComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
 #include "Engine/ECS/Components/Render/VignetteComponent.hpp"
@@ -64,7 +65,16 @@ void RenderSystem::update(Registry &registry)
 			const auto &render = worldView.get<RenderComponent>(entity);
 			const auto &transform = registry.tryGet<TransformComponent>(entity);
 
-			if (const auto item = RenderUtils::createSpriteItem({pos, sprite, render, transform}, viewport)) {
+		if (auto item = RenderUtils::createSpriteItem({pos, sprite, render, transform}, viewport)) {
+				if (auto outlineGlowOpt = registry.tryGet<OutlineGlowComponent>(entity)) {
+					const auto &outlineGlow = outlineGlowOpt->get();
+					if (outlineGlow.active) {
+						item->hasOutlineGlow = true;
+						item->outlineColor = outlineGlow.outlineColor;
+						item->outlineThickness = outlineGlow.thickness;
+						item->outlineIntensity = outlineGlow.intensity;
+					}
+				}
 				renderItems.push_back(item.value());
 			}
 		}

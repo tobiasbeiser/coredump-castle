@@ -29,10 +29,10 @@ class ComponentStorage final : public IStorage {
 		return denseComponents[sparse[entity]];
 	}
 
-	void insert(const Entity entity, const T &component)
+	void insert(const Entity entity, T component)
 	{
 		if (contains(entity)) {
-			denseComponents[sparse[entity]] = component;
+			denseComponents[sparse[entity]] = std::move(component);
 			return;
 		}
 
@@ -41,7 +41,7 @@ class ComponentStorage final : public IStorage {
 		}
 
 		sparse[entity] = denseComponents.size();
-		denseComponents.push_back(component);
+		denseComponents.push_back(std::move(component));
 		denseEntities.push_back(entity);
 	}
 
@@ -54,7 +54,7 @@ class ComponentStorage final : public IStorage {
 		size_t indexLast = denseComponents.size() - 1;
 		Entity entityLast = denseEntities[indexLast];
 
-		denseComponents[indexToRemove] = denseComponents[indexLast];
+		denseComponents[indexToRemove] = std::move(denseComponents[indexLast]);
 		denseEntities[indexToRemove] = denseEntities[indexLast];
 
 		sparse[entityLast] = indexToRemove;

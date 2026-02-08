@@ -356,8 +356,9 @@ TEST_F(HitDetectionTest, BodyHitShouldSetVictimStateToHurting)
 	};
 	GameEngine::ECS::Systems::HitDetectionSystem::update(registry, mockCallback);
 	EXPECT_FALSE(callbackCalled);
+	EXPECT_TRUE(registry.has<PendingDamageComponent>(attacker));
 	GameEngine::ECS::Systems::HealthSystem::update(registry, 0.1f);
-	EXPECT_EQ(attackerState.state, State::Hurting);
+	EXPECT_EQ(registry.get<StateComponent>(attacker).state, State::Hurting);
 }
 
 TEST_F(HitDetectionTest, PendingDamageIsRemovedAfterProcessing)

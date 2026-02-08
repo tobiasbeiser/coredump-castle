@@ -42,6 +42,11 @@ struct RenderItem {
 	bool flipX = false;
 	double angle = 0.0;
 	SDL_Color colorMod = {255, 255, 255, 255};
+	// Outline glow effect
+	bool hasOutlineGlow = false;
+	SDL_Color outlineColor = {255, 200, 0, 255};
+	float outlineThickness = 2.0f;
+	float outlineIntensity = 1.0f;
 	bool isScreenSpace = false;
 };
 

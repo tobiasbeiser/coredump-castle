@@ -8,13 +8,13 @@
 #include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/MeleeAttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
-#include "Engine/ECS/Components/Gameplay/Combat/RangedAttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/VisionComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/TooltipComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
+#include "Engine/ECS/Components/StateMachine/StateMachineComponent.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/View.hpp"
 #include "Engine/Utils/DetectionRangeUtils.hpp"
@@ -67,6 +67,8 @@ void DebugSystem::renderGameOverlay(SDL_Renderer *renderer, const SDL_FRect &vie
 	PROFILE_SCOPE("Debug::Debug Overlay");
 
 	DebugSystem &sys = instance();
+	sys.currentViewport = viewport;
+
 	if (sys.render.showBoundingBoxes)
 		sys.drawCollisionBoxes();
 
@@ -115,7 +117,7 @@ void DebugSystem::updateSettings(SDL_Renderer *renderer)
 	}
 }
 
-void DebugSystem::drawUI()
+void DebugSystem::drawUI(SDL_Renderer *renderer)
 {
 	PROFILE_SCOPE("Debug::Construct imGui");
 
@@ -125,6 +127,10 @@ void DebugSystem::drawUI()
 		return;
 
 	sys.updateFPS();
+
+	if (sys.render.showStateMachine) {
+		sys.drawStateMachineInfo(renderer);
+	}
 
 	if (ImGui::Begin("Debug Control Panel")) {
 
@@ -142,6 +148,7 @@ void DebugSystem::drawUI()
 			ImGui::Checkbox("Show Tooltip Boxes", &sys.render.showTooltipBoxes);
 			ImGui::Checkbox("Show Raycasts", &sys.render.showRaycasts);
 			ImGui::Checkbox("Show vision", &sys.render.showVision);
+			ImGui::Checkbox("Show State Machine Info", &sys.render.showStateMachine);
 			ImGui::Checkbox("VSync", &sys.render.vSync);
 		}
 
@@ -205,9 +212,9 @@ void DebugSystem::drawUI()
 							}
 						}
 						if (foundSpawn) {
-							DebugSystem::debug("Teleported to spawn point in " + map.name);
+							debug("Teleported to spawn point in " + map.name);
 						} else {
-							DebugSystem::debug("No spawn point found in " + map.name + ", teleported to origin.");
+							debug("No spawn point found in " + map.name + ", teleported to origin.");
 						}
 					}
 				}
@@ -220,7 +227,6 @@ void DebugSystem::drawUI()
 			auto playerView = sys.registry->view<PlayerTag, PositionComponent>();
 			const auto &pos = playerView.get<PositionComponent>(playerView.at(0)).position;
 			ImGui::Text("X: %.2f Y: %.2f", pos.x, pos.y);
-			// ImGui::Text("MaxEntity: %d", sys.registry->getMaxEntity());
 		}
 		if (sys.player.showHP) {
 			ImGui::SeparatorText("HP");
@@ -381,6 +387,60 @@ void DebugSystem::drawVision() const
 
 		constexpr SDL_Color visionColor = {0, 255, 255, 100};
 		addCircle(center, visionRange, visionColor);
+	}
+}
+
+void DebugSystem::drawStateMachineInfo(SDL_Renderer *renderer) const
+{
+	if (!registry)
+		return;
+
+	auto view = registry->view<GameEngine::ECS::StateMachineComponent, PositionComponent>();
+	ImDrawList *drawList = ImGui::GetBackgroundDrawList();
+
+	for (const auto entity : view) {
+		const auto &stateMachine = view.get<GameEngine::ECS::StateMachineComponent>(entity);
+		const auto &position = view.get<PositionComponent>(entity).position;
+
+		const auto transform = registry->tryGet<TransformComponent>(entity);
+		const auto sprite = registry->tryGet<SpriteComponent>(entity);
+		const auto collision = registry->tryGet<CollisionComponent>(entity);
+
+		const float scaleX = transform ? transform->get().scale.x : 1.0f;
+		const float scaleY = transform ? transform->get().scale.y : 1.0f;
+
+		float width = 32.0f;
+		if (sprite) {
+			width = sprite->get().tileSize.x;
+		} else if (collision) {
+			width = collision->get().collisionBox.w;
+		}
+
+		width *= scaleX;
+		const float entityCenterX = position.x + (width * 0.5f);
+
+		float entityTopY = position.y;
+		if (collision) {
+			entityTopY += collision->get().collisionBox.y * scaleY;
+		}
+
+		const float logicalX = entityCenterX - instance().currentViewport.x;
+		const float logicalY = entityTopY - instance().currentViewport.y;
+
+		std::string debugInfo = stateMachine.getDebugInfo();
+		const ImVec2 textSize = ImGui::CalcTextSize(debugInfo.c_str());
+
+		float winX = 0, winY = 0;
+		SDL_RenderCoordinatesToWindow(renderer, logicalX, logicalY, &winX, &winY);
+
+		const float finalX = winX - (textSize.x * 0.5f);
+		const float finalY = winY - textSize.y - 2.0f; // 2px padding above entity
+
+		ImVec2 bgMin(finalX - 4, finalY - 4);
+		ImVec2 bgMax(finalX + textSize.x + 4, finalY + textSize.y + 4);
+		drawList->AddRectFilled(bgMin, bgMax, IM_COL32(0, 0, 0, 150));
+
+		drawList->AddText(ImVec2(finalX, finalY), IM_COL32(255, 255, 255, 255), debugInfo.c_str());
 	}
 }
 

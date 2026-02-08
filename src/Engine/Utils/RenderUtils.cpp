@@ -9,6 +9,7 @@
 #include "Engine/Graphics/Renderer.hpp"
 
 #include <algorithm>
+#include <array>
 #include <execution>
 #include <optional>
 #include <vector>
@@ -154,15 +155,63 @@ void GameEngine::Utils::RenderUtils::submitRenderItems(std::vector<RenderItem> &
 {
 	PROFILE_SCOPE("RenderUtils::SubmitRenderItems");
 
-	SDL_Texture *lastTexture = nullptr;
+	const SDL_Texture *lastTexture = nullptr;
 	uint32_t lastColorVal = 0;
 	bool forceUpdate = true;
 
-	for (auto &renderItem : renderItems) {
-		// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-		const uint32_t currentColorVal = *reinterpret_cast<const uint32_t *>(&renderItem.colorMod);
+	// Outline glow directions for 8-direction offset rendering
 
-		if (forceUpdate || renderItem.texture != lastTexture || currentColorVal != lastColorVal) {
+	for (auto &renderItem : renderItems) {
+		// Render outline glow first (so it appears behind the sprite)
+		if (renderItem.hasOutlineGlow && renderItem.dst.has_value() && !renderItem.parallax) {
+			// Enable additive blending for a glowing effect
+			SDL_SetTextureBlendMode(renderItem.texture, SDL_BLENDMODE_ADD);
+
+			// Render multiple layers at different distances to create soft aura effect
+			// Layer 1: Outer glow (larger, more transparent)
+			// Layer 2: Middle glow
+			// Layer 3: Inner glow (smaller, brighter)
+			constexpr int numLayers = 3;
+
+			for (int layer = 0; layer < numLayers; ++layer) {
+				constexpr float layerAlphas[numLayers] = {0.3f, 0.5f, 0.8f};
+				constexpr float layerScales[numLayers] = {2.0f, 1.5f, 1.0f};
+				constexpr std::array<std::pair<float, float>, 8> outlineOffsets = {{{-1.0f, 0.0f},
+				                                                                    {1.0f, 0.0f},
+				                                                                    {0.0f, -1.0f},
+				                                                                    {0.0f, 1.0f},
+				                                                                    {-0.7f, -0.7f},
+				                                                                    {0.7f, -0.7f},
+				                                                                    {-0.7f, 0.7f},
+				                                                                    {0.7f, 0.7f}}};
+				const float layerThickness = renderItem.outlineThickness * layerScales[layer];
+				const auto layerAlpha =
+				    static_cast<Uint8>(renderItem.outlineColor.a * renderItem.outlineIntensity * layerAlphas[layer]);
+
+				SDL_SetTextureColorMod(renderItem.texture, renderItem.outlineColor.r, renderItem.outlineColor.g,
+				                       renderItem.outlineColor.b);
+				SDL_SetTextureAlphaMod(renderItem.texture, layerAlpha);
+
+				// Render multiple offset copies to create glow outline
+				for (const auto &[dx, dy] : outlineOffsets) {
+					SDL_FRect glowDst = renderItem.dst.value();
+					glowDst.x += dx * layerThickness;
+					glowDst.y += dy * layerThickness;
+
+					renderer.renderTexture(*renderItem.texture, renderItem.src, glowDst, renderItem.flipX,
+					                       renderItem.angle);
+				}
+			}
+
+			SDL_SetTextureBlendMode(renderItem.texture, SDL_BLENDMODE_BLEND);
+
+			forceUpdate = true;
+		}
+
+		// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+
+		if (const uint32_t currentColorVal = *reinterpret_cast<const uint32_t *>(&renderItem.colorMod);
+		    forceUpdate || renderItem.texture != lastTexture || currentColorVal != lastColorVal) {
 			SDL_SetTextureColorMod(renderItem.texture, renderItem.colorMod.r, renderItem.colorMod.g,
 			                       renderItem.colorMod.b);
 			SDL_SetTextureAlphaMod(renderItem.texture, renderItem.colorMod.a);

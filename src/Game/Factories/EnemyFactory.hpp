@@ -30,8 +30,9 @@ class EnemyFactory {
 
 	EnemySpawner createEnemy(tson::Object &enemyObj, const glm::vec2 &levelPos, int layer) const;
 
+	static void ensureSafeSpawn(Registry &registry, Entity entity);
+
   private:
-	void ensureSafeSpawn(Entity entity) const;
 
 	std::reference_wrapper<Registry> registry;
 	AnimationFactory &animationFactory;
