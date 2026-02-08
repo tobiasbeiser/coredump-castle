@@ -26,14 +26,29 @@
              "value":true
             }, 
             {
+             "name":"chargeDuration",
+             "type":"float",
+             "value":0.8
+            }, 
+            {
+             "name":"chargePauseDuration",
+             "type":"float",
+             "value":0.1
+            }, 
+            {
+             "name":"chargeSpeedMultiplier",
+             "type":"float",
+             "value":2
+            }, 
+            {
              "name":"collisionBox",
              "type":"string",
-             "value":"16,10,24,40"
+             "value":"9,10,24,40"
             }, 
             {
              "name":"detectionRange",
              "type":"float",
-             "value":300
+             "value":500
             }, 
             {
              "name":"isBoss",
@@ -58,7 +73,7 @@
             {
              "name":"projectileOffset",
              "type":"string",
-             "value":"20,33,0,0"
+             "value":"10,35,0,0"
             }, 
             {
              "name":"projectileSpeed",

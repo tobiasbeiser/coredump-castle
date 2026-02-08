@@ -52,8 +52,8 @@ void GameEngine::ECS::Systems::DeathSystem::update(Registry &registry, const flo
 
 		if (auto &health = view.get<HealthComponent>(entity); HealthSystem::isDead(health)) {
 			if (const auto boss = registry.tryGet<BossComponent>(entity)) {
-				auto playerView = registry.view<PlayerTag, ProgressComponent, JumpComponent>();
-				if (playerView.size() == 1U) {
+				if (auto playerView = registry.view<PlayerTag, ProgressComponent, JumpComponent>();
+				    playerView.size() == 1U) {
 					const Entity playerEntity = playerView.at(0U);
 					auto &progress = playerView.get<ProgressComponent>(playerEntity);
 					auto &jump = playerView.get<JumpComponent>(playerEntity);
@@ -67,7 +67,7 @@ void GameEngine::ECS::Systems::DeathSystem::update(Registry &registry, const flo
 							jump.jumpsLeft = jump.maxJumps;
 						}
 
-						if (auto state = registry.tryGet<StateComponent>(playerEntity)) {
+						if (const auto state = registry.tryGet<StateComponent>(playerEntity)) {
 							state->get().state = State::Interacting;
 						}
 						if (auto anim = registry.tryGet<AnimationComponent>(playerEntity);

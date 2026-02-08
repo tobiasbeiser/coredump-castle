@@ -223,18 +223,15 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 	spawner.addBlueprint(BlinkComponent{});
 
 	if (isBoss) {
-		const int bossId = bossIdProp == -1 ? static_cast<int>(enemyObj.getId()) : bossIdProp;
+		const int bossId = bossIdProp == -1 ? enemyObj.getId() : bossIdProp;
 		spawner.addBlueprint(BossComponent{.bossId = bossId, .unlockAbility = unlockAbility});
-		spawner.addBlueprint(
-		    ChargeComponent{.chargeCooldown = Timer{std::chrono::duration<float>(chargeCooldown), true},
-		                    .chargeSpeedMultiplier = chargeSpeedMultiplier,
-		                    .chargeTimer = Timer{std::chrono::duration<float>(chargeDuration)},
-		                    .chargePauseTimer = Timer{std::chrono::duration<float>(chargePauseDuration)}});
-		// Add JumpComponent specifically for the Archer Boss (or bosses that might need to jump)
-		// Assuming Archer Boss needs to jump to evade
-		if (isRangedEnemy) {
-			spawner.addBlueprint(JumpComponent{.jumpStrength = 410.0f, .jumpsLeft = 1, .maxJumps = 1});
-		}
+		spawner.addBlueprint(ChargeComponent{
+		    .chargeCooldown = Timer{std::chrono::duration<float>(chargeCooldown), true},
+		    .chargeTimer = Timer{std::chrono::duration<float>(chargeDuration)},
+		    .chargePauseTimer = Timer{std::chrono::duration<float>(chargePauseDuration)},
+		    .chargeSpeedMultiplier = chargeSpeedMultiplier,
+		    .chargeChance = chargeChance,
+		});
 	}
 
 	using namespace std::chrono_literals;
@@ -324,10 +321,16 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 		    .giveUpRange = effectiveDetectionRange + 50.0f,
 		    .reactionDelay = Timer{std::chrono::duration<float>(reactionDelay)},
 		});
+		if (isBoss) {
+			spawner.addBlueprint(VisionComponent{.visionRange = effectiveDetectionRange});
+		}
 		spawner.addBlueprint(RangedAttackComponent{
 		    .projectileSpeed = projectileSpeed,
 		    .projectileOffset = projectileOffset,
 		    .attackRange = attackRange,
+		    .useSpreadShot = isBoss,
+		    .spreadCount = 3,
+		    .spreadAngle = 12.0f,
 		});
 		spawner.addBlueprint(ProjectileComponent{
 		    .maxRange = 2000.0f,
@@ -365,7 +368,7 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 	                                     .windUpLimit = windUpLimit,
 	                                     .activeWindUpLimit = windUpLimit});
 
-	if (detectionRange > 0.0f) {
+	if (detectionRange > 0.0f && !(isBoss && isRangedEnemy)) {
 		spawner.addBlueprint(VisionComponent{.visionRange = detectionRange});
 	}
 

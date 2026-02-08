@@ -1,15 +1,21 @@
 #include "RangedActions.hpp"
 
+#include "Engine/Debug/DebugSystem.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/RangedAttackComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/MovementSlowComponent.hpp"
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
+#include "Engine/ECS/Components/Render/CameraShakeComponent.hpp"
+#include "Engine/ECS/Components/Render/ChargeTelegraphComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
+#include "Engine/ECS/Components/Render/VignetteComponent.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
 #include "Engine/ECS/View.hpp"
@@ -22,6 +28,7 @@ namespace {
 struct ProjectileInfo {
 	glm::vec2 size{0.0f, 0.0f};
 	glm::vec2 offset{0.0f, 0.0f};
+	float tileWidth = 0.0f;
 };
 
 ProjectileInfo getProjectileInfo(const ProjectileComponent *projComp)
@@ -30,32 +37,46 @@ ProjectileInfo getProjectileInfo(const ProjectileComponent *projComp)
 		return {};
 
 	const auto &data = ProjectileFactory::getCachedProjectileData(projComp->projectileTilesetPath);
-	return {{data.hitbox.w, data.hitbox.h}, {data.hitbox.x, data.hitbox.y}};
+	return {{data.hitbox.w, data.hitbox.h}, {data.hitbox.x, data.hitbox.y}, static_cast<float>(data.tileSize.x)};
+}
+
+std::optional<glm::vec2> getLosTarget(const EntityInfo &enemy, const EntityInfo &player,
+                                      const RangedAttackComponent *ranged, const ProjectileComponent *proj,
+                                      const bool facingLeft)
+{
+	auto [size, offset, tileWidth] = getProjectileInfo(proj);
+
+	glm::vec2 spawnPos;
+	if (ranged) {
+		float xOffset = facingLeft ? -ranged->projectileOffset.x : ranged->projectileOffset.x;
+		if (facingLeft && tileWidth > 0.0f) {
+			xOffset -= tileWidth;
+		}
+		spawnPos.x = enemy.center.x + xOffset;
+		spawnPos.y = enemy.position.y + ranged->projectileOffset.y;
+	} else {
+		spawnPos = enemy.center;
+	}
+
+	glm::vec2 rayStart;
+	if (facingLeft && tileWidth > 0.0f) {
+		const float mirroredOffsetX = tileWidth - (offset.x + size.x);
+		rayStart = spawnPos;
+		rayStart.x += mirroredOffsetX + (size.x * 0.5f);
+		rayStart.y += offset.y + (size.y * 0.5f);
+	} else {
+		rayStart = spawnPos + offset + (size * 0.5f);
+	}
+
+	return Utils::DetectionRangeUtils::getTargetWithLineOfSight(rayStart, player.center, player.hitBoxRect,
+	                                                            player.scale, size);
 }
 
 bool hasLosToAttacker(const EntityInfo &enemy, const EntityInfo &player, const RangedAttackComponent *ranged,
                       const ProjectileComponent *proj)
 {
-	auto [size, offset] = getProjectileInfo(proj);
-
 	const bool facingLeft = (player.center.x - enemy.position.x) < 0.0f;
-
-	glm::vec2 spawnPos = enemy.position;
-	const float relativeHurtboxX = enemy.hitBoxRect.x - enemy.position.x;
-	float xOffset = relativeHurtboxX;
-
-	if (ranged) {
-		xOffset += facingLeft ? -ranged->projectileOffset.x : ranged->projectileOffset.x;
-		spawnPos.y += ranged->projectileOffset.y;
-	}
-	spawnPos.x += xOffset;
-
-	const glm::vec2 rayStart = spawnPos + offset + (size * 0.5f);
-
-	const auto targetOpt = Utils::DetectionRangeUtils::getTargetWithLineOfSight(rayStart, player.center,
-	                                                                            player.hitBoxRect, player.scale, size);
-
-	return targetOpt.has_value();
+	return getLosTarget(enemy, player, ranged, proj, facingLeft).has_value();
 }
 
 } // namespace
@@ -83,23 +104,10 @@ void AimAtPlayerWithLOSAction::execute(Registry &registry, Entity entity, float 
 		return;
 	}
 
-	auto [size, offset] = getProjectileInfo(projOpt ? &projOpt->get() : nullptr);
-	bool facingLeft = renderOpt->get().isFacingLeft();
+	const bool facingLeft = renderOpt->get().isFacingLeft();
 
-	glm::vec2 spawnPos = enemy->position;
-	float relativeHurtboxX = enemy->hitBoxRect.x - enemy->position.x;
-	float xOffset = relativeHurtboxX;
-
-	xOffset += facingLeft ? -rangedOpt->get().projectileOffset.x : rangedOpt->get().projectileOffset.x;
-	spawnPos.y += rangedOpt->get().projectileOffset.y;
-	spawnPos.x += xOffset;
-
-	const glm::vec2 rayStart = spawnPos + offset + (size * 0.5f);
-
-	auto targetOpt = Utils::DetectionRangeUtils::getTargetWithLineOfSight(rayStart, player->center, player->hitBoxRect,
-	                                                                      player->scale, size);
-
-	if (targetOpt) {
+	if (auto targetOpt =
+	        getLosTarget(*enemy, *player, &rangedOpt->get(), projOpt ? &projOpt->get() : nullptr, facingLeft)) {
 		rangedOpt->get().targetSnapshot = *targetOpt;
 	} else {
 		rangedOpt->get().targetSnapshot = glm::vec2(0.0f);
@@ -156,7 +164,7 @@ void CancelRangedAttackAction::execute(Registry &registry, const Entity entity, 
 	}
 }
 
-void Actions::RetreatFromPlayerAction::execute(Registry &registry, const Entity entity, float deltaTime)
+void RetreatFromPlayerAction::execute(Registry &registry, const Entity entity, float deltaTime)
 {
 	const auto enemy = getEntityInfo(registry, entity);
 	const auto player = getPlayerInfo(registry);
@@ -172,61 +180,48 @@ void Actions::RetreatFromPlayerAction::execute(Registry &registry, const Entity 
 	if (!inputOpt || !renderOpt)
 		return;
 
-	// Move away from player
 	const bool playerOnLeft = player->center.x < enemy->center.x;
 
-	// Face the player while retreating (to shoot at them)
 	renderOpt->get().setFacingLeft(playerOnLeft);
 
 	// Move away from player
 	if (playerOnLeft) {
-		inputOpt->get().horizontalDirection = 1.0f; // Move right
+		inputOpt->get().horizontalDirection = 1.0f;
 	} else {
-		inputOpt->get().horizontalDirection = -1.0f; // Move left
+		inputOpt->get().horizontalDirection = -1.0f;
 	}
 
-	// Set retreat speed
 	if (movementOpt) {
-		movementOpt->get().maxSpeedX = 30;
+		movementOpt->get().maxSpeedX = retreatSpeed;
 	}
 
-	// Set state to Rolling so AnimationSystem uses Roll animation
 	if (stateOpt) {
 		stateOpt->get().state = State::Rolling;
 	}
 }
 
-void Actions::RecordCornerAction::execute(Registry &registry, Entity entity, float deltaTime)
+void RecordCornerAction::execute(Registry &registry, Entity entity, float deltaTime)
 {
-	// Debug logging to trace crash
-	// std::cout << "RecordCornerAction executing for entity " << entity << std::endl;
-	auto patrolOpt = registry.tryGet<PatrolComponent>(entity);
+	const auto patrolOpt = registry.tryGet<PatrolComponent>(entity);
 	const auto renderOpt = registry.tryGet<RenderComponent>(entity);
 	const auto posOpt = registry.tryGet<PositionComponent>(entity);
 
 	if (!patrolOpt || !renderOpt || !posOpt) {
-		// std::cout << "Missing components in RecordCornerAction" << std::endl;
 		return;
 	}
 
-	// If we are cornered, we are at a wall. Record this position.
 	if (renderOpt->get().isFacingLeft()) {
-		// Facing left and stuck -> Left Wall (MinX)
-		// We use current position as a safe estimate for the wall
-		if (!patrolOpt->get().minX.has_value() || posOpt->get().position.x < patrolOpt->get().minX.value()) {
-			// std::cout << "Recording MinX: " << posOpt->get().position.x << std::endl;
-			patrolOpt->get().minX = posOpt->get().position.x;
+		if (!patrolOpt->get().maxX.has_value() || posOpt->get().position.x > patrolOpt->get().maxX.value()) {
+			patrolOpt->get().maxX = posOpt->get().position.x;
 		}
 	} else {
-		// Facing right and stuck -> Right Wall (MaxX)
-		if (!patrolOpt->get().maxX.has_value() || posOpt->get().position.x > patrolOpt->get().maxX.value()) {
-			// std::cout << "Recording MaxX: " << posOpt->get().position.x << std::endl;
-			patrolOpt->get().maxX = posOpt->get().position.x;
+		if (!patrolOpt->get().minX.has_value() || posOpt->get().position.x < patrolOpt->get().minX.value()) {
+			patrolOpt->get().minX = posOpt->get().position.x;
 		}
 	}
 }
 
-void Actions::EvadeJumpAction::execute(Registry &registry, const Entity entity, float deltaTime)
+void EscapeThroughPlayerAction::execute(Registry &registry, const Entity entity, float deltaTime)
 {
 	const auto enemy = getEntityInfo(registry, entity);
 	const auto player = getPlayerInfo(registry);
@@ -237,71 +232,142 @@ void Actions::EvadeJumpAction::execute(Registry &registry, const Entity entity, 
 	auto inputOpt = registry.tryGet<InputComponent>(entity);
 	auto renderOpt = registry.tryGet<RenderComponent>(entity);
 	auto movementOpt = registry.tryGet<MovementComponent>(entity);
-	auto groundedOpt = registry.tryGet<GroundedComponent>(entity);
-	auto patrolOpt = registry.tryGet<PatrolComponent>(entity);
+	auto smOpt = registry.tryGet<StateMachineComponent>(entity);
 
 	if (!inputOpt || !renderOpt)
 		return;
 
-	// Trigger jump on first frame (when grounded)
-	if (groundedOpt && groundedOpt->get().grounded) {
-		inputOpt->get().jumpPressed = true;
-	} else {
-		inputOpt->get().jumpPressed = false;
+	if (smOpt && smOpt->get().timeInState <= deltaTime * 2.0f) {
+		hasStarted = false;
 	}
 
-	// Move away from player during jump
-	const bool playerOnLeft = player->center.x < enemy->center.x;
-
-	// Face the player while jumping (to look menacing)
-	renderOpt->get().setFacingLeft(playerOnLeft);
-
-	// Move away from player
-	// Determine best jump target (Center, Left Wall, Right Wall)
-	// We want to jump to the location that maximizes distance from player
-	float bestTargetX = enemy->center.x;
-	float maxDist = -1.0f;
-
-	float dir = 0.0f;
-
-	if (patrolOpt) {
-		std::vector<float> candidates;
-		candidates.push_back(patrolOpt->get().patrolCenter.x);
-		if (patrolOpt->get().minX.has_value())
-			candidates.push_back(patrolOpt->get().minX.value() + 50.0f); // Offset from wall
-		if (patrolOpt->get().maxX.has_value())
-			candidates.push_back(patrolOpt->get().maxX.value() - 50.0f); // Offset from wall
-
-		for (float targetX : candidates) {
-			float dist = std::abs(targetX - player->center.x);
-			// Also ensure we don't jump INTO the player (cross them) if possible, or at least penalize close targets
-			if (dist > maxDist) {
-				maxDist = dist;
-				bestTargetX = targetX;
-			}
+	if (!hasStarted) {
+		float direction = 0.0f;
+		if (auto patrolOpt = registry.tryGet<PatrolComponent>(entity)) {
+			const float centerX = patrolOpt->get().patrolCenter.x;
+			direction = (centerX > enemy->center.x) ? 1.0f : -1.0f;
+		} else {
+			const bool playerOnLeft = player->center.x < enemy->center.x;
+			direction = playerOnLeft ? -1.0f : 1.0f;
 		}
 
-		// Determine direction to best target
-		dir = (bestTargetX > enemy->center.x) ? 1.0f : -1.0f;
-	} else {
-		// Fallback: away from player
-		dir = playerOnLeft ? 1.0f : -1.0f;
+		storedDirection = direction;
+		hasStarted = true;
+
+		const bool movingLeft = storedDirection < 0.0f;
+		renderOpt->get().setFacingLeft(movingLeft);
 	}
 
-	inputOpt->get().horizontalDirection = dir;
+	inputOpt->get().horizontalDirection = storedDirection;
 
-	// Set movement speed AND force velocity if in air preventing standard movement
 	if (movementOpt) {
-		const float effectiveJumpSpeed = std::max(jumpSpeed, 400.0f);
-		movementOpt->get().maxSpeedX = effectiveJumpSpeed;
+		movementOpt->get().maxSpeedX = escapeSpeed;
 		if (auto velOpt = registry.tryGet<VelocityComponent>(entity)) {
-			// Directly apply horizontal velocity to ensure it moves even if air control is limited
-			velOpt->get().velocity.x = dir * effectiveJumpSpeed;
+			velOpt->get().velocity.x = storedDirection * escapeSpeed;
 		}
 	}
 }
-} // namespace Actions
 
+void ApplyProximitySlowAction::execute(Registry &registry, Entity entity, float deltaTime)
+{
+	const auto enemy = getEntityInfo(registry, entity);
+	const auto playerInfo = getPlayerInfo(registry);
+
+	if (!enemy || !playerInfo) {
+		return;
+	}
+
+	const float distance = glm::distance(enemy->center, playerInfo->center);
+	if (distance > slowRange) {
+		return;
+	}
+
+	for (auto playerView = registry.view<PlayerTag, MovementComponent>(); const auto playerEntity : playerView) {
+		if (!registry.has<MovementSlowComponent>(playerEntity)) {
+			registry.registerComponent(playerEntity, MovementSlowComponent{});
+		}
+
+		auto &slow = registry.get<MovementSlowComponent>(playerEntity);
+		slow.speedMultiplier = slowMultiplier;
+		slow.slowTimer = Timer{std::chrono::duration<float>(slowDuration)};
+		slow.slowTimer.reset();
+		break;
+	}
+}
+
+void ApplyConcussionVignetteAction::execute(Registry &registry, Entity entity, float deltaTime)
+{
+	const auto enemy = getEntityInfo(registry, entity);
+	const auto playerInfo = getPlayerInfo(registry);
+
+	if (!enemy || !playerInfo) {
+		return;
+	}
+
+	if (const float distance = glm::distance(enemy->center, playerInfo->center); distance > effectRange) {
+		return;
+	}
+
+	for (auto playerView = registry.view<PlayerTag, PositionComponent>(); const auto playerEntity : playerView) {
+		if (!registry.has<VignetteComponent>(playerEntity)) {
+			registry.registerComponent(playerEntity, VignetteComponent{});
+		}
+
+		auto &vignette = registry.get<VignetteComponent>(playerEntity);
+		vignette.duration = Timer{std::chrono::duration<float>(effectDuration)};
+		vignette.duration.reset();
+		vignette.color = SDL_FColor{1.0f, 1.0f, 1.0f, 1.0f};
+		break;
+	}
+
+	if (!registry.has<VignetteComponent>(entity)) {
+		registry.registerComponent(entity, VignetteComponent{});
+	}
+	if (auto enemyVignetteOpt = registry.tryGet<VignetteComponent>(entity)) {
+		auto &enemyVignette = enemyVignetteOpt->get();
+		enemyVignette.duration = Timer{std::chrono::duration<float>(effectDuration * 0.5f)};
+		enemyVignette.duration.reset();
+		enemyVignette.color = SDL_FColor{1.0f, 1.0f, 1.0f, 0.85f};
+	}
+}
+
+void ApplyCameraShakeAction::execute(Registry &registry, Entity entity, float deltaTime)
+{
+	const auto enemy = getEntityInfo(registry, entity);
+
+	if (const auto playerInfo = getPlayerInfo(registry); !enemy || !playerInfo) {
+		return;
+	}
+
+	for (auto playerView = registry.view<PlayerTag>(); const auto playerEntity : playerView) {
+		if (!registry.has<CameraShakeComponent>(playerEntity)) {
+			registry.registerComponent(playerEntity, CameraShakeComponent{});
+		}
+
+		auto &shake = registry.get<CameraShakeComponent>(playerEntity);
+		shake.amplitude = amplitude;
+		shake.decay = false;
+		shake.duration = Timer{std::chrono::duration<float>(duration)};
+		shake.duration.reset();
+		shake.offset = {0.0f, 0.0f};
+		break;
+	}
+}
+
+void PhaseShiftAction::execute(Registry &registry, const Entity entity, float deltaTime)
+{
+	if (const auto render = registry.tryGet<RenderComponent>(entity)) {
+		render->get().alpha = 128;
+	}
+}
+
+void RestoreOpacityAction::execute(Registry &registry, const Entity entity, float deltaTime)
+{
+	if (const auto render = registry.tryGet<RenderComponent>(entity)) {
+		render->get().alpha = 255;
+	}
+}
+} // namespace Actions
 
 // Transitions
 
@@ -343,8 +409,7 @@ bool LosLostTransition::canTransition(Registry &registry, const Entity entity, c
 	return losLostDuration >= gracePeriod;
 }
 
-bool PlayerTooCloseTransition::canTransition(Registry &registry, const Entity entity,
-														  float deltaTime) const
+bool PlayerTooCloseTransition::canTransition(Registry &registry, const Entity entity, float deltaTime) const
 {
 	const auto enemy = getEntityInfo(registry, entity);
 	const auto player = getPlayerInfo(registry);
@@ -382,24 +447,110 @@ bool StuckTransition::canTransition(Registry &registry, Entity entity, float del
 {
 	const auto sm = registry.tryGet<StateMachineComponent>(entity);
 	const auto vel = registry.tryGet<VelocityComponent>(entity);
+	const auto input = registry.tryGet<InputComponent>(entity);
 
 	if (!sm || !vel)
 		return false;
 
-	// Give it some time to accelerate
-	if (sm->get().timeInState < 0.2f)
+	if (sm->get().timeInState < 0.2f) {
+		currentStuckTime = 0.0f;
 		return false;
+	}
 
-	// If horizontal velocity is very low, we are likely stuck
-	return std::abs(vel->get().velocity.x) < threshold;
+	if (input && std::abs(input->get().horizontalDirection) > 0.1f) {
+		if (input->get().horizontalDirection * vel->get().velocity.x < -1.0f) {
+			currentStuckTime = 0.0f;
+			return false;
+		}
+	}
+
+	if (std::abs(vel->get().velocity.x) < threshold) {
+		currentStuckTime += deltaTime;
+		if (currentStuckTime > requiredTime) {
+			return true;
+		}
+	} else {
+		currentStuckTime = 0.0f;
+	}
+
+	return false;
+}
+
+bool CanRetreatTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
+{
+	const auto enemy = getEntityInfo(registry, entity);
+	const auto player = getPlayerInfo(registry);
+	const auto patrolOpt = registry.tryGet<PatrolComponent>(entity);
+
+	if (!enemy || !player || !patrolOpt)
+		return true;
+
+	const bool playerOnLeft = player->center.x < enemy->center.x;
+	const float retreatDir = playerOnLeft ? 1.0f : -1.0f;
+
+	if (retreatDir < 0.0f) {
+		if (patrolOpt->get().minX.has_value()) {
+			if (enemy->position.x <= patrolOpt->get().minX.value() + 10.0f) {
+				return false;
+			}
+		}
+	} else {
+		if (patrolOpt->get().maxX.has_value()) {
+			if (enemy->position.x >= patrolOpt->get().maxX.value() - 10.0f) {
+				return false;
+			}
+		}
+	}
+
+	if (patrolOpt->get().minX.has_value() && player->position.x <= patrolOpt->get().minX.value() + 64.0f) {
+		return false;
+	}
+	if (patrolOpt->get().maxX.has_value() && player->position.x >= patrolOpt->get().maxX.value() - 64.0f) {
+		return false;
+	}
+
+	return true;
+}
+
+bool SafePassedPlayerTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
+{
+	const auto enemy = getEntityInfo(registry, entity);
+	const auto player = getPlayerInfo(registry);
+
+	if (!enemy || !player)
+		return true;
+
+	bool passed = false;
+
+	if (auto patrolOpt = registry.tryGet<PatrolComponent>(entity)) {
+		float direction = 0.0f;
+		const float centerX = patrolOpt->get().patrolCenter.x;
+		direction = (centerX > player->center.x) ? 1.0f : -1.0f;
+
+		if (direction > 0.0f) {
+			passed = enemy->center.x > player->center.x + safetyDistance;
+		} else {
+			passed = enemy->center.x < player->center.x - safetyDistance;
+		}
+
+		if (!passed) {
+			if (direction > 0.0f && patrolOpt->get().maxX.has_value()) {
+				if (enemy->position.x >= patrolOpt->get().maxX.value() - 10.0f) {
+					passed = true;
+				}
+			} else if (direction < 0.0f && patrolOpt->get().minX.has_value()) {
+				if (enemy->position.x <= patrolOpt->get().minX.value() + 10.0f) {
+					passed = true;
+				}
+			}
+		}
+	} else {
+		passed = std::abs(enemy->center.x - player->center.x) > safetyDistance + 50.0f;
+	}
+
+	return passed;
+}
+
 } // namespace Transitions
-
-
-} // namespace Transitions
-
-
-
-
-
 
 } // namespace GameEngine::ECS

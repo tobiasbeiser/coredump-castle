@@ -51,10 +51,11 @@ class EnemyStateMachineFactory {
 		const auto &patrol = registry.get<PatrolComponent>(entity);
 		const auto &chase = registry.get<ChaseComponent>(entity);
 
-		// Retreat distance thresholds
-		// Retreat distance thresholds
-		constexpr float retreatTriggerRange = 80.0f;   // Start retreating when player is this close
-		constexpr float safeShootingDistance = 180.0f; // Stop retreating and resume firing at this distance
+		constexpr float retreatTriggerRange = 160.0f;
+		constexpr float escapeTriggerRange = 60.0f; // "Too close" range
+		constexpr float safeShootingDistance = 320.0f;
+
+		float giveUpRange = std::max(chase.giveUpRange, safeShootingDistance + 100.0f);
 
 		StateMachineBuilder builder(sm);
 		builder.addState(AIState::Patrol)
@@ -70,20 +71,19 @@ class EnemyStateMachineFactory {
 		    .onUpdate<AimAtPlayerWithLOSAction>()
 		    .onUpdate<TriggerRangedAttackAction>()
 		    .onExit<CancelRangedAttackAction>()
-		    // .transition<PlayerTooCloseTransition>(AIState::PreJump, 50.0f) // JUMP PRIORITY: If very close, evade
-		    // immediately
+		    .transition<PlayerTooCloseTransition>(AIState::TelegraphCharge, escapeTriggerRange)
 		    .transition<PlayerTooCloseTransition>(AIState::Retreat, retreatTriggerRange)
-		    .transition<ProximityExitTransition>(AIState::Patrol, chase.giveUpRange)
+		    .transition<ProximityExitTransition>(AIState::Patrol, giveUpRange)
 		    .transition<LosLostTransition>(AIState::Patrol, 0.5f)
 
 		    .addState(AIState::Retreat)
 		    .onEnter<TriggerAnimationAction>(AnimationType::Roll, true)
 		    .onEnter<CancelRangedAttackAction>()
-		    .onUpdate<RetreatFromPlayerAction>(chase.chaseSpeed * 2.0f)
-		    .onExit<SetStateComponentAction>(State::Idle) // Reset state so Fire doesn't keep rolling
+		    .onUpdate<RetreatFromPlayerAction>(220)
+		    .onExit<SetStateComponentAction>(State::Idle)
 		    .transition<ProximityExitTransition>(AIState::Fire, safeShootingDistance)
-		    .transition<StuckTransition>(AIState::CorneredFire, 10.0f) // If stuck, go to CorneredFire (no retreat loop)
-		    .transition<ProximityExitTransition>(AIState::Patrol, chase.giveUpRange)
+		    .transition<StuckTransition>(AIState::CorneredFire, 20.0f, 0.1f)
+		    .transition<ProximityExitTransition>(AIState::Patrol, giveUpRange)
 		    .transition<LosLostTransition>(AIState::Patrol, 0.5f)
 
 		    .addState(AIState::CorneredFire)
@@ -92,25 +92,30 @@ class EnemyStateMachineFactory {
 		    .onUpdate<StopAndFacePlayerAction>()
 		    .onUpdate<AimAtPlayerWithLOSAction>()
 		    .onUpdate<TriggerRangedAttackAction>()
-		    .onUpdate<RecordCornerAction>() // NEW: Learn where the corner is!
+		    .onUpdate<RecordCornerAction>()
 		    .onExit<CancelRangedAttackAction>()
-		    // .transition<PlayerTooCloseTransition>(AIState::PreJump, 50.0f)           // Still jump if too close
-		    .transition<ProximityExitTransition>(AIState::Patrol, chase.giveUpRange) // Give up if player leaves
+		    .transition<PlayerTooCloseTransition>(AIState::TelegraphCharge, escapeTriggerRange)
+		    .transition<CanRetreatTransition>(AIState::Fire)
+		    .transition<SafeDistanceReachedTransition>(AIState::Fire, safeShootingDistance + 50.0f)
 		    .transition<LosLostTransition>(AIState::Patrol, 0.5f)
 
-		    .addState(AIState::PreJump)
-		    .onEnter<StopAndFaceWithAnimation>(AnimationType::Charge, true) // Telegraph animation
-		    .onEnter<StartChargeTelegraphAction>()                          // Visual telegraph effect
+		    .addState(AIState::TelegraphCharge)
+		    .onEnter<StopAndFaceWithAnimation>(AnimationType::Interacting, true)
+		    .onEnter<StartChargeTelegraphAction>()
 		    .onUpdate<StopMovementAction>()
-		    .onExit<StopChargeTelegraphAction>()                   // Clean up effect
-		    .transition<TimerTransition>(AIState::EvadeJump, 0.5f) // Wait then jump
-		    .transition<PoiseBreakTransition>(AIState::Staggered)  // Allow player to hit boss
+		    .onExit<StopChargeTelegraphAction>()
+		    .transition<TimerTransition>(AIState::Escaping, 0.5f)
 
-		    .addState(AIState::EvadeJump)
-		    .onEnter<TriggerAnimationAction>(AnimationType::JumpStart, false)
-		    .onUpdate<EvadeJumpAction>(chase.chaseSpeed * 1.5f)
-		    .onExit<CancelRangedAttackAction>()
-		    .transition<LandedTransition>(AIState::Fire, 0.2f); // Wait for landing
+		    .addState(AIState::Escaping)
+		    .onEnter<TriggerAnimationAction>(AnimationType::Walking, true)
+		    .onEnter<PhaseShiftAction>()
+		    .onUpdate<ApplyCameraShakeAction>(7.0f, 1.2f)
+		    .onUpdate<ApplyProximitySlowAction>(160.0f, 0.22f, 1.3f)
+		    .onUpdate<ApplyConcussionVignetteAction>(160.0f, 1.8f)
+		    .onUpdate<EscapeThroughPlayerAction>(200)
+		    .onExit<RestoreOpacityAction>()
+		    .transition<SafePassedPlayerTransition>(AIState::Retreat, 80.0f)
+		    .transition<TimerTransition>(AIState::Retreat, 2.0f);
 	}
 
 	static void createPatrolOnlyEnemy(Registry &registry, const Entity entity)
@@ -190,7 +195,7 @@ class EnemyStateMachineFactory {
 		    .onUpdate<MeleeChaseAction>(chase.chaseSpeed)
 		    .onEnter<TriggerAnimationAction>(AnimationType::Walking, true)
 		    .transition<MeleeAttackTransition>(AIState::CombatDecision)
-		    .transition<isPlayerUnreachableAndGroundedTransition>(AIState::Patrol, 32.0f)
+		    .transition<IsPlayerUnreachableAndGroundedTransition>(AIState::Patrol, 32.0f)
 		    .transition<ProximityExitTransition>(AIState::Patrol, chase.giveUpRange)
 		    .transition<PoiseBreakTransition>(AIState::Staggered)
 
@@ -205,9 +210,16 @@ class EnemyStateMachineFactory {
 		    .addState(AIState::TelegraphCharge)
 		    .onEnter<StartChargeTelegraphAction>()
 		    .onEnter<StopAndFaceWithAnimation>(AnimationType::Idle, true)
+		    .onEnter<ApplyCameraShakeAction>(6.0f, 0.25f)
 		    .onUpdate<StopMovementAction>()
 		    .transition<ChargeTelegraphFinishedTransition>(AIState::Charging)
 		    .transition<PoiseBreakTransition>(AIState::Staggered)
+
+		    .addState(AIState::TelegraphEscape)
+		    .onEnter<StopAndFaceWithAnimation>(AnimationType::Idle, true)
+		    .onUpdate<StopMovementAction>()
+		    .onExit<StopChargeTelegraphAction>()
+		    .transition<TimerTransition>(AIState::Attacking, 0.35f)
 
 		    .addState(AIState::Charging)
 		    .onEnter<StartChargeAction>()
@@ -222,14 +234,16 @@ class EnemyStateMachineFactory {
 		    .onUpdate<StopMovementAction>()
 		    .onUpdate<FacePlayerDuringWindupAction>()
 		    .onExit<CancelMeleeAttackAction>()
-		    .transition<isPlayerUnreachableAndGroundedTransition>(AIState::Patrol, 32.0f)
+		    .transition<IsPlayerUnreachableAndGroundedTransition>(AIState::Patrol, 32.0f)
 		    .transition<AnimationFinishedTransition>(AIState::Recover)
 		    .transition<PoiseBreakTransition>(AIState::Staggered)
 
 		    .addState(AIState::Recover)
+
+		    .addState(AIState::Recover)
 		    .onEnter<StopMovementAction>()
 		    .onEnter<StopAndFaceWithAnimation>(AnimationType::Idle, false)
-		    .transition<isPlayerUnreachableAndGroundedTransition>(AIState::Patrol, 32.0f)
+		    .transition<IsPlayerUnreachableAndGroundedTransition>(AIState::Patrol, 32.0f)
 		    .transition<AnimationFinishedTransition>(AIState::Chase)
 		    .transition<PoiseBreakTransition>(AIState::Staggered)
 
@@ -237,7 +251,7 @@ class EnemyStateMachineFactory {
 		    .onEnter<TriggerAnimationAction>(AnimationType::Hurting, false)
 		    .onEnter<StopMovementAction>()
 		    .onUpdate<StopMovementAction>()
-		    .transition<AnimationFinishedTransition>(AIState::Chase)
+		    .transition<TimerTransition>(AIState::Chase, 1.2f)
 		    .onExit<SetStateComponentAction>(State::Idle);
 	}
 };

@@ -16,6 +16,7 @@
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
+#include "Engine/ECS/Components/StateMachine/StateMachineComponent.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Components/Tags/ProjectileTag.hpp"
@@ -62,6 +63,12 @@ bool isValidVictim(Registry &registry, const Entity attacker, const Entity victi
 		}
 	}
 
+	if (const auto sm = registry.tryGet<StateMachineComponent>(victim)) {
+		if (sm->get().currentState == AI::AIState::Escaping) {
+			return false;
+		}
+	}
+
 	if (const auto victimHealth = registry.tryGet<HealthComponent>(victim);
 	    victimHealth && HealthSystem::isDead(victimHealth->get())) {
 		return false;
@@ -78,8 +85,8 @@ void applyDamage(Registry &registry, const Entity victim, const int damage = 10)
 
 void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
 {
-	auto attackerView = registry.view<AttackComponent, HitBoxComponent, PositionComponent, HurtBoxComponent,
-	                                   RenderComponent>();
+	auto attackerView =
+	    registry.view<AttackComponent, HitBoxComponent, PositionComponent, HurtBoxComponent, RenderComponent>();
 	auto victimView = registry.view<HurtBoxComponent, PositionComponent, HealthComponent>();
 
 	for (const auto attacker : attackerView) {
@@ -154,7 +161,14 @@ void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
 				}
 			}
 
-			if (!hit && registry.has<EnemyTag>(attacker)
+			bool isTelegraphing = false;
+			if (const auto sm = registry.tryGet<StateMachineComponent>(attacker)) {
+				if (const auto state = sm->get().currentState; state == AI::AIState::Escaping) {
+					isTelegraphing = true;
+				}
+			}
+
+			if (!hit && registry.has<EnemyTag>(attacker) && !isTelegraphing
 			    && SDL_HasRectIntersectionFloat(&attackerBodyRect, &victimHurtBoxRect)) {
 				bodyHit = true;
 				if (!isInvulnerable) {
@@ -188,17 +202,17 @@ void resolveProjectileHits(Registry &registry)
 
 		const auto transform = registry.tryGet<TransformComponent>(projectile);
 		const auto scale = transform ? &transform->get().scale : nullptr;
-		
+
 		// Determine if projectile is flying left based on velocity
 		bool facingLeft = false;
 		if (const auto velocity = registry.tryGet<VelocityComponent>(projectile)) {
 			facingLeft = velocity->get().velocity.x < 0.0f;
 		}
-		
+
 		// Use facing-aware hitbox calculation so hitbox stays at the tip
 		SDL_FRect referenceBox = projectileHitBox; // Use hitbox as reference for flipping
-		SDL_FRect projectileHurtBoxRect = Utils::HitBoxUtils::getHitBoxFacing(
-		    position, projectileHitBox, referenceBox, scale, facingLeft);
+		SDL_FRect projectileHurtBoxRect =
+		    Utils::HitBoxUtils::getHitBoxFacing(position, projectileHitBox, referenceBox, scale, facingLeft);
 
 		for (const auto victim : victimView) {
 			if (!isValidVictim(registry, projectile, victim)) {

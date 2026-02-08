@@ -214,12 +214,20 @@
         {
          "animation":[
                 {
-                 "duration":200,
+                 "duration":120,
                  "tileid":48
                 }, 
                 {
-                 "duration":200,
+                 "duration":120,
                  "tileid":49
+                }, 
+                {
+                 "duration":120,
+                 "tileid":50
+                }, 
+                {
+                 "duration":120,
+                 "tileid":51
                 }],
          "id":48,
          "properties":[
@@ -227,15 +235,10 @@
                  "name":"state",
                  "propertytype":"State",
                  "type":"int",
-                 "value":3
+                 "value":12
                 }]
         }, 
         {
-         "animation":[
-                {
-                 "duration":200,
-                 "tileid":49
-                }],
          "id":49,
          "properties":[
                 {
@@ -246,15 +249,6 @@
                 }]
         }, 
         {
-         "animation":[
-                {
-                 "duration":200,
-                 "tileid":50
-                }, 
-                {
-                 "duration":200,
-                 "tileid":51
-                }],
          "id":50,
          "properties":[
                 {

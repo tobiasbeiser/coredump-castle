@@ -112,7 +112,7 @@ void GameEngine::ECS::Systems::ProjectileSystem::cleanUpAllProjectiles(Registry 
 	}
 }
 
-void GameEngine::ECS::Systems::ProjectileSystem::handleEnemySpawning(Registry &registry, float deltaTime)
+void GameEngine::ECS::Systems::ProjectileSystem::handleEnemySpawning(Registry &registry, float deltaTime) const
 {
 	for (auto view = registry.view<EnemyTag, AttackComponent, RangedAttackComponent, PositionComponent,
 	                               HurtBoxComponent, ProjectileComponent>();
@@ -158,13 +158,30 @@ void GameEngine::ECS::Systems::ProjectileSystem::handleEnemySpawning(Registry &r
 
 			const glm::vec2 spawnCenter = spawnPosition + hitboxOffset + (projectileSize * 0.5f);
 
-			const glm::vec2 direction = calculateProjectileDirection(spawnCenter, rangedAttack.targetSnapshot);
+			const glm::vec2 baseDirection = calculateProjectileDirection(spawnCenter, rangedAttack.targetSnapshot);
+			const double baseRotation = std::atan2(baseDirection.y, baseDirection.x);
 
-			const double rotation = std::atan2(direction.y, direction.x) * (180.0 / std::numbers::pi);
+			if (rangedAttack.useSpreadShot && rangedAttack.spreadCount > 1) {
+				const int count = rangedAttack.spreadCount;
+				const float angleStep = rangedAttack.spreadAngle * (std::numbers::pi / 180.0f);
+				const float startAngle = baseRotation - (angleStep * (count - 1) / 2.0f);
 
-			projectileFactory.createProjectile(spawnPosition, direction, projectileSettings.speed,
-			                                   projectileSettings.maxRange, projectileSettings.projectileTilesetPath,
-			                                   rotation);
+				for (int i = 0; i < count; ++i) {
+					const float angle = startAngle + (angleStep * i);
+					const glm::vec2 direction = {std::cos(angle), std::sin(angle)};
+					const double rotationDeg = angle * (180.0 / std::numbers::pi);
+
+					projectileFactory.createProjectile(spawnPosition, direction, projectileSettings.speed,
+					                                   projectileSettings.maxRange,
+					                                   projectileSettings.projectileTilesetPath, rotationDeg);
+				}
+			} else {
+				const double rotation = baseRotation * (180.0 / std::numbers::pi);
+				projectileFactory.createProjectile(spawnPosition, baseDirection, projectileSettings.speed,
+				                                   projectileSettings.maxRange,
+				                                   projectileSettings.projectileTilesetPath, rotation);
+			}
+
 			rangedAttack.projectileSpawned = true;
 		}
 	}
