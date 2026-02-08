@@ -83,7 +83,7 @@ class Renderer {
 	void setupImGui() const;
 	static void startImGuiFrame();
 	Resolution currentResolution{1920, 1080};
-	Resolution logicalResolution{768, 432};
+	Resolution logicalResolution{608, 342};
 
 	SDL_FRect viewport{.x = 0,
 	                   .y = 0,

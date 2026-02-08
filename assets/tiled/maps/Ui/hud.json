@@ -1,5 +1,5 @@
 { "compressionlevel":-1,
- "height":14,
+ "height":11,
  "infinite":false,
  "layers":[
         {
@@ -40,8 +40,8 @@
                  "type":"",
                  "visible":true,
                  "width":192,
-                 "x":561,
-                 "y":72
+                 "x":208,
+                 "y":90
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -115,8 +115,8 @@
                  "type":"",
                  "visible":true,
                  "width":126,
-                 "x":594,
-                 "y":72
+                 "x":241,
+                 "y":90
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -149,5 +149,5 @@
  "tilewidth":32,
  "type":"map",
  "version":"1.11",
- "width":24
+ "width":19
 }
