@@ -9,12 +9,13 @@
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
 #include "Engine/ECS/Components/Tags/AlreadySeenTag.hpp"
 #include "Engine/ECS/Components/Tags/InactiveTag.hpp"
+#include "Engine/ECS/Components/Tags/UiElementTag.hpp"
 #include "Engine/Utils/RenderUtils.hpp"
 
 
 void GameEngine::ECS::Systems::MapTrackingSystem::update(Registry &registry, const SDL_FRect &viewport)
 {
-	for (auto view = registry.view<RenderComponent, PositionComponent, SpriteComponent>().exclude<InactiveTag>(); const auto entity : view) {
+	for (auto view = registry.view<RenderComponent, PositionComponent, SpriteComponent>().exclude<InactiveTag>().exclude<UiElementTag>(); const auto entity : view) {
 		const auto &pos = view.get<PositionComponent>(entity);
 		const auto &sprite = view.get<SpriteComponent>(entity);
 		const auto &transform = registry.tryGet<TransformComponent>(entity);
