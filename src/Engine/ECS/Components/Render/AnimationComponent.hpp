@@ -109,6 +109,9 @@ class AnimationComponent {
 	AnimationType getAnimation() const { return currentAnimation; }
 	void setAnimation(const AnimationType &type)
 	{
+		if (!hasAnimation(type)) {
+			return;
+		}
 		if (currentAnimation != type) {
 			startAnimation(type);
 		}
@@ -116,7 +119,12 @@ class AnimationComponent {
 	}
 
   private:
-	void startAnimation(const AnimationType &type) { animations.at(type).start(); }
+	void startAnimation(const AnimationType &type)
+	{
+		if (animations.contains(type)) {
+			animations.at(type).start();
+		}
+	}
 	std::unordered_map<AnimationType, Animation> animations{};
 	std::unordered_map<AnimationType, std::vector<AnimationFrame>> frames{};
 	std::unordered_map<AnimationType, std::vector<bool>> damageFrames{};

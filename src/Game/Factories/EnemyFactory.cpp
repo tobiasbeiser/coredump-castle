@@ -14,7 +14,6 @@
 #include "Engine/ECS/Components/Gameplay/Combat/PoiseComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/RangedAttackComponent.hpp"
-#include "Engine/ECS/Components/Gameplay/Enemy/AiStateComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/ChargeComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/ChaseComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp"
@@ -30,6 +29,7 @@
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/View.hpp"
+#include "Game/AI/StateMachine/EnemyStateMachineFactory.hpp"
 #include "Game/Spawners/EnemySpawner.hpp"
 
 #include <tileson.hpp>
@@ -190,10 +190,11 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 	const auto isBoss = getBoolProp(enemyObj, "isBoss");
 	const auto bossIdProp = getIntProp(enemyObj, "bossId", -1);
 	const auto unlockAbility = getAbilityProp(enemyObj, "unlockAbility", AbilityType::None);
-	const auto chargeChance = getFloatProp(enemyObj, "chargeChance", 0.25f);
+	const auto chargeChance = getFloatProp(enemyObj, "chargeChance", 0.35f);
 	const auto chargeDuration = getFloatProp(enemyObj, "chargeDuration", 0.75f);
 	const auto chargePauseDuration = getFloatProp(enemyObj, "chargePauseDuration", 1.0f);
 	const auto chargeSpeedMultiplier = getFloatProp(enemyObj, "chargeSpeedMultiplier", 1.5f);
+	const auto chargeCooldown = getFloatProp(enemyObj, "chargeCooldown", 3.0f);
 	const auto detectionRange = getFloatProp(enemyObj, "detectionRange", -1);
 	const auto attackRange = getFloatProp(enemyObj, "attackRange", -1);
 
@@ -214,7 +215,6 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 	spawner.addBlueprint(RenderComponent{.layer = layer, .flipX = false, .flipXOffset = flipXOffset});
 	spawner.addBlueprint(TransformComponent{.scale = glm::vec2(scale, scale)});
 	spawner.addBlueprint(StateComponent{});
-	spawner.addBlueprint(AiStateComponent{});
 	using namespace std::chrono_literals;
 
 	spawner.addBlueprint(InputComponent{});
@@ -225,10 +225,10 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 		const int bossId = bossIdProp == -1 ? static_cast<int>(enemyObj.getId()) : bossIdProp;
 		spawner.addBlueprint(BossComponent{.bossId = bossId, .unlockAbility = unlockAbility});
 		spawner.addBlueprint(
-		    ChargeComponent{.chargeTimer = Timer{std::chrono::duration<float>(chargeDuration)},
-		                    .chargePauseTimer = Timer{std::chrono::duration<float>(chargePauseDuration)},
-		                    .chargeChance = chargeChance,
-		                    .chargeSpeedMultiplier = chargeSpeedMultiplier});
+		    ChargeComponent{.chargeCooldown = Timer{std::chrono::duration<float>(chargeCooldown), true},
+		                    .chargeSpeedMultiplier = chargeSpeedMultiplier,
+		                    .chargeTimer = Timer{std::chrono::duration<float>(chargeDuration)},
+		                    .chargePauseTimer = Timer{std::chrono::duration<float>(chargePauseDuration)}});
 	}
 
 	if (weaponHitBoxStr) {
@@ -252,20 +252,28 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 	}
 
 	if (chaseSpeed > 0.0f) {
+		const float effectiveDetectionRange = detectionRange > 0 ? detectionRange : 200.0f;
 		spawner.addBlueprint(ChaseComponent{
 		    .chaseSpeed = chaseSpeed,
+		    .detectionRange = effectiveDetectionRange,
+		    .giveUpRange = effectiveDetectionRange + 50.0f,
 		    .reactionDelay = Timer{std::chrono::duration<float>(reactionDelay)},
 		});
 	}
 	if (isRangedEnemy) {
+		SDL_Log("[EnemyFactory] Creating ranged enemy at (%.1f, %.1f)", spawn.x, spawn.y);
+
 		std::string projectileTilesetPath;
 		if (const auto tilesetPathOpt = getStringProp(enemyObj, "projectileTileset", "")) {
 			const std::filesystem::path basePath = "assets/tiled/tilesets/";
 			projectileTilesetPath = (basePath / tilesetPathOpt.value()).string();
 		}
 
+		const float effectiveDetectionRange = detectionRange > 0 ? detectionRange : 300.0f;
 		spawner.addBlueprint(ChaseComponent{
 		    .chaseSpeed = chaseSpeed,
+		    .detectionRange = effectiveDetectionRange,
+		    .giveUpRange = effectiveDetectionRange + 50.0f,
 		    .reactionDelay = Timer{std::chrono::duration<float>(reactionDelay)},
 		});
 		spawner.addBlueprint(RangedAttackComponent{
@@ -279,6 +287,16 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 		    .spawnPosition = {0.f, 0.f},
 		    .projectileTilesetPath = projectileTilesetPath,
 		});
+
+		auto reg = registry;
+		spawner.addSetupStep([reg](const Entity entity) { EnemyStateMachineFactory::createWizardEnemy(reg, entity); });
+	} else if (!isBoss && chaseSpeed > 0) {
+		auto reg = registry;
+		spawner.addSetupStep([reg](const Entity entity) { EnemyStateMachineFactory::createMeleeEnemy(reg, entity); });
+	} else if (!isBoss) {
+		auto reg = registry;
+		spawner.addSetupStep(
+		    [reg](const Entity entity) { EnemyStateMachineFactory::createPatrolOnlyEnemy(reg, entity); });
 	}
 
 	using namespace std::chrono_literals;
@@ -324,22 +342,24 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 		spawner.addBlueprint(VisionComponent{.visionRange = detectionRange});
 	}
 
-	// ensureSafeSpawn(entity);
-
+	auto reg = registry;
+	spawner.addSetupStep([reg](const Entity entity) { ensureSafeSpawn(reg, entity); });
+	if (isBoss) {
+		spawner.addSetupStep([reg](const Entity entity) { EnemyStateMachineFactory::createBossEnemy(reg, entity); });
+	}
 	return spawner;
 }
 
-void GameEngine::ECS::EnemyFactory::ensureSafeSpawn(const Entity entity) const
+void GameEngine::ECS::EnemyFactory::ensureSafeSpawn(Registry &registry, const Entity entity)
 {
-
-	auto position = registry.get().tryGet<PositionComponent>(entity);
-	auto collision = registry.get().tryGet<CollisionComponent>(entity);
+	auto position = registry.tryGet<PositionComponent>(entity);
+	auto collision = registry.tryGet<CollisionComponent>(entity);
 
 	if (!position || !collision) {
 		return;
 	}
 
-	const auto transform = registry.get().tryGet<TransformComponent>(entity);
+	const auto transform = registry.tryGet<TransformComponent>(entity);
 	const auto scale = transform ? transform->get().scale : glm::vec2{1.0f, 1.0f};
 
 	position->get().position.x -=
@@ -356,8 +376,7 @@ void GameEngine::ECS::EnemyFactory::ensureSafeSpawn(const Entity entity) const
 		                       position->get().position.y + collision->get().collisionBox.y * scale.y,
 		                       collision->get().collisionBox.w * scale.x, collision->get().collisionBox.h * scale.y};
 
-		for (auto staticColliders = registry.get()
-		                                .view<PositionComponent, CollisionComponent>()
+		for (auto staticColliders = registry.view<PositionComponent, CollisionComponent>()
 		                                .exclude<EnemyTag>()
 		                                .exclude<PlayerTag>()
 		                                .exclude<ProjectileComponent>();
@@ -367,7 +386,7 @@ void GameEngine::ECS::EnemyFactory::ensureSafeSpawn(const Entity entity) const
 			const auto &staticColliderCollisionBox =
 			    staticColliders.get<CollisionComponent>(staticCollider).collisionBox;
 			glm::vec2 staticColliderScale = {1.0f, 1.0f};
-			if (const auto staticTransform = registry.get().tryGet<TransformComponent>(staticCollider)) {
+			if (const auto staticTransform = registry.tryGet<TransformComponent>(staticCollider)) {
 				staticColliderScale = staticTransform->get().scale;
 			}
 
