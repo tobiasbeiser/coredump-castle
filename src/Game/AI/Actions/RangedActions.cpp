@@ -13,7 +13,7 @@
 #include "Engine/ECS/Components/Gameplay/MovementSlowComponent.hpp"
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
 #include "Engine/ECS/Components/Render/CameraShakeComponent.hpp"
-#include "Engine/ECS/Components/Render/ChargeTelegraphComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Render/VignetteComponent.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
@@ -22,6 +22,9 @@
 #include "Engine/Utils/DetectionRangeUtils.hpp"
 #include "Engine/Utils/Random.hpp"
 #include "Game/Factories/ProjectileFactory.hpp"
+#include "Engine/ECS/Components/Render/ChargeTelegraphComponent.hpp"
+
+#include <algorithm>
 namespace GameEngine::ECS {
 
 namespace {
@@ -37,46 +40,64 @@ ProjectileInfo getProjectileInfo(const ProjectileComponent *projComp)
 		return {};
 
 	const auto &data = ProjectileFactory::getCachedProjectileData(projComp->projectileTilesetPath);
-	return {{data.hitbox.w, data.hitbox.h}, {data.hitbox.x, data.hitbox.y}, static_cast<float>(data.tileSize.x)};
+	return {{data.hitbox.w * data.scale.x, data.hitbox.h * data.scale.y},
+	        {data.hitbox.x * data.scale.x, data.hitbox.y * data.scale.y},
+	        static_cast<float>(data.tileSize.x)};
 }
 
-std::optional<glm::vec2> getLosTarget(const EntityInfo &enemy, const EntityInfo &player,
+} // namespace
+
+glm::vec2 calculateRangedRayStart(Registry &registry, Entity entity, const EntityInfo &enemy, const RangedAttackComponent *ranged,
+                                  const ProjectileComponent *proj, const bool facingLeft)
+{
+	glm::vec2 rayStart = enemy.center;
+	if (ranged) {
+		const auto hurtBoxOpt = registry.tryGet<HurtBoxComponent>(entity);
+		SDL_FRect localHurtBox = hurtBoxOpt ? hurtBoxOpt->get().hurtBox : SDL_FRect{0.0f, 0.0f, 0.0f, 0.0f};
+
+		glm::vec2 spawnPos = enemy.position;
+		if (facingLeft) {
+			spawnPos.x += (localHurtBox.x * enemy.scale.x) - ranged->projectileOffset.x;
+		} else {
+			spawnPos.x += ((localHurtBox.x + localHurtBox.w) * enemy.scale.x) + ranged->projectileOffset.x;
+		}
+		spawnPos.y += (localHurtBox.y * enemy.scale.y) + ranged->projectileOffset.y;
+
+		if (proj && !proj->projectileTilesetPath.empty()) {
+			const auto &data = ProjectileFactory::getCachedProjectileData(proj->projectileTilesetPath);
+			spawnPos.x += (data.hitbox.x * data.scale.x) + (data.hitbox.w * data.scale.x * 0.5f);
+			spawnPos.y += (data.hitbox.y * data.scale.y) + (data.hitbox.h * data.scale.y * 0.5f);
+		}
+
+		const float minY = enemy.hitBoxRect.y;
+		const float maxY = enemy.hitBoxRect.y + enemy.hitBoxRect.h;
+		spawnPos.y = std::clamp(spawnPos.y, minY, maxY);
+
+		rayStart = spawnPos;
+	}
+
+	return rayStart;
+}
+
+namespace {
+
+std::optional<glm::vec2> getLosTarget(Registry &registry, Entity entity, const EntityInfo &enemy, const EntityInfo &player,
                                       const RangedAttackComponent *ranged, const ProjectileComponent *proj,
                                       const bool facingLeft)
 {
 	auto [size, offset, tileWidth] = getProjectileInfo(proj);
 
-	glm::vec2 spawnPos;
-	if (ranged) {
-		float xOffset = facingLeft ? -ranged->projectileOffset.x : ranged->projectileOffset.x;
-		if (facingLeft && tileWidth > 0.0f) {
-			xOffset -= tileWidth;
-		}
-		spawnPos.x = enemy.center.x + xOffset;
-		spawnPos.y = enemy.position.y + ranged->projectileOffset.y;
-	} else {
-		spawnPos = enemy.center;
-	}
-
-	glm::vec2 rayStart;
-	if (facingLeft && tileWidth > 0.0f) {
-		const float mirroredOffsetX = tileWidth - (offset.x + size.x);
-		rayStart = spawnPos;
-		rayStart.x += mirroredOffsetX + (size.x * 0.5f);
-		rayStart.y += offset.y + (size.y * 0.5f);
-	} else {
-		rayStart = spawnPos + offset + (size * 0.5f);
-	}
+	const glm::vec2 rayStart = calculateRangedRayStart(registry, entity, enemy, ranged, proj, facingLeft);
 
 	return Utils::DetectionRangeUtils::getTargetWithLineOfSight(rayStart, player.center, player.hitBoxRect,
 	                                                            player.scale, size);
 }
 
-bool hasLosToAttacker(const EntityInfo &enemy, const EntityInfo &player, const RangedAttackComponent *ranged,
+bool hasLosToAttacker(Registry &registry, Entity entity, const EntityInfo &enemy, const EntityInfo &player, const RangedAttackComponent *ranged,
                       const ProjectileComponent *proj)
 {
 	const bool facingLeft = (player.center.x - enemy.position.x) < 0.0f;
-	return getLosTarget(enemy, player, ranged, proj, facingLeft).has_value();
+	return getLosTarget(registry, entity, enemy, player, ranged, proj, facingLeft).has_value();
 }
 
 } // namespace
@@ -104,10 +125,12 @@ void AimAtPlayerWithLOSAction::execute(Registry &registry, Entity entity, float 
 		return;
 	}
 
-	const bool facingLeft = renderOpt->get().isFacingLeft();
+	// Face the player
+	const bool facingLeft = (player->center.x - enemy->center.x) < 0.0f;
+	renderOpt->get().setFacingLeft(facingLeft);
 
-	if (auto targetOpt =
-	        getLosTarget(*enemy, *player, &rangedOpt->get(), projOpt ? &projOpt->get() : nullptr, facingLeft)) {
+	if (auto targetOpt = getLosTarget(registry, entity, *enemy, *player, &rangedOpt->get(),
+	                                  projOpt ? &projOpt->get() : nullptr, facingLeft)) {
 		rangedOpt->get().targetSnapshot = *targetOpt;
 	} else {
 		rangedOpt->get().targetSnapshot = glm::vec2(0.0f);
@@ -126,6 +149,10 @@ void TriggerRangedAttackAction::execute(Registry &registry, const Entity entity,
 	auto &input = inputOpt->get();
 	auto &attack = attackOpt->get();
 	auto &ranged = rangedOpt->get();
+
+	const auto enemy = getEntityInfo(registry, entity);
+	if (!enemy)
+		return;
 
 	for (auto playerView = registry.view<PlayerTag, StateComponent>(); const auto playerEntity : playerView) {
 		if (playerView.get<StateComponent>(playerEntity).state == State::Dead) {
@@ -147,6 +174,14 @@ void TriggerRangedAttackAction::execute(Registry &registry, const Entity entity,
 	if (!Systems::AttackSystem::isAttacking(attack)) {
 		input.attackPressed = true;
 		attack.activeWindUpLimit = Utils::Random::getFloat(attack.windUpLimit * 0.5f, attack.windUpLimit);
+
+		// Ensure we face the player when starting the attack
+		if (auto player = getPlayerInfo(registry)) {
+			if (const auto render = registry.tryGet<RenderComponent>(entity)) {
+				const bool facingLeft = (player->center.x - enemy->center.x) < 0.0f;
+				render->get().setFacingLeft(facingLeft);
+			}
+		}
 	}
 }
 
@@ -367,7 +402,38 @@ void RestoreOpacityAction::execute(Registry &registry, const Entity entity, floa
 		render->get().alpha = 255;
 	}
 }
+
+void StartSpreadTelegraphAction::execute(Registry &registry, Entity entity, float deltaTime)
+{
+	if (auto ranged = registry.tryGet<RangedAttackComponent>(entity)) {
+		ranged->get().spreadTelegraphTimer.reset();
+		ranged->get().spreadTelegraphTimer.step(std::chrono::duration<float>(0.0f), false);
+
+		if (!registry.has<ChargeTelegraphComponent>(entity)) {
+			registry.registerComponent(entity, ChargeTelegraphComponent{});
+		}
+		auto &telegraph = registry.get<ChargeTelegraphComponent>(entity);
+		telegraph.glowColor = SDL_Color{90, 200, 255, 255};
+		telegraph.duration = ranged->get().spreadTelegraphTimer.getLength().count() + 0.1f;
+		telegraph.pulseFrequency = 0.08f;
+		telegraph.outlineThickness = 4.0f;
+		telegraph.useOutlineGlow = true;
+		telegraph.start();
+	}
+}
+
+void StopSpreadTelegraphAction::execute(Registry &registry, Entity entity, float deltaTime)
+{
+	if (auto ranged = registry.tryGet<RangedAttackComponent>(entity)) {
+		ranged->get().spreadTelegraphTimer.reset();
+	}
+	if (auto telegraph = registry.tryGet<ChargeTelegraphComponent>(entity)) {
+		telegraph->get().active = false;
+	}
+}
 } // namespace Actions
+
+
 
 // Transitions
 
@@ -383,7 +449,8 @@ bool LineOfSightTransition::canTransition(Registry &registry, const Entity entit
 	const auto ranged = registry.tryGet<RangedAttackComponent>(entity);
 	const auto proj = registry.tryGet<ProjectileComponent>(entity);
 
-	return hasLosToAttacker(*enemy, *player, ranged ? &ranged->get() : nullptr, proj ? &proj->get() : nullptr);
+	return hasLosToAttacker(registry, entity, *enemy, *player, ranged ? &ranged->get() : nullptr,
+	                        proj ? &proj->get() : nullptr);
 }
 
 bool LosLostTransition::canTransition(Registry &registry, const Entity entity, const float deltaTime) const
@@ -399,7 +466,7 @@ bool LosLostTransition::canTransition(Registry &registry, const Entity entity, c
 	const auto rangedOpt = registry.tryGet<RangedAttackComponent>(entity);
 	const auto projOpt = registry.tryGet<ProjectileComponent>(entity);
 
-	if (hasLosToAttacker(*enemy, *player, rangedOpt ? &rangedOpt->get() : nullptr,
+	if (hasLosToAttacker(registry, entity, *enemy, *player, rangedOpt ? &rangedOpt->get() : nullptr,
 	                     projOpt ? &projOpt->get() : nullptr)) {
 		losLostDuration = 0.0f;
 		return false;
@@ -549,6 +616,41 @@ bool SafePassedPlayerTransition::canTransition(Registry &registry, Entity entity
 	}
 
 	return passed;
+}
+
+bool SpreadAttackReadyTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
+{
+	auto ranged = registry.tryGet<RangedAttackComponent>(entity);
+	if (!ranged)
+		return false;
+
+	if (!ranged->get().spreadCooldownTimer.isTimeout()) {
+		return false;
+	}
+
+	auto enemy = getEntityInfo(registry, entity);
+	auto player = getPlayerInfo(registry);
+
+	if (!enemy || !player)
+		return false;
+
+	// Check min range
+	const float dist = glm::distance(enemy->center, player->center);
+	if (dist < ranged->get().spreadMinRange) {
+		return false;
+	}
+
+	return true;
+}
+
+bool SpreadTelegraphFinishedTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
+{
+	auto ranged = registry.tryGet<RangedAttackComponent>(entity);
+	if (!ranged) {
+		return true;
+	}
+
+	return ranged->get().spreadTelegraphTimer.isTimeout();
 }
 
 } // namespace Transitions

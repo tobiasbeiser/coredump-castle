@@ -12,11 +12,11 @@
 
 struct DebugRenderOptions {
 	bool showBoundingBoxes = false;
-	bool showHitBoxes = true;
-	bool showRaycasts = true;
+	bool showHitBoxes = false;
+	bool showRaycasts = false;
 	bool showTooltipBoxes = false;
-	bool showVision = true;
-	bool showStateMachine = true;
+	bool showVision = false;
+	bool showStateMachine = false;
 	bool vSync = true;
 };
 
@@ -25,13 +25,13 @@ struct DebugSkipMenuOptions {
 };
 
 struct DebugPlayerOptions {
-	bool showState = true;
+	bool showState = false;
 	bool showPosition = true;
 	bool showHP = true;
 };
 
 struct Cheats {
-	bool godMode = true;
+	bool godMode = false;
 	bool noClip = false;
 	bool unlimitedJumps = false;
 };

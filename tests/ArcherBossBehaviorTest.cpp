@@ -82,7 +82,7 @@ TEST_F(ArcherBossBehaviorTest, TransitionsToTelegraphEscapeWhenPlayerClose)
 
 	Systems::StateMachineSystem::update(registry, 0.1f);
 
-	EXPECT_EQ(sm->currentState, AIState::TelegraphEscape);
+	EXPECT_EQ(sm->currentState, AIState::TelegraphCharge);
 }
 
 TEST_F(ArcherBossBehaviorTest, PhaseShiftLowersOpacity)
@@ -96,11 +96,11 @@ TEST_F(ArcherBossBehaviorTest, PhaseShiftLowersOpacity)
 	registry.registerComponent(player, PositionComponent{.position = {200.0f, 0.0f}});
 	registry.registerComponent(player, HurtBoxComponent{});
 
-	sm->currentState = AIState::TelegraphEscape;
+	sm->currentState = AIState::TelegraphCharge;
 	sm->timeInState = 0.0f;
 	sm->justEnteredState = false;
 
-	Systems::StateMachineSystem::update(registry, 0.6f);
+	Systems::StateMachineSystem::update(registry, 1.3f);
 
 	EXPECT_EQ(sm->currentState, AIState::Escaping);
 

@@ -13,12 +13,12 @@
             {
              "name":"attackCooldown",
              "type":"float",
-             "value":0.1
+             "value":0.25
             }, 
             {
              "name":"attackRange",
              "type":"float",
-             "value":300
+             "value":260
             }, 
             {
              "name":"canPatrol",
@@ -73,12 +73,12 @@
             {
              "name":"projectileOffset",
              "type":"string",
-             "value":"10,35,0,0"
+             "value":"0,25,0,0"
             }, 
             {
              "name":"projectileSpeed",
              "type":"float",
-             "value":350
+             "value":260
             }, 
             {
              "name":"projectileTileset",

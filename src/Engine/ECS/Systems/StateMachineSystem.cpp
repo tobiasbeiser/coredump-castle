@@ -34,12 +34,19 @@ void update(Registry &registry, const float deltaTime)
 			action->execute(registry, entity, deltaTime);
 		}
 
-		// Get current state
-		if (sm.currentState == AI::AIState::None || sm.states.find(sm.currentState) == sm.states.end()) {
+		// Get current state - and validate it explicitly
+		if (sm.currentState == AI::AIState::None) {
 			continue;
 		}
 
-		const MachineState *currentState = sm.states[sm.currentState].get();
+		auto stateIt = sm.states.find(sm.currentState);
+		if (stateIt == sm.states.end()) {
+			SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "[StateMachineSystem] Entity %u has invalid state '%s'",
+			            static_cast<unsigned int>(entity), AI::toString(sm.currentState).data());
+			continue;
+		}
+
+		const MachineState *currentState = stateIt->second.get();
 
 		// Execute onEnter actions if just entered
 		if (sm.justEnteredState) {

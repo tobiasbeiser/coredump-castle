@@ -1,6 +1,5 @@
 #include "MeleeActions.hpp"
 
-#include <math.h>
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/MeleeAttackComponent.hpp"
@@ -13,6 +12,7 @@
 #include "Engine/ECS/Systems/Enemy/ChargeSystem.hpp"
 #include "Engine/ECS/Systems/Enemy/ChaseSystem.hpp"
 #include "Engine/Utils/Random.hpp"
+#include <math.h>
 
 #include <cmath>
 
@@ -32,9 +32,26 @@ void ExecuteAttackAction::execute(Registry &registry, Entity entity, float delta
 	}
 
 	if (auto attack = registry.tryGet<AttackComponent>(entity)) {
-		// Set random windup to vary attack timing
 		attack->get().activeWindUpLimit =
 		    Utils::Random::getFloat(attack->get().windUpLimit * 0.5f, attack->get().windUpLimit);
+	}
+
+	auto meleeAttack = registry.tryGet<MeleeAttackComponent>(entity);
+	auto enemy = getEntityInfo(registry, entity);
+	auto player = getPlayerInfo(registry);
+
+	if (meleeAttack && enemy && player) {
+		const float enemyBottom = enemy->hitBoxRect.y + enemy->hitBoxRect.h;
+		const float playerBottom = player->hitBoxRect.y + player->hitBoxRect.h;
+
+		if (std::abs(enemyBottom - playerBottom) > 10.0f) {
+			meleeAttack->get().weaponHitBox.h = enemy->hitBoxRect.h / enemy->scale.y;
+			meleeAttack->get().weaponHitBox.y =
+			    (enemy->hitBoxRect.h * 0.5f) / enemy->scale.y - (meleeAttack->get().weaponHitBox.h * 0.5f);
+		} else {
+			// Player is on the same level - reset to original hitbox
+			meleeAttack->get().weaponHitBox = meleeAttack->get().originalWeaponHitBox;
+		}
 	}
 }
 
@@ -45,6 +62,9 @@ void CancelMeleeAttackAction::execute(Registry &registry, Entity entity, float d
 	if (auto attack = registry.tryGet<AttackComponent>(entity)) {
 		attack->get().attackTimer.reset();
 		attack->get().isDamageActive = false;
+	}
+	if (auto meleeAttack = registry.tryGet<MeleeAttackComponent>(entity)) {
+		meleeAttack->get().weaponHitBox = meleeAttack->get().originalWeaponHitBox;
 	}
 }
 
@@ -138,18 +158,23 @@ bool MeleeAttackTransition::canTransition(Registry &registry, Entity entity, flo
 
 	const float weaponWidth = meleeAttack->get().weaponHitBox.w * enemy->scale.x;
 
-	float weaponCenterX = NAN;
-	if (player->center.x > enemy->center.x) {
-		weaponCenterX = enemy->hitBoxRect.x + enemy->hitBoxRect.w + (weaponWidth * 0.5f);
+	float distToPlayer = 0.0f;
+	bool isPlayerFullyInside = false;
+	if (player->hitBoxRect.x < enemy->hitBoxRect.x + enemy->hitBoxRect.w
+	    && player->hitBoxRect.x + player->hitBoxRect.w > enemy->hitBoxRect.x) {
+		isPlayerFullyInside = true;
+	} else if (player->center.x > enemy->center.x) {
+		if (distToPlayer + player->hitBoxRect.w <= weaponWidth) {
+			isPlayerFullyInside = true;
+		}
 	} else {
-		weaponCenterX = enemy->hitBoxRect.x - (weaponWidth * 0.5f);
+		distToPlayer = enemy->hitBoxRect.x - (player->hitBoxRect.x + player->hitBoxRect.w);
+		if (distToPlayer + player->hitBoxRect.w <= weaponWidth) {
+			isPlayerFullyInside = true;
+		}
 	}
 
-	const float centerDistance = std::abs(player->center.x - weaponCenterX);
-
-	constexpr float alignmentThreshold = 5.0f;
-
-	return centerDistance <= alignmentThreshold;
+	return isPlayerFullyInside;
 }
 
 bool ChargeReadyTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const
@@ -158,7 +183,21 @@ bool ChargeReadyTransition::canTransition(Registry &registry, Entity entity, flo
 	if (!charge)
 		return false;
 
-	return charge->get().chargeCooldown.isTimeout();
+	if (!charge->get().chargeCooldown.isTimeout()) {
+		return false;
+	}
+
+	auto enemy = getEntityInfo(registry, entity);
+	auto player = getPlayerInfo(registry);
+
+	if (!enemy || !player)
+		return false;
+
+	// Only charge if on basically the same floor level (strict vertical check)
+	const float enemyBottom = enemy->hitBoxRect.y + enemy->hitBoxRect.h;
+	const float playerBottom = player->hitBoxRect.y + player->hitBoxRect.h;
+
+	return std::abs(enemyBottom - playerBottom) < 10.0f;
 }
 
 bool ChargeFinishedTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const

@@ -63,12 +63,6 @@ bool isValidVictim(Registry &registry, const Entity attacker, const Entity victi
 		}
 	}
 
-	if (const auto sm = registry.tryGet<StateMachineComponent>(victim)) {
-		if (sm->get().currentState == AI::AIState::Escaping) {
-			return false;
-		}
-	}
-
 	if (const auto victimHealth = registry.tryGet<HealthComponent>(victim);
 	    victimHealth && HealthSystem::isDead(victimHealth->get())) {
 		return false;
@@ -163,7 +157,8 @@ void resolveAttacks(Registry &registry, const EnemyHitCallback &onHit)
 
 			bool isTelegraphing = false;
 			if (const auto sm = registry.tryGet<StateMachineComponent>(attacker)) {
-				if (const auto state = sm->get().currentState; state == AI::AIState::Escaping) {
+				if (const auto state = sm->get().currentState;
+				    state == AI::AIState::Escaping || state == AI::AIState::TelegraphEscape) {
 					isTelegraphing = true;
 				}
 			}
@@ -203,14 +198,12 @@ void resolveProjectileHits(Registry &registry)
 		const auto transform = registry.tryGet<TransformComponent>(projectile);
 		const auto scale = transform ? &transform->get().scale : nullptr;
 
-		// Determine if projectile is flying left based on velocity
 		bool facingLeft = false;
 		if (const auto velocity = registry.tryGet<VelocityComponent>(projectile)) {
 			facingLeft = velocity->get().velocity.x < 0.0f;
 		}
 
-		// Use facing-aware hitbox calculation so hitbox stays at the tip
-		SDL_FRect referenceBox = projectileHitBox; // Use hitbox as reference for flipping
+		SDL_FRect referenceBox = projectileHitBox;
 		SDL_FRect projectileHurtBoxRect =
 		    Utils::HitBoxUtils::getHitBoxFacing(position, projectileHitBox, referenceBox, scale, facingLeft);
 

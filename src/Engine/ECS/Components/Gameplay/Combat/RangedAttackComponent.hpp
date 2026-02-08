@@ -1,4 +1,6 @@
 #pragma once
+#include "Engine/Utils/Timer.hpp"
+#include <chrono>
 #include <glm/vec2.hpp>
 
 struct RangedAttackComponent {
@@ -8,8 +10,10 @@ struct RangedAttackComponent {
 	glm::vec2 targetSnapshot = glm::vec2(0.0f);
 	float attackRange = 300.0f;
 
-	// Spread shot configuration
 	bool useSpreadShot = false;
-	int spreadCount = 3;          // Number of arrows in spread (must be odd for center shot)
-	float spreadAngle = 15.0f;    // Angle between each arrow (degrees)
+	int spreadCount = 0;
+	float spreadAngle = 0.0f;
+	float spreadMinRange = 0.0f;
+	Timer spreadCooldownTimer{std::chrono::duration<float>(0.0f), true};
+	Timer spreadTelegraphTimer{std::chrono::duration<float>(0.0f), true};
 };

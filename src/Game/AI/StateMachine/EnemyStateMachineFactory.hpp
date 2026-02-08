@@ -51,9 +51,9 @@ class EnemyStateMachineFactory {
 		const auto &patrol = registry.get<PatrolComponent>(entity);
 		const auto &chase = registry.get<ChaseComponent>(entity);
 
-		constexpr float retreatTriggerRange = 160.0f;
-		constexpr float escapeTriggerRange = 60.0f; // "Too close" range
-		constexpr float safeShootingDistance = 320.0f;
+		constexpr float retreatTriggerRange = 130.0f;
+		constexpr float escapeTriggerRange = 80.0f; // "Too close" range
+		constexpr float safeShootingDistance = 280.0f;
 
 		float giveUpRange = std::max(chase.giveUpRange, safeShootingDistance + 100.0f);
 
@@ -104,7 +104,7 @@ class EnemyStateMachineFactory {
 		    .onEnter<StartChargeTelegraphAction>()
 		    .onUpdate<StopMovementAction>()
 		    .onExit<StopChargeTelegraphAction>()
-		    .transition<TimerTransition>(AIState::Escaping, 0.5f)
+		    .transition<TimerTransition>(AIState::Escaping, 1.2f)
 
 		    .addState(AIState::Escaping)
 		    .onEnter<TriggerAnimationAction>(AnimationType::Walking, true)
@@ -148,12 +148,12 @@ class EnemyStateMachineFactory {
 		    .onEnter<TriggerAnimationAction>(AnimationType::Walking, true)
 		    .onUpdate<SetMovementSpeedAction>(patrol.patrolSpeed)
 		    .onUpdate<PatrolAction>()
-		    .transition<PlayerReachableTransition>(AIState::Chase, chase.detectionRange, 32.0f)
+		    .transition<PlayerReachableTransition>(AIState::Chase, chase.detectionRange, 10.0f)
 
 		    .addState(AIState::Chase)
 		    .onUpdate<MeleeChaseAction>(chase.chaseSpeed)
 		    .transition<MeleeAttackTransition>(AIState::Attacking)
-		    .transition<PlayerUnreachableTransition>(AIState::Patrol, 32.0f)
+		    .transition<PlayerUnreachableTransition>(AIState::Patrol, 10.0f)
 		    .transition<ProximityExitTransition>(AIState::Patrol, chase.giveUpRange)
 
 		    .addState(AIState::Attacking)
@@ -161,14 +161,14 @@ class EnemyStateMachineFactory {
 		    .onEnter<ExecuteAttackAction>()
 		    .onUpdate<StopMovementAction>()
 		    .onUpdate<FacePlayerAction>()
-		    .transition<PlayerUnreachableTransition>(AIState::Patrol, 32.0f)
+		    .transition<PlayerUnreachableTransition>(AIState::Patrol, 10.0f)
 		    .transition<TimerTransition>(AIState::Recover, 0.8f)
 
 		    .addState(AIState::Recover)
 		    .onEnter<StopMovementAction>()
 		    .onUpdate<StopMovementAction>()
 		    .onUpdate<FacePlayerAction>()
-		    .transition<PlayerUnreachableTransition>(AIState::Patrol, 32.0f)
+		    .transition<PlayerUnreachableTransition>(AIState::Patrol, 10.0f)
 		    .transition<TimerTransition>(AIState::Chase, 0.5f);
 	}
 
@@ -188,14 +188,14 @@ class EnemyStateMachineFactory {
 		    .onEnter<TriggerAnimationAction>(AnimationType::Walking, true)
 		    .onUpdate<SetMovementSpeedAction>(patrol.patrolSpeed)
 		    .onUpdate<PatrolAction>()
-		    .transition<PlayerReachableTransition>(AIState::Chase, chase.detectionRange, 32.0f)
+		    .transition<PlayerReachableTransition>(AIState::Chase, chase.detectionRange, 10.0f)
 		    .transition<PoiseBreakTransition>(AIState::Staggered)
 
 		    .addState(AIState::Chase)
 		    .onUpdate<MeleeChaseAction>(chase.chaseSpeed)
 		    .onEnter<TriggerAnimationAction>(AnimationType::Walking, true)
 		    .transition<MeleeAttackTransition>(AIState::CombatDecision)
-		    .transition<IsPlayerUnreachableAndGroundedTransition>(AIState::Patrol, 32.0f)
+		    .transition<IsPlayerUnreachableAndGroundedTransition>(AIState::Patrol, 10.0f)
 		    .transition<ProximityExitTransition>(AIState::Patrol, chase.giveUpRange)
 		    .transition<PoiseBreakTransition>(AIState::Staggered)
 
@@ -223,6 +223,7 @@ class EnemyStateMachineFactory {
 
 		    .addState(AIState::Charging)
 		    .onEnter<StartChargeAction>()
+		    .onEnter<ApplyCameraShakeAction>(12.0f, 0.5f)
 		    .onEnter<TriggerAnimationAction>(AnimationType::Walking, true)
 		    .onUpdate<ChargeAction>()
 		    .transition<ChargeFinishedTransition>(AIState::Recover)
@@ -234,19 +235,16 @@ class EnemyStateMachineFactory {
 		    .onUpdate<StopMovementAction>()
 		    .onUpdate<FacePlayerDuringWindupAction>()
 		    .onExit<CancelMeleeAttackAction>()
-		    .transition<IsPlayerUnreachableAndGroundedTransition>(AIState::Patrol, 32.0f)
+		    .transition<IsPlayerUnreachableAndGroundedTransition>(AIState::Patrol, 10.0f)
 		    .transition<AnimationFinishedTransition>(AIState::Recover)
 		    .transition<PoiseBreakTransition>(AIState::Staggered)
 
 		    .addState(AIState::Recover)
-
-		    .addState(AIState::Recover)
 		    .onEnter<StopMovementAction>()
 		    .onEnter<StopAndFaceWithAnimation>(AnimationType::Idle, false)
-		    .transition<IsPlayerUnreachableAndGroundedTransition>(AIState::Patrol, 32.0f)
+		    .transition<IsPlayerUnreachableAndGroundedTransition>(AIState::Patrol, 10.0f)
 		    .transition<AnimationFinishedTransition>(AIState::Chase)
 		    .transition<PoiseBreakTransition>(AIState::Staggered)
-
 		    .addState(AIState::Staggered)
 		    .onEnter<TriggerAnimationAction>(AnimationType::Hurting, false)
 		    .onEnter<StopMovementAction>()

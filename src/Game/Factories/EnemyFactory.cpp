@@ -191,6 +191,9 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 	const auto isBoss = getBoolProp(enemyObj, "isBoss");
 	const auto bossIdProp = getIntProp(enemyObj, "bossId", -1);
 	const auto unlockAbility = getAbilityProp(enemyObj, "unlockAbility", AbilityType::None);
+	const auto spreadMinRange = getFloatProp(enemyObj, "spreadMinRange", isBoss ? 200.0f : 0.0f);
+	const auto spreadCooldown = getFloatProp(enemyObj, "spreadCooldown", isBoss ? 2.0f : 0.0f);
+	const auto spreadTelegraphDuration = getFloatProp(enemyObj, "spreadTelegraphDuration", isBoss ? 0.25f : 0.0f);
 	const auto chargeChance = getFloatProp(enemyObj, "chargeChance", 0.35f);
 	const auto chargeDuration = getFloatProp(enemyObj, "chargeDuration", 0.75f);
 	const auto chargePauseDuration = getFloatProp(enemyObj, "chargePauseDuration", 1.0f);
@@ -269,7 +272,8 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 		const auto weaponHitBox = parseCollisionBox(weaponHitBoxStr.value());
 
 		if (weaponHitBox.w >= 0.f && weaponHitBox.h >= 0.f) {
-			spawner.addBlueprint(MeleeAttackComponent{weaponHitBox, attackRange > 0 ? attackRange : weaponHitBox.w});
+			spawner.addBlueprint(
+			    MeleeAttackComponent{weaponHitBox, attackRange > 0 ? attackRange : weaponHitBox.w, weaponHitBox});
 		}
 	}
 
@@ -331,6 +335,9 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 		    .useSpreadShot = isBoss,
 		    .spreadCount = 3,
 		    .spreadAngle = 12.0f,
+		    .spreadMinRange = spreadMinRange,
+		    .spreadCooldownTimer = Timer{std::chrono::duration<float>(spreadCooldown), true},
+		    .spreadTelegraphTimer = Timer{std::chrono::duration<float>(spreadTelegraphDuration), true},
 		});
 		spawner.addBlueprint(ProjectileComponent{
 		    .maxRange = 2000.0f,

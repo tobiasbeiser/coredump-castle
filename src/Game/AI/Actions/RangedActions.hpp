@@ -3,10 +3,10 @@
 #include "CoreActions.hpp"
 #include "Engine/ECS/Components/StateMachine/StateMachineComponent.hpp"
 
+struct RangedAttackComponent;
+struct ProjectileComponent;
+
 namespace GameEngine::ECS {
-
-// Actions
-
 namespace Actions {
 
 struct AimAtPlayerWithLOSAction final : StateAction {
@@ -84,6 +84,14 @@ struct RestoreOpacityAction final : StateAction {
 };
 
 struct RecordCornerAction final : StateAction {
+	void execute(Registry &registry, Entity entity, float deltaTime) override;
+};
+
+struct StartSpreadTelegraphAction final : StateAction {
+	void execute(Registry &registry, Entity entity, float deltaTime) override;
+};
+
+struct StopSpreadTelegraphAction final : StateAction {
 	void execute(Registry &registry, Entity entity, float deltaTime) override;
 };
 
@@ -192,6 +200,22 @@ struct SafePassedPlayerTransition final : Transition {
 	bool canTransition(Registry &registry, Entity entity, float deltaTime) const override;
 };
 
+struct SpreadAttackReadyTransition final : Transition {
+	explicit SpreadAttackReadyTransition(const AI::AIState target) { this->targetState = target; }
+
+	bool canTransition(Registry &registry, Entity entity, float deltaTime) const override;
+};
+
+struct SpreadTelegraphFinishedTransition final : Transition {
+	explicit SpreadTelegraphFinishedTransition(const AI::AIState target) { this->targetState = target; }
+
+	bool canTransition(Registry &registry, Entity entity, float deltaTime) const override;
+};
+
 } // namespace Transitions
+
+// Exposed for testing
+glm::vec2 calculateRangedRayStart(Registry &registry, Entity entity, const EntityInfo &enemy, const RangedAttackComponent *ranged,
+                                  const ProjectileComponent *proj, const bool facingLeft);
 
 } // namespace GameEngine::ECS
