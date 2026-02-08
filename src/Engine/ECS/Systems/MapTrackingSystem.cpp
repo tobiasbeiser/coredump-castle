@@ -3,6 +3,7 @@
 
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
+#include "Engine/ECS/Components/Core/LevelComponent.hpp"
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
@@ -15,6 +16,10 @@
 
 void GameEngine::ECS::Systems::MapTrackingSystem::update(Registry &registry, const SDL_FRect &viewport)
 {
+	if (const auto levelView = registry.view<LevelComponent, PositionComponent>().exclude<InactiveTag>(); levelView.size() != 1) {
+		return;
+	}
+
 	for (auto view = registry.view<RenderComponent, PositionComponent, SpriteComponent>().exclude<InactiveTag>().exclude<UiElementTag>(); const auto entity : view) {
 		const auto &pos = view.get<PositionComponent>(entity);
 		const auto &sprite = view.get<SpriteComponent>(entity);
