@@ -21,6 +21,7 @@
 #include "Engine/Graphics/TextureManager.hpp"
 
 #include <cmath>
+#include <filesystem>
 #include <gtest/gtest.h>
 #include <numbers>
 
@@ -45,7 +46,8 @@ struct ProjectileSystemTest : testing::Test {
 		registry.registerComponent<HurtBoxComponent>(enemy, {{0.0f, 0.0f, 20.0f, 20.0f}});
 		registry.registerComponent<AttackComponent>(enemy, {Timer{1s}, Timer{1s}});
 		registry.registerComponent<RangedAttackComponent>(enemy, {});
-		registry.registerComponent<ProjectileComponent>(enemy, {.maxRange = 500.0f, .speed = 200.0f});
+		registry.registerComponent<ProjectileComponent>(enemy,
+		                                                {.maxRange = 500.0f, .speed = 200.0f, .projectileTilesetPath = "dummy.tsj"});
 		registry.registerComponent<RenderComponent>(enemy, {.flipX = false});
 		registry.registerComponent<TransformComponent>(enemy, {.scale = {1.0f, 1.0f}});
 		registry.registerComponent<SpriteComponent>(enemy, {});
@@ -121,6 +123,93 @@ TEST_F(ProjectileSystemTest, SpawnsProjectileTowardTargetSnapshot)
 	EXPECT_GT(velocity.velocity.x, 0.0f);
 }
 
+TEST_F(ProjectileSystemTest, SpawnsProjectileTowardUpperRightTarget)
+{
+	auto view =
+	    registry.view<AttackComponent, RangedAttackComponent, HurtBoxComponent, PositionComponent, RenderComponent>();
+	auto &attack = view.get<AttackComponent>(enemy);
+	auto &rangedAttack = view.get<RangedAttackComponent>(enemy);
+	auto &hurtBox = view.get<HurtBoxComponent>(enemy);
+	auto &position = view.get<PositionComponent>(enemy);
+	auto &render = view.get<RenderComponent>(enemy);
+
+	attack.attackTimer.reset();
+	attack.attackTimer.step(std::chrono::duration<float>(0.1f), false);
+	hurtBox.hurtBox = {0.0f, 0.0f, 20.0f, 20.0f};
+	position.position = {0.0f, 0.0f};
+	render.flipX = false;
+	rangedAttack.projectileOffset = {0.0f, 0.0f};
+	rangedAttack.targetSnapshot = {100.0f, -100.0f};
+
+	projectileSystem.update(registry, 0.1f);
+
+	auto projectileView = registry.view<ProjectileTag, VelocityComponent>();
+	ASSERT_GT(projectileView.size(), 0u);
+	const auto projectile = projectileView.at(0);
+	const auto &velocity = projectileView.get<VelocityComponent>(projectile);
+	const glm::vec2 dir = glm::normalize(velocity.velocity);
+	EXPECT_GT(dir.x, 0.0f);
+	EXPECT_LT(dir.y, 0.0f);
+}
+
+TEST_F(ProjectileSystemTest, SpawnsProjectileTowardLowerRightTarget)
+{
+	auto view =
+	    registry.view<AttackComponent, RangedAttackComponent, HurtBoxComponent, PositionComponent, RenderComponent>();
+	auto &attack = view.get<AttackComponent>(enemy);
+	auto &rangedAttack = view.get<RangedAttackComponent>(enemy);
+	auto &hurtBox = view.get<HurtBoxComponent>(enemy);
+	auto &position = view.get<PositionComponent>(enemy);
+	auto &render = view.get<RenderComponent>(enemy);
+
+	attack.attackTimer.reset();
+	attack.attackTimer.step(std::chrono::duration<float>(0.1f), false);
+	hurtBox.hurtBox = {0.0f, 0.0f, 20.0f, 20.0f};
+	position.position = {0.0f, 0.0f};
+	render.flipX = false;
+	rangedAttack.projectileOffset = {0.0f, 0.0f};
+	rangedAttack.targetSnapshot = {100.0f, 100.0f};
+
+	projectileSystem.update(registry, 0.1f);
+
+	auto projectileView = registry.view<ProjectileTag, VelocityComponent>();
+	ASSERT_GT(projectileView.size(), 0u);
+	const auto projectile = projectileView.at(0);
+	const auto &velocity = projectileView.get<VelocityComponent>(projectile);
+	const glm::vec2 dir = glm::normalize(velocity.velocity);
+	EXPECT_GT(dir.x, 0.0f);
+	EXPECT_GT(dir.y, 0.0f);
+}
+
+TEST_F(ProjectileSystemTest, SpawnsProjectileTowardUpperLeftTargetWhenFacingLeft)
+{
+	auto view =
+	    registry.view<AttackComponent, RangedAttackComponent, HurtBoxComponent, PositionComponent, RenderComponent>();
+	auto &attack = view.get<AttackComponent>(enemy);
+	auto &rangedAttack = view.get<RangedAttackComponent>(enemy);
+	auto &hurtBox = view.get<HurtBoxComponent>(enemy);
+	auto &position = view.get<PositionComponent>(enemy);
+	auto &render = view.get<RenderComponent>(enemy);
+
+	attack.attackTimer.reset();
+	attack.attackTimer.step(std::chrono::duration<float>(0.1f), false);
+	hurtBox.hurtBox = {0.0f, 0.0f, 20.0f, 20.0f};
+	position.position = {0.0f, 0.0f};
+	render.flipX = true;
+	rangedAttack.projectileOffset = {0.0f, 0.0f};
+	rangedAttack.targetSnapshot = {-100.0f, -100.0f};
+
+	projectileSystem.update(registry, 0.1f);
+
+	auto projectileView = registry.view<ProjectileTag, VelocityComponent>();
+	ASSERT_GT(projectileView.size(), 0u);
+	const auto projectile = projectileView.at(0);
+	const auto &velocity = projectileView.get<VelocityComponent>(projectile);
+	const glm::vec2 dir = glm::normalize(velocity.velocity);
+	EXPECT_LT(dir.x, 0.0f);
+	EXPECT_LT(dir.y, 0.0f);
+}
+
 TEST_F(ProjectileSystemTest, SetsProjectileRotationFromTargetSnapshot)
 {
 	auto view = registry.view<AttackComponent, RangedAttackComponent, PositionComponent, HurtBoxComponent,
@@ -141,7 +230,7 @@ TEST_F(ProjectileSystemTest, SetsProjectileRotationFromTargetSnapshot)
 	sprite.tileSize = {10.0f, 10.0f};
 	hitBox = {0.0f, 0.0f};
 	rangedAttack.projectileOffset = {0.0f, 0.0f};
-	rangedAttack.targetSnapshot = {0.0f, 100.0f};
+	registry.get<RangedAttackComponent>(enemy).targetSnapshot = {0.0f, 100.0f};
 
 	projectileSystem.update(registry, 0.1f);
 
@@ -150,11 +239,29 @@ TEST_F(ProjectileSystemTest, SetsProjectileRotationFromTargetSnapshot)
 	const auto projectile = projectileView.at(0);
 	const auto &transform = projectileView.get<TransformComponent>(projectile);
 
-	const glm::vec2 spawnCenter = glm::vec2{0.0f, 0.0f};
-	const glm::vec2 direction = glm::normalize(rangedAttack.targetSnapshot - spawnCenter);
+	// Re-fetch component to avoid any dangling reference issues
+	const auto &rangedAttackPost = registry.get<RangedAttackComponent>(enemy);
+	const auto &hurtBoxPost = registry.get<HurtBoxComponent>(enemy);
+	const auto &posPost = registry.get<PositionComponent>(enemy);
+	
+	glm::vec2 spawnPos = posPost.position;
+	spawnPos.x += (hurtBoxPost.hurtBox.x + hurtBoxPost.hurtBox.w);
+	spawnPos.y += hurtBoxPost.hurtBox.y;
+
+	// Projectile internal offset (dummy.tsj uses default empty data: 3x3 hitbox)
+	const auto &data = ProjectileFactory::getCachedProjectileData("dummy.tsj");
+	const glm::vec2 pScale = data.scale;
+	const glm::vec2 hitboxOffset = {data.hitbox.x * pScale.x, data.hitbox.y * pScale.y};
+	const glm::vec2 projectileSize = {data.hitbox.w * pScale.x, data.hitbox.h * pScale.y};
+	
+	const glm::vec2 spawnCenter = spawnPos + hitboxOffset + (projectileSize * 0.5f); 
+
+	const glm::vec2 direction = glm::normalize(rangedAttackPost.targetSnapshot - spawnCenter);
 	const double expectedRotation = std::atan2(direction.y, direction.x) * (180.0 / std::numbers::pi);
 
-	EXPECT_NEAR(transform.rotation, expectedRotation, 0.1);
+	double diff = std::fmod(std::abs(transform.rotation - expectedRotation), 360.0);
+	if (diff > 180.0) diff = 360.0 - diff;
+	EXPECT_NEAR(diff, 0.0, 0.1);
 }
 
 TEST_F(ProjectileSystemTest, MarksProjectileAsSpawned)

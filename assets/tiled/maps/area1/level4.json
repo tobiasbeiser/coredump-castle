@@ -142,6 +142,29 @@
         }, 
         {
          "draworder":"topdown",
+         "id":11,
+         "name":"Enemies",
+         "objects":[
+                {
+                 "id":1,
+                 "template":"..\/..\/objects\/meleeEnemy.tj",
+                 "x":128,
+                 "y":352
+                }, 
+                {
+                 "id":2,
+                 "template":"..\/..\/objects\/baseEnemy.tj",
+                 "x":288,
+                 "y":352
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
          "id":3,
          "name":"Entities",
          "objects":[],
@@ -157,8 +180,8 @@
          "x":0,
          "y":0
         }],
- "nextlayerid":11,
- "nextobjectid":1,
+ "nextlayerid":12,
+ "nextobjectid":3,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",

@@ -23,7 +23,7 @@
             {
              "name":"chaseSpeed",
              "type":"float",
-             "value":80
+             "value":60
             }, 
             {
              "name":"collisionBox",

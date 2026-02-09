@@ -71,6 +71,9 @@ GameEngine::Utils::RenderUtils::createSpriteItem(const SpriteRenderContext &ctx,
 	                    .w = static_cast<float>(tileSize.x),
 	                    .h = static_cast<float>(tileSize.y)};
 
+	SDL_Color combinedColorMod = spriteColorMod;
+	combinedColorMod.a = (combinedColorMod.a * render.alpha) / 255;
+
 	return RenderItem{.layer = render.layer,
 	                  .texture = texture,
 	                  .src = src,
@@ -78,7 +81,7 @@ GameEngine::Utils::RenderUtils::createSpriteItem(const SpriteRenderContext &ctx,
 	                  .parallax = false,
 	                  .flipX = render.flipX,
 	                  .angle = rotation,
-	                  .colorMod = spriteColorMod};
+	                  .colorMod = combinedColorMod};
 }
 
 std::optional<GameEngine::Utils::RenderUtils::RenderItem>

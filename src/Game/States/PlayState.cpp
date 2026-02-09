@@ -2,6 +2,7 @@
 
 #include "Engine/ECS/Systems/AnimationSystem.hpp"
 #include "Engine/ECS/Systems/BlinkSystem.hpp"
+#include "Engine/ECS/Systems/CameraShakeSystem.hpp"
 #include "Engine/ECS/Systems/ChargeTelegraphSystem.hpp"
 #include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
 #include "Engine/ECS/Systems/Combat/DeathSystem.hpp"
@@ -9,8 +10,8 @@
 #include "Engine/ECS/Systems/Combat/HitDetectionSystem.hpp"
 #include "Engine/ECS/Systems/Combat/PoiseSystem.hpp"
 #include "Engine/ECS/Systems/EffectSystem.hpp"
-#include "Engine/ECS/Systems/Enemy/ProjectileSystem.hpp"
 #include "Engine/ECS/Systems/Enemy/ChaseSystem.hpp"
+#include "Engine/ECS/Systems/Enemy/ProjectileSystem.hpp"
 #include "Engine/ECS/Systems/Hazard/SpikeSystem.hpp"
 #include "Engine/ECS/Systems/InteractionSystem.hpp"
 #include "Engine/ECS/Systems/JumpSystem.hpp"
@@ -107,6 +108,7 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 	ECS::Systems::ChargeTelegraphSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::EffectSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::VignetteSystem::update(game.getRegistry(), deltaTime);
+	ECS::Systems::CameraShakeSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::SoundSystem::update(game.getRegistry(), game.getAudioManager(), deltaTime);
 
 	ECS::Systems::DeathSystem::update(game.getRegistry(), deltaTime);

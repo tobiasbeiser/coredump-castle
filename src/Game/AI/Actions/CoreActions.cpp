@@ -43,8 +43,12 @@ std::optional<EntityInfo> getEntityInfo(Registry &registry, Entity entity)
 
 std::optional<EntityInfo> getPlayerInfo(Registry &registry)
 {
-	for (auto playerView = registry.view<PlayerTag, PositionComponent, HurtBoxComponent>();
-	     const auto entity : playerView) {
+	auto playerView = registry.view<PlayerTag, PositionComponent, HurtBoxComponent>();
+	if (playerView.size() == 0) {
+		return std::nullopt;
+	}
+	
+	for (const auto entity : playerView) {
 		return getEntityInfo(registry, entity);
 	}
 	return std::nullopt;
@@ -200,10 +204,12 @@ bool PlayerUnreachableTransition::canTransition(Registry &registry, const Entity
 	const auto player = getPlayerInfo(registry);
 	if (!player)
 		return true;
-	const float playerBottom = player->hitBoxRect.y + player->hitBoxRect.h;
+	const float enemyTop = enemy->hitBoxRect.y;
 	const float enemyBottom = enemy->hitBoxRect.y + enemy->hitBoxRect.h;
+	const float playerTop = player->hitBoxRect.y;
+	const float playerBottom = player->hitBoxRect.y + player->hitBoxRect.h;
 
-	return (enemyBottom - playerBottom) > maxHeightDifference;
+	return !((playerTop < enemyBottom + maxHeightDifference) && (playerBottom > enemyTop - maxHeightDifference));
 }
 PlayerGroundedTransition::PlayerGroundedTransition(AI::AIState target)
 {
@@ -226,10 +232,13 @@ bool PlayerVerticalRangeTransition::canTransition(Registry &registry, const Enti
 	if (!enemy || !player)
 		return false;
 
-	const float playerBottom = player->hitBoxRect.y + player->hitBoxRect.h;
+	const float enemyTop = enemy->hitBoxRect.y;
 	const float enemyBottom = enemy->hitBoxRect.y + enemy->hitBoxRect.h;
+	const float playerTop = player->hitBoxRect.y;
+	const float playerBottom = player->hitBoxRect.y + player->hitBoxRect.h;
 
-	return std::abs(enemyBottom - playerBottom) <= maxVerticalDist;
+	const bool overlap = (playerTop < enemyBottom + maxVerticalDist) && (playerBottom > enemyTop - maxVerticalDist);
+	return overlap;
 }
 
 } // namespace Transitions

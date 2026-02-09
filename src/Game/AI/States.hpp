@@ -16,6 +16,10 @@ enum class AIState {
 	CheckChargeChance,
 	TelegraphCharge,
 	Charging,
+	Retreat,
+	TelegraphEscape,
+	Escaping,
+	CorneredFire,
 	None
 };
 
@@ -42,6 +46,14 @@ constexpr std::string_view toString(const AIState state) noexcept
 		return "telegraph_charge";
 	case AIState::Charging:
 		return "charging";
+	case AIState::Retreat:
+		return "retreat";
+	case AIState::TelegraphEscape:
+		return "telegraph_escape";
+	case AIState::Escaping:
+		return "escaping";
+	case AIState::CorneredFire:
+		return "cornered_fire";
 	case AIState::None:
 	default:
 		return "none";

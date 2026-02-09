@@ -16,7 +16,13 @@ void EnemySpawner::spawn()
 	for (const auto &blueprint : blueprints) {
 		blueprint(*currentEntity);
 	}
-	const auto position = registry.get().tryGet<PositionComponent>(*currentEntity);
+	auto position = registry.get().tryGet<PositionComponent>(*currentEntity);
+	const auto sprite = registry.get().tryGet<SpriteComponent>(*currentEntity);
+	if (sprite && position) {
+		position->get().position.x = position->get().position.x - sprite->get().tileSize.x / 2.0f;
+		position->get().position.y = position->get().position.y - sprite->get().tileSize.y;
+	}
+
 	const auto referenceFrame = GameEngine::Utils::ReferenceFrameUtils::getReferenceFrame(registry.get());
 	if (!position || !GameEngine::Utils::ReferenceFrameUtils::isInFrame(position->get().position, referenceFrame)) {
 		registry.get().registerComponent(*currentEntity, InactiveTag{});
