@@ -10,6 +10,17 @@
     ],
     "propertyTypes": [
         {
+            "id": 3,
+            "name": "Ability",
+            "storageType": "int",
+            "type": "enum",
+            "values": [
+                "None",
+                "DoubleJump"
+            ],
+            "valuesAsFlags": false
+        },
+        {
             "id": 2,
             "name": "State",
             "storageType": "int",
@@ -27,18 +38,8 @@
                 "Dead",
                 "Charge",
                 "Fire",
-                "Interacting"
-            ],
-            "valuesAsFlags": false
-        },
-        {
-            "id": 3,
-            "name": "Ability",
-            "storageType": "int",
-            "type": "enum",
-            "values": [
-                "None",
-                "DoubleJump"
+                "Interacting",
+                "Roll"
             ],
             "valuesAsFlags": false
         }

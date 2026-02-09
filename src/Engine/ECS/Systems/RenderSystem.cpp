@@ -5,12 +5,14 @@
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
 #include "Engine/ECS/Components/Render/BackgroundComponent.hpp"
+#include "Engine/ECS/Components/Render/CameraShakeComponent.hpp"
 #include "Engine/ECS/Components/Render/CenterCameraComponent.hpp"
 #include "Engine/ECS/Components/Render/OutlineGlowComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
 #include "Engine/ECS/Components/Render/VignetteComponent.hpp"
 #include "Engine/ECS/Components/Tags/InactiveTag.hpp"
+#include "Engine/ECS/Components/Tags/UiElementTag.hpp"
 #include "Engine/ECS/View.hpp"
 #include "Engine/Utils/RenderUtils.hpp"
 
@@ -34,9 +36,14 @@ void RenderSystem::update(Registry &registry)
 		centerCamera(registry);
 
 		auto bgView = registry.view<BackgroundComponent, RenderComponent, PositionComponent>().exclude<InactiveTag>();
-		auto view = registry.view<RenderComponent, PositionComponent, SpriteComponent>().exclude<InactiveTag>();
+		auto worldView = registry.view<RenderComponent, PositionComponent, SpriteComponent>()
+		                     .exclude<InactiveTag>()
+		                     .exclude<UiElementTag>();
+		auto uiView =
+		    registry.view<UiElementTag, RenderComponent, PositionComponent, SpriteComponent>().exclude<InactiveTag>();
 
-		if (const int requiredCapacity = bgView.size() + view.size(); requiredCapacity > renderItemsCapacity) {
+		if (const int requiredCapacity = bgView.size() + worldView.size() + uiView.size();
+		    requiredCapacity > renderItemsCapacity) {
 			renderItemsCapacity = static_cast<int>(requiredCapacity * 1.5f);
 			renderItems.reserve(renderItemsCapacity);
 		}
@@ -53,13 +60,13 @@ void RenderSystem::update(Registry &registry)
 
 		const SDL_FRect &viewport = renderer.getViewport();
 		// Tiles, Player
-		for (const auto entity : view) {
-			const auto &pos = view.get<PositionComponent>(entity);
-			const auto &sprite = view.get<SpriteComponent>(entity);
-			const auto &render = view.get<RenderComponent>(entity);
+		for (const auto entity : worldView) {
+			const auto &pos = worldView.get<PositionComponent>(entity);
+			const auto &sprite = worldView.get<SpriteComponent>(entity);
+			const auto &render = worldView.get<RenderComponent>(entity);
 			const auto &transform = registry.tryGet<TransformComponent>(entity);
 
-		if (auto item = RenderUtils::createSpriteItem({pos, sprite, render, transform}, viewport)) {
+			if (auto item = RenderUtils::createSpriteItem({pos, sprite, render, transform}, viewport)) {
 				if (auto outlineGlowOpt = registry.tryGet<OutlineGlowComponent>(entity)) {
 					const auto &outlineGlow = outlineGlowOpt->get();
 					if (outlineGlow.active) {
@@ -69,6 +76,19 @@ void RenderSystem::update(Registry &registry)
 						item->outlineIntensity = outlineGlow.intensity;
 					}
 				}
+				renderItems.push_back(item.value());
+			}
+		}
+
+		// HUD, UiOverlay
+		for (const auto entity : uiView) {
+			const auto &pos = uiView.get<PositionComponent>(entity);
+			const auto &sprite = uiView.get<SpriteComponent>(entity);
+			const auto &render = uiView.get<RenderComponent>(entity);
+			const auto &transform = registry.tryGet<TransformComponent>(entity);
+
+			if (const auto item =
+			        RenderUtils::createUiItem({pos, sprite, render, transform}, 1.0f)) { // 1.0f global scaling
 				renderItems.push_back(item.value());
 			}
 		}
@@ -116,8 +136,28 @@ void RenderSystem::centerCamera(Registry &registry) const
 			const auto levelEntity = levelView.at(0);
 			const auto &level = levelView.get<LevelComponent>(levelEntity);
 			const auto &posLvl = levelView.get<PositionComponent>(levelEntity);
-			renderer.centerCameraOn((position + static_cast<glm::vec2>(tile.tileSize / 2)), posLvl.position,
-			                        level.levelSize);
+			const glm::vec2 cameraTarget = position + static_cast<glm::vec2>(tile.tileSize / 2);
+			renderer.centerCameraOn(cameraTarget, posLvl.position, level.levelSize);
+			if (const auto shakeOpt = registry.tryGet<CameraShakeComponent>(centerCameraEntity)) {
+				auto viewport = renderer.getViewport();
+				const float minX = posLvl.position.x;
+				const float minY = posLvl.position.y;
+				const float maxX = posLvl.position.x + level.levelSize.x - viewport.w;
+				const float maxY = posLvl.position.y + level.levelSize.y - viewport.h;
+
+				const float targetX = viewport.x + shakeOpt->get().offset.x;
+				const float targetY = viewport.y + shakeOpt->get().offset.y;
+
+				if (maxX >= minX) {
+					viewport.x = std::clamp(targetX, minX, maxX);
+				}
+				if (maxY >= minY) {
+					viewport.y = std::clamp(targetY, minY, maxY);
+				}
+
+				const glm::vec2 centered = {viewport.x + viewport.w * 0.5f, viewport.y + viewport.h * 0.5f};
+				renderer.setCameraCenter(centered);
+			}
 
 			if (const auto render = registry.tryGet<RenderComponent>(levelEntity)) {
 				auto &renderComp = render->get();
@@ -150,5 +190,6 @@ std::optional<RenderUtils::RenderItem> RenderSystem::createBackgroundItem(const 
 	                  .dst = dstOpt,
 	                  .parallax = repeatX,
 	                  .scrollFactor = scrollSpeed,
-	                  .flipX = render.flipX};
+	                  .flipX = render.flipX,
+	                  .colorMod = {255, 255, 255, static_cast<Uint8>(render.alpha)}};
 }

@@ -4,9 +4,9 @@
 
 - GameEngine - `src/Engine/GameEngine.[hpp/cpp]`
 - ECS
-  - Registry
-  - Storage - `src/Engine/ECS/ComponentStorage.hpp`
-  - View - `src/Engine/ECS/View.hpp`
+    - Registry
+    - Storage - `src/Engine/ECS/ComponentStorage.hpp`
+    - View - `src/Engine/ECS/View.hpp`
 - PlayState + fixed Timesteps
 - TextureManager
 - Audio Manager
@@ -43,11 +43,46 @@
         - PlayerFactory
 - CMake/vcpkg
 - CI/CD
-  - Pipelines
-  - Rules
-
-
+    - Pipelines
+    - Rules
 
 ## Erik
+
+Main Responsibility for the whole Enemies + Boss, Combat system and Enemy related AI.
+
+- Setup
+    - Google Tests
+- Debug
+    - DebugSystem (in collaboration)
+- System
+    - Combat
+        - AttackSystem
+        - HealthSystem
+        - HitDetectionSystem
+        - PoiseSystem
+    - Enemy
+        - ChargeSystem
+        - ChaseSystem
+        - PatrolSystem
+        - ProjectileSystem
+        - BlinkSystem
+        - CameraShakeSystem
+        - ChargeTelegraphSystem
+        - StateMachineSystem
+    - Utils
+        - SpatialHash
+- Game
+    - AI
+        - Actions
+            - CoreActions
+            - MeleeActions
+            - RangedActions
+        - StateMachine
+            - EnemyStateMachineFactory
+            - StateMachineBuilder
+    - Factories
+        - ProjectileFactory
+        - EnemyFactory
+- Tests (related system tests from topics above)
 
 ## Leo

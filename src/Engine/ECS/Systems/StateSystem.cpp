@@ -15,7 +15,9 @@
 
 namespace {
 const std::unordered_map<State, AnimationType> blockingStateAnimations = {
-    {State::Hurting, AnimationType::Hurting}, {State::Interacting, AnimationType::Interacting}};
+    {State::Hurting, AnimationType::Hurting},
+    {State::Interacting, AnimationType::Interacting},
+    {State::Rolling, AnimationType::Roll}};
 } // namespace
 
 void GameEngine::ECS::Systems::StateSystem::update(Registry &registry)
@@ -39,6 +41,10 @@ void GameEngine::ECS::Systems::StateSystem::update(Registry &registry)
 		}
 
 		if (auto it = blockingStateAnimations.find(state.state); it != blockingStateAnimations.end()) {
+			// Rolling is controlled by AI, don't override it
+			if (state.state == State::Rolling) {
+				continue;
+			}
 			if (const auto anim = registry.tryGet<AnimationComponent>(entity)) {
 				if (anim->get().hasAnimation(it->second)
 				    && (anim->get().getAnimation() != it->second || !anim->get().hasFinished(it->second))) {

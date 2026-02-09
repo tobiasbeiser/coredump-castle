@@ -168,7 +168,7 @@
                  "id":3,
                  "template":"..\/..\/objects\/baseEnemy.tj",
                  "x":544,
-                 "y":512
+                 "y":544
                 }],
          "opacity":1,
          "type":"objectgroup",

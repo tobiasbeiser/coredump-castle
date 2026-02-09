@@ -19,6 +19,7 @@
 #include "Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/VisionComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/JumpComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
 #include "Engine/ECS/Components/Physics/AccelerationComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
@@ -190,6 +191,9 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 	const auto isBoss = getBoolProp(enemyObj, "isBoss");
 	const auto bossIdProp = getIntProp(enemyObj, "bossId", -1);
 	const auto unlockAbility = getAbilityProp(enemyObj, "unlockAbility", AbilityType::None);
+	const auto spreadMinRange = getFloatProp(enemyObj, "spreadMinRange", isBoss ? 200.0f : 0.0f);
+	const auto spreadCooldown = getFloatProp(enemyObj, "spreadCooldown", isBoss ? 2.0f : 0.0f);
+	const auto spreadTelegraphDuration = getFloatProp(enemyObj, "spreadTelegraphDuration", isBoss ? 0.25f : 0.0f);
 	const auto chargeChance = getFloatProp(enemyObj, "chargeChance", 0.35f);
 	const auto chargeDuration = getFloatProp(enemyObj, "chargeDuration", 0.75f);
 	const auto chargePauseDuration = getFloatProp(enemyObj, "chargePauseDuration", 1.0f);
@@ -222,92 +226,30 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 	spawner.addBlueprint(BlinkComponent{});
 
 	if (isBoss) {
-		const int bossId = bossIdProp == -1 ? static_cast<int>(enemyObj.getId()) : bossIdProp;
+		const int bossId = bossIdProp == -1 ? enemyObj.getId() : bossIdProp;
 		spawner.addBlueprint(BossComponent{.bossId = bossId, .unlockAbility = unlockAbility});
-		spawner.addBlueprint(
-		    ChargeComponent{.chargeCooldown = Timer{std::chrono::duration<float>(chargeCooldown), true},
-		                    .chargeSpeedMultiplier = chargeSpeedMultiplier,
-		                    .chargeTimer = Timer{std::chrono::duration<float>(chargeDuration)},
-		                    .chargePauseTimer = Timer{std::chrono::duration<float>(chargePauseDuration)}});
-	}
-
-	if (weaponHitBoxStr) {
-		const auto weaponHitBox = parseCollisionBox(weaponHitBoxStr.value());
-
-		if (weaponHitBox.w >= 0.f && weaponHitBox.h >= 0.f) {
-			spawner.addBlueprint(MeleeAttackComponent{weaponHitBox, attackRange > 0 ? attackRange : weaponHitBox.w});
-		}
-	}
-
-	if (collisionStr) {
-		const auto collisionBox = parseCollisionBox(collisionStr.value());
-		const auto touchDamageBox = touchDamageBoxStr ? parseCollisionBox(touchDamageBoxStr.value()) : collisionBox;
-		spawner.addBlueprint(HitBoxComponent{.bodyHitBox = touchDamageBox});
-		spawner.addBlueprint(CollisionComponent{collisionBox});
-		spawner.addBlueprint(HurtBoxComponent{hurtBoxStr ? parseCollisionBox(hurtBoxStr.value()) : collisionBox});
-	}
-
-	if (canPatrol) {
-		spawner.addBlueprint(PatrolComponent{maxSpeedX});
-	}
-
-	if (chaseSpeed > 0.0f) {
-		const float effectiveDetectionRange = detectionRange > 0 ? detectionRange : 200.0f;
-		spawner.addBlueprint(ChaseComponent{
-		    .chaseSpeed = chaseSpeed,
-		    .detectionRange = effectiveDetectionRange,
-		    .giveUpRange = effectiveDetectionRange + 50.0f,
-		    .reactionDelay = Timer{std::chrono::duration<float>(reactionDelay)},
+		spawner.addBlueprint(ChargeComponent{
+		    .chargeCooldown = Timer{std::chrono::duration<float>(chargeCooldown), true},
+		    .chargeTimer = Timer{std::chrono::duration<float>(chargeDuration)},
+		    .chargePauseTimer = Timer{std::chrono::duration<float>(chargePauseDuration)},
+		    .chargeSpeedMultiplier = chargeSpeedMultiplier,
+		    .chargeChance = chargeChance,
 		});
-	}
-	if (isRangedEnemy) {
-		SDL_Log("[EnemyFactory] Creating ranged enemy at (%.1f, %.1f)", spawn.x, spawn.y);
-
-		std::string projectileTilesetPath;
-		if (const auto tilesetPathOpt = getStringProp(enemyObj, "projectileTileset", "")) {
-			const std::filesystem::path basePath = "assets/tiled/tilesets/";
-			projectileTilesetPath = (basePath / tilesetPathOpt.value()).string();
-		}
-
-		const float effectiveDetectionRange = detectionRange > 0 ? detectionRange : 300.0f;
-		spawner.addBlueprint(ChaseComponent{
-		    .chaseSpeed = chaseSpeed,
-		    .detectionRange = effectiveDetectionRange,
-		    .giveUpRange = effectiveDetectionRange + 50.0f,
-		    .reactionDelay = Timer{std::chrono::duration<float>(reactionDelay)},
-		});
-		spawner.addBlueprint(RangedAttackComponent{
-		    .projectileSpeed = projectileSpeed,
-		    .projectileOffset = projectileOffset,
-		    .attackRange = attackRange,
-		});
-		spawner.addBlueprint(ProjectileComponent{
-		    .maxRange = 2000.0f,
-		    .speed = projectileSpeed,
-		    .spawnPosition = {0.f, 0.f},
-		    .projectileTilesetPath = projectileTilesetPath,
-		});
-
-		auto reg = registry;
-		spawner.addSetupStep([reg](const Entity entity) { EnemyStateMachineFactory::createWizardEnemy(reg, entity); });
-	} else if (!isBoss && chaseSpeed > 0) {
-		auto reg = registry;
-		spawner.addSetupStep([reg](const Entity entity) { EnemyStateMachineFactory::createMeleeEnemy(reg, entity); });
-	} else if (!isBoss) {
-		auto reg = registry;
-		spawner.addSetupStep(
-		    [reg](const Entity entity) { EnemyStateMachineFactory::createPatrolOnlyEnemy(reg, entity); });
 	}
 
 	using namespace std::chrono_literals;
 	std::chrono::duration<float> attackDuration = 100ms;
 	std::chrono::duration<float> invulnerabilityTime = 300ms;
 
+	float spriteWidth = 0.0f;
+
 	if (const auto animComp = animationFactory.loadAnimationsFromTileset(enemyObj)) {
 		auto &[animationComponent, spriteComponent] = *animComp;
 
 		spawner.addBlueprint(animationComponent);
 		spawner.addBlueprint(spriteComponent);
+
+		spriteWidth = static_cast<float>(spriteComponent.tileSize.x);
 
 		if (animationComponent.hasAnimation(AnimationType::Attacking)) {
 			attackDuration = animationComponent.getAnimationDuration(AnimationType::Attacking);
@@ -326,6 +268,101 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 		}
 	}
 
+	if (weaponHitBoxStr) {
+		const auto weaponHitBox = parseCollisionBox(weaponHitBoxStr.value());
+
+		if (weaponHitBox.w >= 0.f && weaponHitBox.h >= 0.f) {
+			spawner.addBlueprint(
+			    MeleeAttackComponent{weaponHitBox, attackRange > 0 ? attackRange : weaponHitBox.w, weaponHitBox});
+		}
+	}
+
+	if (collisionStr) {
+		auto collisionBox = parseCollisionBox(collisionStr.value());
+		if (spriteWidth > 0.0f && collisionBox.w > 0.0f) {
+			collisionBox.x = (spriteWidth - collisionBox.w) * 0.5f;
+		}
+
+		const auto touchDamageBox = touchDamageBoxStr ? parseCollisionBox(touchDamageBoxStr.value()) : collisionBox;
+		spawner.addBlueprint(HitBoxComponent{.bodyHitBox = touchDamageBox});
+		spawner.addBlueprint(CollisionComponent{collisionBox});
+		spawner.addBlueprint(HurtBoxComponent{hurtBoxStr ? parseCollisionBox(hurtBoxStr.value()) : collisionBox});
+	}
+
+	if (canPatrol) {
+		spawner.addBlueprint(PatrolComponent{.patrolSpeed = maxSpeedX, .patrolCenter = spawn});
+	}
+
+	if (chaseSpeed > 0.0f) {
+		const float effectiveDetectionRange = detectionRange > 0 ? detectionRange : 200.0f;
+		spawner.addBlueprint(ChaseComponent{
+		    .chaseSpeed = chaseSpeed,
+		    .detectionRange = effectiveDetectionRange,
+		    .giveUpRange = effectiveDetectionRange + 50.0f,
+		    .reactionDelay = Timer{std::chrono::duration<float>(reactionDelay)},
+		});
+	}
+	if (isRangedEnemy) {
+		SDL_Log("[EnemyFactory] Creating ranged enemy at (%.1f, %.1f)", spawn.x, spawn.y);
+
+		std::string projectileTilesetPath;
+		if (const auto tilesetPathOpt = getStringProp(enemyObj, "projectileTileset", "")) {
+			const std::string relPath = tilesetPathOpt.value();
+			if (!relPath.empty() && relPath.find(".tsj") != std::string::npos) {
+				const std::filesystem::path basePath = "assets/tiled/tilesets/";
+				projectileTilesetPath = (basePath / relPath).string();
+				SDL_Log("[EnemyFactory] Projectile tileset path: %s", projectileTilesetPath.c_str());
+			} else {
+				SDL_Log("[EnemyFactory] WARNING: Invalid or empty projectileTileset property for enemy %s: '%s'",
+				        enemyObj.getName().c_str(), relPath.c_str());
+			}
+		}
+
+		const float effectiveDetectionRange = detectionRange > 0 ? detectionRange : 300.0f;
+		spawner.addBlueprint(ChaseComponent{
+		    .chaseSpeed = chaseSpeed,
+		    .detectionRange = effectiveDetectionRange,
+		    .giveUpRange = effectiveDetectionRange + 50.0f,
+		    .reactionDelay = Timer{std::chrono::duration<float>(reactionDelay)},
+		});
+		if (isBoss) {
+			spawner.addBlueprint(VisionComponent{.visionRange = effectiveDetectionRange});
+		}
+		spawner.addBlueprint(RangedAttackComponent{
+		    .projectileSpeed = projectileSpeed,
+		    .projectileOffset = projectileOffset,
+		    .attackRange = attackRange,
+		    .useSpreadShot = isBoss,
+		    .spreadCount = 3,
+		    .spreadAngle = 12.0f,
+		    .spreadMinRange = spreadMinRange,
+		    .spreadCooldownTimer = Timer{std::chrono::duration<float>(spreadCooldown), true},
+		    .spreadTelegraphTimer = Timer{std::chrono::duration<float>(spreadTelegraphDuration), true},
+		});
+		spawner.addBlueprint(ProjectileComponent{
+		    .maxRange = 2000.0f,
+		    .speed = projectileSpeed,
+		    .spawnPosition = {0.f, 0.f},
+		    .projectileTilesetPath = projectileTilesetPath,
+		});
+
+		auto reg = registry;
+		if (isBoss) {
+			spawner.addSetupStep(
+			    [reg](const Entity entity) { EnemyStateMachineFactory::createArcherBoss(reg, entity); });
+		} else {
+			spawner.addSetupStep(
+			    [reg](const Entity entity) { EnemyStateMachineFactory::createWizardEnemy(reg, entity); });
+		}
+	} else if (!isBoss && chaseSpeed > 0) {
+		auto reg = registry;
+		spawner.addSetupStep([reg](const Entity entity) { EnemyStateMachineFactory::createMeleeEnemy(reg, entity); });
+	} else if (!isBoss) {
+		auto reg = registry;
+		spawner.addSetupStep(
+		    [reg](const Entity entity) { EnemyStateMachineFactory::createPatrolOnlyEnemy(reg, entity); });
+	}
+
 	spawner.addBlueprint(HealthComponent{maxHealth, maxHealth, invulnerabilityTime});
 
 	if (poise > 0.0f) {
@@ -338,13 +375,13 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 	                                     .windUpLimit = windUpLimit,
 	                                     .activeWindUpLimit = windUpLimit});
 
-	if (detectionRange > 0.0f) {
+	if (detectionRange > 0.0f && !(isBoss && isRangedEnemy)) {
 		spawner.addBlueprint(VisionComponent{.visionRange = detectionRange});
 	}
 
 	auto reg = registry;
 	spawner.addSetupStep([reg](const Entity entity) { ensureSafeSpawn(reg, entity); });
-	if (isBoss) {
+	if (isBoss && !isRangedEnemy) {
 		spawner.addSetupStep([reg](const Entity entity) { EnemyStateMachineFactory::createBossEnemy(reg, entity); });
 	}
 	return spawner;

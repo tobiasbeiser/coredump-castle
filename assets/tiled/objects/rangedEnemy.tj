@@ -13,7 +13,12 @@
             {
              "name":"attackCooldown",
              "type":"float",
-             "value":0.1
+             "value":0.2
+            }, 
+            {
+             "name":"attackRange",
+             "type":"float",
+             "value":300
             }, 
             {
              "name":"attackRange",
@@ -48,12 +53,12 @@
             {
              "name":"maxSpeedX",
              "type":"float",
-             "value":50
+             "value":20
             }, 
             {
              "name":"projectileOffset",
              "type":"string",
-             "value":"33,60,0,0"
+             "value":"33,15,0,0"
             }, 
             {
              "name":"projectileSpeed",

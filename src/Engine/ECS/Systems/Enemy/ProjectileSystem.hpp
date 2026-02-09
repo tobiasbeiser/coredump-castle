@@ -28,7 +28,7 @@ class ProjectileSystem {
 	static void handleEnemyProjectileCollisions(Registry &registry);
 
   private:
-	void handleEnemySpawning(Registry &registry, float deltaTime);
+	void handleEnemySpawning(Registry &registry, float deltaTime) const;
 	static void resolveProjectileWallCollisions(Registry &registry);
 	static void cleanUpOldProjectiles(Registry &registry);
 	static glm::vec2 calculateProjectileSpawnPosition(const glm::vec2 &enemyPosition, const SDL_FRect &enemyHurtBox,

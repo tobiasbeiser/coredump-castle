@@ -2,6 +2,7 @@
 #include "../Components/Core/VelocityComponent.hpp"
 #include "../Components/Gameplay/InputComponent.hpp"
 #include "../Components/Gameplay/MovementComponent.hpp"
+#include "../Components/Gameplay/MovementSlowComponent.hpp"
 #include "../Components/Physics/AccelerationComponent.hpp"
 #include "../Registry.hpp"
 #include "Engine/Debug/ScopedProfiler.hpp"
@@ -20,7 +21,9 @@ class MovementSystem {
 		     const auto entity : view) {
 			auto &[velocity] = view.get<VelocityComponent>(entity);
 			auto &[acceleration] = view.get<AccelerationComponent>(entity);
-			const auto &[accelerationRate, maxSpeedX] = view.get<MovementComponent>(entity);
+			auto &movement = view.get<MovementComponent>(entity);
+			const auto accelerationRate = movement.accelerationRate;
+			auto &maxSpeedX = movement.maxSpeedX;
 			const auto &input = view.get<InputComponent>(entity);
 
 			if (input.horizontalDirection != 0.0f) {
@@ -50,6 +53,22 @@ class MovementSystem {
 			    renderComp && input.horizontalDirection != 0.0f) {
 				const bool facingLeft = input.horizontalDirection < 0;
 				renderComp->get().setFacingLeft(facingLeft);
+			}
+
+			if (const auto slowOpt = registry.tryGet<MovementSlowComponent>(entity)) {
+				auto &slow = slowOpt->get();
+				if (!slow.initialized) {
+					slow.originalMaxSpeedX = maxSpeedX;
+					slow.initialized = true;
+				}
+
+				slow.slowTimer.step(std::chrono::duration<float>(stepSize), false);
+				maxSpeedX = slow.originalMaxSpeedX * slow.speedMultiplier;
+
+				if (slow.slowTimer.isTimeout()) {
+					maxSpeedX = slow.originalMaxSpeedX;
+					registry.remove<MovementSlowComponent>(entity);
+				}
 			}
 		}
 	}

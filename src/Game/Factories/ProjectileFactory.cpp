@@ -26,6 +26,13 @@ ProjectileFactory::ProjectileFactory(GameEngine::ECS::Registry &registry, Animat
 void ProjectileFactory::createProjectile(const glm::vec2 &startPosition, const glm::vec2 &direction, float speed,
                                          float range, const std::string &tilesetPath, double rotation) const
 {
+	if (tilesetPath.empty() || tilesetPath.back() == '/' || tilesetPath.back() == '\\'
+	    || tilesetPath.find(".tsj") == std::string::npos) {
+		SDL_Log("[ProjectileFactory] ERROR: Cannot create projectile with invalid tileset path: '%s'",
+		        tilesetPath.c_str());
+		return;
+	}
+
 	const auto entity = registry.create();
 
 	// avoid friendly fire
@@ -42,11 +49,12 @@ void ProjectileFactory::createProjectile(const glm::vec2 &startPosition, const g
 
 	registry.registerComponent(entity, PositionComponent{.position = startPosition, .previousPosition = startPosition});
 	registry.registerComponent(entity, VelocityComponent{.velocity = direction * speed});
-	registry.registerComponent(
-	    entity, TransformComponent{.scale = glm::vec2(1.0f, 1.0f), .rotation = static_cast<float>(rotation)});
-	registry.registerComponent(entity, RenderComponent{.layer = 15, .flipX = false});
-
+	// Use the cached scale from ProjectileData, or default to 1.0f if not set
 	const ProjectileData &data = getCachedProjectileData(tilesetPath);
+
+	registry.registerComponent(entity,
+	                           TransformComponent{.scale = data.scale, .rotation = static_cast<float>(rotation)});
+	registry.registerComponent(entity, RenderComponent{.layer = 15, .flipX = false});
 
 	SDL_FRect finalHitbox = data.hitbox;
 	finalHitbox.x = data.hitbox.x;
@@ -65,6 +73,12 @@ const ProjectileData &ProjectileFactory::getCachedProjectileData(const std::stri
 {
 	static std::unordered_map<std::string, ProjectileData> cache;
 
+	if (path.empty() || path.back() == '/' || path.back() == '\\' || path.find(".tsj") == std::string::npos) {
+		SDL_Log("[ProjectileFactory] ERROR: Invalid projectile tileset path: '%s'", path.c_str());
+		static ProjectileData emptyData;
+		return emptyData;
+	}
+
 	if (auto it = cache.find(path); it != cache.end()) {
 		return it->second;
 	}
@@ -81,6 +95,13 @@ const ProjectileData &ProjectileFactory::getCachedProjectileData(const std::stri
 		if (!tileset.getImage().empty()) {
 			const std::string tilesetDir = path.substr(0, path.find_last_of("/\\") + 1);
 			data.texturePath = tilesetDir + tileset.getImage().string();
+		}
+
+		if (const auto scaleProp = tileset.getProp("scale")) {
+			if (scaleProp->getType() == tson::Type::Float) {
+				const auto scaleVal = scaleProp->getValue<float>();
+				data.scale = {scaleVal, scaleVal};
+			}
 		}
 
 		if (!tileset.getTiles().empty()) {

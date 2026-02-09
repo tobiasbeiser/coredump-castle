@@ -16,7 +16,7 @@ struct DebugRenderOptions {
 	bool showRaycasts = false;
 	bool showTooltipBoxes = false;
 	bool showVision = false;
-	bool showStateMachine = true;
+	bool showStateMachine = false;
 	bool vSync = true;
 };
 

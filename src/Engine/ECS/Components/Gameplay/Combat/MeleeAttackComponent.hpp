@@ -3,4 +3,5 @@
 struct MeleeAttackComponent {
 	SDL_FRect weaponHitBox{0, 0, 0, 0};
 	float attackRange{50.0f};
+	SDL_FRect originalWeaponHitBox{0, 0, 0, 0};
 };

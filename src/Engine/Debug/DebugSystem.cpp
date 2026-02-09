@@ -285,8 +285,8 @@ void DebugSystem::drawCollisionBoxes() const
 
 		const auto transform = registry->tryGet<TransformComponent>(entity);
 		const auto scale = transform ? &transform->get().scale : nullptr;
+		const auto render = registry->tryGet<RenderComponent>(entity);
 		SDL_FRect col = GameEngine::Utils::HitBoxUtils::getHitBox(position, collision, scale);
-
 		const SDL_Color color =
 		    registry->has<MovementComponent>(entity) ? SDL_Color{0, 0, 255, 255} : SDL_Color{255, 0, 0, 255};
 		addRect(col, color);

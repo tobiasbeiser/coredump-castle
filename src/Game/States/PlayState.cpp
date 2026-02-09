@@ -2,6 +2,7 @@
 
 #include "Engine/ECS/Systems/AnimationSystem.hpp"
 #include "Engine/ECS/Systems/BlinkSystem.hpp"
+#include "Engine/ECS/Systems/CameraShakeSystem.hpp"
 #include "Engine/ECS/Systems/ChargeTelegraphSystem.hpp"
 #include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
 #include "Engine/ECS/Systems/Combat/DeathSystem.hpp"
@@ -10,8 +11,8 @@
 #include "Engine/ECS/Systems/Combat/PoiseSystem.hpp"
 #include "Engine/ECS/Systems/Combat/ProgressSystem.hpp"
 #include "Engine/ECS/Systems/EffectSystem.hpp"
-#include "Engine/ECS/Systems/Enemy/ProjectileSystem.hpp"
 #include "Engine/ECS/Systems/Enemy/ChaseSystem.hpp"
+#include "Engine/ECS/Systems/Enemy/ProjectileSystem.hpp"
 #include "Engine/ECS/Systems/Hazard/SpikeSystem.hpp"
 #include "Engine/ECS/Systems/InteractionSystem.hpp"
 #include "Engine/ECS/Systems/JumpSystem.hpp"
@@ -25,9 +26,10 @@
 #include "Engine/ECS/Systems/StateMachineSystem.hpp"
 #include "Engine/ECS/Systems/StateSystem.hpp"
 #include "Engine/ECS/Systems/TooltipSystem.hpp"
-#include "Engine/ECS/Systems/MapToggleSystem.hpp"
+#include "Engine/ECS/Systems/Ui/HudSystem.hpp"
 #include "Engine/ECS/Systems/VignetteSystem.hpp"
 #include "Engine/GameEngine.hpp"
+#include "Game/Factories/OverlayFactory.hpp"
 #include "Game/Factories/WorldFactory.hpp"
 #include "MapMenuState.hpp"
 
@@ -41,6 +43,10 @@ void PlayState::init(GameEngine &game)
 
 	const std::filesystem::path worldPath = "assets/tiled/coredumpCastle.world";
 	factory.createWorld(worldPath);
+
+	OverlayFactory overlayFactory(game.getRegistry(), game.getTextureManager());
+	overlayFactory.createOverlay("assets/tiled/maps/Ui/hud.json");
+
 	game.getSaveSystem().loadSavedGame(game.getRegistry());
 
 	game.getAudioManager().playMusic("assets/audio/music/main_theme.ogg", 2500);
@@ -103,6 +109,7 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 	ECS::Systems::ChargeTelegraphSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::EffectSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::VignetteSystem::update(game.getRegistry(), deltaTime);
+	ECS::Systems::CameraShakeSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::SoundSystem::update(game.getRegistry(), game.getAudioManager(), deltaTime);
 
 	ECS::Systems::ProgressSystem::update(game.getRegistry(), game.getSaveSystem());
@@ -112,6 +119,7 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 	ECS::Systems::TooltipSystem::update(game.getRegistry());
 	ECS::Systems::RespawnSystem::update(game.getRegistry(), game, deltaTime);
 	ECS::Systems::MapToggleSystem::update(game.getRegistry(), game);
+	ECS::Systems::HudSystem::update(game.getRegistry());
 }
 
 void PlayState::render(GameEngine &game, const float alpha)

@@ -110,6 +110,13 @@ void GameEngine::ECS::Systems::AnimationSystem::update(Registry &registry, const
 			case State::Walking:
 				handleLanding(anim, AnimationType::Walking);
 				break;
+			case State::Rolling:
+				if (anim.hasAnimation(AnimationType::Roll)) {
+					anim.setAnimation(AnimationType::Roll);
+				} else {
+					handleLanding(anim, AnimationType::Walking); // Fallback to walking if no roll animation
+				}
+				break;
 			case State::Jumping:
 				handleJumping(anim);
 				break;

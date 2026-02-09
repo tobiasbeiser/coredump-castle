@@ -71,6 +71,9 @@ GameEngine::Utils::RenderUtils::createSpriteItem(const SpriteRenderContext &ctx,
 	                    .w = static_cast<float>(tileSize.x),
 	                    .h = static_cast<float>(tileSize.y)};
 
+	SDL_Color combinedColorMod = spriteColorMod;
+	combinedColorMod.a = (combinedColorMod.a * render.alpha) / 255;
+
 	return RenderItem{.layer = render.layer,
 	                  .texture = texture,
 	                  .src = src,
@@ -78,7 +81,32 @@ GameEngine::Utils::RenderUtils::createSpriteItem(const SpriteRenderContext &ctx,
 	                  .parallax = false,
 	                  .flipX = render.flipX,
 	                  .angle = rotation,
-	                  .colorMod = spriteColorMod};
+	                  .colorMod = combinedColorMod};
+}
+
+std::optional<GameEngine::Utils::RenderUtils::RenderItem>
+GameEngine::Utils::RenderUtils::createUiItem(const SpriteRenderContext &ctx, const float globalScaling)
+{
+	const SDL_FRect dst = getTileDstFRect({ctx.posComp, ctx.spriteComp, ctx.transformComp}, globalScaling);
+
+	const auto &[texture, tileSize, tileMapPosition, spriteColorMod] = ctx.spriteComp;
+	const auto &render = ctx.renderComp;
+	const double rotation = ctx.transformComp ? ctx.transformComp->get().rotation : 0.0;
+
+	const SDL_FRect src{.x = static_cast<float>(tileMapPosition.x),
+	                    .y = static_cast<float>(tileMapPosition.y),
+	                    .w = static_cast<float>(tileSize.x),
+	                    .h = static_cast<float>(tileSize.y)};
+
+	return RenderItem{.layer = render.layer,
+	                  .texture = texture,
+	                  .src = src,
+	                  .dst = dst,
+	                  .parallax = false,
+	                  .flipX = render.flipX,
+	                  .angle = rotation,
+	                  .colorMod = spriteColorMod,
+	                  .isScreenSpace = true};
 }
 
 SDL_FRect GameEngine::Utils::RenderUtils::getTileDstFRect(const DstRectContext &ctx, const float globalScaling)
@@ -195,8 +223,10 @@ void GameEngine::Utils::RenderUtils::submitRenderItems(std::vector<RenderItem> &
 			lastColorVal = currentColorVal;
 			forceUpdate = false;
 		}
-
-		if (!renderItem.parallax) {
+		if (renderItem.isScreenSpace && renderItem.dst.has_value()) {
+			renderer.renderUI(*renderItem.texture, renderItem.src, renderItem.dst.value(), renderItem.flipX,
+			                  renderItem.angle);
+		} else if (!renderItem.parallax) {
 			renderer.renderTexture(*renderItem.texture, renderItem.src, renderItem.dst, renderItem.flipX,
 			                       renderItem.angle);
 		} else if (renderItem.dst.has_value()) {

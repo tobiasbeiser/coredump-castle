@@ -1,4 +1,4 @@
-﻿#include "DeathSystem.hpp"
+#include "DeathSystem.hpp"
 
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
