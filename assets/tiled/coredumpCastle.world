@@ -100,10 +100,24 @@
         },
         {
             "fileName": "maps/Tutorial.json",
-            "height": 576,
+            "height": 512,
             "width": 1216,
             "x": -1440,
-            "y": 576
+            "y": 640
+        },
+        {
+            "fileName": "maps/area2/area2_boss.json",
+            "height": 640,
+            "width": 960,
+            "x": 928,
+            "y": -640
+        },
+        {
+            "fileName": "maps/area2/area2_level1.json",
+            "height": 800,
+            "width": 960,
+            "x": -1184,
+            "y": -192
         }
     ],
     "onlyShowAdjacentMaps": false,
