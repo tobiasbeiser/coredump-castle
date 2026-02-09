@@ -2,6 +2,7 @@
 #include "Engine/ECS/Entity.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "tileson.hpp"
+#include <functional>
 
 class AnimationFactory;
 
@@ -25,6 +26,8 @@ class EnemySpawner {
 		blueprints.emplace_back(
 		    [&regRef, component](GameEngine::ECS::Entity e) { regRef.registerComponent(e, component); });
 	}
+
+	void addSetupStep(std::function<void(GameEngine::ECS::Entity)> step) { blueprints.emplace_back(step); }
 
   private:
 	std::reference_wrapper<GameEngine::ECS::Registry> registry;

@@ -135,7 +135,7 @@ void Renderer::endFrame() const
 	{
 		DebugSystem::renderGameOverlay(renderer.get(), viewport);
 		DebugSystem::updateSettings(renderer.get());
-		DebugSystem::drawUI();
+		DebugSystem::drawUI(renderer.get());
 	}
 
 	SDL_SetRenderLogicalPresentation(renderer.get(), 0, 0, SDL_LOGICAL_PRESENTATION_DISABLED);

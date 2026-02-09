@@ -1,8 +1,6 @@
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
-#include "Engine/ECS/Components/Gameplay/Enemy/AiStateComponent.hpp"
-#include "Engine/ECS/Components/Gameplay/Enemy/ChaseComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
@@ -13,36 +11,46 @@
 
 namespace GameEngine::ECS::Systems::PatrolSystem {
 
-void update(Registry &registry)
+void updateEntity(Registry &registry, Entity entity)
 {
-	auto view = registry.view<PositionComponent, PatrolComponent, InputComponent, CollisionComponent, AiStateComponent,
-	                          MovementComponent>();
+	const auto patrolComp = registry.tryGet<PatrolComponent>(entity);
+	if (!patrolComp)
+		return;
+	const auto &[patrolSpeed, patrolCenter, minX, maxX] = patrolComp->get();
 
-	for (const auto entity : view) {
+	auto movementComp = registry.tryGet<MovementComponent>(entity);
+	if (!movementComp)
+		return;
+	auto &[accelerationRate, maxSpeedX] = movementComp->get();
+	maxSpeedX = patrolSpeed;
 
-		if (const auto &[state] = view.get<AiStateComponent>(entity); state != AiState::Patrol) {
-			continue;
-		}
-		const auto &[patrolSpeed] = view.get<PatrolComponent>(entity);
-		auto &[accelerationRate, maxSpeedX] = view.get<MovementComponent>(entity);
-		maxSpeedX = patrolSpeed;
+	auto inputComp = registry.tryGet<InputComponent>(entity);
+	if (!inputComp)
+		return;
+	auto &input = inputComp->get();
 
-		auto &input = view.get<InputComponent>(entity);
-		const auto &[position, previousPosition] = view.get<PositionComponent>(entity);
-		const auto &[collisionBox] = view.get<CollisionComponent>(entity);
-		const auto transform = registry.tryGet<TransformComponent>(entity);
-		const std::optional<const glm::vec2> scale = transform ? std::optional(transform->get().scale) : std::nullopt;
+	const auto posComp = registry.tryGet<PositionComponent>(entity);
+	if (!posComp)
+		return;
+	const auto &[position, previousPosition] = posComp->get();
 
-		if (input.horizontalDirection == 0.0f) {
-			input.horizontalDirection = 1.0f;
-		}
+	const auto colComp = registry.tryGet<CollisionComponent>(entity);
+	if (!colComp)
+		return;
+	const auto &[collisionBox] = colComp->get();
 
-		const bool isEnvironmentBlocked =
-		    !CollisionSystem::canContinueMovingHorizontally(position, collisionBox, scale, input.horizontalDirection);
+	const auto transform = registry.tryGet<TransformComponent>(entity);
+	const std::optional<const glm::vec2> scale = transform ? std::optional(transform->get().scale) : std::nullopt;
 
-		if (isEnvironmentBlocked) {
-			input.horizontalDirection *= -1.0f;
-		}
+	if (input.horizontalDirection == 0.0f) {
+		input.horizontalDirection = 1.0f;
+	}
+
+	const bool isEnvironmentBlocked =
+	    !CollisionSystem::canContinueMovingHorizontally(position, collisionBox, scale, input.horizontalDirection);
+
+	if (isEnvironmentBlocked) {
+		input.horizontalDirection *= -1.0f;
 	}
 }
 

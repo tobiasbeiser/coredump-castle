@@ -28,7 +28,7 @@
             {
              "name":"maxSpeedX",
              "type":"float",
-             "value":40
+             "value":30
             }, 
             {
              "name":"scale",

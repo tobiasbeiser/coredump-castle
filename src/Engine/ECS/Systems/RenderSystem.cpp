@@ -5,7 +5,9 @@
 #include "Engine/ECS/Components/Core/TransformComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HitBoxComponent.hpp"
 #include "Engine/ECS/Components/Render/BackgroundComponent.hpp"
+#include "Engine/ECS/Components/Render/CameraShakeComponent.hpp"
 #include "Engine/ECS/Components/Render/CenterCameraComponent.hpp"
+#include "Engine/ECS/Components/Render/OutlineGlowComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
 #include "Engine/ECS/Components/Render/VignetteComponent.hpp"
@@ -58,7 +60,16 @@ void RenderSystem::update(Registry &registry)
 			const auto &render = view.get<RenderComponent>(entity);
 			const auto &transform = registry.tryGet<TransformComponent>(entity);
 
-			if (const auto item = RenderUtils::createSpriteItem({pos, sprite, render, transform}, viewport)) {
+			if (auto item = RenderUtils::createSpriteItem({pos, sprite, render, transform}, viewport)) {
+				if (auto outlineGlowOpt = registry.tryGet<OutlineGlowComponent>(entity)) {
+					const auto &outlineGlow = outlineGlowOpt->get();
+					if (outlineGlow.active) {
+						item->hasOutlineGlow = true;
+						item->outlineColor = outlineGlow.outlineColor;
+						item->outlineThickness = outlineGlow.thickness;
+						item->outlineIntensity = outlineGlow.intensity;
+					}
+				}
 				renderItems.push_back(item.value());
 			}
 		}
@@ -106,8 +117,28 @@ void RenderSystem::centerCamera(Registry &registry) const
 			const auto levelEntity = levelView.at(0);
 			const auto &level = levelView.get<LevelComponent>(levelEntity);
 			const auto &posLvl = levelView.get<PositionComponent>(levelEntity);
-			renderer.centerCameraOn((position + static_cast<glm::vec2>(tile.tileSize / 2)), posLvl.position,
-			                        level.levelSize);
+			const glm::vec2 cameraTarget = position + static_cast<glm::vec2>(tile.tileSize / 2);
+			renderer.centerCameraOn(cameraTarget, posLvl.position, level.levelSize);
+			if (const auto shakeOpt = registry.tryGet<CameraShakeComponent>(centerCameraEntity)) {
+				auto viewport = renderer.getViewport();
+				const float minX = posLvl.position.x;
+				const float minY = posLvl.position.y;
+				const float maxX = posLvl.position.x + level.levelSize.x - viewport.w;
+				const float maxY = posLvl.position.y + level.levelSize.y - viewport.h;
+
+				const float targetX = viewport.x + shakeOpt->get().offset.x;
+				const float targetY = viewport.y + shakeOpt->get().offset.y;
+
+				if (maxX >= minX) {
+					viewport.x = std::clamp(targetX, minX, maxX);
+				}
+				if (maxY >= minY) {
+					viewport.y = std::clamp(targetY, minY, maxY);
+				}
+
+				const glm::vec2 centered = {viewport.x + viewport.w * 0.5f, viewport.y + viewport.h * 0.5f};
+				renderer.setCameraCenter(centered);
+			}
 
 			if (const auto render = registry.tryGet<RenderComponent>(levelEntity)) {
 				auto &renderComp = render->get();
@@ -140,5 +171,6 @@ std::optional<RenderUtils::RenderItem> RenderSystem::createBackgroundItem(const 
 	                  .dst = dstOpt,
 	                  .parallax = repeatX,
 	                  .scrollFactor = scrollSpeed,
-	                  .flipX = render.flipX};
+	                  .flipX = render.flipX,
+	                  .colorMod = {255, 255, 255, static_cast<Uint8>(render.alpha)}};
 }

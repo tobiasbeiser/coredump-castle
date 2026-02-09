@@ -2,16 +2,15 @@
 
 #include "Engine/ECS/Systems/AnimationSystem.hpp"
 #include "Engine/ECS/Systems/BlinkSystem.hpp"
+#include "Engine/ECS/Systems/CameraShakeSystem.hpp"
+#include "Engine/ECS/Systems/ChargeTelegraphSystem.hpp"
 #include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
 #include "Engine/ECS/Systems/Combat/DeathSystem.hpp"
 #include "Engine/ECS/Systems/Combat/HealthSystem.hpp"
 #include "Engine/ECS/Systems/Combat/HitDetectionSystem.hpp"
 #include "Engine/ECS/Systems/Combat/PoiseSystem.hpp"
 #include "Engine/ECS/Systems/EffectSystem.hpp"
-#include "Engine/ECS/Systems/Enemy/AiAttackSystem.hpp"
-#include "Engine/ECS/Systems/Enemy/AiDecisionSystem.hpp"
 #include "Engine/ECS/Systems/Enemy/ChaseSystem.hpp"
-#include "Engine/ECS/Systems/Enemy/PatrolSystem.hpp"
 #include "Engine/ECS/Systems/Enemy/ProjectileSystem.hpp"
 #include "Engine/ECS/Systems/Hazard/SpikeSystem.hpp"
 #include "Engine/ECS/Systems/InteractionSystem.hpp"
@@ -23,6 +22,7 @@
 #include "Engine/ECS/Systems/RenderSystem.hpp"
 #include "Engine/ECS/Systems/RespawnSystem.hpp"
 #include "Engine/ECS/Systems/SoundSystem.hpp"
+#include "Engine/ECS/Systems/StateMachineSystem.hpp"
 #include "Engine/ECS/Systems/StateSystem.hpp"
 #include "Engine/ECS/Systems/TooltipSystem.hpp"
 #include "Engine/ECS/Systems/VignetteSystem.hpp"
@@ -70,7 +70,6 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 	}
 	mapActivationSystem.update(game.getRegistry());
 	inputSystem.update(game.getRegistry());
-	ECS::Systems::AiDecisionSystem::update(game.getRegistry());
 
 	projectileSystem.update(game.getRegistry(), deltaTime);
 	ECS::Systems::JumpSystem::update(game.getRegistry(), deltaTime);
@@ -78,13 +77,11 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 	accumulator += deltaTime;
 	while (accumulator >= stepSize) {
 		accumulator -= stepSize;
-		ECS::Systems::ChaseSystem::update(game.getRegistry(), deltaTime);
-		ECS::Systems::PatrolSystem::update(game.getRegistry());
+		ECS::Systems::StateMachineSystem::update(game.getRegistry(), stepSize);
 		ECS::Systems::MovementSystem::update(game.getRegistry(), stepSize);
 		ECS::Systems::PhysicsSystem::update(game.getRegistry(), stepSize);
 	}
 
-	ECS::Systems::AiAttackSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::AttackSystem::update(game.getRegistry(), deltaTime, [&](const ECS::Entity e) {
 		if (game.getRegistry().has<PlayerTag>(e)) {
 			effectFactory.createEffectOnEntity(e, EffectType::PlayerSwoosh);
@@ -102,8 +99,10 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 
 	ECS::Systems::AnimationSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::BlinkSystem::update(game.getRegistry());
+	ECS::Systems::ChargeTelegraphSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::EffectSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::VignetteSystem::update(game.getRegistry(), deltaTime);
+	ECS::Systems::CameraShakeSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::SoundSystem::update(game.getRegistry(), game.getAudioManager(), deltaTime);
 
 	ECS::Systems::DeathSystem::update(game.getRegistry(), deltaTime);

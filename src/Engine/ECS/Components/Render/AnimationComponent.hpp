@@ -21,7 +21,8 @@ enum class AnimationType {
 	Dead,
 	Charge,
 	Fire,
-	Interacting
+	Interacting,
+	Roll
 };
 
 class AnimationComponent {
@@ -42,6 +43,7 @@ class AnimationComponent {
 		animations[type] = Animation(frameCount, length);
 
 		std::vector<AnimationFrame> animationFrames{};
+		animationFrames.reserve(frameCount);
 		for (int i = 0; i < frameCount; i++) {
 			animationFrames.push_back({texture, tileSize, glm::ivec2(tileMapPos.x + i * tileSize.x, tileMapPos.y)});
 		}
@@ -80,7 +82,7 @@ class AnimationComponent {
 		return false;
 	}
 
-	bool isDamageActive(const AnimationType &type) const
+	[[nodiscard]] bool isDamageActive(const AnimationType &type) const
 	{
 		if (!damageFrames.contains(type) || !animations.contains(type)) {
 			return false;
@@ -98,7 +100,7 @@ class AnimationComponent {
 		animations.at(type).step(deltaTime);
 	}
 
-	std::chrono::duration<float> getAnimationDuration(const AnimationType &type) const
+	[[nodiscard]] std::chrono::duration<float> getAnimationDuration(const AnimationType &type) const
 	{
 		if (!animations.contains(type)) {
 			return std::chrono::duration<float>::zero();
@@ -106,9 +108,12 @@ class AnimationComponent {
 		return animations.at(type).getLength();
 	}
 
-	AnimationType getAnimation() const { return currentAnimation; }
+	[[nodiscard]] AnimationType getAnimation() const { return currentAnimation; }
 	void setAnimation(const AnimationType &type)
 	{
+		if (!hasAnimation(type)) {
+			return;
+		}
 		if (currentAnimation != type) {
 			startAnimation(type);
 		}
@@ -116,7 +121,12 @@ class AnimationComponent {
 	}
 
   private:
-	void startAnimation(const AnimationType &type) { animations.at(type).start(); }
+	void startAnimation(const AnimationType &type)
+	{
+		if (animations.contains(type)) {
+			animations.at(type).start();
+		}
+	}
 	std::unordered_map<AnimationType, Animation> animations{};
 	std::unordered_map<AnimationType, std::vector<AnimationFrame>> frames{};
 	std::unordered_map<AnimationType, std::vector<bool>> damageFrames{};

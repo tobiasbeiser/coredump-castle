@@ -16,6 +16,7 @@ struct DebugRenderOptions {
 	bool showRaycasts = false;
 	bool showTooltipBoxes = false;
 	bool showVision = false;
+	bool showStateMachine = false;
 	bool vSync = true;
 };
 
@@ -70,7 +71,7 @@ class DebugSystem {
 
 	static void renderGameOverlay(SDL_Renderer *renderer, const SDL_FRect &viewport);
 	static void updateSettings(SDL_Renderer *renderer);
-	static void drawUI();
+	static void drawUI(SDL_Renderer *renderer);
 
 	void toggle() { enabled = !enabled; }
 	void setRegistry(GameEngine::ECS::Registry &registryPtr) { registry = &registryPtr; }
@@ -106,11 +107,14 @@ class DebugSystem {
 	GameEngine::ECS::Registry *registry = nullptr;
 	glm::vec2 spawnPoint{};
 	bool hasSpawnPoint = false;
+	SDL_FRect currentViewport{};
+
 	void drawCollisionBoxes() const;
 	void drawProjectileHitBox() const;
 	void drawHitBoxes() const;
 	void drawTooltipBoxes() const;
 	void drawVision() const;
+	void drawStateMachineInfo(SDL_Renderer *renderer) const;
 	void updateFPS();
 
 	static void addLine(const glm::vec2 &start, const glm::vec2 &end, const SDL_Color &color);
