@@ -230,6 +230,7 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 
 	if (isBoss) {
 		const int bossId = bossIdProp == -1 ? enemyObj.getId() : bossIdProp;
+		spawner.setBossId(bossId);
 		spawner.addBlueprint(BossComponent{.bossId = bossId, .unlockAbility = unlockAbility});
 		spawner.addBlueprint(ChargeComponent{
 		    .chargeCooldown = Timer{std::chrono::duration<float>(chargeCooldown), true},

@@ -29,10 +29,13 @@ class EnemySpawner {
 
 	void addSetupStep(std::function<void(GameEngine::ECS::Entity)> step) { blueprints.emplace_back(step); }
 
+	void setBossId(int id);
+
   private:
 	std::reference_wrapper<GameEngine::ECS::Registry> registry;
 	std::optional<GameEngine::ECS::Entity> currentEntity;
 
 	using ComponentAdder = std::function<void(GameEngine::ECS::Entity)>;
 	std::vector<ComponentAdder> blueprints;
+	std::optional<int> bossId;
 };
