@@ -1,7 +1,7 @@
 
 #include "MapMenuState.hpp"
 
-#include "Engine/ECS/Systems/MapToggleSystem.hpp"
+#include "Engine/ECS/Systems/MenuStateToggleSystem.hpp"
 #include "Engine/GameEngine.hpp"
 #include "Engine/Graphics/Gui/UiViewFactory.hpp"
 #include "Engine/Graphics/Gui/Utils.hpp"
@@ -39,7 +39,7 @@ void MapMenuState::handleEvents(GameEngine &game, const SDL_Event &event)
 void MapMenuState::update(GameEngine &game, const float deltaTime)
 {
 	inputSystem.update(game.getRegistry());
-	ECS::Systems::MapToggleSystem::update(game.getRegistry(), game);
+	ECS::Systems::MenuStateToggleSystem::update(game.getRegistry(), game);
 	ECS::Systems::AnimationSystem::update(game.getRegistry(), deltaTime);
 }
 

@@ -102,6 +102,29 @@ std::unique_ptr<Widget> createMainMenu(const UIContext &ctx, const MainMenuActio
 	return root;
 }
 
+std::unique_ptr<Widget> createPauseMenu(const UIContext &ctx, const PauseMenuActions &actions)
+{
+	auto root = makeMenuRoot(ctx, "Coredump Castle");
+
+	auto buttonContainer = makeButtonContainer();
+
+	if (actions.onShowInventory) {
+		buttonContainer->addWidget(makeBigMenuButton(ctx, "Inventory", actions.onShowInventory));
+	}
+
+	if (actions.onShowSettings) {
+		buttonContainer->addWidget(makeBigMenuButton(ctx, "Settings", actions.onShowSettings));
+	}
+
+	if (actions.onBackToMainMenu) {
+		buttonContainer->addWidget(makeBigMenuButton(ctx, "Main Menu", actions.onBackToMainMenu));
+	}
+
+	root->addWidget(std::move(buttonContainer));
+
+	return root;
+}
+
 std::unique_ptr<Widget> createContinueMenu(const UIContext &ctx, const ContinueMenuActions &actions,
                                            const std::vector<GameEngine::ECS::SaveMetaData>& savesData)
 {
@@ -142,7 +165,7 @@ std::unique_ptr<Widget> createContinueMenu(const UIContext &ctx, const ContinueM
 	return root;
 }
 
-std::unique_ptr<Widget> createSettingsMenu(const UIContext &ctx, const SettingsMenuActions &actions)
+std::unique_ptr<Widget> createSettingsMenu(const UIContext &ctx, const SettingsMenuActions &actions, const bool pauseMenuView)
 {
 	auto root = makeMenuRoot(ctx, "Settings");
 
@@ -172,20 +195,21 @@ std::unique_ptr<Widget> createSettingsMenu(const UIContext &ctx, const SettingsM
 		content->addWidget(std::move(listElement));
 	}
 
-	auto deleteAll = std::make_unique<LinearLayout>();
-	deleteAll->setOrientation(Orientation::Horizontal);
-	auto deleteLabel = std::make_unique<Label>("Delete all saves", ctx.textFont);
-	deleteLabel->setLayoutWeight(1.0f);
-	deleteAll->addWidget(std::move(deleteLabel));
+	if (!pauseMenuView) {
+		auto deleteAll = std::make_unique<LinearLayout>();
+		deleteAll->setOrientation(Orientation::Horizontal);
+		auto deleteLabel = std::make_unique<Label>("Delete all saves", ctx.textFont);
+		deleteLabel->setLayoutWeight(1.0f);
+		deleteAll->addWidget(std::move(deleteLabel));
 
-	auto deleteButton = std::make_unique<Button>("Delete", ctx.textFont, actions.onDelete);
-	if (!actions.onDelete) {
-		deleteButton->setButtonDisabled(true);
+		auto deleteButton = std::make_unique<Button>("Delete", ctx.textFont, actions.onDelete);
+		if (!actions.onDelete) {
+			deleteButton->setButtonDisabled(true);
+		}
+
+		deleteAll->addWidget(std::move(deleteButton));
+		content->addWidget(std::move(deleteAll));
 	}
-
-	deleteAll->addWidget(std::move(deleteButton));
-
-	content->addWidget(std::move(deleteAll));
 	content->addWidget(makeBackButtonFooter(ctx, actions.onBack));
 
 	container->addWidget(std::move(content));

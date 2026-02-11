@@ -24,6 +24,7 @@
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 
 #include "Engine/ECS/Components/Core/SoundComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/PauseMenuToggleComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/MeleeAttackComponent.hpp"
 
 PlayerFactory::PlayerFactory(GameEngine::ECS::Registry &registry, TextureManager &tex_mgr,
@@ -78,6 +79,7 @@ GameEngine::ECS::Entity PlayerFactory::createPlayer(tson::Object &player, const 
 		registry.registerComponent(e, InputComponent{});
 		registry.registerComponent(e, MovementComponent{});
 		registry.registerComponent(e, MapToggleComponent{});
+		registry.registerComponent(e, PauseMenuToggleComponent{});
 
 		registry.registerComponent(e, JumpComponent{.maxJumps = 1, .coyoteTimer = Timer{0.08s}});
 		registry.registerComponent(e, BlinkComponent{.color = {50, 50, 50, 150}});

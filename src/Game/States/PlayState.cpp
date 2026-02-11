@@ -16,7 +16,7 @@
 #include "Engine/ECS/Systems/Hazard/SpikeSystem.hpp"
 #include "Engine/ECS/Systems/InteractionSystem.hpp"
 #include "Engine/ECS/Systems/JumpSystem.hpp"
-#include "Engine/ECS/Systems/MapToggleSystem.hpp"
+#include "Engine/ECS/Systems/MenuStateToggleSystem.hpp"
 #include "Engine/ECS/Systems/MapTrackingSystem.hpp"
 #include "Engine/ECS/Systems/MovementSystem.hpp"
 #include "Engine/ECS/Systems/PhysicsSystem.hpp"
@@ -118,7 +118,7 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 	ECS::Systems::InteractionSystem::update(game, game.getRegistry(), spawners);
 	ECS::Systems::TooltipSystem::update(game.getRegistry());
 	ECS::Systems::RespawnSystem::update(game.getRegistry(), game, deltaTime);
-	ECS::Systems::MapToggleSystem::update(game.getRegistry(), game);
+	ECS::Systems::MenuStateToggleSystem::update(game.getRegistry(), game);
 	ECS::Systems::HudSystem::update(game.getRegistry());
 }
 

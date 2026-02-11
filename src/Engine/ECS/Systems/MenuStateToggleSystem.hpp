@@ -5,7 +5,7 @@ namespace GameEngine::ECS {
 class Registry;
 }
 
-namespace GameEngine::ECS::Systems::MapToggleSystem {
+namespace GameEngine::ECS::Systems::MenuStateToggleSystem {
 
 void update(Registry &registry, GameEngine &game);
 

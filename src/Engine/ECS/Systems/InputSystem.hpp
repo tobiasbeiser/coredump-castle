@@ -6,6 +6,7 @@
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/View.hpp"
+#include "Engine/ECS/Components/Gameplay/PauseMenuToggleComponent.hpp"
 #include "Engine/Input/InputManager.hpp"
 #include <string>
 
@@ -32,7 +33,7 @@ class InputSystem {
 		}
 
 		for (auto view =
-		         registry.view<InputComponent, MapToggleComponent>().exclude<EnemyTag, PendingRespawnComponent>();
+		         registry.view<InputComponent, MapToggleComponent, PauseMenuToggleComponent>().exclude<EnemyTag, PendingRespawnComponent>();
 		     const auto entity : view) {
 			auto &[horizontalDirectionTarget, jumpPressed, attackPressed, interactPressed, interactConsumed] =
 			    view.get<InputComponent>(entity);
@@ -41,8 +42,15 @@ class InputSystem {
 			attackPressed = inputManager.isKeyPressed(Key::Attack);
 			interactPressed = inputManager.isKeyPressed(Key::Interact);
 
-			auto &[mapToggled, _] = view.get<MapToggleComponent>(entity);
-			mapToggled = inputManager.isKeyPressed(Key::ToggleMap);
+			auto &[mapToggled, mapShowing] = view.get<MapToggleComponent>(entity);
+			auto &[pauseMenuToggled, pauseMenuShowing] = view.get<PauseMenuToggleComponent>(entity);
+
+			if (!pauseMenuShowing) {
+				mapToggled = inputManager.isKeyPressed(Key::ToggleMap);
+			}
+			if (!mapShowing) {
+				pauseMenuToggled = inputManager.isKeyPressed(Key::Escape);
+			}
 		}
 
 		for (auto view = registry.view<InputComponent, PendingRespawnComponent>(); const auto entity : view) {
