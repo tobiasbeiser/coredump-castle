@@ -52,6 +52,7 @@ void PauseMenuState::setupUI(GameEngine &game)
 	PauseMenuActions actions;
 
 	actions.onShowSettings = [this, &game]() { showSettingsMenu(game); };
+	actions.onShowInventory = [this, &game]() { showInventory(game); };
 
 	actions.onBackToMainMenu = [&game]() {
 		game.getRegistry().clearAll();
@@ -70,6 +71,25 @@ void PauseMenuState::showSettingsMenu(GameEngine &game)
 	optActions.onBack = [this, &game]() { setupUI(game); };
 
 	rootWidget = UiViewFactory::createSettingsMenu(guiManager.getContext(), optActions, true);
+	guiManager.updateLayout(rootWidget.get());
+}
+
+void PauseMenuState::showInventory(GameEngine &game)
+{
+	InventoryActions invActions;
+
+	invActions.onBack = [this, &game]() { setupUI(game); };
+
+	auto playerView = game.getRegistry().view<PlayerTag, InventoryComponent, ProgressComponent>();
+	if (playerView.size() != 1) {
+		return;
+	}
+	const auto playerEntity = playerView.at(0U);
+
+	const auto &inventory = playerView.get<InventoryComponent>(playerEntity);
+	const auto &progress = playerView.get<ProgressComponent>(playerEntity);
+
+	rootWidget = UiViewFactory::createInventoryMenu(guiManager.getContext(), invActions, inventory.keys.size(), progress.unlockedAbilities);
 	guiManager.updateLayout(rootWidget.get());
 }
 

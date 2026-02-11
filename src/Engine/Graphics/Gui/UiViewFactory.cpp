@@ -104,7 +104,7 @@ std::unique_ptr<Widget> createMainMenu(const UIContext &ctx, const MainMenuActio
 
 std::unique_ptr<Widget> createPauseMenu(const UIContext &ctx, const PauseMenuActions &actions)
 {
-	auto root = makeMenuRoot(ctx, "Coredump Castle");
+	auto root = makeMenuRoot(ctx, "Game Paused");
 
 	auto buttonContainer = makeButtonContainer();
 
@@ -216,6 +216,19 @@ std::unique_ptr<Widget> createSettingsMenu(const UIContext &ctx, const SettingsM
 	container->addWidget(makeSpacer());
 
 	root->addWidget(std::move(container));
+	return root;
+}
+
+std::unique_ptr<Widget> createInventoryMenu(const UIContext &ctx, const InventoryActions &actions, int collectedKeys,
+	const std::vector<int> &unlockedAbilities)
+{
+	auto root = makeMenuRoot(ctx, "Inventory");
+
+	auto posContainer = std::make_unique<LinearLayout>();
+	posContainer->setOrientation(Orientation::Horizontal);
+	posContainer->addWidget(makeSpacer());
+
+	root->addWidget(makeBackButtonFooter(ctx, actions.onBack));
 	return root;
 }
 

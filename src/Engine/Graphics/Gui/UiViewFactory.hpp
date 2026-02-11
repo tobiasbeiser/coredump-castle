@@ -31,6 +31,10 @@ struct SettingsMenuActions {
 	std::function<void()> onDelete;
 };
 
+struct InventoryActions {
+	std::function<void()> onBack;
+};
+
 namespace UiViewFactory {
 using namespace Ui;
 std::unique_ptr<Widget> createMainMenu(const UIContext &ctx, const MainMenuActions &actions);
@@ -41,6 +45,8 @@ std::unique_ptr<Widget> createContinueMenu(const UIContext &ctx, const ContinueM
                                            const std::vector<GameEngine::ECS::SaveMetaData>& savesData);
 
 std::unique_ptr<Widget> createSettingsMenu(const UIContext &ctx, const SettingsMenuActions &actions, bool pauseMenuView=false);
+
+std::unique_ptr<Widget> createInventoryMenu(const UIContext &ctx, const InventoryActions &actions, int collectedKeys, const std::vector<int> &unlockedAbilities);
 
 std::unique_ptr<Widget> createLoadingScreen(const UIContext &ctx);
 
