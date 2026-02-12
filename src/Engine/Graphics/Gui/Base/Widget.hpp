@@ -12,42 +12,24 @@ class Widget {
 	Widget &operator=(Widget &&) = delete;
 	virtual ~Widget() = default;
 
-	glm::vec2 measure(const UIContext &ctx, BoxConstraints constraints) const;
-	[[nodiscard]] glm::vec2 getMeasuredSize() const { return cachedSize.value_or(glm::vec2{0.0f, 0.0f}); };
-	virtual void layout(const UIContext &ctx, const SDL_FRect allocatedRect) { bounds = allocatedRect; }
+	void setBounds(const SDL_FRect& newBounds) { bounds = newBounds; }
+	[[nodiscard]] const SDL_FRect& getBounds() const { return bounds; }
 
-	virtual bool handleEvent(glm::vec2 localMousePos, const SDL_Event &event) = 0;
+	[[nodiscard]] glm::vec2 getPos() const { return {bounds.x, bounds.y}; }
+	[[nodiscard]] glm::vec2 getSize() const { return {bounds.w, bounds.h}; }
+
 	virtual void draw(const UIContext &ctx, glm::vec2 parentOffset) const = 0;
+	virtual bool handleEvent(glm::vec2 localMousePos, const SDL_Event& event) = 0;
 
-	void setLayoutWeight(const float weight) { layoutWeight = weight; }
-	[[nodiscard]] float getLayoutWeight() const { return layoutWeight; };
-
-	void setSizeMode(SizeMode w, SizeMode h);
-	void setFixedSize(glm::vec2 size);
-	void setBackground(SDL_Texture *background);
-
-	[[nodiscard]] SDL_FRect getBounds() const { return bounds; }
-	[[nodiscard]] SizeMode getWidthMode() const { return widthMode; }
-	[[nodiscard]] SizeMode getHeightMode() const { return heightMode; }
-	[[nodiscard]] glm::vec2 getRelativePosition() const { return {bounds.x, bounds.y}; }
-	[[nodiscard]] SDL_FRect getScreenRect(glm::vec2 parentOffset) const noexcept;
+	[[nodiscard]] virtual glm::vec2 getIdealContentSize(const UIContext& ctx) const {
+		return {0.0f, 0.0f};
+	}
 
   protected:
 	Widget() = default;
-	virtual glm::vec2 performMeasure(const UIContext &ctx, BoxConstraints constraints) const = 0;
-	void invalidate() { isDirty = true; };
-	void drawBackground(const UIContext &ctx, glm::vec2 parentOffset) const;
 
   private:
-	SDL_FRect bounds = {0.0f, 0.0f, 0.0f, 0.0f}; // Position is relative to Parent
-
-	SDL_Texture *backgroundTex = nullptr;
-	float layoutWeight = 0.0f;
-	SizeMode widthMode = SizeMode::WrapContent;
-	SizeMode heightMode = SizeMode::WrapContent;
-	glm::vec2 fixedSize = {0.0f, 0.0f};
-	mutable std::optional<glm::vec2> cachedSize;
-	mutable std::optional<BoxConstraints> lastConstraints;
-	mutable bool isDirty = true;
+	SDL_FRect bounds{0.f, 0.f, 0.f, 0.f};
 };
+
 } // namespace Ui
