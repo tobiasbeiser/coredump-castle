@@ -1,26 +1,29 @@
 #pragma once
-#include "HealthSystem.hpp"
-#include "Engine/ECS/View.hpp"
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/BossComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/HealthComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/JumpComponent.hpp"
 #include "Engine/ECS/Components/Render/AnimationComponent.hpp"
-
+#include "Engine/ECS/Components/Tags/PlayerTag.hpp"
+#include "Engine/ECS/View.hpp"
+#include "HealthSystem.hpp"
 
 namespace GameEngine::ECS::Systems::ProgressSystem {
 
-template<typename T>
-concept SaveSystemConcept = requires(const T& t, Registry& r) {
+template <typename T>
+concept SaveSystemConcept = requires(const T &t, Registry &r) {
 	{ t.saveGame(r) } -> std::same_as<void>;
 };
 
 template <SaveSystemConcept TSaveSystem>
-void update(Registry& registry, const TSaveSystem& saveSystem)
+void update(Registry &registry, const TSaveSystem &saveSystem)
 {
 	for (auto bossView = registry.view<BossComponent, HealthComponent>(); const auto entity : bossView) {
 		if (auto &health = bossView.get<HealthComponent>(entity); HealthSystem::isDead(health)) {
 			const auto &boss = bossView.get<BossComponent>(entity);
 
-			if (auto playerView = registry.view<PlayerTag, ProgressComponent, JumpComponent>(); playerView.size() == 1U) {
+			if (auto playerView = registry.view<PlayerTag, ProgressComponent, JumpComponent>();
+			    playerView.size() == 1U) {
 
 				const Entity playerEntity = playerView.at(0U);
 				auto &progress = playerView.get<ProgressComponent>(playerEntity);
@@ -39,10 +42,10 @@ void update(Registry& registry, const TSaveSystem& saveSystem)
 						state->get().state = State::Interacting;
 					}
 					if (const auto anim = registry.tryGet<AnimationComponent>(playerEntity);
-						anim && anim->get().hasAnimation(AnimationType::Interacting)
-						&& anim->get().getAnimation() != AnimationType::Interacting) {
+					    anim && anim->get().hasAnimation(AnimationType::Interacting)
+					    && anim->get().getAnimation() != AnimationType::Interacting) {
 						anim->get().setAnimation(AnimationType::Interacting);
-						}
+					}
 
 					saveSystem.saveGame(registry);
 				}

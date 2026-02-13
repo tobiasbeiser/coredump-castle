@@ -2,10 +2,9 @@
 
 #include <nlohmann/json.hpp>
 
-namespace GameEngine::ECS {
+namespace GameEngine::FileIO {
 
-struct SaveMetaData
-{
+struct SaveMetaData {
 	std::string saveName;
 	std::filesystem::file_time_type lastSaved;
 };
@@ -25,9 +24,10 @@ class ISaveStorage {
 	virtual void clearSaveName() = 0;
 	virtual std::string getSaveName() const = 0;
 	virtual void setSaveName(std::string saveName) = 0;
+	virtual void deleteCurrentSave() = 0;
 
   protected:
 	ISaveStorage() = default;
 };
 
-} // namespace GameEngine::ECS
+} // namespace GameEngine::FileIO

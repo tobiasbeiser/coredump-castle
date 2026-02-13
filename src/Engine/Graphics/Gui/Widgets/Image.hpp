@@ -5,16 +5,10 @@
 namespace Ui {
 class Image final : public Widget {
   public:
-	explicit Image(SDL_Texture *tex) : texture(tex) {}
-	bool handleEvent(glm::vec2 localMousePos, const SDL_Event &event) override { return false; }
+	explicit Image(SDL_Texture *tex);
+	bool handleEvent(glm::vec2 localMousePos, const SDL_Event &event) override;
 
-	void draw(const UIContext &ctx, glm::vec2 parentOffset) const override
-	{
-		if (texture) {
-			const SDL_FRect rect = getScreenRect(parentOffset);
-			ctx.renderer->renderAbsolutePositionTexture(*texture, std::nullopt, rect, false, 0);
-		}
-	}
+	void draw(const UIContext &ctx, glm::vec2 parentOffset) const override;
 
   private:
 	SDL_Texture *texture;

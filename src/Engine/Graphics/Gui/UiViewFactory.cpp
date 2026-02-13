@@ -33,10 +33,10 @@ SDL_FRect getScreenRect(const Ui::UIContext &ctx)
 	return {0, 0, static_cast<float>(width), static_cast<float>(height)};
 }
 template <typename T>
-std::unique_ptr<Ui::Widget>
-createStandardScreen(const Ui::UIContext &ctx, const std::string_view titleText, Ui::UiBuilder<T> &&contentBuilder,
-                     float contentWidth, const std::string_view bottomButtonText = "",
-                     std::function<void()> onBottomButton = nullptr, const bool drawBackgroundPanel = false)
+std::unique_ptr<Ui::Widget> createStandardScreen(const Ui::UIContext &ctx, const std::string_view titleText,
+                                                 Ui::UiBuilder<T> &&contentBuilder, float contentWidth,
+                                                 const std::string_view bottomButtonText = "",
+                                                 std::function<void()> onBottomButton = nullptr)
 {
 	using namespace Ui::LayoutEngine;
 
@@ -91,7 +91,7 @@ std::unique_ptr<Widget> createPauseMenu(const UIContext &ctx, const PauseMenuAct
 }
 
 std::unique_ptr<Widget> createContinueMenu(const UIContext &ctx, const ContinueMenuActions &actions,
-                                           const std::vector<GameEngine::ECS::SaveMetaData> &savesData)
+                                           const std::vector<GameEngine::FileIO::SaveMetaData> &savesData)
 {
 	const std::vector gridRows(savesData.size(), Track::fix(30.0f));
 
@@ -116,9 +116,13 @@ std::unique_ptr<Widget> createContinueMenu(const UIContext &ctx, const ContinueM
 std::unique_ptr<Widget> createSettingsMenu(const UIContext &ctx, const SettingsMenuActions &actions,
                                            const bool pauseMenuView)
 {
-	std::unordered_map<std::string, std::string> keyMapping = {
-	    {"Left", "[A]"},     {"Right", "[D]"},      {"Jump", "[Space]"},           {"Attack", "[K]"},
-	    {"Interact", "[E]"}, {"Toggle Map", "[M]"}, {"Toggle Pause Menu", "[ESC]"}};
+	std::unordered_map<std::string, std::string> keyMapping = {{"Left", "[A]"},
+	                                                           {"Right", "[D]"},
+	                                                           {"Jump", "[Space]"},
+	                                                           {"Attack", "[K]"},
+	                                                           {"Interact", "[E]"},
+	                                                           {"Toggle Map", "[M]"},
+	                                                           {"Toggle Pause Menu", "[Escape]"}};
 
 	const int rowCount = static_cast<int>(keyMapping.size()) + (pauseMenuView ? 0 : 2);
 	const std::vector rows(rowCount, Track::fix(20.0f));
@@ -218,6 +222,25 @@ std::unique_ptr<Widget> createGameOverScreen(const UIContext &ctx, GameEngine::G
 	return UiBuilder<Container>::create()
 	    .withStack()
 	    .add(Label("Game Over", ctx.titleFont, ctx.theme.titleTextColor), {.anchor = {AnchorParams::topCenter}})
+	    .add(Label(hintString, ctx.textFont), {.anchor = AnchorParams::bottomCenter})
+	    .build(&ctx, getScreenRect(ctx));
+}
+
+std::unique_ptr<Widget> createCongratulationsScreen(const UIContext &ctx, GameEngine::GameEngine &game)
+{
+	const std::string hintString =
+	    std::format("Press [{}] to return to main menu.", game.getInputManager().getHumanReadableKey(Key::Up));
+
+	return UiBuilder<Container>::create()
+	    .withStack()
+	    .add(Label("Congratulations, You Won!", ctx.titleFont, ctx.theme.titleTextColor),
+	         {.anchor = {AnchorParams::topCenter}})
+	    .add(Label("Thank you for playing Coredump Castle,\n"
+	               "we hope you had as much fun playing it,\n"
+	               "as we had building it.\n"
+	               "All the best from Tobi, Erik and Leo",
+	               ctx.bigFont, ctx.theme.titleTextColor),
+	         {.anchor = {AnchorParams::center}})
 	    .add(Label(hintString, ctx.textFont), {.anchor = AnchorParams::bottomCenter})
 	    .build(&ctx, getScreenRect(ctx));
 }

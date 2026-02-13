@@ -20,7 +20,7 @@ std::unique_ptr<UIContext> getContext(GameEngine::GameEngine &game)
 	    Paint{{150, 150, 150, 255}, {200, 200, 200, 255}, {215, 215, 215, 215}},
 	};
 
-	FrameStyle frameStyle = {{50, 50, 50, 50}, {100, 100, 100, 255}};
+	FrameStyle frameStyle = {{50, 50, 50, 120}, {100, 100, 100, 255}};
 
 	UiTheme theme = {{255, 215, 0, 255}, btnStyle, frameStyle};
 

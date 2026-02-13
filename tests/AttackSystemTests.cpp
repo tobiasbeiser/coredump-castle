@@ -1,5 +1,6 @@
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/ECS/Systems/Combat/AttackSystem.hpp"
+#include "Engine/ECS/View.hpp"
 #include "Engine/GameEngine.hpp"
 
 #include <Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp>

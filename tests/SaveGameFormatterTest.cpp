@@ -8,7 +8,7 @@
 
 namespace {
 
-using GameEngine::ECS::SaveMetaData;
+using GameEngine::FileIO::SaveMetaData;
 using namespace GameEngine::Utils;
 
 TEST(SaveGameFormatterTest, GetDisplayString_FormatsStructureCorrectly)

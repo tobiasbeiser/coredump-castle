@@ -13,7 +13,7 @@ namespace GameEngine {
 
 GameEngine::GameEngine(const std::string &title, const Resolution resolution)
     : renderer(title, resolution), textureManager(renderer), fontManager(renderer),
-      saveSystem(std::make_unique<ECS::FileSaveStorage>())
+      saveSystem(std::make_unique<FileIO::FileSaveStorage>())
 {
 	DebugSystem::instance().setRegistry(registry);
 };
@@ -27,8 +27,7 @@ bool GameEngine::init()
 {
 	context = CoredumpContext::getContext(*this);
 
-	states.emplace_back(
-	    std::make_unique<MainMenuState>(getInputManager(), getTextureManager(), getRenderer()));
+	states.emplace_back(std::make_unique<MainMenuState>(getInputManager(), getTextureManager(), getRenderer()));
 	running = true;
 
 	states.back()->init(*this);

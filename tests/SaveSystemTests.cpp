@@ -1,9 +1,11 @@
 
-#include <gtest/gtest.h>
-#include <vector>
+#include "Engine/ECS/View.hpp"
+
+#include <algorithm>
 #include <chrono>
 #include <filesystem>
-#include <algorithm>
+#include <gtest/gtest.h>
+#include <vector>
 
 #include "Engine/ECS/Components/Core/PositionComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/BossComponent.hpp"
@@ -13,15 +15,15 @@
 #include "Engine/ECS/Components/Gameplay/LockComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/ProgressComponent.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
-#include "Engine/ECS/Systems/SaveSystem.hpp"
+#include "Engine/FileIO/SaveManager.hpp"
 
 namespace {
 
 using GameEngine::ECS::Entity;
-using GameEngine::ECS::ISaveStorage;
 using GameEngine::ECS::Registry;
-using GameEngine::ECS::SaveMetaData;
-using GameEngine::ECS::Systems::SaveSystem;
+using GameEngine::FileIO::ISaveStorage;
+using GameEngine::FileIO::SaveManager;
+using GameEngine::FileIO::SaveMetaData;
 using json = nlohmann::json;
 using namespace std::chrono_literals;
 
@@ -31,31 +33,39 @@ class FakeSaveStorage final : public ISaveStorage {
 
 	[[nodiscard]] json read() const override { return store; }
 
-    [[nodiscard]] std::vector<SaveMetaData> getSavesData() const override {
-        return existingSaves;
-    }
+	[[nodiscard]] std::vector<SaveMetaData> getSavesData() const override { return existingSaves; }
 
-    void deleteSaves() override {
-        existingSaves.clear();
-        store.clear();
-        deletionCalled = true;
-    }
+	void deleteSaves() override
+	{
+		existingSaves.clear();
+		store.clear();
+		deletionCalled = true;
+	}
 
-    void clearSaveName() override{ currentSaveName = ""; }
-    [[nodiscard]] std::string getSaveName() const override { return currentSaveName; }
-    void setSaveName(std::string saveName) override { currentSaveName = std::move(saveName); }
+	void clearSaveName() override { currentSaveName = ""; }
+	[[nodiscard]] std::string getSaveName() const override { return currentSaveName; }
+	void setSaveName(std::string saveName) override { currentSaveName = std::move(saveName); }
+	void deleteCurrentSave() override
+	{
+		store.clear();
+		currentSaveName = "";
+		currentSaveDeletedCalled = true;
+	}
 
-    [[nodiscard]] const json &getStoredData() const { return store; }
+	[[nodiscard]] const json &getStoredData() const { return store; }
 
-    void setExistingSaves(std::vector<SaveMetaData> saves) { existingSaves = std::move(saves); }
+	void setExistingSaves(std::vector<SaveMetaData> saves) { existingSaves = std::move(saves); }
 
-    [[nodiscard]] bool wasDeleteCalled() const { return deletionCalled; }
+	[[nodiscard]] bool wasDeleteCalled() const { return deletionCalled; }
+
+	[[nodiscard]] bool wasCurrentSaveDeletedCalled() const { return currentSaveDeletedCalled; }
 
   private:
-    json store{};
-    std::string currentSaveName;
-    std::vector<SaveMetaData> existingSaves;
-    bool deletionCalled = false;
+	json store{};
+	std::string currentSaveName;
+	std::vector<SaveMetaData> existingSaves;
+	bool deletionCalled = false;
+	bool currentSaveDeletedCalled = false; // New flag to track the call}
 };
 
 class SaveSystemTest : public ::testing::Test {
@@ -88,7 +98,7 @@ TEST_F(SaveSystemTest, SaveGame_ProducesExpectedJson)
 {
 	auto storage = std::make_unique<FakeSaveStorage>();
 	auto *storagePtr = storage.get();
-	const SaveSystem saveSystem{std::move(storage)};
+	const SaveManager saveSystem{std::move(storage)};
 
 	storagePtr->setSaveName("QuickSave");
 	saveSystem.saveGame(registry);
@@ -113,7 +123,7 @@ TEST_F(SaveSystemTest, SaveGame_IncludesProgressData)
 {
 	auto storage = std::make_unique<FakeSaveStorage>();
 	auto *storagePtr = storage.get();
-	const SaveSystem saveSystem{std::move(storage)};
+	const SaveManager saveSystem{std::move(storage)};
 
 	auto playerView = registry.view<PlayerTag, ProgressComponent>();
 	const Entity entity = playerView.at(0U);
@@ -133,7 +143,7 @@ TEST_F(SaveSystemTest, LoadSavedGame_RestoresPlayerStateFromJson)
 {
 	auto storage = std::make_unique<FakeSaveStorage>();
 	auto *storagePtr = storage.get();
-	const SaveSystem saveSystem{std::move(storage)};
+	const SaveManager saveSystem{std::move(storage)};
 
 	// Setup the fake data
 	json saved;
@@ -174,7 +184,7 @@ TEST_F(SaveSystemTest, LoadSavedGame_RemovesCollectedLocksAndKeys)
 {
 	auto storage = std::make_unique<FakeSaveStorage>();
 	auto *storagePtr = storage.get();
-	const SaveSystem saveSystem{std::move(storage)};
+	const SaveManager saveSystem{std::move(storage)};
 
 	json saved;
 	saved["maxJumps"] = 2;
@@ -220,8 +230,8 @@ TEST_F(SaveSystemTest, SaveGame_CreatesNewEmptySave_IfFileDoesNotExist)
 {
 	auto storage = std::make_unique<FakeSaveStorage>();
 	auto *storagePtr = storage.get();
-	const SaveSystem saveSystem{std::move(storage)};
-    storagePtr->setExistingSaves({});
+	const SaveManager saveSystem{std::move(storage)};
+	storagePtr->setExistingSaves({});
 
 	// Put garbage in storage to verify it gets overwritten
 	const std::string junkKey = "foo";
@@ -251,7 +261,7 @@ TEST_F(SaveSystemTest, SaveGame_ThrowsIfMultiplePlayerEntitiesExist)
 	registry.registerComponent<ProgressComponent>(secondPlayer, {});
 
 	auto storage = std::make_unique<FakeSaveStorage>();
-	const SaveSystem saveSystem{std::move(storage)};
+	const SaveManager saveSystem{std::move(storage)};
 
 	EXPECT_THROW(saveSystem.saveGame(registry), std::runtime_error);
 }
@@ -260,7 +270,7 @@ TEST_F(SaveSystemTest, LoadSavedGame_ThrowsIfMultiplePlayerEntitiesExist)
 {
 	auto storage = std::make_unique<FakeSaveStorage>();
 	auto *storagePtr = storage.get();
-	const SaveSystem saveSystem{std::move(storage)};
+	const SaveManager saveSystem{std::move(storage)};
 
 	json saved;
 	saved["maxJumps"] = 2;
@@ -284,30 +294,27 @@ TEST_F(SaveSystemTest, GetSaves_ReturnsStorageListWithMetadata)
 	auto storage = std::make_unique<FakeSaveStorage>();
 	auto *storagePtr = storage.get();
 
-    // Create a fixed time point for testing
-    const auto now = std::filesystem::file_time_type::clock::now();
+	// Create a fixed time point for testing
+	const auto now = std::filesystem::file_time_type::clock::now();
 
-    const std::vector<SaveMetaData> expectedSaves = {
-        {"Save1", now},
-        {"Save2", now}
-    };
-    storagePtr->setExistingSaves(expectedSaves);
+	const std::vector<SaveMetaData> expectedSaves = {{"Save1", now}, {"Save2", now}};
+	storagePtr->setExistingSaves(expectedSaves);
 
-	const SaveSystem saveSystem{std::move(storage)};
+	const SaveManager saveSystem{std::move(storage)};
 
 	const auto result = saveSystem.getSaves();
 
-    ASSERT_EQ(expectedSaves.size(), result.size());
-    EXPECT_EQ(expectedSaves[0].saveName, result[0].saveName);
-    EXPECT_EQ(expectedSaves[0].lastSaved, result[0].lastSaved);
-    EXPECT_EQ(expectedSaves[1].saveName, result[1].saveName);
+	ASSERT_EQ(expectedSaves.size(), result.size());
+	EXPECT_EQ(expectedSaves[0].saveName, result[0].saveName);
+	EXPECT_EQ(expectedSaves[0].lastSaved, result[0].lastSaved);
+	EXPECT_EQ(expectedSaves[1].saveName, result[1].saveName);
 }
 
 TEST_F(SaveSystemTest, RoundTrip_SaveThenLoad_PreservesState)
 {
-    auto storage = std::make_unique<FakeSaveStorage>();
-    auto *storagePtr = storage.get();
-    const SaveSystem saveSystem{std::move(storage)};
+	auto storage = std::make_unique<FakeSaveStorage>();
+	auto *storagePtr = storage.get();
+	const SaveManager saveSystem{std::move(storage)};
 
 	// 1. Modify initial state to be distinct from defaults
 	auto playerView = registry.view<PlayerTag, JumpComponent, PositionComponent, ProgressComponent>();
@@ -319,34 +326,32 @@ TEST_F(SaveSystemTest, RoundTrip_SaveThenLoad_PreservesState)
 	auto &pos = playerView.get<PositionComponent>(entity);
 	pos.position = glm::vec2{500.0F, 500.0F};
 
-    // 2. Save
-    const std::string saveName = "RoundTripSave";
-    storagePtr->setSaveName(saveName);
-    saveSystem.saveGame(registry);
+	// 2. Save
+	const std::string saveName = "RoundTripSave";
+	storagePtr->setSaveName(saveName);
+	saveSystem.saveGame(registry);
 
-    // Simulate file existing now (requires SaveMetaData construction)
-    storagePtr->setExistingSaves({
-        SaveMetaData{saveName, std::filesystem::file_time_type::clock::now()}
-    });
+	// Simulate file existing now (requires SaveMetaData construction)
+	storagePtr->setExistingSaves({SaveMetaData{saveName, std::filesystem::file_time_type::clock::now()}});
 
-    // 3. Corrupt the registry
-    jump.maxJumps = 0;
-    pos.position = glm::vec2{0.0F, 0.0F};
+	// 3. Corrupt the registry
+	jump.maxJumps = 0;
+	pos.position = glm::vec2{0.0F, 0.0F};
 
-    // 4. Load back
-    saveSystem.loadSavedGame(registry);
+	// 4. Load back
+	saveSystem.loadSavedGame(registry);
 
-    // 5. Verify restoration
-    EXPECT_EQ(99, jump.maxJumps);
-    EXPECT_FLOAT_EQ(500.0F, pos.position.x);
-    EXPECT_FLOAT_EQ(500.0F, pos.position.y);
+	// 5. Verify restoration
+	EXPECT_EQ(99, jump.maxJumps);
+	EXPECT_FLOAT_EQ(500.0F, pos.position.x);
+	EXPECT_FLOAT_EQ(500.0F, pos.position.y);
 }
 
 TEST_F(SaveSystemTest, LoadSavedGame_RemovesDefeatedBossEntities)
 {
 	auto storage = std::make_unique<FakeSaveStorage>();
 	auto *storagePtr = storage.get();
-	const SaveSystem saveSystem{std::move(storage)};
+	const SaveManager saveSystem{std::move(storage)};
 
 	json saved;
 	saved["maxJumps"] = 1;
@@ -358,12 +363,12 @@ TEST_F(SaveSystemTest, LoadSavedGame_RemovesDefeatedBossEntities)
 	storagePtr->write(saved);
 
 	const Entity bossDefeated = registry.create();
-	registry.registerComponent<BossComponent>(bossDefeated, BossComponent{.bossId = 7,
-	                                                                    .unlockAbility = AbilityType::DoubleJump});
+	registry.registerComponent<BossComponent>(bossDefeated,
+	                                          BossComponent{.bossId = 7, .unlockAbility = AbilityType::DoubleJump});
 
 	const Entity bossAlive = registry.create();
-	registry.registerComponent<BossComponent>(bossAlive, BossComponent{.bossId = 9,
-	                                                                  .unlockAbility = AbilityType::None});
+	registry.registerComponent<BossComponent>(bossAlive,
+	                                          BossComponent{.bossId = 9, .unlockAbility = AbilityType::None});
 
 	saveSystem.loadSavedGame(registry);
 
@@ -380,7 +385,7 @@ TEST_F(SaveSystemTest, LoadSavedGame_KeepsBossIfNotDefeated)
 {
 	auto storage = std::make_unique<FakeSaveStorage>();
 	auto *storagePtr = storage.get();
-	const SaveSystem saveSystem{std::move(storage)};
+	const SaveManager saveSystem{std::move(storage)};
 
 	json saved;
 	saved["maxJumps"] = 1;
@@ -392,8 +397,8 @@ TEST_F(SaveSystemTest, LoadSavedGame_KeepsBossIfNotDefeated)
 	storagePtr->write(saved);
 
 	const Entity bossAlive = registry.create();
-	registry.registerComponent<BossComponent>(bossAlive, BossComponent{.bossId = 3,
-	                                                                  .unlockAbility = AbilityType::None});
+	registry.registerComponent<BossComponent>(bossAlive,
+	                                          BossComponent{.bossId = 3, .unlockAbility = AbilityType::None});
 
 	saveSystem.loadSavedGame(registry);
 
@@ -408,24 +413,21 @@ TEST_F(SaveSystemTest, LoadSavedGame_KeepsBossIfNotDefeated)
 
 TEST_F(SaveSystemTest, DeleteAllSaves_DelegatesToStorage)
 {
-    auto storage = std::make_unique<FakeSaveStorage>();
-    auto *storagePtr = storage.get();
+	auto storage = std::make_unique<FakeSaveStorage>();
+	auto *storagePtr = storage.get();
 
-    // Populate with dummy data
-    storagePtr->setExistingSaves({
-        SaveMetaData{"Save1", std::filesystem::file_time_type::clock::now()}
-    });
+	// Populate with dummy data
+	storagePtr->setExistingSaves({SaveMetaData{"Save1", std::filesystem::file_time_type::clock::now()}});
 
-    const SaveSystem saveSystem{std::move(storage)};
+	const SaveManager saveSystem{std::move(storage)};
 
-    // Act
-    saveSystem.deleteAllSaves();
+	// Act
+	saveSystem.deleteAllSaves();
 
-    // Verify
-    EXPECT_TRUE(storagePtr->wasDeleteCalled());
-    EXPECT_TRUE(storagePtr->getSavesData().empty());
+	// Verify
+	EXPECT_TRUE(storagePtr->wasDeleteCalled());
+	EXPECT_TRUE(storagePtr->getSavesData().empty());
 }
-
 
 TEST_F(SaveSystemTest, ClearSaveName_DelegatesToStorage)
 {
@@ -433,8 +435,7 @@ TEST_F(SaveSystemTest, ClearSaveName_DelegatesToStorage)
 	auto *storagePtr = storage.get();
 	storage->setSaveName("Test");
 
-
-	const SaveSystem saveSystem{std::move(storage)};
+	const SaveManager saveSystem{std::move(storage)};
 
 	// Act
 	saveSystem.clearCurrentSaveName();
@@ -443,5 +444,26 @@ TEST_F(SaveSystemTest, ClearSaveName_DelegatesToStorage)
 	EXPECT_TRUE(storagePtr->getSaveName().empty());
 }
 
+TEST_F(SaveSystemTest, DeleteCurrentSave_DelegatesToStorage)
+{
+	auto storage = std::make_unique<FakeSaveStorage>();
+	auto *storagePtr = storage.get();
+
+	// Simulate an active loaded save
+	storagePtr->setSaveName("MyActiveSave");
+	json dummyData;
+	dummyData["dummy"] = "data";
+	storagePtr->write(dummyData);
+
+	const SaveManager saveSystem{std::move(storage)};
+
+	// Act
+	saveSystem.deleteCurrentSave();
+
+	// Verify
+	EXPECT_TRUE(storagePtr->wasCurrentSaveDeletedCalled());
+	EXPECT_TRUE(storagePtr->getSaveName().empty());
+	EXPECT_TRUE(storagePtr->getStoredData().empty());
+}
 
 } // namespace

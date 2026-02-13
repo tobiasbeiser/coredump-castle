@@ -2,7 +2,9 @@
 
 #include "Engine/ECS/Components/Core/LevelComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
+#include "Engine/ECS/Components/Tags/AlreadySeenTag.hpp"
 #include "Engine/ECS/Components/Tags/InactiveTag.hpp"
+#include "Engine/ECS/Components/Tags/PlayerTag.hpp"
 #include "Engine/Utils/RenderUtils.hpp"
 #include "Game/States/MapMenuState.hpp"
 
@@ -48,7 +50,7 @@ void MapRenderSystem::initFocusPoint(Registry &registry)
 		const auto playerEntity = playerView.at(0);
 		const auto &playerPos = playerView.get<PositionComponent>(playerEntity);
 		const auto &tile = playerView.get<SpriteComponent>(playerEntity);
-		focusPoint =  playerPos.position + static_cast<glm::vec2>(tile.tileSize / 2);
+		focusPoint = playerPos.position + static_cast<glm::vec2>(tile.tileSize / 2);
 	}
 }
 

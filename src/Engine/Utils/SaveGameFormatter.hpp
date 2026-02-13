@@ -6,7 +6,7 @@
 #include <string>
 
 namespace GameEngine::Utils::SaveGameFormatter {
-[[nodiscard]] inline std::string getDisplayString(const ECS::SaveMetaData &metaData)
+[[nodiscard]] inline std::string getDisplayString(const FileIO::SaveMetaData &metaData)
 {
 	const auto sysTime = toSystemClock(metaData.lastSaved);
 	const std::tm localTm = toLocalTime(sysTime);

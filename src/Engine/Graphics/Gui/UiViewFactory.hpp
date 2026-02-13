@@ -46,7 +46,7 @@ std::unique_ptr<Widget> createMainMenu(const UIContext &ctx, const MainMenuActio
 std::unique_ptr<Widget> createPauseMenu(const UIContext &ctx, const PauseMenuActions &actions);
 
 std::unique_ptr<Widget> createContinueMenu(const UIContext &ctx, const ContinueMenuActions &actions,
-                                           const std::vector<GameEngine::ECS::SaveMetaData> &savesData);
+                                           const std::vector<GameEngine::FileIO::SaveMetaData> &savesData);
 
 std::unique_ptr<Widget> createSettingsMenu(const UIContext &ctx, const SettingsMenuActions &actions,
                                            bool pauseMenuView = false);
@@ -59,4 +59,6 @@ std::unique_ptr<Widget> createLoadingScreen(const UIContext &ctx);
 std::unique_ptr<Widget> createMapScreen(const UIContext &ctx, float mapSizeFactor);
 
 std::unique_ptr<Widget> createGameOverScreen(const UIContext &ctx, GameEngine::GameEngine &game);
+
+std::unique_ptr<Widget> createCongratulationsScreen(const UIContext &ctx, GameEngine::GameEngine &game);
 }; // namespace UiViewFactory

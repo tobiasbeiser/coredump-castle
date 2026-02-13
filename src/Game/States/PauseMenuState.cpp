@@ -1,5 +1,7 @@
 #include "PauseMenuState.hpp"
 
+#include "Engine/ECS/Components/Gameplay/InventoryComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/ProgressComponent.hpp"
 #include "Engine/ECS/Systems/MenuStateToggleSystem.hpp"
 #include "Engine/GameEngine.hpp"
 #include "Engine/Graphics/Gui/UiViewFactory.hpp"
