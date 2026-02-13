@@ -233,13 +233,13 @@ std::unique_ptr<Widget> createCongratulationsScreen(const UIContext &ctx, GameEn
 
 	return UiBuilder<Container>::create()
 	    .withStack()
-	    .add(Label("Congratulations, You Won!", ctx.titleFont, ctx.theme.titleTextColor),
+	    .add(Label("You Won!", ctx.titleFont, ctx.theme.titleTextColor),
 	         {.anchor = {AnchorParams::topCenter}})
 	    .add(Label("Thank you for playing Coredump Castle,\n"
 	               "we hope you had as much fun playing it,\n"
 	               "as we had building it.\n"
 	               "All the best from Tobi, Erik and Leo",
-	               ctx.bigFont, ctx.theme.titleTextColor),
+	               ctx.bigFont),
 	         {.anchor = {AnchorParams::center}})
 	    .add(Label(hintString, ctx.textFont), {.anchor = AnchorParams::bottomCenter})
 	    .build(&ctx, getScreenRect(ctx));

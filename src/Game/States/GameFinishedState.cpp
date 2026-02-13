@@ -2,12 +2,7 @@
 #include "GameFinishedState.hpp"
 
 #include "Engine/ECS/Systems/AnimationSystem.hpp"
-#include "Engine/ECS/Systems/BlinkSystem.hpp"
-#include "Engine/ECS/Systems/ChargeTelegraphSystem.hpp"
 #include "Engine/ECS/Systems/MovementSystem.hpp"
-#include "Engine/ECS/Systems/ReviveSystem.hpp"
-#include "Engine/ECS/Systems/StateMachineSystem.hpp"
-#include "Engine/ECS/Systems/StateSystem.hpp"
 #include "Engine/GameEngine.hpp"
 #include "Engine/Graphics/Gui/UiViewFactory.hpp"
 #include "Engine/Graphics/Gui/Utils.hpp"
@@ -54,6 +49,7 @@ void GameFinishedState::update(GameEngine &game, const float deltaTime)
 
 void GameFinishedState::render(GameEngine &game, const float alpha)
 {
+	renderSystem.update(game.getRegistry());
 	rootWidget->draw(game.getUiContext(), {0, 0});
 }
 

@@ -85,13 +85,6 @@
             "y": -192
         },
         {
-            "fileName": "maps/area1/area1_boss2.json",
-            "height": 576,
-            "width": 768,
-            "x": 2272,
-            "y": -768
-        },
-        {
             "fileName": "maps/area1/level11.json",
             "height": 576,
             "width": 672,

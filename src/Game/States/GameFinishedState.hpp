@@ -14,11 +14,7 @@ namespace GameEngine {
 class GameFinishedState final : public GameState {
 	// Inherited via GameState
   public:
-	GameFinishedState(InputManager &input, TextureManager &textureManager, Renderer &renderer,
-	                  std::vector<EnemySpawner> &spawners)
-	    : inputManager(input), textureManager(textureManager), renderer(renderer), spawners(spawners)
-	{
-	}
+	GameFinishedState(InputManager &input, Renderer &renderer) : inputManager(input), renderer(renderer) {}
 	void init(GameEngine &game) override;
 	void cleanup() override;
 	void pause() override;
@@ -29,13 +25,10 @@ class GameFinishedState final : public GameState {
 
   private:
 	InputManager &inputManager;
-	TextureManager &textureManager;
 	Renderer &renderer;
+	ECS::Systems::RenderSystem renderSystem{renderer};
 	ECS::Systems::InputSystem inputSystem{inputManager};
-	std::vector<EnemySpawner> &spawners;
 	std::unique_ptr<Ui::Widget> rootWidget{};
 	bool paused = false;
-	float accumulator = 0.0f;
-	static constexpr float stepSize = 1.0f / 120.0f;
 };
 } // namespace GameEngine
