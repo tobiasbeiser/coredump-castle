@@ -44,6 +44,12 @@ void PauseMenuState::update(GameEngine &game, const float deltaTime)
 void PauseMenuState::render(GameEngine &game, const float alpha)
 {
 	PROFILE_SCOPE("PauseMenuState::render");
+	if (SDL_Texture *backgroundTexture =
+	        &game.getTextureManager().getTexture("assets/tiled/tilesets/Ui/MenuBackground.png")) {
+		SDL_SetTextureColorMod(backgroundTexture, 170, 170, 170);
+		SDL_SetTextureAlphaMod(backgroundTexture, 255);
+		renderer.renderTexture(*backgroundTexture, std::nullopt, std::nullopt, false);
+	}
 	rootWidget->draw(game.getUiContext(), {0, 0});
 }
 
@@ -57,7 +63,8 @@ void PauseMenuState::setupUI(GameEngine &game)
 	actions.onBackToMainMenu = [&game]() {
 		game.getRegistry().clearAll();
 		game.getSaveSystem().clearCurrentSaveName();
-		game.resetToState(std::make_unique<MainMenuState>(game.getInputManager(), game.getTextureManager(), game.getRenderer()));
+		game.resetToState(
+		    std::make_unique<MainMenuState>(game.getInputManager(), game.getTextureManager(), game.getRenderer()));
 	};
 
 	rootWidget = UiViewFactory::createPauseMenu(game.getUiContext(), actions);
@@ -87,7 +94,7 @@ void PauseMenuState::showInventory(GameEngine &game)
 	const auto &progress = playerView.get<ProgressComponent>(playerEntity);
 
 	rootWidget = UiViewFactory::createInventoryMenu(game.getUiContext(), invActions, inventory.keys.size(),
-	                                                progress.unlockedAbilities);
+	                                                progress.unlockedAbilities, game.getTextureManager());
 }
 
 } // namespace GameEngine

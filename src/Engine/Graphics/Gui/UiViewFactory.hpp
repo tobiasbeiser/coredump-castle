@@ -5,6 +5,8 @@
 
 #include "Engine/FileIO/ISaveStorage.hpp"
 
+class TextureManager;
+
 namespace GameEngine {
 class GameEngine;
 }
@@ -43,11 +45,13 @@ std::unique_ptr<Widget> createMainMenu(const UIContext &ctx, const MainMenuActio
 std::unique_ptr<Widget> createPauseMenu(const UIContext &ctx, const PauseMenuActions &actions);
 
 std::unique_ptr<Widget> createContinueMenu(const UIContext &ctx, const ContinueMenuActions &actions,
-                                           const std::vector<GameEngine::ECS::SaveMetaData>& savesData);
+                                           const std::vector<GameEngine::ECS::SaveMetaData> &savesData);
 
-std::unique_ptr<Widget> createSettingsMenu(const UIContext &ctx, const SettingsMenuActions &actions, bool pauseMenuView=false);
+std::unique_ptr<Widget> createSettingsMenu(const UIContext &ctx, const SettingsMenuActions &actions,
+                                           bool pauseMenuView = false);
 
-std::unique_ptr<Widget> createInventoryMenu(const UIContext &ctx, const InventoryActions &actions, int collectedKeys, const std::vector<int> &unlockedAbilities);
+std::unique_ptr<Widget> createInventoryMenu(const UIContext &ctx, const InventoryActions &actions, int collectedKeys,
+                                            const std::vector<int> &unlockedAbilities, TextureManager &textureManager);
 
 std::unique_ptr<Widget> createLoadingScreen(const UIContext &ctx);
 

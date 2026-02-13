@@ -44,6 +44,12 @@ void MapMenuState::update(GameEngine &game, const float deltaTime)
 
 void MapMenuState::render(GameEngine &game, const float alpha)
 {
+	if (SDL_Texture *backgroundTexture =
+			&game.getTextureManager().getTexture("assets/tiled/tilesets/Ui/MenuBackground.png")) {
+		SDL_SetTextureColorMod(backgroundTexture, 170, 170, 170);
+		SDL_SetTextureAlphaMod(backgroundTexture, 255);
+		renderer.renderTexture(*backgroundTexture, std::nullopt, std::nullopt, false);
+			}
 	rootWidget->draw(game.getUiContext(), {0, 0});
 	mapRenderSystem.update(game.getRegistry(), game);
 }

@@ -2,6 +2,7 @@
 
 #include "Base/Widget.hpp"
 
+#include <numeric>
 #include <ranges>
 #include <span>
 
@@ -28,37 +29,32 @@ SDL_FRect alignBox(const SDL_FRect slot, const glm::vec2 size, const Alignment h
 }
 
 std::vector<float> resolveTracks(const std::vector<Track> &defs, const int uniformCount, const float availableSpace,
-                                 float gap)
+                                 const float gap)
 {
-	std::vector<float> results;
 
 	if (defs.empty()) {
+		std::vector<float> results;
 		const float size = (availableSpace - ((uniformCount - 1) * gap)) / uniformCount;
 		results.assign(uniformCount, std::max(0.0f, size));
 		return results;
 	}
 
-	float totalFlex = 0.0f;
-	float usedFixed = 0.0f;
-
-	for (const auto &[type, value] : defs) {
-		if (type == Track::Fixed)
-			usedFixed += value;
+	auto [usedFixed, totalFlex] = std::ranges::fold_left(defs, std::pair{0.0f, 0.0f}, [](auto acc, const Track &t) {
+		if (t.type == Track::Fixed)
+			acc.first += t.value;
 		else
-			totalFlex += value;
-	}
+			acc.second += t.value;
+		return acc;
+	});
 
 	const float flexSpace = std::max(0.0f, availableSpace - usedFixed - ((defs.size() - 1) * gap));
 	const float flexUnit = (totalFlex > 0) ? (flexSpace / totalFlex) : 0.0f;
 
-	results.reserve(defs.size());
-	for (const auto &[type, value] : defs) {
-		if (type == Track::Fixed)
-			results.push_back(value);
-		else
-			results.push_back(value * flexUnit);
-	}
-	return results;
+	auto results_view = defs | std::views::transform([=](const Track &t) {
+		                    return (t.type == Track::Fixed) ? t.value : (t.value * flexUnit);
+	                    });
+
+	return {results_view.begin(), results_view.end()};
 }
 } // namespace
 
@@ -158,7 +154,6 @@ void solveLinear(std::span<LayoutItem> items, const SDL_FRect &parentRect, const
 		} else {
 			finalRect = {parentRect.x + cursor, parentRect.y + crossStart + crossOffset, mainLen, crossLen};
 		}
-
 		item.calculatedBounds = finalRect;
 
 		cursor += mainLen + config.spacing;
@@ -185,22 +180,18 @@ void solveGrid(const std::span<LayoutItem> items, const SDL_FRect &parentRect, c
 	const float availH = parentRect.h - cfg.padding.top - cfg.padding.bottom;
 	const std::vector<float> rowHeights = resolveTracks(cfg.rowDefs, cfg.uniformRows, availH, cfg.gap);
 
+	std::vector colOffsets(colWidths.size() + 1, 0.0f);
+	std::inclusive_scan(colWidths.begin(), colWidths.end(), colOffsets.begin() + 1);
+
+	std::vector rowOffsets(rowHeights.size() + 1, 0.0f);
+	std::inclusive_scan(rowHeights.begin(), rowHeights.end(), rowOffsets.begin() + 1);
+
 	for (auto &item : items) {
-		float x = parentRect.x + cfg.padding.left;
-		for (int i = 0; i < item.col; ++i)
-			x += colWidths[i] + cfg.gap;
+		const float x = parentRect.x + cfg.padding.left + colOffsets[item.col] + (item.col * cfg.gap);
+		const float w = colOffsets[item.col + item.spanX] - colOffsets[item.col] + ((item.spanX - 1) * cfg.gap);
 
-		float w = -cfg.gap;
-		for (int i = 0; i < item.spanX; ++i)
-			w += colWidths[item.col + i] + cfg.gap;
-
-		float y = parentRect.y + cfg.padding.top;
-		for (int i = 0; i < item.row; ++i)
-			y += rowHeights[i] + cfg.gap;
-
-		float h = -cfg.gap;
-		for (int i = 0; i < item.spanY; ++i)
-			h += rowHeights[item.row + i] + cfg.gap;
+		const float y = parentRect.y + cfg.padding.top + rowOffsets[item.row] + (item.row * cfg.gap);
+		const float h = rowOffsets[item.row + item.spanY] - rowOffsets[item.row] + ((item.spanY - 1) * cfg.gap);
 
 		item.calculatedBounds = alignBox({x, y, w, h}, item.idealSize, item.hAlign, item.vAlign);
 	}
