@@ -37,6 +37,9 @@ struct BossProgressTests : testing::Test {
 		                                                      .maxJumps = 1,
 		                                                  });
 		registry.registerComponent<StateComponent>(player, StateComponent{});
+		registry.registerComponent<PositionComponent>(player, PositionComponent{});
+		registry.registerComponent<>(player, PositionComponent{});
+		registry.registerComponent<>(player, InteractionComponent{});
 
 		boss = registry.create();
 		registry.registerComponent<BossComponent>(
