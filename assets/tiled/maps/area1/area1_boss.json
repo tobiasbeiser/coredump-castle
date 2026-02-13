@@ -216,6 +216,28 @@
                  "template":"..\/..\/objects\/demonBoss.tj",
                  "x":448,
                  "y":544
+                }, 
+                {
+                 "height":136,
+                 "id":11,
+                 "name":"",
+                 "properties":[
+                        {
+                         "name":"enabled",
+                         "type":"bool",
+                         "value":false
+                        }, 
+                        {
+                         "name":"tooltip",
+                         "type":"string",
+                         "value":"doublejump"
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":392,
+                 "x":240,
+                 "y":408
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -247,10 +269,10 @@
          "y":0
         }],
  "nextlayerid":40,
- "nextobjectid":11,
+ "nextobjectid":12,
  "orientation":"orthogonal",
  "renderorder":"right-down",
- "tiledversion":"1.11.2",
+ "tiledversion":"1.11.1-99-gec89c545",
  "tileheight":32,
  "tilesets":[
         {

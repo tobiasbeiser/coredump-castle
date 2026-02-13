@@ -27,6 +27,12 @@ SDL_FRect positionFrameChild(const glm::vec2 frameSize, const int outlineOffset)
 	return positionAnchored(frameSize, childSize, AnchorParams::center);
 }
 
+SDL_FRect positionFrame(const SDL_FRect contentBounds, const int outlineOffset)
+{
+	const glm::vec2 frameSize = {contentBounds.x - outlineOffset, contentBounds.y - outlineOffset};
+	return {frameSize.x, frameSize.y, contentBounds.w + 2 * outlineOffset, contentBounds.h + 2 * outlineOffset};
+}
+
 void layoutAnchored(Widget *widget, const UIContext &ctx, const SDL_FRect allocatedRect, const AnchorParams &params)
 {
 	const glm::vec2 parentSize = {allocatedRect.w, allocatedRect.h};

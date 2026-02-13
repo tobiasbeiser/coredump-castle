@@ -5,4 +5,5 @@
 struct TooltipComponent {
 	std::string text{};
 	SDL_FRect box{};
+	bool enabled = true;
 };

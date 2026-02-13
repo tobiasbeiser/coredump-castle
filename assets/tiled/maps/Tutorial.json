@@ -288,6 +288,11 @@
                  "name":"",
                  "properties":[
                         {
+                         "name":"enabled",
+                         "type":"bool",
+                         "value":true
+                        }, 
+                        {
                          "name":"tooltip",
                          "type":"string",
                          "value":"jump"
@@ -304,6 +309,11 @@
                  "id":11,
                  "name":"",
                  "properties":[
+                        {
+                         "name":"enabled",
+                         "type":"bool",
+                         "value":true
+                        }, 
                         {
                          "name":"tooltip",
                          "type":"string",
@@ -322,6 +332,11 @@
                  "name":"",
                  "properties":[
                         {
+                         "name":"enabled",
+                         "type":"bool",
+                         "value":true
+                        }, 
+                        {
                          "name":"tooltip",
                          "type":"string",
                          "value":"save"
@@ -339,6 +354,11 @@
                  "name":"",
                  "properties":[
                         {
+                         "name":"enabled",
+                         "type":"bool",
+                         "value":true
+                        }, 
+                        {
                          "name":"tooltip",
                          "type":"string",
                          "value":"combat"
@@ -349,6 +369,50 @@
                  "width":58.3333333333334,
                  "x":801.666666666667,
                  "y":58.333333333333
+                }, 
+                {
+                 "height":40,
+                 "id":18,
+                 "name":"",
+                 "properties":[
+                        {
+                         "name":"enabled",
+                         "type":"bool",
+                         "value":true
+                        }, 
+                        {
+                         "name":"tooltip",
+                         "type":"string",
+                         "value":"map"
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":104,
+                 "x":96,
+                 "y":248
+                }, 
+                {
+                 "height":32,
+                 "id":19,
+                 "name":"",
+                 "properties":[
+                        {
+                         "name":"enabled",
+                         "type":"bool",
+                         "value":true
+                        }, 
+                        {
+                         "name":"tooltip",
+                         "type":"string",
+                         "value":"pause"
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":64,
+                 "x":1096,
+                 "y":64
                 }],
          "opacity":1,
          "properties":[
@@ -390,10 +454,10 @@
          "y":0
         }],
  "nextlayerid":26,
- "nextobjectid":18,
+ "nextobjectid":20,
  "orientation":"orthogonal",
  "renderorder":"right-down",
- "tiledversion":"1.11.2",
+ "tiledversion":"1.11.1-99-gec89c545",
  "tileheight":32,
  "tilesets":[
         {

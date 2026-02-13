@@ -20,7 +20,7 @@ void GameEngine::ECS::Systems::TooltipSystem::update(Registry &registry, const f
 	}
 
 	for (auto view = registry.view<TooltipComponent>(); const auto entity : view) {
-		auto &[text, box] = view.get<TooltipComponent>(entity);
+		auto &[text, box, enabled] = view.get<TooltipComponent>(entity);
 
 		const auto &playerHitbox = playerView.get<InteractionComponent>(playerView.at(0)).interactionBox;
 		const auto &playerPosition = playerView.get<PositionComponent>(playerView.at(0)).position;
@@ -28,7 +28,7 @@ void GameEngine::ECS::Systems::TooltipSystem::update(Registry &registry, const f
 		SDL_FRect playerInteractionBox{playerPosition.x + playerHitbox.x, playerPosition.y + playerHitbox.y,
 		                               playerHitbox.w, playerHitbox.h};
 
-		if (SDL_HasRectIntersectionFloat(&playerInteractionBox, &box)) {
+		if (enabled && SDL_HasRectIntersectionFloat(&playerInteractionBox, &box)) {
 			if (!registry.has<TextDisplayComponent>(entity)) {
 				registry.registerComponent(entity, TextDisplayComponent{});
 			}

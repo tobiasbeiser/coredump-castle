@@ -14,6 +14,7 @@ static constexpr int framePixelOffset = 4;
 SDL_FRect positionAnchored(glm::vec2 allocatedSize, glm::vec2 ownSize, const AnchorParams &anchorParams);
 SDL_FRect positionCentered(glm::vec2 allocatedSize, glm::vec2 ownSize);
 SDL_FRect positionFrameChild(glm::vec2 frameSize, int outlineOffset = framePixelOffset);
+SDL_FRect positionFrame(SDL_FRect contentBounds, int outlineOffset = framePixelOffset);
 void layoutAnchored(Widget *widget, const UIContext &ctx, SDL_FRect allocatedRect, AnchorParams params);
 
 } // namespace Ui::LayoutEngine

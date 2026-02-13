@@ -363,7 +363,7 @@ void DebugSystem::drawTooltipBoxes() const
 	}
 	auto view = registry->view<TooltipComponent>();
 	for (const auto entity : view) {
-		const auto &[text, box] = view.get<TooltipComponent>(entity);
+		const auto &[text, box, tipEnabled] = view.get<TooltipComponent>(entity);
 		constexpr SDL_Color tooltipBoxColor = {255, 255, 0, 255};
 		addRect(box, tooltipBoxColor);
 	}
