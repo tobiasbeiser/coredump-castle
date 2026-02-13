@@ -1,5 +1,6 @@
 #include "EnemySpawner.hpp"
 
+#include "Engine/ECS/Components/Gameplay/ProgressComponent.hpp"
 #include "Engine/ECS/Components/Tags/InactiveTag.hpp"
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/ECS/Systems/MapActivationSystem.hpp"
@@ -9,6 +10,14 @@ EnemySpawner::EnemySpawner(GameEngine::ECS::Registry &registry) : registry(regis
 }
 void EnemySpawner::spawn()
 {
+	if (bossId) {
+		auto playerView = registry.get().view<PlayerTag, ProgressComponent>();
+		if (const auto &progress = playerView.get<ProgressComponent>(playerView.at(0));
+		    progress.isBossDefeated(*bossId)) {
+			return;
+		}
+	}
+
 	if (currentEntity) {
 		despawn();
 	}
@@ -37,4 +46,8 @@ void EnemySpawner::despawn() const
 bool EnemySpawner::isAlive() const
 {
 	return currentEntity && registry.get().exists(*currentEntity);
+}
+void EnemySpawner::setBossId(int const id)
+{
+	bossId = id;
 }

@@ -22,6 +22,7 @@ class ISaveStorage {
 	[[nodiscard]] virtual nlohmann::json read() const = 0;
 	[[nodiscard]] virtual std::vector<SaveMetaData> getSavesData() const = 0;
 	virtual void deleteSaves() = 0;
+	virtual void clearSaveName() = 0;
 	virtual std::string getSaveName() const = 0;
 	virtual void setSaveName(std::string saveName) = 0;
 

@@ -158,23 +158,17 @@ bool MeleeAttackTransition::canTransition(Registry &registry, Entity entity, flo
 
 	const float weaponWidth = meleeAttack->get().weaponHitBox.w * enemy->scale.x;
 
-	float distToPlayer = 0.0f;
-	bool isPlayerFullyInside = false;
-	if (player->hitBoxRect.x < enemy->hitBoxRect.x + enemy->hitBoxRect.w
-	    && player->hitBoxRect.x + player->hitBoxRect.w > enemy->hitBoxRect.x) {
-		isPlayerFullyInside = true;
-	} else if (player->center.x > enemy->center.x) {
-		if (distToPlayer + player->hitBoxRect.w <= weaponWidth) {
-			isPlayerFullyInside = true;
-		}
-	} else {
-		distToPlayer = enemy->hitBoxRect.x - (player->hitBoxRect.x + player->hitBoxRect.w);
-		if (distToPlayer + player->hitBoxRect.w <= weaponWidth) {
-			isPlayerFullyInside = true;
-		}
-	}
+	const float weaponLeft = enemy->hitBoxRect.x - weaponWidth;
+	const float weaponRight = enemy->hitBoxRect.x + enemy->hitBoxRect.w + weaponWidth;
 
-	return isPlayerFullyInside;
+	const float playerLeft = player->hitBoxRect.x;
+	const float playerRight = player->hitBoxRect.x + player->hitBoxRect.w;
+
+	const float overlap = std::min(playerRight, weaponRight) - std::max(playerLeft, weaponLeft);
+
+	bool canMeleeAttack = overlap > 0 && overlap >= player->hitBoxRect.w * 0.5f;
+
+	return canMeleeAttack;
 }
 
 bool ChargeReadyTransition::canTransition(Registry &registry, Entity entity, float deltaTime) const

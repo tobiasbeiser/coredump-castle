@@ -1,4 +1,4 @@
-﻿#include "DeathSystem.hpp"
+#include "DeathSystem.hpp"
 
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
@@ -13,8 +13,12 @@
 #include "Engine/ECS/Components/Render/SimpleDeathComponent.hpp"
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
+#include "Engine/GameEngine.hpp"
 #include "Engine/ECS/View.hpp"
 #include "HealthSystem.hpp"
+#include "Engine/ECS/Components/Tags/PendingReviveTag.hpp"
+#include "Game/Spawners/EnemySpawner.hpp"
+#include "Game/States/GameOverState.hpp"
 
 #include <SDL3/SDL_log.h>
 
@@ -46,38 +50,11 @@ bool processSimpleDeathAnimation(SimpleDeathComponent &death, SpriteComponent &s
 
 } // namespace
 
-void GameEngine::ECS::Systems::DeathSystem::update(Registry &registry, const float deltaTime)
+void GameEngine::ECS::Systems::DeathSystem::update(Registry &registry, GameEngine &game, const float deltaTime, std::vector<EnemySpawner> &spawners)
 {
 	for (auto view = registry.view<HealthComponent>(); const auto entity : view) {
 
 		if (auto &health = view.get<HealthComponent>(entity); HealthSystem::isDead(health)) {
-			if (const auto boss = registry.tryGet<BossComponent>(entity)) {
-				if (auto playerView = registry.view<PlayerTag, ProgressComponent, JumpComponent>();
-				    playerView.size() == 1U) {
-					const Entity playerEntity = playerView.at(0U);
-					auto &progress = playerView.get<ProgressComponent>(playerEntity);
-					auto &jump = playerView.get<JumpComponent>(playerEntity);
-
-					if (const int bossId = boss->get().bossId; !progress.isBossDefeated(bossId)) {
-						progress.markBossDefeated(bossId);
-						progress.unlockAbility(boss->get().unlockAbility);
-
-						if (boss->get().unlockAbility == AbilityType::DoubleJump) {
-							jump.maxJumps = std::max(jump.maxJumps, 2);
-							jump.jumpsLeft = jump.maxJumps;
-						}
-
-						if (const auto state = registry.tryGet<StateComponent>(playerEntity)) {
-							state->get().state = State::Interacting;
-						}
-						if (auto anim = registry.tryGet<AnimationComponent>(playerEntity);
-						    anim && anim->get().hasAnimation(AnimationType::Interacting)
-						    && anim->get().getAnimation() != AnimationType::Interacting) {
-							anim->get().setAnimation(AnimationType::Interacting);
-						}
-					}
-				}
-			}
 
 			removeComponents(registry, entity);
 			const auto simpleDeathComp = registry.tryGet<SimpleDeathComponent>(entity);
@@ -101,7 +78,12 @@ void GameEngine::ECS::Systems::DeathSystem::update(Registry &registry, const flo
 				}
 			}
 
-			registry.deleteEntity(entity);
+			if (registry.has<PlayerTag>(entity)) {
+				registry.registerComponent(entity, PendingReviveTag{});
+				game.pushState(std::make_unique<GameOverState>(game.getInputManager(), game.getTextureManager(), game.getGuiManager(), game.getRenderer(), spawners));
+			} else {
+				registry.deleteEntity(entity);
+			}
 		}
 	}
 }

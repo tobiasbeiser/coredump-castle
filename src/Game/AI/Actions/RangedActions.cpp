@@ -5,6 +5,7 @@
 #include "Engine/ECS/Components/Core/StateComponent.hpp"
 #include "Engine/ECS/Components/Core/VelocityComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/AttackComponent.hpp"
+#include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/ProjectileComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Combat/RangedAttackComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp"
@@ -13,7 +14,7 @@
 #include "Engine/ECS/Components/Gameplay/MovementSlowComponent.hpp"
 #include "Engine/ECS/Components/Physics/GroundedComponent.hpp"
 #include "Engine/ECS/Components/Render/CameraShakeComponent.hpp"
-#include "Engine/ECS/Components/Gameplay/Combat/HurtBoxComponent.hpp"
+#include "Engine/ECS/Components/Render/ChargeTelegraphComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Render/VignetteComponent.hpp"
 #include "Engine/ECS/Components/Tags/PlayerTag.hpp"
@@ -22,7 +23,6 @@
 #include "Engine/Utils/DetectionRangeUtils.hpp"
 #include "Engine/Utils/Random.hpp"
 #include "Game/Factories/ProjectileFactory.hpp"
-#include "Engine/ECS/Components/Render/ChargeTelegraphComponent.hpp"
 
 #include <algorithm>
 namespace GameEngine::ECS {
@@ -47,33 +47,24 @@ ProjectileInfo getProjectileInfo(const ProjectileComponent *projComp)
 
 } // namespace
 
-glm::vec2 calculateRangedRayStart(Registry &registry, Entity entity, const EntityInfo &enemy, const RangedAttackComponent *ranged,
-                                  const ProjectileComponent *proj, const bool facingLeft)
+glm::vec2 calculateRangedRayStart(Registry &registry, Entity entity, const EntityInfo &enemy,
+                                  const RangedAttackComponent *ranged, const ProjectileComponent *proj,
+                                  const bool facingLeft)
 {
 	glm::vec2 rayStart = enemy.center;
-	if (ranged) {
-		const auto hurtBoxOpt = registry.tryGet<HurtBoxComponent>(entity);
-		SDL_FRect localHurtBox = hurtBoxOpt ? hurtBoxOpt->get().hurtBox : SDL_FRect{0.0f, 0.0f, 0.0f, 0.0f};
 
-		glm::vec2 spawnPos = enemy.position;
-		if (facingLeft) {
-			spawnPos.x += (localHurtBox.x * enemy.scale.x) - ranged->projectileOffset.x;
-		} else {
-			spawnPos.x += ((localHurtBox.x + localHurtBox.w) * enemy.scale.x) + ranged->projectileOffset.x;
-		}
-		spawnPos.y += (localHurtBox.y * enemy.scale.y) + ranged->projectileOffset.y;
+	if (ranged) {
+		float dir = facingLeft ? -1.0f : 1.0f;
 
 		if (proj && !proj->projectileTilesetPath.empty()) {
 			const auto &data = ProjectileFactory::getCachedProjectileData(proj->projectileTilesetPath);
-			spawnPos.x += (data.hitbox.x * data.scale.x) + (data.hitbox.w * data.scale.x * 0.5f);
-			spawnPos.y += (data.hitbox.y * data.scale.y) + (data.hitbox.h * data.scale.y * 0.5f);
+			float internalProjOffset = (data.hitbox.x + (data.hitbox.w * 0.5f)) * data.scale.x;
+			rayStart.x += internalProjOffset * dir;
 		}
 
 		const float minY = enemy.hitBoxRect.y;
 		const float maxY = enemy.hitBoxRect.y + enemy.hitBoxRect.h;
-		spawnPos.y = std::clamp(spawnPos.y, minY, maxY);
-
-		rayStart = spawnPos;
+		rayStart.y = std::clamp(rayStart.y, minY, maxY);
 	}
 
 	return rayStart;
@@ -81,9 +72,9 @@ glm::vec2 calculateRangedRayStart(Registry &registry, Entity entity, const Entit
 
 namespace {
 
-std::optional<glm::vec2> getLosTarget(Registry &registry, Entity entity, const EntityInfo &enemy, const EntityInfo &player,
-                                      const RangedAttackComponent *ranged, const ProjectileComponent *proj,
-                                      const bool facingLeft)
+std::optional<glm::vec2> getLosTarget(Registry &registry, Entity entity, const EntityInfo &enemy,
+                                      const EntityInfo &player, const RangedAttackComponent *ranged,
+                                      const ProjectileComponent *proj, const bool facingLeft)
 {
 	auto [size, offset, tileWidth] = getProjectileInfo(proj);
 
@@ -93,8 +84,8 @@ std::optional<glm::vec2> getLosTarget(Registry &registry, Entity entity, const E
 	                                                            player.scale, size);
 }
 
-bool hasLosToAttacker(Registry &registry, Entity entity, const EntityInfo &enemy, const EntityInfo &player, const RangedAttackComponent *ranged,
-                      const ProjectileComponent *proj)
+bool hasLosToAttacker(Registry &registry, Entity entity, const EntityInfo &enemy, const EntityInfo &player,
+                      const RangedAttackComponent *ranged, const ProjectileComponent *proj)
 {
 	const bool facingLeft = (player.center.x - enemy.position.x) < 0.0f;
 	return getLosTarget(registry, entity, enemy, player, ranged, proj, facingLeft).has_value();
@@ -432,8 +423,6 @@ void StopSpreadTelegraphAction::execute(Registry &registry, Entity entity, float
 	}
 }
 } // namespace Actions
-
-
 
 // Transitions
 

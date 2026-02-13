@@ -50,9 +50,6 @@ void update(Registry &registry, const float deltaTime)
 
 		// Execute onEnter actions if just entered
 		if (sm.justEnteredState) {
-			SDL_Log("[StateMachine] Entity %u entering state '%s', executing %zu onEnter actions",
-			        static_cast<unsigned int>(entity), AI::toString(sm.currentState).data(),
-			        currentState->onEnterActions.size());
 			for (const auto &action : currentState->onEnterActions) {
 				action->execute(registry, entity, deltaTime);
 			}

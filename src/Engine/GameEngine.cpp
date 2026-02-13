@@ -55,6 +55,11 @@ void GameEngine::popState()
 	actionQueue.push_back({PendingAction::Type::Pop});
 }
 
+void GameEngine::resetToState(std::unique_ptr<GameState> state)
+{
+	actionQueue.push_back({PendingAction::Type::Reset, std::move(state)});
+}
+
 void GameEngine::handleEvents()
 {
 	PROFILE_SCOPE("GameEngine::handleEvents");
@@ -124,6 +129,17 @@ void GameEngine::update(const float deltaTime)
 			}
 			if (!states.empty()) {
 				states.back()->resume();
+			}
+			break;
+
+		case PendingAction::Type::Reset:
+			while (!states.empty()) {
+				states.back()->cleanup();
+				states.pop_back();
+			}
+			if (action.state) {
+				states.push_back(std::move(action.state).value());
+				states.back()->init(*this);
 			}
 			break;
 		}

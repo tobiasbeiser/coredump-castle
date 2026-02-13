@@ -191,6 +191,15 @@ void Renderer::renderTextureTiled(SDL_Texture &texture, SDL_FRect &dstRect, cons
 	SDL_RenderTextureTiled(renderer.get(), &texture, nullptr, 1, &dstRect);
 }
 
+void Renderer::renderUI(SDL_Texture &texture, const std::optional<SDL_FRect> &srcRect, const SDL_FRect &dstRect,
+                        const bool flip, const double angle) const
+{
+	const SDL_FRect *srcPtr = srcRect ? &srcRect.value() : nullptr;
+	const SDL_FlipMode flipMode = flip ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
+
+	SDL_RenderTextureRotated(renderer.get(), &texture, srcPtr, &dstRect, angle, nullptr, flipMode);
+}
+
 void Renderer::renderCircularFade(float progress, SDL_FColor color)
 {
 	if (progress <= 0.0f)

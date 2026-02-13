@@ -215,4 +215,19 @@ std::unique_ptr<Widget> createMapScreen(const UIContext &ctx, const float mapSiz
 
 	return root;
 }
+
+std::unique_ptr<Widget> createGameOverScreen(const UIContext &ctx, GameEngine::GameEngine &game)
+{
+	const auto [width, height] = ctx.renderer->getLogicalResolution();
+	auto root = std::make_unique<AnchorLayout>();
+
+	auto title = std::make_unique<Label>("Game Over", ctx.titleFont);
+	root->addChild(std::move(title), {{0.5f, 0.1f}, {0.5f, 0.5f}, {0.0f, 0.0f}});
+
+	std::string hintString = std::format("Press [{}] to reload. Press [{}] to return to the main menu.", game.getInputManager().getHumanReadableKey(Key::Up), game.getInputManager().getHumanReadableKey(Key::Escape));
+	auto hint = std::make_unique<Label>(hintString, ctx.textFont);
+	root->addChild(std::move(hint), {{0.5f, 1.0f}, {0.5f, 1.0f}, {0.0f, -10.0f}});
+
+	return root;
+}
 } // namespace UiViewFactory

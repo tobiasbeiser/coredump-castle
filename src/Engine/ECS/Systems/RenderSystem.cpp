@@ -12,6 +12,7 @@
 #include "Engine/ECS/Components/Render/SpriteComponent.hpp"
 #include "Engine/ECS/Components/Render/VignetteComponent.hpp"
 #include "Engine/ECS/Components/Tags/InactiveTag.hpp"
+#include "Engine/ECS/Components/Tags/UiElementTag.hpp"
 #include "Engine/ECS/View.hpp"
 #include "Engine/Utils/RenderUtils.hpp"
 
@@ -35,9 +36,14 @@ void RenderSystem::update(Registry &registry)
 		centerCamera(registry);
 
 		auto bgView = registry.view<BackgroundComponent, RenderComponent, PositionComponent>().exclude<InactiveTag>();
-		auto view = registry.view<RenderComponent, PositionComponent, SpriteComponent>().exclude<InactiveTag>();
+		auto worldView = registry.view<RenderComponent, PositionComponent, SpriteComponent>()
+		                     .exclude<InactiveTag>()
+		                     .exclude<UiElementTag>();
+		auto uiView =
+		    registry.view<UiElementTag, RenderComponent, PositionComponent, SpriteComponent>().exclude<InactiveTag>();
 
-		if (const int requiredCapacity = bgView.size() + view.size(); requiredCapacity > renderItemsCapacity) {
+		if (const int requiredCapacity = bgView.size() + worldView.size() + uiView.size();
+		    requiredCapacity > renderItemsCapacity) {
 			renderItemsCapacity = static_cast<int>(requiredCapacity * 1.5f);
 			renderItems.reserve(renderItemsCapacity);
 		}
@@ -54,10 +60,10 @@ void RenderSystem::update(Registry &registry)
 
 		const SDL_FRect &viewport = renderer.getViewport();
 		// Tiles, Player
-		for (const auto entity : view) {
-			const auto &pos = view.get<PositionComponent>(entity);
-			const auto &sprite = view.get<SpriteComponent>(entity);
-			const auto &render = view.get<RenderComponent>(entity);
+		for (const auto entity : worldView) {
+			const auto &pos = worldView.get<PositionComponent>(entity);
+			const auto &sprite = worldView.get<SpriteComponent>(entity);
+			const auto &render = worldView.get<RenderComponent>(entity);
 			const auto &transform = registry.tryGet<TransformComponent>(entity);
 
 			if (auto item = RenderUtils::createSpriteItem({pos, sprite, render, transform}, viewport)) {
@@ -70,6 +76,19 @@ void RenderSystem::update(Registry &registry)
 						item->outlineIntensity = outlineGlow.intensity;
 					}
 				}
+				renderItems.push_back(item.value());
+			}
+		}
+
+		// HUD, UiOverlay
+		for (const auto entity : uiView) {
+			const auto &pos = uiView.get<PositionComponent>(entity);
+			const auto &sprite = uiView.get<SpriteComponent>(entity);
+			const auto &render = uiView.get<RenderComponent>(entity);
+			const auto &transform = registry.tryGet<TransformComponent>(entity);
+
+			if (const auto item =
+			        RenderUtils::createUiItem({pos, sprite, render, transform}, 1.0f)) { // 1.0f global scaling
 				renderItems.push_back(item.value());
 			}
 		}

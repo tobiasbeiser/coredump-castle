@@ -33,13 +33,14 @@ class Registry {
 		return *static_cast<ComponentStorage<T> *>(storagePools[id].get());
 	}
 
-	void deleteEntity(const Entity entity) const
+	void deleteEntity(const Entity entity)
 	{
 		for (const auto &storagePool : storagePools) {
 			if (storagePool) {
 				storagePool->remove(entity);
 			}
 		}
+		deletedEntities.emplace(entity);
 	}
 
 	void clearAll() { storagePools.clear(); }

@@ -19,7 +19,6 @@
 #include "Engine/ECS/Components/Gameplay/Enemy/PatrolComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/Enemy/VisionComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/InputComponent.hpp"
-#include "Engine/ECS/Components/Gameplay/JumpComponent.hpp"
 #include "Engine/ECS/Components/Gameplay/MovementComponent.hpp"
 #include "Engine/ECS/Components/Physics/AccelerationComponent.hpp"
 #include "Engine/ECS/Components/Physics/CollisionComponent.hpp"
@@ -28,8 +27,6 @@
 #include "Engine/ECS/Components/Render/BlinkComponent.hpp"
 #include "Engine/ECS/Components/Render/RenderComponent.hpp"
 #include "Engine/ECS/Components/Tags/EnemyTag.hpp"
-#include "Engine/ECS/Components/Tags/PlayerTag.hpp"
-#include "Engine/ECS/View.hpp"
 #include "Game/AI/StateMachine/EnemyStateMachineFactory.hpp"
 #include "Game/Spawners/EnemySpawner.hpp"
 
@@ -209,7 +206,13 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 	}
 
 	const tson::Vector2 pos = enemyObj.getPosition();
-	const glm::vec2 spawn = glm::vec2(pos.x, pos.y) + levelPos;
+	glm::vec2 spawn = glm::vec2(pos.x, pos.y) + levelPos;
+
+	if (collisionStr) {
+		auto collisionBox = parseCollisionBox(collisionStr.value());
+		spawn.x -= collisionBox.w / 2;
+		spawn.y -= collisionBox.h;
+	}
 
 	spawner.addBlueprint(PositionComponent{.position = spawn});
 	spawner.addBlueprint(VelocityComponent{.velocity = {0.0f, 0.0f}});
@@ -227,6 +230,7 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 
 	if (isBoss) {
 		const int bossId = bossIdProp == -1 ? enemyObj.getId() : bossIdProp;
+		spawner.setBossId(bossId);
 		spawner.addBlueprint(BossComponent{.bossId = bossId, .unlockAbility = unlockAbility});
 		spawner.addBlueprint(ChargeComponent{
 		    .chargeCooldown = Timer{std::chrono::duration<float>(chargeCooldown), true},
@@ -380,69 +384,8 @@ EnemySpawner GameEngine::ECS::EnemyFactory::createEnemy(tson::Object &enemyObj, 
 	}
 
 	auto reg = registry;
-	spawner.addSetupStep([reg](const Entity entity) { ensureSafeSpawn(reg, entity); });
 	if (isBoss && !isRangedEnemy) {
 		spawner.addSetupStep([reg](const Entity entity) { EnemyStateMachineFactory::createBossEnemy(reg, entity); });
 	}
 	return spawner;
-}
-
-void GameEngine::ECS::EnemyFactory::ensureSafeSpawn(Registry &registry, const Entity entity)
-{
-	auto position = registry.tryGet<PositionComponent>(entity);
-	auto collision = registry.tryGet<CollisionComponent>(entity);
-
-	if (!position || !collision) {
-		return;
-	}
-
-	const auto transform = registry.tryGet<TransformComponent>(entity);
-	const auto scale = transform ? transform->get().scale : glm::vec2{1.0f, 1.0f};
-
-	position->get().position.x -=
-	    (collision->get().collisionBox.x + (collision->get().collisionBox.w / 2.0f)) * scale.x;
-	position->get().position.y -=
-	    (collision->get().collisionBox.y + (collision->get().collisionBox.h / 2.0f)) * scale.y;
-
-	int maxAttempts = 100;
-	bool hasCollision = true;
-
-	while (hasCollision && maxAttempts > 0) {
-		hasCollision = false;
-		SDL_FRect enemyRect = {position->get().position.x + collision->get().collisionBox.x * scale.x,
-		                       position->get().position.y + collision->get().collisionBox.y * scale.y,
-		                       collision->get().collisionBox.w * scale.x, collision->get().collisionBox.h * scale.y};
-
-		for (auto staticColliders = registry.view<PositionComponent, CollisionComponent>()
-		                                .exclude<EnemyTag>()
-		                                .exclude<PlayerTag>()
-		                                .exclude<ProjectileComponent>();
-		     const auto staticCollider : staticColliders) {
-
-			const auto &staticColliderPos = staticColliders.get<PositionComponent>(staticCollider);
-			const auto &staticColliderCollisionBox =
-			    staticColliders.get<CollisionComponent>(staticCollider).collisionBox;
-			glm::vec2 staticColliderScale = {1.0f, 1.0f};
-			if (const auto staticTransform = registry.tryGet<TransformComponent>(staticCollider)) {
-				staticColliderScale = staticTransform->get().scale;
-			}
-
-			SDL_FRect staticColliderRect = {
-			    staticColliderPos.position.x + staticColliderCollisionBox.x * staticColliderScale.x,
-			    staticColliderPos.position.y + staticColliderCollisionBox.y * staticColliderScale.y,
-			    staticColliderCollisionBox.w * staticColliderScale.x,
-			    staticColliderCollisionBox.h * staticColliderScale.y};
-
-			if (SDL_HasRectIntersectionFloat(&enemyRect, &staticColliderRect)) {
-				hasCollision = true;
-				position->get().position.y -= 2.0f;
-				break;
-			}
-		}
-		maxAttempts--;
-	}
-
-	if (maxAttempts == 0) {
-		SDL_Log("Warning: Could not safe-spawn enemy entity %u", static_cast<unsigned int>(entity));
-	}
 }

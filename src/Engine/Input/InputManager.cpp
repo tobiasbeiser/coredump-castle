@@ -7,7 +7,7 @@ InputManager::InputManager()
 {
 	scancodeMapping = {{SDL_SCANCODE_A, Key::Left},     {SDL_SCANCODE_D, Key::Right},    {SDL_SCANCODE_SPACE, Key::Up},
 	                   {SDL_SCANCODE_S, Key::Down},     {SDL_SCANCODE_E, Key::Interact}, {SDL_SCANCODE_K, Key::Attack},
-	                   {SDL_SCANCODE_M, Key::ToggleMap}};
+	                   {SDL_SCANCODE_M, Key::ToggleMap}, {SDL_SCANCODE_ESCAPE, Key::Escape}};
 
 	for (auto &key : scancodeMapping | std::views::values) {
 		previousKeyStates[key] = false;

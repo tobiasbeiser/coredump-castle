@@ -57,6 +57,8 @@ void updateDamageState(Registry &registry, Entity entity, AttackComponent &attac
 		if (anim->get().usesDamageFrames(currentAnim)) {
 			attack.isDamageActive = anim->get().isDamageActive(currentAnim);
 			usingFrameData = true;
+		} else if (anim->get().getAnimation() != AnimationType::Attacking) {
+			return;
 		}
 	}
 

@@ -25,6 +25,11 @@ class SaveSystem {
   public:
 	explicit SaveSystem(std::unique_ptr<ISaveStorage> storage) : saveStorage{std::move(storage)} {}
 
+	bool isSaveNameSet() const
+	{
+		return !saveStorage->getSaveName().empty();
+	}
+
 	void saveGame(Registry &registry) const
 	{
 		const json saveData = buildSaveData(registry);
@@ -42,6 +47,11 @@ class SaveSystem {
 			return;
 		}
 		reinitializePlayerGameData(registry, savedGameData);
+	}
+
+	void clearCurrentSaveName() const
+	{
+		saveStorage->clearSaveName();
 	}
 
 	void setCurrentSaveName(const std::string_view saveName, const bool overwrite = false) const
@@ -132,7 +142,7 @@ class SaveSystem {
 			const auto &[tilePos, _] = view.get<PositionComponent>(entity);
 			visitedPositions.emplace(tilePos.x, tilePos.y);
 		}
-		saveData["seenPositions"] = visitedPositions;
+		saveData[seenPositionsLabel] = visitedPositions;
 
 		return saveData;
 	}
@@ -198,6 +208,10 @@ class SaveSystem {
 		}
 
 		if (gameData.contains(seenPositionsLabel)) {
+			for (auto view = registry.view<AlreadySeenTag>(); auto entity : view) {
+				registry.remove<AlreadySeenTag>(entity);
+			}
+
 			const std::set<std::pair<int, int>> tilesSeen = gameData.at(seenPositionsLabel);
 			for (auto view = registry.view<RenderComponent, PositionComponent, SpriteComponent>(); auto entity : view) {
 				if (const auto [spritePos, prevPos] = view.get<PositionComponent>(entity);

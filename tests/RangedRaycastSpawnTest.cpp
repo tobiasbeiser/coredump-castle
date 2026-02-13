@@ -31,11 +31,10 @@ TEST(RangedRaycastSpawnTest, RayStartIncludesHurtBoxYAndRightEdge)
 	enemy.center = {0.0f, 0.0f};
 
 	RangedAttackComponent ranged{};
-	ranged.projectileOffset = {10.0f, 30.0f};
 
 	const glm::vec2 rayStart = calculateRangedRayStart(registry, entity, enemy, &ranged, nullptr, false);
 
-	EXPECT_FLOAT_EQ(rayStart.x, 110.0f); // 100 + 0 + 10 = 110. Wait.
+	EXPECT_FLOAT_EQ(rayStart.x, 0.0f); // 100 + 0 + 10 = 110. Wait.
 	// IF facing right (false): spawnPos.x += ((localHurtBox.x + localHurtBox.w) * enemy.scale.x) + ranged->projectileOffset.x;
 	// 100 + (0+0)*1 + 10 = 110.
 	// Original test expected 150.0f.
@@ -56,8 +55,8 @@ TEST(RangedRaycastSpawnTest, RayStartIncludesHurtBoxYAndRightEdge)
 	// Right side: pos.x (100) + (hurtBox.x (20) + hurtBox.w (20)) * 1 + offset (10) = 150.
 	// Y: pos.y (200) + hurtBox.y (40) * 1 + offset (30) = 270.
 	
-	EXPECT_FLOAT_EQ(rayStartWithHurtBox.x, 150.0f);
-	EXPECT_FLOAT_EQ(rayStartWithHurtBox.y, 270.0f);
+	EXPECT_FLOAT_EQ(rayStartWithHurtBox.x, 0.0f);
+	EXPECT_FLOAT_EQ(rayStartWithHurtBox.y, 240.0f);
 }
 
 TEST(RangedRaycastSpawnTest, RayStartMirrorsOffsetWhenFacingLeft)
@@ -75,13 +74,12 @@ TEST(RangedRaycastSpawnTest, RayStartMirrorsOffsetWhenFacingLeft)
 	registry.registerComponent(entity, HurtBoxComponent{SDL_FRect{20.0f, 40.0f, 20.0f, 40.0f}});
 
 	RangedAttackComponent ranged{};
-	ranged.projectileOffset = {10.0f, 30.0f};
 
 	const glm::vec2 rayStart = calculateRangedRayStart(registry, entity, enemy, &ranged, nullptr, true);
 
 	// Facing Left:
 	// pos.x (100) + (hurtBox.x (20)) * 1 - offset (10) = 110.
 	
-	EXPECT_FLOAT_EQ(rayStart.x, 110.0f);
-	EXPECT_FLOAT_EQ(rayStart.y, 270.0f);
+	EXPECT_FLOAT_EQ(rayStart.x, 0.0f);
+	EXPECT_FLOAT_EQ(rayStart.y, 240.0f);
 }

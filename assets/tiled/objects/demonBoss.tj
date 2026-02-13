@@ -83,7 +83,7 @@
             {
              "name":"maxHealth",
              "type":"int",
-             "value":100
+             "value":150
             }, 
             {
              "name":"maxSpeedX",
@@ -93,7 +93,7 @@
             {
              "name":"poise",
              "type":"float",
-             "value":30
+             "value":45
             }, 
             {
              "name":"reactionDelay",
