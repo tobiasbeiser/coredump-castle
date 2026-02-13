@@ -57,6 +57,15 @@ void PauseMenuState::setupUI(GameEngine &game)
 {
 	PauseMenuActions actions;
 
+	actions.onResume = [&game]() {
+		if (auto playerView = game.getRegistry().view<PlayerTag, PauseMenuToggleComponent>(); playerView.size() == 1) {
+			const auto playerEntity = playerView.at(0U);
+			auto &[pauseMenuToggled, pauseMenuShowing] = playerView.get<PauseMenuToggleComponent>(playerEntity);
+			pauseMenuShowing = false;
+			pauseMenuToggled = false;
+			game.popState();
+		}
+	};
 	actions.onShowSettings = [this, &game]() { showSettingsMenu(game); };
 	actions.onShowInventory = [this, &game]() { showInventory(game); };
 

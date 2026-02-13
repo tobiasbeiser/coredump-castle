@@ -18,10 +18,6 @@ void Label::draw(const UIContext &ctx, const glm::vec2 parentOffset) const
 		colorDirty = false;
 	}
 
-	auto rect = getScreenRect(parentOffset);
-	SDL_SetRenderDrawColor(ctx.renderer->getNativeRenderer(), 255, 0, 0, 0);
-	SDL_RenderRect(ctx.renderer->getNativeRenderer(), &rect);
-
 	const auto absolutePosition = parentOffset + getRelativePosition();
 	ctx.renderer->drawText(textObject.get(), absolutePosition.x, absolutePosition.y);
 }

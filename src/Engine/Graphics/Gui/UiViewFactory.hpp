@@ -22,6 +22,7 @@ struct PauseMenuActions {
 	std::function<void()> onShowInventory;
 	std::function<void()> onShowSettings;
 	std::function<void()> onBackToMainMenu;
+	std::function<void()> onResume;
 };
 
 struct ContinueMenuActions {
