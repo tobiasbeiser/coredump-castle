@@ -31,6 +31,7 @@ class ComponentStorage final : public IStorage {
 
 	void insert(const Entity entity, T component)
 	{
+
 		if (contains(entity)) {
 			denseComponents[sparse[entity]] = std::move(component);
 			return;

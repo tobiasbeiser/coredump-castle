@@ -116,7 +116,7 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 	ECS::Systems::DeathSystem::update(game.getRegistry(), game, deltaTime, spawners);
 
 	ECS::Systems::InteractionSystem::update(game, game.getRegistry(), spawners);
-	ECS::Systems::TooltipSystem::update(game.getRegistry());
+	ECS::Systems::TooltipSystem::update(game.getRegistry(), deltaTime);
 	ECS::Systems::RespawnSystem::update(game.getRegistry(), game, deltaTime);
 	ECS::Systems::MenuStateToggleSystem::update(game.getRegistry(), game);
 	ECS::Systems::HudSystem::update(game.getRegistry());
@@ -125,6 +125,7 @@ void PlayState::update(GameEngine &game, const float deltaTime)
 void PlayState::render(GameEngine &game, const float alpha)
 {
 	renderSystem.update(game.getRegistry());
+	uiRenderSystem.update(game.getRegistry(), game);
 	ECS::Systems::MapTrackingSystem::update(game.getRegistry(), renderer.getViewport());
 }
 } // namespace GameEngine

@@ -74,7 +74,8 @@ SDL_FRect positionAnchored(const glm::vec2 allocatedSize, const glm::vec2 ownSiz
 	const glm::vec2 anchorPos = allocatedSize * anchor;
 	const glm::vec2 pivotPos = ownSize * pivot;
 	const glm::vec2 finalPos = anchorPos - pivotPos + offset;
-	return {finalPos.x, finalPos.y, ownSize.x, ownSize.y};
+	return {std::clamp(finalPos.x, 0.f, allocatedSize.x), std::clamp(finalPos.y, 0.f, allocatedSize.y), ownSize.x,
+	        ownSize.y};
 }
 
 SDL_FRect positionCentered(const glm::vec2 allocatedSize, const glm::vec2 ownSize)
@@ -86,6 +87,12 @@ SDL_FRect positionFrameChild(const glm::vec2 frameSize, const int outlineOffset)
 {
 	const glm::vec2 childSize = {frameSize.x - outlineOffset, frameSize.y - outlineOffset};
 	return positionAnchored(frameSize, childSize, AnchorParams::center);
+}
+
+SDL_FRect positionFrame(const SDL_FRect contentBounds, const int outlineOffset)
+{
+	const glm::vec2 frameSize = {contentBounds.x - outlineOffset, contentBounds.y - outlineOffset};
+	return {frameSize.x, frameSize.y, contentBounds.w + 2 * outlineOffset, contentBounds.h + 2 * outlineOffset};
 }
 
 void solveLinear(std::span<LayoutItem> items, const SDL_FRect &parentRect, const LinearConfig &config)

@@ -103,6 +103,22 @@ std::unique_ptr<TTF_Text, TTFTextDestroyer> Renderer::createText(TTF_Font *font,
 	return std::unique_ptr<TTF_Text, TTFTextDestroyer>(ttfText);
 }
 
+glm::vec2 Renderer::getStringSizeWrapped(TTF_Font *font, const std::string &text, const int wrapWidth)
+{
+	int w = 0;
+	int h = 0;
+	TTF_GetStringSizeWrapped(font, text.c_str(), text.size(), wrapWidth, &w, &h);
+	return {w, h};
+}
+
+glm::vec2 Renderer::measureText(TTF_Text *text)
+{
+	int w = 0;
+	int h = 0;
+	TTF_GetTextSize(text, &w, &h);
+	return {w, h};
+}
+
 void Renderer::startFrame(const int red, const int green, const int blue, const int alpha) const
 {
 	SDL_SetRenderLogicalPresentation(renderer.get(), 0, 0, SDL_LOGICAL_PRESENTATION_DISABLED);
@@ -353,7 +369,12 @@ void Renderer::drawRectShape(const SDL_FRect rect, const SDL_Color fillColor, co
 	SDL_RenderRect(renderer.get(), &rect);
 }
 
-void Renderer::drawText(TTF_Text *textObject, const float x, const float y) const
+void Renderer::drawText(TTF_Text *textObject, const float x, const float y)
 {
 	TTF_DrawRendererText(textObject, x, y);
+}
+
+void Renderer::setSourceText(TTF_Text *textObject, const std::string &sourceText, const int textLength)
+{
+	TTF_SetTextString(textObject, sourceText.c_str(), textLength);
 }

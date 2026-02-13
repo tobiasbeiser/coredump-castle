@@ -3,6 +3,7 @@
 #include "Engine/ECS/Systems/InputSystem.hpp"
 #include "Engine/ECS/Systems/MapActivationSystem.hpp"
 #include "Engine/ECS/Systems/RenderSystem.hpp"
+#include "Engine/ECS/Systems/Ui/UiRenderSystem.hpp"
 #include "Engine/GameState.hpp"
 #include "Engine/Graphics/Gui/Base/Widget.hpp"
 #include "Game/Factories/EffectFactory.hpp"
@@ -32,6 +33,7 @@ class PlayState final : public GameState {
 	TextureManager &textureManager;
 	Renderer &renderer;
 	ECS::Systems::RenderSystem renderSystem{renderer};
+	ECS::Systems::UiRenderSystem uiRenderSystem{renderer};
 	ECS::Systems::InputSystem inputSystem{inputManager};
 	ECS::Systems::MapActivationSystem mapActivationSystem{};
 	ECS::Systems::ProjectileSystem projectileSystem;
