@@ -5,7 +5,7 @@
 #include "Engine/ECS/Systems/RenderSystem.hpp"
 #include "Engine/GameState.hpp"
 #include "Engine/ECS/Systems/MapRenderSystem.hpp"
-#include "Engine/Graphics/Gui/GuiManager.hpp"
+#include "Engine/Graphics/Gui/Base/Widget.hpp"
 #include "Engine/Graphics/TextureManager.hpp"
 #include "Game/Spawners/EnemySpawner.hpp"
 
@@ -14,8 +14,8 @@ namespace GameEngine {
 class GameOverState final : public GameState {
 	// Inherited via GameState
 public:
-	GameOverState(InputManager &input, TextureManager &textureManager, Ui::GuiManager &guiManager, Renderer &renderer, std::vector<EnemySpawner> &spawners)
-		: inputManager(input), textureManager(textureManager), guiManager(guiManager), renderer(renderer), spawners(spawners)
+	GameOverState(InputManager &input, TextureManager &textureManager, Renderer &renderer, std::vector<EnemySpawner> &spawners)
+		: inputManager(input), textureManager(textureManager), renderer(renderer), spawners(spawners)
 	{
 	}
 	void init(GameEngine &game) override;
@@ -29,7 +29,6 @@ public:
 private:
 	InputManager &inputManager;
 	TextureManager &textureManager;
-	Ui::GuiManager &guiManager;
 	Renderer &renderer;
 	ECS::Systems::InputSystem inputSystem{inputManager};
 	std::vector<EnemySpawner> &spawners;

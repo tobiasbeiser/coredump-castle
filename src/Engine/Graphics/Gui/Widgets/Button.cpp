@@ -1,10 +1,11 @@
 
 #include "Button.hpp"
 
+#include "Engine/Graphics/Gui/LayoutEngine.hpp"
 #include "Label.hpp"
 
 namespace Ui {
-static const Paint &resolvePaint(const WidgetState state, const ButtonStyle &style)
+static constexpr Paint resolvePaint(const WidgetState state, const ButtonStyle &style)
 {
 	switch (state) {
 	case WidgetState::Hovered:
@@ -22,43 +23,9 @@ static const Paint &resolvePaint(const WidgetState state, const ButtonStyle &sty
 Button::Button(std::string_view label, TTF_Font *font, const std::function<void()> &onClick)
     : content(std::make_unique<Label>(label, font)), callback(onClick)
 {
-	setSizeMode(SizeMode::WrapContent, SizeMode::WrapContent);
-}
-
-glm::vec2 Button::performMeasure(const UIContext &ctx, const BoxConstraints constraints) const
-{
-	const float xPad = ctx.theme.button.widthPadding * 2.0f;
-	const float yPad = ctx.theme.button.heightPadding * 2.0f;
-
-	BoxConstraints childConstraints = constraints;
-	childConstraints.maxWidth = std::max(0.0f, constraints.maxWidth - xPad);
-	childConstraints.maxHeight = std::max(0.0f, constraints.maxHeight - yPad);
-	childConstraints.minWidth = std::min(0.0f, constraints.minWidth - xPad);
-	childConstraints.minHeight = std::min(0.0f, constraints.minHeight - yPad);
-
-	const glm::vec2 contentSize = content->measure(ctx, childConstraints);
-	return {contentSize.x + xPad, contentSize.y + yPad};
-}
-
-void Button::layout(const UIContext &ctx, SDL_FRect allocatedRect)
-{
-	Widget::layout(ctx, allocatedRect);
-
-	const auto constraints = BoxConstraints::loose({allocatedRect.w, allocatedRect.h});
-	const glm::vec2 contentSize = content->measure(ctx, constraints);
-
-	float offsetX = 0.0f;
-	float offsetY = 0.0f;
-
-	offsetX = getWidthMode() == SizeMode::WrapContent ? ctx.theme.button.widthPadding
-	                                                  : (allocatedRect.w - contentSize.x) / 2.0f;
-
-	offsetY = getHeightMode() == SizeMode::WrapContent ? ctx.theme.button.heightPadding
-	                                                   : (allocatedRect.h - contentSize.y) / 2.0f;
-
-	const SDL_FRect contentRect = {offsetX, offsetY, contentSize.x, contentSize.y};
-
-	content->layout(ctx, contentRect);
+	if (!callback) {
+		isDisabled = true;
+	}
 }
 
 bool Button::handleEvent(const glm::vec2 localMousePos, const SDL_Event &event)
@@ -105,9 +72,30 @@ void Button::draw(const UIContext &ctx, const glm::vec2 parentOffset) const
 	ctx.renderer->drawRectShape(rect, fillCol, outlineCol);
 
 	if (content) {
-		content->setColor(textCol);
+		if (const glm::vec2 size = content->getSize(); size == glm::vec2{0, 0}) {
+			LayoutEngine::LayoutItem textItem;
+			textItem.idealSize = content->getIdealContentSize(ctx);
+			textItem.hAlign = LayoutEngine::Alignment::Center;
+			textItem.vAlign = LayoutEngine::Alignment::Center;
+
+			const SDL_FRect localSlot = {0.0f, 0.0f, rect.w, rect.h};
+
+			std::array solveItems = {textItem};
+			LayoutEngine::solveStack(solveItems, localSlot);
+
+			content->setBounds(solveItems[0].calculatedBounds);
+		}
 		content->draw(ctx, {rect.x, rect.y});
 	}
+}
+
+glm::vec2 Button::getIdealContentSize(const UIContext &ctx) const
+{
+	const float xPad = ctx.theme.button.widthPadding * 2.0f;
+	const float yPad = ctx.theme.button.heightPadding * 2.0f;
+
+	const glm::vec2 contentSize = content->getIdealContentSize(ctx);
+	return {contentSize.x + xPad, contentSize.y + yPad};
 }
 
 } // namespace Ui

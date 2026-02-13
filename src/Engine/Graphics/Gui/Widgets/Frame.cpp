@@ -1,14 +1,13 @@
 
 #include "Frame.hpp"
 
+#include "Engine/Graphics/Gui/LayoutEngine.hpp"
 #include "Engine/Utils/RenderUtils.hpp"
 
 namespace Ui {
+static constexpr float backgroundOffset = 4;
 
-void Frame::layout(const UIContext &ctx, SDL_FRect allocatedRect)
-{
-	Widget::layout(ctx, allocatedRect);
-}
+Frame::Frame(SDL_Texture *backgroundTex) : backgroundTex(backgroundTex) {}
 
 bool Frame::handleEvent(const glm::vec2 localMousePos, const SDL_Event &event)
 {
@@ -25,9 +24,15 @@ void Frame::draw(const UIContext &ctx, const glm::vec2 parentOffset) const
 	drawBackground(ctx, {rect.x, rect.y});
 }
 
-glm::vec2 Frame::performMeasure(const UIContext &ctx, BoxConstraints constraints) const
+void Frame::drawBackground(const UIContext &ctx, const glm::vec2 parentOffset) const
 {
-	return {constraints.maxWidth, constraints.maxHeight};
+	if (backgroundTex) {
+		const auto size = getSize();
+		auto sizedRect = LayoutEngine::positionCentered(size, size - backgroundOffset);
+		sizedRect.x += parentOffset.x;
+		sizedRect.y += parentOffset.y;
+		ctx.renderer->renderAbsolutePositionTexture(*backgroundTex, std::nullopt, sizedRect, false, 0);
+	}
 }
 
 } // namespace Ui

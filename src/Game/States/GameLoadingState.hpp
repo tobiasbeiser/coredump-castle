@@ -4,15 +4,16 @@
 
 #include "Engine/GameState.hpp"
 
+namespace Ui {
+class Widget;
+}
+
 namespace GameEngine {
 class GameLoadingState : public GameState {
   public:
 	using StateFactory = std::function<std::unique_ptr<GameState>()>;
 
-	GameLoadingState(StateFactory factory, Ui::GuiManager &guiManager)
-	    : nextStateFactory(std::move(factory)), guiManager(guiManager)
-	{
-	}
+	explicit GameLoadingState(StateFactory factory);
 
 	void init(GameEngine &game) override;
 
@@ -29,7 +30,6 @@ class GameLoadingState : public GameState {
 
   private:
 	StateFactory nextStateFactory;
-	Ui::GuiManager &guiManager;
 	std::unique_ptr<Ui::Widget> rootWidget{};
 	bool hasRenderedOnce = false;
 };

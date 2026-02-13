@@ -3,7 +3,7 @@
 #include "Engine/ECS/Systems/RenderSystem.hpp"
 #include "Engine/GameState.hpp"
 #include "Engine/ECS/Systems/MapRenderSystem.hpp"
-#include "Engine/Graphics/Gui/GuiManager.hpp"
+#include "Engine/Graphics/Gui/Base/Widget.hpp"
 #include "Engine/Graphics/TextureManager.hpp"
 
 namespace GameEngine {
@@ -11,8 +11,8 @@ namespace GameEngine {
 class MapMenuState final : public GameState {
 	// Inherited via GameState
   public:
-	MapMenuState(InputManager &input, TextureManager &textureManager, Ui::GuiManager &guiManager, Renderer &renderer)
-	    : inputManager(input), textureManager(textureManager), guiManager(guiManager), renderer(renderer)
+	MapMenuState(InputManager &input, TextureManager &textureManager, Renderer &renderer)
+	    : inputManager(input), textureManager(textureManager), renderer(renderer)
 	{
 	}
 	void init(GameEngine &game) override;
@@ -26,7 +26,6 @@ class MapMenuState final : public GameState {
   private:
 	InputManager &inputManager;
 	TextureManager &textureManager;
-	Ui::GuiManager &guiManager;
 	Renderer &renderer;
 	static constexpr float initialScalingFactor = 0.30;
 	ECS::Systems::MapRenderSystem mapRenderSystem{renderer, initialScalingFactor};

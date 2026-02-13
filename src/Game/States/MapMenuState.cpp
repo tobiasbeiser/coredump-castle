@@ -1,20 +1,19 @@
 
 #include "MapMenuState.hpp"
 
+#include "Engine/ECS/Systems/AnimationSystem.hpp"
 #include "Engine/ECS/Systems/MenuStateToggleSystem.hpp"
 #include "Engine/GameEngine.hpp"
 #include "Engine/Graphics/Gui/UiViewFactory.hpp"
 #include "Engine/Graphics/Gui/Utils.hpp"
 #include "PlayState.hpp"
-#include "Engine/ECS/Systems/AnimationSystem.hpp"
 
 namespace GameEngine {
 
 void MapMenuState::init(GameEngine &game)
 {
 	mapRenderSystem.initFocusPoint(game.getRegistry());
-	rootWidget = UiViewFactory::createMapScreen(guiManager.getContext(), mapRenderSystem.getMapSizeFactor());
-	guiManager.updateLayout(rootWidget.get());
+	rootWidget = UiViewFactory::createMapScreen(game.getUiContext(), mapRenderSystem.getMapSizeFactor());
 }
 
 void MapMenuState::cleanup() {}
@@ -45,7 +44,7 @@ void MapMenuState::update(GameEngine &game, const float deltaTime)
 
 void MapMenuState::render(GameEngine &game, const float alpha)
 {
-	rootWidget->draw(guiManager.getContext(), {0, 0});
+	rootWidget->draw(game.getUiContext(), {0, 0});
 	mapRenderSystem.update(game.getRegistry(), game);
 }
 

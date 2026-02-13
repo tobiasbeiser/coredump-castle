@@ -1,141 +1,169 @@
 #pragma once
-#include <vector>
-#include <memory>
-#include <concepts>
 #include "Base/Widget.hpp"
-#include "Layouts/Container.hpp"
 #include "LayoutEngine.hpp"
+#include <concepts>
+#include <memory>
+#include <vector>
 
 namespace Ui {
 
-// Configuration for a specific child in the layout
-struct ChildLayoutConfig {
-    // For Grid
-    int row = 0;
-    int col = 0;
-    int spanX = 1;
-    int spanY = 1;
-    
-    // For Linear/Stack
-    float weight = 0.0f; 
+template <typename T>
+concept IsWidget = std::derived_from<T, Widget>;
 
-    // Alignment
-    LayoutEngine::Alignment hAlign = LayoutEngine::Alignment::Center;
-    LayoutEngine::Alignment vAlign = LayoutEngine::Alignment::Center;
-};
-
-// Builder
-template <typename RootType = Container>
+template <IsWidget RootType>
 class UiBuilder {
-public:
-    enum class LayoutMode { Linear, Stack, Grid };
+  public:
+	enum class LayoutMode { Linear, Stack, Grid };
 
-    static UiBuilder<RootType> create(LayoutMode mode = LayoutMode::Linear) {
-        UiBuilder<RootType> b;
-        b.mode = mode;
-        return b;
-    }
+	static UiBuilder create(LayoutMode mode = LayoutMode::Linear)
+	{
+		UiBuilder builder;
+		builder.mode = mode;
+		return builder;
+	}
 
-    // --- Configuration ---
-    
-    // Grid Config
-    UiBuilder& withGrid(int rows, int cols, float gap = 0.0f) {
-        mode = LayoutMode::Grid;
-        gridCfg.rows = rows;
-        gridCfg.columns = cols;
-        gridCfg.gap = gap;
-        return *this;
-    }
+	UiBuilder &withGrid(std::vector<LayoutEngine::Track> cols, std::vector<LayoutEngine::Track> rows, float gap = 0.0f)
+	{
+		mode = LayoutMode::Grid;
+		gridCfg.colDefs = std::move(cols);
+		gridCfg.rowDefs = std::move(rows);
+		gridCfg.gap = gap;
+		return *this;
+	}
 
-    // Stack Config (just mode)
-    UiBuilder& withStack() {
-        mode = LayoutMode::Stack;
-        return *this;
-    }
+	UiBuilder &withStack()
+	{
+		mode = LayoutMode::Stack;
+		return *this;
+	}
 
-    // Linear Config
-    UiBuilder& withLinear(LayoutEngine::Orientation orient, float spacing = 0.0f) {
-        mode = LayoutMode::Linear;
-        linearCfg.orientation = orient;
-        linearCfg.spacing = spacing;
-        return *this;
-    }
+	UiBuilder &withLinear(const LayoutEngine::Orientation orientation, const float spacing = 0.0f)
+	{
+		linearCfg.orientation = orientation;
+		linearCfg.spacing = spacing;
+		return *this;
+	}
 
-    // --- Adding Children ---
+	template <IsWidget T>
+	UiBuilder &add(T &&widget, LayoutEngine::LayoutProps props = {})
+	{
+		std::unique_ptr<Widget> ptr = std::make_unique<T>(std::forward<T>(widget));
+		children.push_back({std::make_unique<WidgetNode>(std::move(ptr)), props});
+		return *this;
+	}
 
-    // 1. Add direct Widget
-    template <typename T>
-    UiBuilder& add(T&& widget, ChildLayoutConfig cfg = {}) {
-        auto ptr = std::make_unique<T>(std::move(widget));
-        children.push_back({std::move(ptr), cfg});
-        return *this;
-    }
+	UiBuilder &add(std::unique_ptr<Widget> widget, LayoutEngine::LayoutProps props = {})
+	{
+		if (widget)
+			children.push_back({std::make_unique<WidgetNode>(std::move(widget)), props});
+		return *this;
+	}
 
-    // 2. Add Nested Builder (Recursion!)
-    // This builds the sub-tree using a temporary rect (0,0), 
-    // but the parent LayoutEngine will overwrite the bounds later.
-    template <typename T>
-    UiBuilder& add(UiBuilder<T>&& subBuilder, ChildLayoutConfig cfg = {}) {
-        // We temporarily build it with size 0. 
-        // The parent solve() will set the correct bounds later.
-        std::unique_ptr<Widget> subTree = subBuilder.build(nullptr, {0,0,0,0});
-        children.push_back({std::move(subTree), cfg});
-        return *this;
-    }
+	template <typename T>
+	UiBuilder &add(UiBuilder<T> &&subBuilder, LayoutEngine::LayoutProps props = {})
+	{
+		children.push_back({std::make_unique<SubBuilderNode<T>>(std::move(subBuilder)), props});
+		return *this;
+	}
 
-    // --- Build ---
+	template <typename T>
+	UiBuilder &add(UiBuilder<T> &subBuilder, const LayoutEngine::LayoutProps props = {})
+	{
+		return add(std::move(subBuilder), props);
+	}
 
-    std::unique_ptr<RootType> build(const UIContext* ctx, SDL_FRect targetRect) {
-        auto root = std::make_unique<RootType>();
-        root->setBounds(targetRect);
+	std::unique_ptr<RootType> build(const UIContext *ctx, SDL_FRect targetRect)
+	{
+		auto root = std::make_unique<RootType>();
+		root->setBounds(targetRect);
 
-        // 1. Convert Children to LayoutItems
-        std::vector<LayoutEngine::LayoutItem> items;
-        items.reserve(children.size());
+		SDL_FRect localRect = {0.0f, 0.0f, targetRect.w, targetRect.h};
 
-        for (auto& [ptr, cfg] : children) {
-            glm::vec2 ideal = {0,0};
-            if (ctx) ideal = ptr->getIdealContentSize(*ctx);
-            
-            items.push_back({
-                ptr.get(),
-                cfg.row, cfg.col, cfg.spanX, cfg.spanY,
-                cfg.hAlign, cfg.vAlign,
-                ideal
-            });
-        }
+		std::vector<LayoutEngine::LayoutItem> solveItems;
+		solveItems.reserve(children.size());
 
-        // 2. Solve Layout (BAKING)
-        if (mode == LayoutMode::Stack) {
-            LayoutEngine::solveStack(items, targetRect);
-        } else if (mode == LayoutMode::Grid) {
-            LayoutEngine::solveGrid(items, targetRect, gridCfg);
-        } else {
-            // Adapt Linear params
-            // Note: Linear solver needs updating to match the unified LayoutItem struct
-            // or we map it here. For brevity, assuming solveLinear updated to use LayoutItem.
-             LayoutEngine::solveLinear(items, targetRect, linearCfg);
-        }
+		for (auto &entry : children) {
+			LayoutEngine::LayoutItem item;
+			static_cast<LayoutEngine::LayoutProps &>(item) = entry.props;
 
-        // 3. Adopt
-        std::vector<std::unique_ptr<Widget>> finalChildren;
-        for (auto& c : children) finalChildren.push_back(std::move(c.widget));
-        root->adoptChildren(std::move(finalChildren));
+			glm::vec2 naturalSize = entry.node->getIdealSize(ctx);
+			item.idealSize = {std::max(naturalSize.x, entry.props.minSize.x),
+			                  std::max(naturalSize.y, entry.props.minSize.y)};
 
-        return root;
-    }
+			solveItems.push_back(item);
+		}
 
-private:
-    struct Entry {
-        std::unique_ptr<Widget> widget;
-        ChildLayoutConfig config;
-    };
+		if (mode == LayoutMode::Grid)
+			LayoutEngine::solveGrid(solveItems, localRect, gridCfg);
+		else if (mode == LayoutMode::Stack)
+			LayoutEngine::solveStack(solveItems, localRect);
+		else
+			LayoutEngine::solveLinear(solveItems, localRect, linearCfg);
 
-    LayoutMode mode = LayoutMode::Linear;
-    std::vector<Entry> children;
-    
-    LayoutEngine::GridConfig gridCfg;
-    LayoutEngine::LinearConfig linearCfg;
+		if constexpr (requires { root->adoptChildren(std::vector<std::unique_ptr<Widget>>{}); }) {
+			std::vector<std::unique_ptr<Widget>> actualChildren;
+			actualChildren.reserve(children.size());
+
+			for (size_t i = 0; i < children.size(); ++i) {
+				if (std::unique_ptr<Widget> builtWidget =
+				        children[i].node->build(ctx, solveItems[i].calculatedBounds)) {
+					actualChildren.push_back(std::move(builtWidget));
+				}
+			}
+			root->adoptChildren(std::move(actualChildren));
+		}
+
+		return root;
+	}
+
+  private:
+	struct INode {
+		virtual ~INode() = default;
+		virtual glm::vec2 getIdealSize(const UIContext *ctx) = 0;
+		virtual std::unique_ptr<Widget> build(const UIContext *ctx, SDL_FRect targetRect) = 0;
+	};
+
+	struct WidgetNode : INode {
+		std::unique_ptr<Widget> widget;
+
+		explicit WidgetNode(std::unique_ptr<Widget> w) : widget(std::move(w)) {}
+
+		glm::vec2 getIdealSize(const UIContext *ctx) override
+		{
+			return (ctx && widget) ? widget->getIdealContentSize(*ctx) : glm::vec2{0, 0};
+		}
+
+		std::unique_ptr<Widget> build(const UIContext *ctx, SDL_FRect targetRect) override
+		{
+			if (widget)
+				widget->setBounds(targetRect);
+			return std::move(widget);
+		}
+	};
+
+	template <typename SubT>
+	struct SubBuilderNode : INode {
+		UiBuilder<SubT> builder;
+
+		explicit SubBuilderNode(UiBuilder<SubT> &&b) : builder(std::move(b)) {}
+
+		glm::vec2 getIdealSize(const UIContext *ctx) override { return {0, 0}; }
+
+		std::unique_ptr<Widget> build(const UIContext *ctx, SDL_FRect targetRect) override
+		{
+			return builder.build(ctx, targetRect);
+		}
+	};
+
+	struct Entry {
+		std::unique_ptr<INode> node;
+		LayoutEngine::LayoutProps props;
+	};
+
+	LayoutMode mode = LayoutMode::Linear;
+	std::vector<Entry> children;
+
+	LayoutEngine::GridConfig gridCfg;
+	LayoutEngine::LinearConfig linearCfg;
 };
-
 } // namespace Ui

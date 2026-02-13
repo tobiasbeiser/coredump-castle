@@ -4,10 +4,13 @@
 
 namespace GameEngine {
 
+GameLoadingState::GameLoadingState(StateFactory factory): nextStateFactory(std::move(factory))
+{
+}
+
 void GameLoadingState::init(GameEngine &game)
 {
-	rootWidget = UiViewFactory::createLoadingScreen(guiManager.getContext());
-	guiManager.updateLayout(rootWidget.get());
+	rootWidget = UiViewFactory::createLoadingScreen(game.getUiContext());
 }
 
 void GameLoadingState::update(GameEngine &game, float deltaTime)
@@ -19,7 +22,7 @@ void GameLoadingState::update(GameEngine &game, float deltaTime)
 
 void GameLoadingState::render(GameEngine &game, float alpha)
 {
-	rootWidget->draw(guiManager.getContext(), {0, 0});
+	rootWidget->draw(game.getUiContext(), {0, 0});
 	hasRenderedOnce = true;
 }
 } // namespace GameEngine

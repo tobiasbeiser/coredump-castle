@@ -5,9 +5,9 @@
 #include "Game/Factories/EffectFactory.hpp"
 #include "Game/Factories/ProjectileFactory.hpp"
 #include "Graphics/FontManager.hpp"
-#include "Graphics/Gui/GuiManager.hpp"
 #include "Graphics/Renderer.hpp"
 #include "Graphics/TextureManager.hpp"
+#include "Graphics/Gui/Core/UiContext.hpp"
 #include "Input/InputManager.hpp"
 #include <concepts>
 #include <memory>
@@ -60,7 +60,7 @@ class GameEngine {
 	InputManager &getInputManager() { return inputManager; }
 	TextureManager &getTextureManager() { return textureManager; }
 	FontManager &getFontManager() { return fontManager; }
-	Ui::GuiManager &getGuiManager() const { return *guiManager; }
+	Ui::UIContext &getUiContext() const { return *context; }
 	EffectFactory &getEffectFactory() { return effectFactory; };
 	ECS::Systems::SaveSystem &getSaveSystem() { return saveSystem; }
 	AudioManager &getAudioManager() { return audioManager; }
@@ -75,7 +75,7 @@ class GameEngine {
 	InputManager inputManager;
 	TextureManager textureManager;
 	FontManager fontManager;
-	std::unique_ptr<Ui::GuiManager> guiManager;
+	std::unique_ptr<Ui::UIContext> context;
 	ECS::Systems::SaveSystem saveSystem;
 	struct PendingAction {
 		enum class Type { Push, Pop, Change, Reset};

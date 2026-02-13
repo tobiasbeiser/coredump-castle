@@ -11,7 +11,7 @@ void GameEngine::ECS::Systems::MenuStateToggleSystem::update(Registry &registry,
 			if (!mapShowing) {
 				mapShowing = true;
 				game.pushState(std::make_unique<MapMenuState>(game.getInputManager(), game.getTextureManager(),
-				                                              game.getGuiManager(), game.getRenderer()));
+				                                              game.getRenderer()));
 			} else {
 				mapShowing = false;
 				game.popState();
@@ -24,7 +24,7 @@ void GameEngine::ECS::Systems::MenuStateToggleSystem::update(Registry &registry,
 			if (!pauseMenuShowing) {
 				pauseMenuShowing = true;
 				game.pushState(std::make_unique<PauseMenuState>(game.getInputManager(), game.getTextureManager(),
-															  game.getGuiManager(), game.getRenderer()));
+															  game.getRenderer()));
 			} else {
 				pauseMenuShowing = false;
 				game.popState();

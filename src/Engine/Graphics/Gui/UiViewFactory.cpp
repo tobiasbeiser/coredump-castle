@@ -2,269 +2,197 @@
 #include "UiViewFactory.hpp"
 
 #include "Engine/GameEngine.hpp"
+#include "UiBuilder.hpp"
 
 #include <utility>
 
 #include "Engine/Graphics/TextureManager.hpp"
 #include "Engine/Utils/SaveGameFormatter.hpp"
-#include "Layouts/AnchorLayout.hpp"
-#include "Layouts/LinearLayout.hpp"
+#include "Layouts/Container.hpp"
 #include "Widgets/Button.hpp"
 #include "Widgets/Frame.hpp"
 #include "Widgets/Label.hpp"
-#include "Widgets/Spacer.hpp"
+
+namespace {
+SDL_FRect getScreenRect(const Ui::UIContext &ctx)
+{
+	const auto [width, height] = ctx.renderer->getLogicalResolution();
+	return {0, 0, static_cast<float>(width), static_cast<float>(height)};
+}
+
+constexpr float contentWidth = 300;
+
+} // namespace
 
 namespace UiViewFactory {
-inline std::unique_ptr<Spacer> makeSpacer(const float layoutWeight = 1.0f)
-{
-	auto spacer = std::make_unique<Spacer>();
-	spacer->setLayoutWeight(std::clamp(layoutWeight, 0.f, 1.0f));
-	return spacer;
-}
 
-inline std::unique_ptr<Button> makeWrappingButton(const UIContext &ctx, std::string_view text, std::function<void()> cb)
-{
-	auto btn = std::make_unique<Button>(text, ctx.bigFont, std::move(cb));
-	return btn;
-}
-
-inline std::unique_ptr<Button> makeBigMenuButton(const UIContext &ctx, std::string_view text, std::function<void()> cb)
-{
-	auto btn = std::make_unique<Button>(text, ctx.bigFont, std::move(cb));
-	btn->setSizeMode(SizeMode::MatchParent, SizeMode::WrapContent);
-	return btn;
-}
-
-inline std::unique_ptr<LinearLayout> makeMenuRoot(const UIContext &ctx, std::string_view titleText)
-{
-	auto root = std::make_unique<LinearLayout>();
-	root->setSpacing(0.0f);
-	root->setSizeMode(SizeMode::MatchParent, SizeMode::MatchParent);
-
-	root->addWidget(std::make_unique<Spacer>(0.f, ctx.resolution.height * 0.1f));
-
-	auto titleLabel = std::make_unique<Label>(titleText, ctx.titleFont);
-	titleLabel->setColor(ctx.theme.titleTextColor);
-	root->addWidget(std::move(titleLabel));
-
-	root->addWidget(std::make_unique<Spacer>(0.f, ctx.resolution.height * 0.1f));
-	return root;
-}
-
-inline std::unique_ptr<LinearLayout> makeBackButtonFooter(const UIContext &ctx, std::function<void()> cb)
-{
-	auto footer = std::make_unique<LinearLayout>();
-	footer->setOrientation(Orientation::Horizontal);
-	footer->setCrossAxisAlignment(CrossAxisAlignment::Center);
-
-	footer->addWidget(makeSpacer());
-
-	std::unique_ptr<Button> backButton = makeWrappingButton(ctx, "Back", std::move(cb));
-	footer->addWidget(std::move(backButton));
-	return footer;
-}
-
-inline std::unique_ptr<LinearLayout> makeButtonContainer()
-{
-	auto buttonContainer = std::make_unique<LinearLayout>();
-	buttonContainer->setSpacing(8.0f);
-	buttonContainer->setCrossAxisAlignment(CrossAxisAlignment::Center);
-	buttonContainer->setSizeMode(SizeMode::WrapContent, SizeMode::MatchParent);
-	return buttonContainer;
-}
+using namespace Ui;
+using namespace Ui::LayoutEngine;
 
 std::unique_ptr<Widget> createMainMenu(const UIContext &ctx, const MainMenuActions &actions)
 {
-	auto root = makeMenuRoot(ctx, "Coredump Castle");
 
-	auto buttonContainer = makeButtonContainer();
-
-	if (actions.onStartNewGame) {
-		buttonContainer->addWidget(makeBigMenuButton(ctx, "Start New Game", actions.onStartNewGame));
-	}
-
-	auto bigMenuButton = makeBigMenuButton(ctx, "Continue", actions.onShowContinue);
-	if (!actions.onShowContinue) {
-		bigMenuButton->setButtonDisabled(true);
-	}
-	buttonContainer->addWidget(std::move(bigMenuButton));
-
-	if (actions.onShowSettings) {
-		buttonContainer->addWidget(makeBigMenuButton(ctx, "Settings", actions.onShowSettings));
-	}
-
-	if (actions.onQuit) {
-		buttonContainer->addWidget(makeBigMenuButton(ctx, "Quit", actions.onQuit));
-	}
-
-	root->addWidget(std::move(buttonContainer));
-
-	return root;
+	return UiBuilder<Container>::create()
+	    .withGrid({Track::flex(1.0f)}, {Track::fix(80), Track::flex(1.f), Track::fix(200), Track::flex(1)})
+	    .add(Label("Coredump Castle", ctx.titleFont, ctx.theme.titleTextColor), {.row = 0, .col = 0})
+	    .add(UiBuilder<Container>::create()
+	             .withLinear(Orientation::Vertical, 8.0f)
+	             .add(Button("Start New Game", ctx.bigFont, actions.onStartNewGame), {.hAlign = Alignment::Stretch})
+	             .add(Button("Continue", ctx.bigFont, actions.onShowContinue), {.hAlign = Alignment::Stretch})
+	             .add(Button("Settings", ctx.bigFont, actions.onShowSettings), {.hAlign = Alignment::Stretch})
+	             .add(Button("Quit", ctx.bigFont, actions.onQuit), {.hAlign = Alignment::Stretch}),
+	         {.row = 2, .col = 0, .hAlign = Alignment::Center, .vAlign = Alignment::Start, .minSize = {200.0f, 0.0f}})
+	    .build(&ctx, getScreenRect(ctx));
 }
 
 std::unique_ptr<Widget> createPauseMenu(const UIContext &ctx, const PauseMenuActions &actions)
 {
-	auto root = makeMenuRoot(ctx, "Game Paused");
-
-	auto buttonContainer = makeButtonContainer();
-
-	if (actions.onShowInventory) {
-		buttonContainer->addWidget(makeBigMenuButton(ctx, "Inventory", actions.onShowInventory));
-	}
-
-	if (actions.onShowSettings) {
-		buttonContainer->addWidget(makeBigMenuButton(ctx, "Settings", actions.onShowSettings));
-	}
-
-	if (actions.onBackToMainMenu) {
-		buttonContainer->addWidget(makeBigMenuButton(ctx, "Main Menu", actions.onBackToMainMenu));
-	}
-
-	root->addWidget(std::move(buttonContainer));
-
-	return root;
+	return UiBuilder<Container>::create()
+	    .withGrid({Track::flex(1.0f)}, {Track::fix(80), Track::flex(1), Track::fix(400), Track::flex(1)})
+	    .add(Label("Game Paused", ctx.titleFont, ctx.theme.titleTextColor), {.row = 0, .col = 0})
+	    .add(UiBuilder<Container>::create()
+	             .withLinear(Orientation::Vertical, 8.0f)
+	             .add(Button("Inventory", ctx.bigFont, actions.onShowInventory), {.hAlign = Alignment::Stretch})
+	             .add(Button("Settings", ctx.bigFont, actions.onShowSettings), {.hAlign = Alignment::Stretch})
+	             .add(Button("Quit Game", ctx.bigFont, actions.onBackToMainMenu), {.hAlign = Alignment::Stretch}),
+	         {.row = 2,
+	          .col = 0,
+	          .hAlign = Alignment::Center,
+	          .vAlign = Alignment::Start,
+	          .minSize = {contentWidth, 0.0f}})
+	    .build(&ctx, getScreenRect(ctx));
 }
 
 std::unique_ptr<Widget> createContinueMenu(const UIContext &ctx, const ContinueMenuActions &actions,
-                                           const std::vector<GameEngine::ECS::SaveMetaData>& savesData)
+                                           const std::vector<GameEngine::ECS::SaveMetaData> &savesData)
 {
-	auto root = makeMenuRoot(ctx, "Continue Game");
-
-	auto posContainer = std::make_unique<LinearLayout>();
-	posContainer->setOrientation(Orientation::Horizontal);
-	posContainer->addWidget(makeSpacer());
-
-	auto buttonContainer = makeButtonContainer();
-
-	for (const auto& saveData : savesData) {
-		auto buttonRow = std::make_unique<LinearLayout>();
-		buttonRow->setOrientation(Orientation::Horizontal);
-
-		auto metaLabel =
-		    std::make_unique<Label>(GameEngine::Utils::SaveGameFormatter::getDisplayString(saveData), ctx.textFont);
-		buttonRow->addWidget(std::move(metaLabel));
-		auto loadCallback = [actions, saveData] { actions.onContinue(saveData.saveName); };
-		buttonRow->addWidget(makeWrappingButton(ctx, "continue", loadCallback));
-		buttonContainer->addWidget(std::move(buttonRow));
+	std::vector<Track> gridRows;
+	for (size_t i = 0; i < savesData.size(); ++i) {
+		gridRows.push_back(Track::fix(30.0f));
 	}
 
-	auto continueContainer = std::make_unique<LinearLayout>();
+	auto saveListBuilder = UiBuilder<Container>::create();
 
-	continueContainer->setSpacing(20.f);
-	continueContainer->addWidget(std::move(buttonContainer));
-	continueContainer->setSizeMode(SizeMode::WrapContent, SizeMode::WrapContent);
+	saveListBuilder.withGrid({Track::flex(1.0f), Track::fix(120.0f)}, gridRows, 4.0f);
 
-	if (actions.onBack) {
-		continueContainer->addWidget(makeBackButtonFooter(ctx, actions.onBack));
+	int currentRow = 0;
+	for (const auto &saveData : savesData) {
+		std::string labelText = GameEngine::Utils::SaveGameFormatter::getDisplayString(saveData);
+
+		saveListBuilder.add(Label(labelText, ctx.textFont), {.row = currentRow, .col = 0, .hAlign = Alignment::Start});
+
+		auto loadCallback = [actions, name = saveData.saveName] { actions.onContinue(name); };
+		saveListBuilder.add(Button("Continue", ctx.bigFont, loadCallback),
+		                    {.row = currentRow, .col = 1, .hAlign = Alignment::Stretch});
+		currentRow++;
 	}
-	posContainer->addWidget(std::move(continueContainer));
-	posContainer->addWidget(makeSpacer());
 
-	root->addWidget(std::move(posContainer));
-
-	return root;
+	return UiBuilder<Container>::create()
+	    .withGrid({Track::flex(1.0f)}, {Track::fix(100), Track::flex(1), Track::fix(100)})
+	    .add(Label("Continue Game", ctx.titleFont, ctx.theme.titleTextColor), {.row = 0, .col = 0})
+	    .add(std::move(saveListBuilder), {.row = 1,
+	                                      .col = 0,
+	                                      .hAlign = Alignment::Center,
+	                                      .vAlign = Alignment::Start,
+	                                      .minSize = {contentWidth, 0.0f}})
+	    .add(Button("Back", ctx.bigFont, actions.onBack),
+	         {
+	             .row = 2,
+	             .col = 0,
+	             .spanX = 2,
+	             .hAlign = Alignment::End,
+	             .vAlign = Alignment::Center,
+	         })
+	    .build(&ctx, getScreenRect(ctx));
 }
 
-std::unique_ptr<Widget> createSettingsMenu(const UIContext &ctx, const SettingsMenuActions &actions, const bool pauseMenuView)
+std::unique_ptr<Widget> createSettingsMenu(const UIContext &ctx, const SettingsMenuActions &actions,
+                                           const bool pauseMenuView)
 {
-	auto root = makeMenuRoot(ctx, "Settings");
 
-	std::unordered_map<std::string, std::string> keyMapping = {{"Left", "[A]"},     {"Right", "[D]"},
-	                                                           {"Jump", "[Space]"}, {"Attack", "[K]"},
-	                                                           {"Interact", "[E]"}, {"Toggle Map", "[M]"}};
+	std::unordered_map<std::string, std::string> keyMapping = {
+	    {"Left", "[A]"},     {"Right", "[D]"},      {"Jump", "[Space]"},           {"Attack", "[K]"},
+	    {"Interact", "[E]"}, {"Toggle Map", "[M]"}, {"Toggle Pause Menu", "[ESC]"}};
+	auto contentBuilder = UiBuilder<Container>::create();
 
-	auto container = std::make_unique<LinearLayout>();
-	container->setOrientation(Orientation::Horizontal);
+	const int rowCount = static_cast<int>(keyMapping.size()) + (pauseMenuView ? 0 : 2);
 
-	container->addWidget(makeSpacer());
+	const std::vector rows(rowCount, Track::fix(20.0f));
 
-	auto content = std::make_unique<LinearLayout>();
-	content->setLayoutWeight(1.0f);
-	content->setCrossAxisAlignment(CrossAxisAlignment::Stretch);
+	contentBuilder.withGrid({Track::flex(1.0f), Track::fix(50.0f)}, rows);
+
+	int currentRow = 0;
 	for (const auto &[action, key] : keyMapping) {
-		auto listElement = std::make_unique<LinearLayout>();
-		listElement->setOrientation(Orientation::Horizontal);
-		auto actionLabel = std::make_unique<Label>(action, ctx.textFont);
-		actionLabel->setLayoutWeight(0.5);
-		listElement->addWidget(std::move(actionLabel));
-		listElement->addWidget(makeSpacer(0.8));
-		auto keyLabel = std::make_unique<Label>(key, ctx.textFont);
-		keyLabel->setLayoutWeight(0.30f);
-		listElement->addWidget(std::move(keyLabel));
-
-		content->addWidget(std::move(listElement));
+		contentBuilder.add(Label(action, ctx.textFont), {.row = currentRow, .col = 0, .hAlign = Alignment::Start});
+		contentBuilder.add(Label(key, ctx.textFont), {.row = currentRow, .col = 1, .hAlign = Alignment::Center});
+		currentRow++;
 	}
 
 	if (!pauseMenuView) {
-		auto deleteAll = std::make_unique<LinearLayout>();
-		deleteAll->setOrientation(Orientation::Horizontal);
-		auto deleteLabel = std::make_unique<Label>("Delete all saves", ctx.textFont);
-		deleteLabel->setLayoutWeight(1.0f);
-		deleteAll->addWidget(std::move(deleteLabel));
-
-		auto deleteButton = std::make_unique<Button>("Delete", ctx.textFont, actions.onDelete);
-		if (!actions.onDelete) {
-			deleteButton->setButtonDisabled(true);
-		}
-
-		deleteAll->addWidget(std::move(deleteButton));
-		content->addWidget(std::move(deleteAll));
+		contentBuilder.add(Frame(), {.row = currentRow++, .spanX = 2, .minSize{contentWidth, 2}});
+		contentBuilder.add(Label("Delete all saves", ctx.textFont),
+		                   {.row = currentRow, .col = 0, .hAlign = Alignment::Start});
+		contentBuilder.add(Button("Delete", ctx.textFont, actions.onDelete),
+		                   {.row = currentRow, .col = 1, .hAlign = Alignment::End});
 	}
-	content->addWidget(makeBackButtonFooter(ctx, actions.onBack));
 
-	container->addWidget(std::move(content));
-	container->addWidget(makeSpacer());
-
-	root->addWidget(std::move(container));
-	return root;
+	return UiBuilder<Container>::create()
+	    .withGrid({Track::flex(1.f)},
+	              {Track::fix(80), Track::flex(1.f), Track::fix(200), Track::flex(1.f)}
+	              )
+	    .add(Label("Settings", ctx.titleFont, ctx.theme.titleTextColor), {.row = 0, .col = 0})
+	    .add(std::move(contentBuilder), {.row = 1,
+	                                     .col = 0,
+	                                     .hAlign = Alignment::Center,
+	                                     .vAlign = Alignment::Center,
+	                                     .minSize = {contentWidth, 0.0f}})
+	    .add(Button("Back", ctx.bigFont, actions.onBack),
+	         {.row = 2, .col = 0, .hAlign = Alignment::End, .vAlign = Alignment::Center})
+	    .build(&ctx, getScreenRect(ctx));
 }
 
 std::unique_ptr<Widget> createInventoryMenu(const UIContext &ctx, const InventoryActions &actions, int collectedKeys,
-	const std::vector<int> &unlockedAbilities)
+                                            const std::vector<int> &unlockedAbilities)
 {
-	auto root = makeMenuRoot(ctx, "Inventory");
-
-	auto posContainer = std::make_unique<LinearLayout>();
-	posContainer->setOrientation(Orientation::Horizontal);
-	posContainer->addWidget(makeSpacer());
-
-	root->addWidget(makeBackButtonFooter(ctx, actions.onBack));
-	return root;
+	return UiBuilder<Container>::create()
+	    .withGrid({Track::flex(1.0f)}, {Track::fix(100), Track::flex(1), Track::fix(100)})
+	    .add(Label("Inventory", ctx.titleFont, ctx.theme.titleTextColor), {.row = 0, .col = 0})
+	    .add(Button("Back", ctx.bigFont, actions.onBack),
+	         {.row = 2, .col = 0, .hAlign = Alignment::End, .vAlign = Alignment::Center})
+	    .build(&ctx, getScreenRect(ctx));
 }
 
 std::unique_ptr<Widget> createLoadingScreen(const UIContext &ctx)
 {
-	auto root = std::make_unique<AnchorLayout>();
-	auto loadingLabel = std::make_unique<Label>("Loading...", ctx.bigFont);
-	root->addChild(std::move(loadingLabel), AnchorParams::bottomCenter);
-	return root;
+	return UiBuilder<Container>::create()
+	    .withStack()
+	    .add(Label("Loading...", ctx.bigFont), {.anchor = AnchorParams::bottomCenter})
+	    .build(&ctx, getScreenRect(ctx));
 }
 
 std::unique_ptr<Widget> createMapScreen(const UIContext &ctx, const float mapSizeFactor)
 {
 	static constexpr int bleedingGuard = 3;
-	const auto [width, height] = ctx.renderer->getLogicalResolution();
-	auto root = std::make_unique<AnchorLayout>();
+	const SDL_FRect screen = getScreenRect(ctx);
 
-	auto mapContent = std::make_unique<Frame>();
-	mapContent->setFixedSize({width * mapSizeFactor + bleedingGuard, height * mapSizeFactor + bleedingGuard});
-	root->addChild(std::move(mapContent), AnchorParams::center);
-
-	return root;
+	return UiBuilder<Container>::create()
+	    .withStack()
+	    .add(Frame(),
+	         {.minSize = {screen.w * mapSizeFactor + bleedingGuard, screen.h * mapSizeFactor + bleedingGuard},
+	          .anchor = {AnchorParams::center}})
+	    .build(&ctx, screen);
 }
 
 std::unique_ptr<Widget> createGameOverScreen(const UIContext &ctx, GameEngine::GameEngine &game)
 {
-	const auto [width, height] = ctx.renderer->getLogicalResolution();
-	auto root = std::make_unique<AnchorLayout>();
+	const std::string hintString = std::format("Press [{}] to reload. Press [{}] to return to the main menu.",
+	                                           game.getInputManager().getHumanReadableKey(Key::Up),
+	                                           game.getInputManager().getHumanReadableKey(Key::Escape));
 
-	auto title = std::make_unique<Label>("Game Over", ctx.titleFont);
-	root->addChild(std::move(title), {{0.5f, 0.1f}, {0.5f, 0.5f}, {0.0f, 0.0f}});
-
-	std::string hintString = std::format("Press [{}] to reload. Press [{}] to return to the main menu.", game.getInputManager().getHumanReadableKey(Key::Up), game.getInputManager().getHumanReadableKey(Key::Escape));
-	auto hint = std::make_unique<Label>(hintString, ctx.textFont);
-	root->addChild(std::move(hint), {{0.5f, 1.0f}, {0.5f, 1.0f}, {0.0f, -10.0f}});
-
-	return root;
+	return UiBuilder<Container>::create()
+	    .withStack()
+	    .add(Label("Game Over", ctx.titleFont, ctx.theme.titleTextColor), {.anchor = {AnchorParams::topCenter}})
+	    .add(Label(hintString, ctx.textFont), {.anchor = AnchorParams::bottomCenter})
+	    .build(&ctx, getScreenRect(ctx));
 }
 } // namespace UiViewFactory

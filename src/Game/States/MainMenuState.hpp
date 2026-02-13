@@ -1,17 +1,16 @@
 #pragma once
 #include "Engine/ECS/Systems/RenderSystem.hpp"
 #include "Engine/GameState.hpp"
-#include "Engine/Graphics/FontManager.hpp"
-#include "Engine/Graphics/Gui/GuiManager.hpp"
 #include "Engine/Graphics/TextureManager.hpp"
+#include "Engine/Graphics/Gui/Base/Widget.hpp"
 
 namespace GameEngine {
 
 class MainMenuState final : public GameState {
 	// Inherited via GameState
   public:
-	MainMenuState(InputManager &input, TextureManager &textureManager, Ui::GuiManager &guiManager, Renderer &renderer)
-	    : inputManager(input), textureManager(textureManager), guiManager(guiManager), renderer(renderer)
+	MainMenuState(InputManager &input, TextureManager &textureManager, Renderer &renderer)
+	    : inputManager(input), textureManager(textureManager), renderer(renderer)
 	{
 	}
 	void init(GameEngine &game) override;
@@ -29,7 +28,6 @@ class MainMenuState final : public GameState {
 	static void transitionToPlayState(GameEngine &game);
 	InputManager &inputManager;
 	TextureManager &textureManager;
-	Ui::GuiManager &guiManager;
 	Renderer &renderer;
 	ECS::Systems::RenderSystem renderSystem{renderer};
 	std::unique_ptr<Ui::Widget> rootWidget{};

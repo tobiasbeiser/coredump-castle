@@ -1,11 +1,11 @@
 #include "PauseMenuState.hpp"
 
+#include "Engine/ECS/Systems/MenuStateToggleSystem.hpp"
 #include "Engine/GameEngine.hpp"
 #include "Engine/Graphics/Gui/UiViewFactory.hpp"
 #include "Engine/Graphics/Gui/Utils.hpp"
 #include "MainMenuState.hpp"
 #include "PlayState.hpp"
-#include "Engine/ECS/Systems/MenuStateToggleSystem.hpp"
 
 namespace GameEngine {
 
@@ -44,7 +44,7 @@ void PauseMenuState::update(GameEngine &game, const float deltaTime)
 void PauseMenuState::render(GameEngine &game, const float alpha)
 {
 	PROFILE_SCOPE("PauseMenuState::render");
-	rootWidget->draw(guiManager.getContext(), {0, 0});
+	rootWidget->draw(game.getUiContext(), {0, 0});
 }
 
 void PauseMenuState::setupUI(GameEngine &game)
@@ -57,12 +57,10 @@ void PauseMenuState::setupUI(GameEngine &game)
 	actions.onBackToMainMenu = [&game]() {
 		game.getRegistry().clearAll();
 		game.getSaveSystem().clearCurrentSaveName();
-		game.resetToState(std::make_unique<MainMenuState>(game.getInputManager(), game.getTextureManager(), game.getGuiManager(), game.getRenderer()));
+		game.resetToState(std::make_unique<MainMenuState>(game.getInputManager(), game.getTextureManager(), game.getRenderer()));
 	};
 
-	rootWidget = UiViewFactory::createPauseMenu(guiManager.getContext(), actions);
-
-	guiManager.updateLayout(rootWidget.get());
+	rootWidget = UiViewFactory::createPauseMenu(game.getUiContext(), actions);
 }
 
 void PauseMenuState::showSettingsMenu(GameEngine &game)
@@ -70,8 +68,7 @@ void PauseMenuState::showSettingsMenu(GameEngine &game)
 	SettingsMenuActions optActions;
 	optActions.onBack = [this, &game]() { setupUI(game); };
 
-	rootWidget = UiViewFactory::createSettingsMenu(guiManager.getContext(), optActions, true);
-	guiManager.updateLayout(rootWidget.get());
+	rootWidget = UiViewFactory::createSettingsMenu(game.getUiContext(), optActions, true);
 }
 
 void PauseMenuState::showInventory(GameEngine &game)
@@ -89,8 +86,8 @@ void PauseMenuState::showInventory(GameEngine &game)
 	const auto &inventory = playerView.get<InventoryComponent>(playerEntity);
 	const auto &progress = playerView.get<ProgressComponent>(playerEntity);
 
-	rootWidget = UiViewFactory::createInventoryMenu(guiManager.getContext(), invActions, inventory.keys.size(), progress.unlockedAbilities);
-	guiManager.updateLayout(rootWidget.get());
+	rootWidget = UiViewFactory::createInventoryMenu(game.getUiContext(), invActions, inventory.keys.size(),
+	                                                progress.unlockedAbilities);
 }
 
 } // namespace GameEngine

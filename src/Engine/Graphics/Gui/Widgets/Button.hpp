@@ -14,13 +14,12 @@ class Label;
 class Button final : public Widget {
   public:
 	Button(std::string_view label, TTF_Font *font, const std::function<void()> &onClick);
-	void layout(const UIContext &ctx, SDL_FRect allocatedRect) override;
 	bool handleEvent(glm::vec2 localMousePos, const SDL_Event &event) override;
 	void draw(const UIContext &ctx, glm::vec2 parentOffset) const override;
-	void setButtonDisabled(const bool disabled) { isDisabled = disabled; };
+	void setButtonDisabled(const bool disabled) { isDisabled = disabled; }
+	[[nodiscard]] glm::vec2 getIdealContentSize(const UIContext &ctx) const override;
 
   private:
-	glm::vec2 performMeasure(const UIContext &ctx, BoxConstraints constraints) const override;
 	std::unique_ptr<Label> content;
 	std::function<void()> callback;
 

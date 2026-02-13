@@ -1,7 +1,6 @@
 #pragma once
 #include "Engine/ECS/Registry.hpp"
 #include "Engine/Graphics/Gui/LayoutEngine.hpp"
-#include "Engine/Graphics/Gui/Layouts/AnchorLayout.hpp"
 #include "Engine/Graphics/Renderer.hpp"
 #include "Engine/Utils/RenderUtils.hpp"
 

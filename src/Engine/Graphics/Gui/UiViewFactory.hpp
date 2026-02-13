@@ -1,5 +1,6 @@
 #pragma once
-#include "GuiManager.hpp"
+#include "Base/Widget.hpp"
+
 #include <functional>
 
 #include "Engine/FileIO/ISaveStorage.hpp"

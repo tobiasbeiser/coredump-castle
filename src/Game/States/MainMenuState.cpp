@@ -12,8 +12,7 @@ namespace GameEngine {
 void MainMenuState::init(GameEngine &game)
 {
 	if (DebugSystem::instance().getSkipMenuOptions().skipMainMenu) {
-		game.pushState(std::make_unique<PlayState>(game.getInputManager(), game.getTextureManager(),
-		                                           game.getGuiManager(), game.getRenderer(), game.getEffectFactory(),
+		game.pushState(std::make_unique<PlayState>(game.getInputManager(), game.getTextureManager(), game.getRenderer(), game.getEffectFactory(),
 		                                           game.getProjectileFactory()));
 	}
 
@@ -49,7 +48,7 @@ void MainMenuState::render(GameEngine &game, const float alpha)
 		SDL_SetTextureAlphaMod(backgroundTexture, 255);
 		renderer.renderTexture(*backgroundTexture, std::nullopt, std::nullopt, false);
 	}
-	rootWidget->draw(guiManager.getContext(), {0, 0});
+	rootWidget->draw(game.getUiContext(), {0, 0});
 }
 
 void MainMenuState::setupUI(GameEngine &game)
@@ -71,9 +70,7 @@ void MainMenuState::setupUI(GameEngine &game)
 		SDL_PushEvent(&quit);
 	};
 
-	rootWidget = UiViewFactory::createMainMenu(guiManager.getContext(), actions);
-
-	guiManager.updateLayout(rootWidget.get());
+	rootWidget = UiViewFactory::createMainMenu(game.getUiContext(), actions);
 }
 
 void MainMenuState::showContinueMenu(GameEngine &game)
@@ -88,9 +85,7 @@ void MainMenuState::showContinueMenu(GameEngine &game)
 	contActions.onBack = [this, &game]() { setupUI(game); }; // Recursive call to rebuild MainMenu
 
 	const auto gameSaves = game.getSaveSystem().getSaves();
-	rootWidget = UiViewFactory::createContinueMenu(guiManager.getContext(), contActions, gameSaves);
-
-	guiManager.updateLayout(rootWidget.get());
+	rootWidget = UiViewFactory::createContinueMenu(game.getUiContext(), contActions, gameSaves);
 }
 
 void MainMenuState::showSettingsMenu(GameEngine &game)
@@ -104,17 +99,15 @@ void MainMenuState::showSettingsMenu(GameEngine &game)
 		};
 	}
 
-	rootWidget = UiViewFactory::createSettingsMenu(guiManager.getContext(), optActions);
-	guiManager.updateLayout(rootWidget.get());
+	rootWidget = UiViewFactory::createSettingsMenu(game.getUiContext(), optActions);
 }
 
 void MainMenuState::transitionToPlayState(GameEngine &game)
 {
 	auto playStateFactory = [&game]() {
-		return std::make_unique<PlayState>(game.getInputManager(), game.getTextureManager(), game.getGuiManager(),
-		                                   game.getRenderer(), game.getEffectFactory(), game.getProjectileFactory());
+		return std::make_unique<PlayState>(game.getInputManager(), game.getTextureManager(), game.getRenderer(), game.getEffectFactory(), game.getProjectileFactory());
 	};
-	game.changeState(std::make_unique<GameLoadingState>(std::move(playStateFactory), game.getGuiManager()));
+	game.changeState(std::make_unique<GameLoadingState>(std::move(playStateFactory)));
 }
 
 } // namespace GameEngine

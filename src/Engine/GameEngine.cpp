@@ -1,5 +1,4 @@
 #include "GameEngine.hpp"
-#include "../Game/States/PlayState.hpp"
 #include "Debug/DebugSystem.hpp"
 #include "FileIO/FileSaveStorage.hpp"
 #include "Game/States/MainMenuState.hpp"
@@ -26,11 +25,10 @@ GameEngine::~GameEngine()
 
 bool GameEngine::init()
 {
-	std::unique_ptr<Ui::UIContext> context = CoredumpContext::getContext(*this);
+	context = CoredumpContext::getContext(*this);
 
-	guiManager = std::make_unique<Ui::GuiManager>(std::move(context));
 	states.emplace_back(
-	    std::make_unique<MainMenuState>(getInputManager(), getTextureManager(), getGuiManager(), getRenderer()));
+	    std::make_unique<MainMenuState>(getInputManager(), getTextureManager(), getRenderer()));
 	running = true;
 
 	states.back()->init(*this);
