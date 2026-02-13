@@ -9,13 +9,9 @@ namespace Ui {
 
 class Frame final : public Widget {
   public:
-	explicit Frame(SDL_Texture *backgroundTex=nullptr);
+	Frame() = default;
 	bool handleEvent(glm::vec2 localMousePos, const SDL_Event &event) override;
 	void draw(const UIContext &ctx, glm::vec2 parentOffset) const override;
-
-  private:
-	void drawBackground(const UIContext &ctx, glm::vec2 parentOffset) const;
-	SDL_Texture *backgroundTex;
 };
 
 } // namespace Ui

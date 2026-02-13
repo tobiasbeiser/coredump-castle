@@ -1,7 +1,5 @@
 #pragma once
 #include <SDL3/SDL_pixels.h>
-#include <algorithm>
-#include <glm/vec2.hpp>
 #include <limits>
 
 #include "Engine/Graphics/FontManager.hpp"

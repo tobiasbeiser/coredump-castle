@@ -4,9 +4,7 @@
 
 namespace GameEngine {
 
-GameLoadingState::GameLoadingState(StateFactory factory): nextStateFactory(std::move(factory))
-{
-}
+GameLoadingState::GameLoadingState(StateFactory factory) : nextStateFactory(std::move(factory)) {}
 
 void GameLoadingState::init(GameEngine &game)
 {
@@ -22,6 +20,11 @@ void GameLoadingState::update(GameEngine &game, float deltaTime)
 
 void GameLoadingState::render(GameEngine &game, float alpha)
 {
+	if (SDL_Texture *backgroundTexture = &game.getTextureManager().getTexture("assets/ui/MainMenuBackground.png")) {
+		SDL_SetTextureColorMod(backgroundTexture, 170, 170, 170);
+		SDL_SetTextureAlphaMod(backgroundTexture, 255);
+		game.getRenderer().renderTexture(*backgroundTexture, std::nullopt, std::nullopt, false);
+	}
 	rootWidget->draw(game.getUiContext(), {0, 0});
 	hasRenderedOnce = true;
 }

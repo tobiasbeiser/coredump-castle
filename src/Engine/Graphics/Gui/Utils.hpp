@@ -15,7 +15,7 @@ inline void passMouseEvent(Widget *targetWidget, const SDL_Event &event, const R
 {
 
 	if (event.type != SDL_EVENT_MOUSE_MOTION && event.type != SDL_EVENT_MOUSE_BUTTON_DOWN
-	    && event.type != SDL_EVENT_MOUSE_BUTTON_UP) {
+	    && event.type != SDL_EVENT_MOUSE_BUTTON_UP && event.type != SDL_EVENT_MOUSE_WHEEL) {
 		return;
 	}
 
@@ -25,6 +25,9 @@ inline void passMouseEvent(Widget *targetWidget, const SDL_Event &event, const R
 	if (event.type == SDL_EVENT_MOUSE_MOTION) {
 		mx = event.motion.x;
 		my = event.motion.y;
+	} else if (event.type == SDL_EVENT_MOUSE_WHEEL) {
+		mx = event.wheel.mouse_x;
+		my = event.wheel.mouse_y;
 	} else {
 		mx = event.button.x;
 		my = event.button.y;

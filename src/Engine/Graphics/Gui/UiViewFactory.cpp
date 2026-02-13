@@ -9,6 +9,7 @@
 #include "Engine/Graphics/TextureManager.hpp"
 #include "Engine/Utils/SaveGameFormatter.hpp"
 #include "Layouts/Container.hpp"
+#include "Layouts/ScrollContainer.hpp"
 #include "Widgets/Button.hpp"
 #include "Widgets/Frame.hpp"
 #include "Widgets/Image.hpp"
@@ -31,11 +32,11 @@ SDL_FRect getScreenRect(const Ui::UIContext &ctx)
 	const auto [width, height] = ctx.renderer->getLogicalResolution();
 	return {0, 0, static_cast<float>(width), static_cast<float>(height)};
 }
-
-std::unique_ptr<Ui::Widget> createStandardScreen(const Ui::UIContext &ctx, const std::string_view titleText,
-                                                 Ui::UiBuilder<Ui::Container> &&contentBuilder, float contentWidth,
-                                                 const std::string_view bottomButtonText = "",
-                                                 std::function<void()> onBottomButton = nullptr)
+template <typename T>
+std::unique_ptr<Ui::Widget>
+createStandardScreen(const Ui::UIContext &ctx, const std::string_view titleText, Ui::UiBuilder<T> &&contentBuilder,
+                     float contentWidth, const std::string_view bottomButtonText = "",
+                     std::function<void()> onBottomButton = nullptr, const bool drawBackgroundPanel = false)
 {
 	using namespace Ui::LayoutEngine;
 
@@ -94,7 +95,7 @@ std::unique_ptr<Widget> createContinueMenu(const UIContext &ctx, const ContinueM
 {
 	const std::vector gridRows(savesData.size(), Track::fix(30.0f));
 
-	auto saveListBuilder = UiBuilder<Container>::create();
+	auto saveListBuilder = UiBuilder<ScrollContainer>::create();
 	saveListBuilder.withGrid({Track::flex(1.0f), Track::fix(120.0f)}, gridRows, 4.0f);
 
 	int currentRow = 0;

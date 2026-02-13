@@ -44,8 +44,7 @@ void PauseMenuState::update(GameEngine &game, const float deltaTime)
 void PauseMenuState::render(GameEngine &game, const float alpha)
 {
 	PROFILE_SCOPE("PauseMenuState::render");
-	if (SDL_Texture *backgroundTexture =
-	        &game.getTextureManager().getTexture("assets/tiled/tilesets/Ui/MenuBackground.png")) {
+	if (SDL_Texture *backgroundTexture = &game.getTextureManager().getTexture("assets/ui/MenuBackground.png")) {
 		SDL_SetTextureColorMod(backgroundTexture, 170, 170, 170);
 		SDL_SetTextureAlphaMod(backgroundTexture, 255);
 		renderer.renderTexture(*backgroundTexture, std::nullopt, std::nullopt, false);

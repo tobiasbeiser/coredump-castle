@@ -2,6 +2,7 @@
 
 #include "Base/Widget.hpp"
 
+#include <algorithm>
 #include <numeric>
 #include <ranges>
 #include <span>
@@ -50,11 +51,11 @@ std::vector<float> resolveTracks(const std::vector<Track> &defs, const int unifo
 	const float flexSpace = std::max(0.0f, availableSpace - usedFixed - ((defs.size() - 1) * gap));
 	const float flexUnit = (totalFlex > 0) ? (flexSpace / totalFlex) : 0.0f;
 
-	auto results_view = defs | std::views::transform([=](const Track &t) {
-		                    return (t.type == Track::Fixed) ? t.value : (t.value * flexUnit);
-	                    });
+	auto resultsView = defs | std::views::transform([=](const Track &t) {
+		                   return (t.type == Track::Fixed) ? t.value : (t.value * flexUnit);
+	                   });
 
-	return {results_view.begin(), results_view.end()};
+	return {resultsView.begin(), resultsView.end()};
 }
 } // namespace
 

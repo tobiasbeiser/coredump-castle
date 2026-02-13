@@ -12,8 +12,8 @@ namespace GameEngine {
 void MainMenuState::init(GameEngine &game)
 {
 	if (DebugSystem::instance().getSkipMenuOptions().skipMainMenu) {
-		game.pushState(std::make_unique<PlayState>(game.getInputManager(), game.getTextureManager(), game.getRenderer(), game.getEffectFactory(),
-		                                           game.getProjectileFactory()));
+		game.pushState(std::make_unique<PlayState>(game.getInputManager(), game.getTextureManager(), game.getRenderer(),
+		                                           game.getEffectFactory(), game.getProjectileFactory()));
 	}
 
 	setupUI(game);
@@ -43,7 +43,7 @@ void MainMenuState::update(GameEngine &game, const float deltaTime) {}
 void MainMenuState::render(GameEngine &game, const float alpha)
 {
 	PROFILE_SCOPE("MainMenuState::render");
-	if (SDL_Texture *backgroundTexture = &game.getTextureManager().getTexture("assets/ui/main_menu_background.png")) {
+	if (SDL_Texture *backgroundTexture = &game.getTextureManager().getTexture("assets/ui/MainMenuBackground.png")) {
 		SDL_SetTextureColorMod(backgroundTexture, 170, 170, 170);
 		SDL_SetTextureAlphaMod(backgroundTexture, 255);
 		renderer.renderTexture(*backgroundTexture, std::nullopt, std::nullopt, false);
@@ -105,7 +105,8 @@ void MainMenuState::showSettingsMenu(GameEngine &game)
 void MainMenuState::transitionToPlayState(GameEngine &game)
 {
 	auto playStateFactory = [&game]() {
-		return std::make_unique<PlayState>(game.getInputManager(), game.getTextureManager(), game.getRenderer(), game.getEffectFactory(), game.getProjectileFactory());
+		return std::make_unique<PlayState>(game.getInputManager(), game.getTextureManager(), game.getRenderer(),
+		                                   game.getEffectFactory(), game.getProjectileFactory());
 	};
 	game.changeState(std::make_unique<GameLoadingState>(std::move(playStateFactory)));
 }

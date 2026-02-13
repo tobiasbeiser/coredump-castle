@@ -8,7 +8,7 @@ class Container : public Widget {
 	void draw(const UIContext &context, glm::vec2 parentOffset) const override;
 	void adoptChildren(std::vector<std::unique_ptr<Widget>> newChildren);
 
-  private:
+  protected:
 	std::vector<std::unique_ptr<Widget>> children;
 };
 } // namespace Ui
